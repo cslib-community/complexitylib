@@ -36,8 +36,10 @@ particular, it states no runtime, success-probability, hardness or unforgeabilit
 
 ## Main results
 
-* `Cslib.Crypto.MQOM.siblingNode_parent`: a path entry and the hidden node have the same parent.
-* `Cslib.Crypto.MQOM.siblingNode_ne_hiddenNode`: the revealed sibling is not the hidden node.
+* `Cslib.Crypto.MQOM.siblingNode_parent_eq_hiddenNode_succ`: a path entry's parent is the next
+  hidden ancestor.
+* `Cslib.Crypto.MQOM.siblingNode_pos`, `.siblingNode_lt`: path entries lie in the tree array.
+* `Cslib.Crypto.MQOM.siblingNode_ne_leafNode`: no path entry reveals the challenged leaf.
 * `Cslib.Crypto.MQOM.length_siblingPathNodes`: an opening contains exactly `height` nodes.
 * `Cslib.Crypto.MQOM.transcriptConsistent_validationTranscript`: every recorded reply is exact.
 * `Cslib.Crypto.MQOM.ValidationRun.queryCount_eq_length_transcript`: failed and repeated calls
@@ -96,6 +98,21 @@ theorem ancestorNode_le (node level : Nat) : ancestorNode node level ≤ node :=
     rw [ancestorNode]
     exact (Nat.div_le_self _ _).trans ih
 
+theorem ancestorNode_eq_div_pow (node level : Nat) :
+    ancestorNode node level = node / 2 ^ level := by
+  induction level with
+  | zero => simp only [ancestorNode_zero, pow_zero, Nat.div_one]
+  | succ level ih =>
+    rw [ancestorNode, ih, Nat.div_div_eq_div_mul, Nat.pow_succ]
+
+private theorem ancestorNode_le_div_two (node level : Nat) (hlevel : 0 < level) :
+    ancestorNode node level ≤ node / 2 := by
+  cases level with
+  | zero => omega
+  | succ level =>
+    rw [ancestorNode]
+    exact Nat.div_le_div_right (ancestorNode_le node level)
+
 theorem leafCount_le_leafNode {height : Nat} (leaf : LeafIndex height) :
     leafCount height ≤ leafNode leaf := by
   simp only [leafNode]
@@ -118,7 +135,24 @@ theorem hiddenNode_lt {height : Nat} (leaf : LeafIndex height)
     (level : Fin (height + 1)) : hiddenNode leaf level < 2 * leafCount height := by
   exact (ancestorNode_le (leafNode leaf) level).trans_lt (leafNode_lt leaf)
 
-/-- Every sibling-path index belongs to the source tree array `1, ..., 2N - 1`. -/
+/-- A sibling-path index is nonzero, as required by the source tree array. -/
+theorem siblingNode_pos {height : Nat} (leaf : LeafIndex height) (level : Fin height) :
+    0 < siblingNode leaf level := by
+  have hnode : 2 ≤ hiddenNode leaf (Fin.castSucc level) := by
+    simp only [hiddenNode, ancestorNode_eq_div_pow]
+    apply (Nat.le_div_iff_mul_le (Nat.two_pow_pos level)).2
+    rw [← Nat.pow_succ']
+    exact (Nat.pow_le_pow_right (by decide) (Nat.succ_le_iff.mpr level.isLt)).trans
+      (leafCount_le_leafNode leaf)
+  simp only [siblingNode]
+  generalize hiddenNode leaf (Fin.castSucc level) = node at hnode ⊢
+  rcases Nat.even_or_odd node with he | ho
+  · rw [Nat.xor_one_of_even he]
+    omega
+  · rw [Nat.xor_one_of_odd ho]
+    omega
+
+/-- A sibling-path index is at most the final source tree-array index `2N - 1`. -/
 theorem siblingNode_lt {height : Nat} (leaf : LeafIndex height) (level : Fin height) :
     siblingNode leaf level < 2 * leafCount height := by
   have hnode := hiddenNode_lt leaf (Fin.castSucc level)
@@ -144,6 +178,11 @@ theorem siblingNode_parent {height : Nat} (leaf : LeafIndex height) (level : Fin
     obtain ⟨k, rfl⟩ := ho
     omega
 
+/-- After revealing the sibling, the source loop moves the hidden node to their common parent. -/
+theorem siblingNode_parent_eq_hiddenNode_succ {height : Nat} (leaf : LeafIndex height)
+    (level : Fin height) : siblingNode leaf level / 2 = hiddenNode leaf level.succ := by
+  rw [siblingNode_parent, hiddenNode_succ]
+
 /-- An opening never reveals the hidden node at the same level. -/
 theorem siblingNode_ne_hiddenNode {height : Nat} (leaf : LeafIndex height)
     (level : Fin height) : siblingNode leaf level ≠ hiddenNode leaf (Fin.castSucc level) := by
@@ -155,6 +194,33 @@ theorem siblingNode_ne_hiddenNode {height : Nat} (leaf : LeafIndex height)
     omega
   · rw [Nat.xor_one_of_odd ho]
     obtain ⟨k, rfl⟩ := ho
+    omega
+
+/-- No entry in an opening is the challenged leaf node. -/
+theorem siblingNode_ne_leafNode {height : Nat} (leaf : LeafIndex height)
+    (level : Fin height) : siblingNode leaf level ≠ leafNode leaf := by
+  by_cases hlevel : (level : Nat) = 0
+  · intro heq
+    apply siblingNode_ne_hiddenNode leaf level
+    rw [heq]
+    simp only [hiddenNode, hlevel, ancestorNode_zero]
+  · apply Nat.ne_of_lt
+    have hhidden : hiddenNode leaf (Fin.castSucc level) ≤ leafNode leaf / 2 := by
+      simp only [hiddenNode]
+      exact ancestorNode_le_div_two _ _ (Nat.pos_of_ne_zero hlevel)
+    have hsibling :
+        siblingNode leaf level ≤ hiddenNode leaf (Fin.castSucc level) + 1 := by
+      simp only [siblingNode]
+      generalize hiddenNode leaf (Fin.castSucc level) = node
+      rcases Nat.even_or_odd node with he | ho
+      · rw [Nat.xor_one_of_even he]
+      · rw [Nat.xor_one_of_odd ho]
+        omega
+    have hleaf : 4 ≤ leafNode leaf := by
+      apply (show 4 ≤ leafCount height by
+        simp only [leafCount]
+        exact Nat.pow_le_pow_right (by decide) (by omega)).trans
+      exact leafCount_le_leafNode leaf
     omega
 
 /-- A correlated-tree opening contains exactly one sibling for each tree level. -/
