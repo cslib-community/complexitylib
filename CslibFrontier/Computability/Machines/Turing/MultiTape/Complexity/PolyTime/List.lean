@@ -998,18 +998,6 @@ theorem zipIdx {α : Type} (enc : α ↪ List Bool) :
 
 end Turing.MultiTapeTM.ComputableInPolyTime
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-/-- Legacy tidy certificate for numbered entries; the implementation uses plain list rules.
-Retained for the recognition clients being migrated in #5470. -/
-@[fun_prop]
-theorem zipIdx {α : Type} (enc : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun list : List α => list.zipIdx)
-      (encList enc) (encList (encPair enc encUnary)) :=
-  (ComputableInPolyTime.zipIdx enc).tidy
-
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
 namespace Turing.MultiTapeTM
 
 open ComputableTidilyInPolyTime
