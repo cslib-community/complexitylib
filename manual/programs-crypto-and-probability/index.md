@@ -2398,6 +2398,54 @@ full source `Exchange` histories include per-call time vectors that native reply
 bytes need not reveal. An enriched-history filter must justify its projection to
 native observations; a native-visible filter must retain unrevealed data privately.
 
+For a fixed discrete source across generated native accepted-batch policies, import
+`CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction`.
+The source stores real latent state. The native policy carries its full checkpoint
+with dummy latent state and runs the actual unbounded accepted selector. Requests
+contain only the accepted public snapshot and selected batch; they contain no native
+tapes, raw event log or latent state. `ConcurrentBatch.Interaction.draw` samples
+one joint trajectory vector and successor, and `draw_serve` recovers the original
+guarded reply/server law for an admitted request. Both the receipt and successor
+come from the same draw.
+
+The analytical reply is the full `Exchange`, including its per-call stop times.
+`advance` passes only `replyOf` to native channels and commits the full receipt in
+the dummy accepted ledger. `step_trace` proves exact original native trace readback;
+`execution_trace` lifts it to every finite accepted-epoch horizon. Earlier accepted
+receipts remain in the analytical history when the private checkpoint diverges.
+This retains their bills and durations without claiming to recover an infinite raw
+log of rejected requests. `execution_terminal` recovers the original unbounded
+native terminal law after the source turn budget plus one halt/divergence decision.
+
+`execution_histories` uses one shared source filter in the explicit sequential
+history law; only the generated private query policy depends on the machine.
+`source_posterior` derives the retained latent-state posterior at supported complete
+histories, including divergent private checkpoints. These histories are enriched
+analytical observations. The theorem does not identify that posterior with a filter
+conditioned only on the machine-readable reply bytes.
+
+An arbitrary generic interaction policy could forge a request's snapshot.
+`execution_ledger_bound` instead proves turn, deadline and nonreuse feasibility for
+the generated actual native policies, using the existing native trace invariant.
+This supplies a fixed-source realization for that class; the final source-envelope
+and common-oracle optimum instantiation remain open.
+
+The [accepted-interaction client](../../CslibFrontierTests/NativeAcceptedInteraction.lean)
+uses the existing singleton source and the shared ordinary
+[native packet-writing program](../../CslibFrontierTests/NativeBatchProgram.lean).
+The actual program writes both packet bits, issues its admitted batch, then returns
+the singleton family. A latent source bit selects invoices of two or four with the
+same family word and duration. The checked complete histories distinguish those
+invoices and recover the corresponding source posterior; native terminal readback
+uses the original interpreter. The older successful-batch and retention/deadline
+clients also use the extracted program. The existing `Trace.law_hidden` projection
+uses `ObservedProcess.stateLaw_map`, matching the new full-trace transport and
+removing its separate clock induction. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.NativeAcceptedInteraction CslibFrontierTests.NativeBatchSuccess CslibFrontierTests.NativeRetentionDeadline
+```
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches
