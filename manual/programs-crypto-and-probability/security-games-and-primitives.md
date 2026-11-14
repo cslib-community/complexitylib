@@ -332,7 +332,9 @@ ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/C
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
 [`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean), with the
 compressed-verification reduction in
-[`MLDSA/CompressedKeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/CompressedKeyOnly.lean).
+[`MLDSA/CompressedKeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/CompressedKeyOnly.lean)
+and bounded compressed signing in
+[`MLDSA/Signing.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Signing.lean).
 `power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
 `abs_power2RoundVec_low_le` give the coefficientwise public-key identity and low-part bound used by
 the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
@@ -365,6 +367,18 @@ description size of each `B(A)`, time, space, randomness and queries, plus its a
 wrapper, controller, advice, layout, copying and interpreter costs. Offline `A ↦ B(A)` compiler
 time is not attack time unless the produced reduction executes that compiler.
 
+The bounded compressed signer follows Algorithm 7's two rejection stages, including
+`||c t₀||∞ < γ₂` and the hint-weight bound, and uses the explicit counter schedule
+`κ + i ℓ`. Exhaustion returns one `none` result; this is executable functional semantics, not a
+model of the standard's physical destruction of intermediate state or side-channel behavior. A
+separate IID-mask convenience model proves that `K`-attempt failure has mass equal to the
+one-attempt failure mass raised to `K`; it is not identified with seeded `ExpandMask`. Published
+FIPS 204 Appendix C, Table 3 still says `814`. [NIST's potential-updates
+workbook](https://csrc.nist.gov/files/pubs/fips/204/final/docs/fips-204-potential-updates.xlsx),
+Sheet1 row 27 (2026-07-31), proposes `821` after accounting for Algorithm 7 line 28, but that
+proposed value is not part of the published standard. Neither value alone proves a failure bound
+in the semantic model.
+
 The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
 signs, verifies, rejects a modified response and yields a self-target solution. The
@@ -373,6 +387,9 @@ families and positive, negative and wrap-around bucket adjustments. The
 [compressed client](../../CslibFrontierTests/Crypto/MLDSACompressedKeyOnly.lean) uses the
 ML-DSA-44 coefficient dimensions, exercises set and clear hints and a nonzero `Power2Round` low
 part, checks the exact self-target identity, and rejects after changing the hash-checked hint.
+The [bounded-signing client](../../CslibFrontierTests/Crypto/MLDSASigning.lean) separates
+first-stage, product-norm and hint-weight rejection, checks counter-stepped first-success and
+exhaustion, and applies the exact IID failure law.
 
 The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
 [`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
