@@ -32,9 +32,9 @@ loss formula for the two reductions, so this module does not invent one or claim
 endpoint. In particular, applying the canonical native assumptions in
 `Cslib.Crypto.HQC.NativeQuantumTwoDQCSDP` and
 `Cslib.Crypto.HQC.NativeQuantumThreeDQCSDPT` still requires circuit/resource certificates for
-these reductions and an explicit treatment of the fair parity mixtures. The source defines
-IND-CPA advantage as the signed bias `Pr[win] - 1/2`; `indCpaAdvantage` uses its absolute value,
-which is invariant under flipping the final guess and implies the displayed signed bound.
+these reductions and an explicit treatment of the fair parity mixtures. As in [HQC2026],
+Definition 2.4.1 (printed p. 13), `indCpaAdvantage` is the absolute bias
+`|Pr[win] - 1/2|`.
 
 The displayed Game3 pseudocode on printed p. 63 repeats the fixed-weight Game2 sampling and
 formula. This conflicts with the adjacent transition text, the definition of 3-DQCSD-PT and the
@@ -145,9 +145,8 @@ noncomputable def indCpaGame {State : Type}
   let guess ← adversary.guess state (pkeEncrypt P encode pk (messages.select bit) coins)
   return guess == bit
 
-/-- Absolute bias of the hidden-bit success probability from one half. The source writes the
-signed bias; the absolute value is invariant under flipping the final guess and bounds that signed
-quantity. -/
+/-- Absolute bias of the hidden-bit success probability from one half, matching [HQC2026],
+Definition 2.4.1 (printed p. 13). -/
 noncomputable def indCpaAdvantage {State : Type}
     (encode : PKEMessage P → Codeword P)
     (adversary : TwoStage (PKEPublicKey P) (MessagePair (PKEMessage P))

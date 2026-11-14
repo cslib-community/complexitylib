@@ -886,11 +886,10 @@ message. The resulting `indCpaAdvantage_le` bound is
 The public parity `b₁` is sampled from the public word, so both reduction laws explicitly mix
 the two fixed-parity branches. The second identity also requires `omegaE = omegaR`; all published
 v5.1 parameter sets have that equality, while `PKEParams` deliberately permits other finite
-instances. The source defines IND-CPA advantage as the signed bias `Pr[win] - 1/2`; the Lean
-definition takes its absolute value, which is invariant under flipping the final guess and bounds
-the signed quantity. There is also a source inconsistency: the displayed Game3 body on printed
-p. 63 repeats Game2's fixed-weight sampling, whereas the adjacent transition text, the
-3-DQCSD-PT definition and the proof paragraph use the uniform comparison law and conclude that
+instances. The source's Definition 2.4.1 (printed p. 13) and the Lean definition both use the
+absolute bias `|Pr[win] - 1/2|`. There is also a source inconsistency: the displayed Game3
+body on printed p. 63 repeats Game2's fixed-weight sampling, whereas the adjacent transition text,
+the 3-DQCSD-PT definition and the proof paragraph use the uniform comparison law and conclude that
 the challenge bit is hidden. The formal game follows that stated comparison-law transition.
 
 This is not yet an asymptotic native-quantum PKE security endpoint. The specification supplies no
