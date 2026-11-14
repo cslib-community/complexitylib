@@ -188,6 +188,7 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
   have ha3 : a.mem 3 = n := (haframe 3 (Or.inl (by omega))).trans hnHeader
   have ha4 : a.mem 4 = p := (haframe 4 (Or.inl (by omega))).trans hpHeader
   have h1 : Fits (w + 2) 1 := hbudget.of_le (by omega)
+  have h4 : Fits (w + 2) 4 := hbudget.of_le (by omega)
   let b := a.set 31 1 |>.set 0 1 |>.set 7 D |>.set 0 2 |>.set 8 g |>.set 0 3 |>.set 6 n
   have hb : ExecWithin (w + 2) deliverParameters a b 7 := by
     ram_eval [deliverParameters, b, ha1, ha2, ha3, h1, Fin.mk.injEq]
@@ -240,7 +241,7 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
   have hd : ExecWithin (w + 2) deliverChunks c d 12 := by
     have hc4 : c.mem 4 = p := (congrFun hcmem 4).trans ha4
     ram_eval [deliverChunks, d, hc28, hc29, hc6, hc10, hc11, hc12, hc4,
-      hN, h2N, h2Np, hOut, N, pieceLength, pieces, ChunkCatalogue.counts,
+      h4, hN, h2N, h2Np, hOut, N, pieceLength, pieces, ChunkCatalogue.counts,
       ChunkCatalogue.queries, ChunkCatalogue.size, ChunkCatalogue.capacity,
       ChunkCatalogue.modulus, ChunkCatalogue.dst, ChunkCatalogue.addr, Fin.mk.injEq]
   have hd14 : d.regs ChunkCatalogue.counts = countBase := by
