@@ -211,22 +211,6 @@ theorem compactedItemWords_succ_sub_le_two {U V w N n : ℕ} (hw : 0 < w)
           Nat.add_mul_div_right _ _ hw
   omega
 
-/-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `readBitSlice` coincides
-with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.readPacked`. -/
-theorem readBitSlice_eq_readPacked (base k w mem idx : ℕ) :
-    readBitSlice base (wordOffset k w idx)
-      (bitOffset k w idx) k w mem =
-      readPacked base k w mem idx :=
-  rfl
-
-/-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `writeBitSlice` coincides
-with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.writePacked`. -/
-theorem writeBitSlice_eq_writePacked (base k w mem idx val : ℕ) :
-    writeBitSlice base (wordOffset k w idx)
-      (bitOffset k w idx) k w mem val =
-      writePacked base k w mem idx val :=
-  rfl
-
 /-- Pure extraction function for dense quotient `d < n` at `itemBase`. -/
 @[expose] def compQuotAt (itemBase U V w N n : ℕ) (mem : ℕ → ℕ) (d : ℕ) : ℕ :=
   if d < n then

@@ -22,9 +22,10 @@ It establishes:
 1. **Static `1 · OPT` compacted epoch footprint bounds** (`compactedEpochWords_le_succinctWords`,
    `w_mul_compactedEpochWords_le_bits`): under `EpochValid U n N`, the live compacted epoch
    footprint formula is at most `Dynamic.succinctWords 1355 441 U V w n` words (`1 · OPT`,
-   never `2 · OPT`). The constant `1355` (vs theoretical `≤ 680` in the static analysis of
-   T59 §5.3) is an explicit upper bound accounting for conservative bit-level bucket alignment,
-   the worst-case epoch expansion ratio $N / n \le 4$, and the T59 §5.3 window-shift constant.
+   never `2 · OPT`). The constant `1355` decomposes algebraically as `11 + 1344`, where
+   `11 * n * logLogFactor n` bounds the quotient-bit slack from `N ≤ 4 * n` and
+   `1344 = 16 * 84` bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
+   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening e.g. to `≤ 680` remains open in #3167).
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.
