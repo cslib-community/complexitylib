@@ -22,8 +22,9 @@ domain-separated implicit-rejection transform `FO-notbot = U-notbot ∘ T` of
 [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated 2 November 2021, §3.2.2,
 Fig. 12), after Theorems 3.2 and 3.4 of that paper. It holds for one fixed finite scheme, with no
 security parameter and no running-time bound on the reduction `romCpaReduction A`; it is the step
-that the word-level asymptotic theorem for the `FO-notbot` family consumes. For uniform messages, a
-`δ`-correct explicit-coin PKE and a randomized adversary each of whose coin values makes at most
+that the word-level asymptotic theorem for the `FO-notbot` family, `WordPKE.INDCPA.romINDCCA` in
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity`, consumes. For uniform messages,
+a `δ`-correct explicit-coin PKE and a randomized adversary each of whose coin values makes at most
 `qG` queries to `G` and `qH` queries to `H` (and any number of decapsulation queries),
 
 `Adv^{IND-CCA}(A) ≤ 2 · Adv^{IND-CPA}(B) + (2 qH + 2 (qG + qH)) / |M| + 2 (qG + qH + 1) δ`,

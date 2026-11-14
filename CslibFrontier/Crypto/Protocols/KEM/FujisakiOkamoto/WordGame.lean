@@ -42,8 +42,9 @@ indistinguishable for every uniform strict oracle PPT adversary. The two-world a
 the source's hidden-bit advantage `|Pr[b' = b] - 1/2|`.
 
 This notion is FO-specific and local to this module, pending the generic KEM records of the
-crypto readability program (#4817, I3 #4894). The theorem that `ROMINDCCA` follows from IND-CPA
-security of the PKE family is a later step of #5293.
+crypto readability program (#4817, I3 #4894). `WordPKE.INDCPA.romINDCCA` in
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity` derives `ROMINDCCA` from IND-CPA
+security of the PKE family.
 
 ## Main definitions
 
