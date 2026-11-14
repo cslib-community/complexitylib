@@ -584,7 +584,7 @@ theorem validProg_lastSlotOf {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {s : M
     (hbc : 1 ≤ bCount n_max (gmAt d.1 U V w n_max h_space s.mem) d.2) :
     ValidProg w (dictFrontier U V w n_max h_space d.1) s
       (lastSlotOfProg U V w n_max h_space d) := by
-  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [lastSlotOfProg, lastSlotOfGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   split_ifs with hb0
   · exact validProg_bind (validProg_readGM hw (by unfold globalMetaLen; omega)) (validProg_pure _)
@@ -645,7 +645,7 @@ theorem validProg_pushBackSlot {U V w n_max h_space : ℕ}
   let base := d.1.1.1
   let b := d.1.1.2
   let gm₀ := gmAt base U V w n_max h_space s.mem
-  simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
+  simp only [pushBackSlotProg, pushBackSlotGenProg, ite_bucketBits_mk, p_twoSlabSize_mk,
     readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
     pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
   split_ifs with hb0
@@ -691,7 +691,7 @@ theorem validProg_popBackSlot {U V w n_max h_space : ℕ}
   let base := d.1
   let b := d.2
   let gm₀ := gmAt base U V w n_max h_space s.mem
-  simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
+  simp only [popBackSlotProg, popBackSlotGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
   split_ifs with hb0
   · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
@@ -1092,7 +1092,7 @@ theorem validProg_readTotalSlots {U V w n_max h_space : ℕ}
     (hw : 0 < w) {base : ℕ} {s : Memory.State} :
     ValidProg w (dictFrontier U V w n_max h_space base) s
       (readTotalSlotsProg U V w n_max h_space base) := by
-  simp only [readTotalSlotsProg, readTotalSlotsGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [readTotalSlotsProg, readTotalSlotsGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_slabSize_mk]
   have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
   split_ifs with hb0

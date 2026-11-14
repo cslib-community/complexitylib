@@ -355,15 +355,20 @@ def LastSlotOfGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.Stat
         d.2 < numBuckets n_max ∧
         1 ≤ bCount n_max (gmAt d.1 U V w₀ n_max h_space s.mem) d.2) := Iff.rfl
 
+/-- Specialize a packed bucket guard together with its decision instance. -/
+theorem ite_bucketBits_mk {α : Sort*} (U V w n_max h_space : ℕ) (t e : α) :
+    (if dpBucketBits (mkDictParams U V w n_max h_space) = 0 then t else e) =
+      (if bucketBits n_max = 0 then t else e) := rfl
+
 theorem clientState_lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (lastSlotOfProg U V w n_max h_space d) = s := by
-  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [lastSlotOfProg, lastSlotOfGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   split_ifs <;> rfl
 
 theorem memoryCost_lastSlotOfProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (lastSlotOfProg U V w n_max h_space d) s ≤ 4 := by
-  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [lastSlotOfProg, lastSlotOfGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   split_ifs
   · change 2 ≤ 4; omega
@@ -377,7 +382,7 @@ theorem clientResult_lastSlotOfProg {U V w n_max h_space : ℕ} (d : ℕ × ℕ)
       slotOf n_max (gmAt d.1 U V w n_max h_space s.mem) d.2
         (bCount n_max (gmAt d.1 U V w n_max h_space s.mem) d.2 - 1) := by
   let gm := gmAt d.1 U V w n_max h_space s.mem
-  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [lastSlotOfProg, lastSlotOfGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   by_cases hb0 : bucketBits n_max = 0
   · have hd2 : d.2 = 0 := by
@@ -798,8 +803,34 @@ def pushBackSlotProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
       pushBackSlotProg U V w n_max h_space ((d1, d2), d3) := by
   rfl
 
-/-- Pure state effect and amortized `memoryCost` bound of `pushBackSlotProg`. -/
-theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
+-- Readback and state equations keep packed writes out of execution normalization.
+private theorem pushBackSlotProg_execution {U V w n_max h_space base b q_val v_val : ℕ}
+    (s s₁ : Memory.State) (hb0 : bucketBits n_max ≠ 0)
+    (hs1 : (Memory.spec 0).clientState s
+      (pushBackTailWriteProg U V w n_max h_space (((base, b), q_val), v_val)) = s₁)
+    (r : ℕ)
+    (hres : (Memory.spec 0).clientResult s
+      (pushBackTailWriteProg U V w n_max h_space (((base, b), q_val), v_val)) = r) :
+    (Memory.spec 0).clientState s
+      (pushBackSlotProg U V w n_max h_space (((base, b), q_val), v_val)) =
+      (if r = 2 * slabSize n_max then
+        (Memory.spec 0).clientState s₁ (promoteSlabProg U V w n_max h_space (base, b))
+      else s₁) ∧
+    memoryCost (pushBackSlotProg U V w n_max h_space (((base, b), q_val), v_val)) s =
+      30 + (if r = 2 * slabSize n_max then
+        memoryCost (promoteSlabProg U V w n_max h_space (base, b)) s₁ else 0) := by
+  simp only [pushBackSlotProg, pushBackSlotGenProg, ite_bucketBits_mk, p_twoSlabSize_mk,
+    readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
+    pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk, hb0, ↓reduceIte]
+  constructor
+  · rw [StateTransitionSpec.clientState_bind, hs1, hres]
+    split_ifs <;> rfl
+  · rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
+      memoryCost_pushBackTailWriteProg, hs1, hres]
+    split_ifs <;> rfl
+
+-- Keep the final state abstract while proving its invariant and resource bound.
+private theorem pushBackSlotProg_effect_of_clientState {U V w n_max h_space base b q_val v_val : ℕ}
     (hw : 0 < w) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
     (hb : b < numBuckets n_max)
@@ -808,7 +839,8 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
     (hv_lt : v_val < 2 ^ valBits V) :
     let gm₀ := gmAt base U V w n_max h_space s.mem
     let d := (((base, b), q_val), v_val)
-    let s' := (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d)
+    ∀ s' : Memory.State,
+      (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d) = s' →
     let gm' := gmAt base U V w n_max h_space s'.mem
     s'.frontier = s.frontier ∧
     (∀ a, ¬(base + offQuot h_space ≤ a ∧
@@ -827,7 +859,7 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
         valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j)) ∧
     memoryCost (pushBackSlotProg U V w n_max h_space d) s + 66 * slotPotential n_max gm' ≤
       66 * slotPotential n_max gm₀ + 134 := by
-  intro gm₀ d s' gm'
+  intro gm₀ d s' hrun gm'
   change SlotStoreInv n_max gm₀ at hinv
   change totalSlots n_max gm₀ < n_max at htot
   by_cases hb0 : bucketBits n_max = 0
@@ -854,8 +886,9 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
     let s₃ := (Memory.spec 0).clientState s₂
       (writeGMProg U V w n_max h_space ((base, 0), gm₀ 0 + 1))
     have hst : s' = s₃ := by
+      rw [← hrun]
       change (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d) = s₃
-      simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
+      simp only [pushBackSlotProg, pushBackSlotGenProg, ite_bucketBits_mk, p_twoSlabSize_mk,
         readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
         pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
       simp only [hb0, ↓reduceIte, d]
@@ -897,7 +930,7 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
         Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
       exact ⟨rfl, rfl⟩
     · have hcost : memoryCost (pushBackSlotProg U V w n_max h_space d) s = 14 := by
-        simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
+        simp only [pushBackSlotProg, pushBackSlotGenProg, ite_bucketBits_mk, p_twoSlabSize_mk,
           readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
           pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
         simp [hb0, d, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
@@ -941,22 +974,14 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
         valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j) at hold1
     have htot0_lt : gm₀ 0 * slabSize n_max + gm₀ 1 < n_max := by
       unfold totalSlots at htot; rw [ite_eq_right hb0] at htot; exact htot
+    obtain ⟨hexec, hcharge⟩ := pushBackSlotProg_execution s s₁ hb0 rfl _ hres1
+    rw [hrun] at hexec
     by_cases hprom : gm₀ (gmRIdx b) + 1 = 2 * slabSize n_max
     · have hst : s' = (Memory.spec 0).clientState s₁
           (promoteSlabProg U V w n_max h_space (base, b)) := by
-        change (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d) = _
-        simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
-          readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
-          pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte]
-        rw [StateTransitionSpec.clientState_bind, hres1, ite_eq_left hprom]
-      have hcost : memoryCost (pushBackSlotProg U V w n_max h_space d) s =
-          30 + memoryCost (promoteSlabProg U V w n_max h_space (base, b)) s₁ := by
-        simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
-          readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
-          pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte, ← PFunctor.FreeM.bind_eq_bind]
-        rw [memoryCost_bind, memoryCost_pushBackTailWriteProg, hres1, ite_eq_left hprom]
+        exact hexec.trans (by rw [ite_eq_left hprom])
+      have hcost := hcharge
+      rw [ite_eq_left hprom] at hcost
       have hpre_prom : PromoteSlabInv U V w n_max h_space base b s₁ := by
         refine ⟨hb, htail1, hslab1, ?_, fun b' hb' hne => ?_, ?_⟩
         · change gm₁ (gmRIdx b) = 2 * slabSize n_max
@@ -1019,21 +1044,10 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
       · rw [hcost]
         omega
     · have hst : s' = s₁ := by
-        change (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d) = s₁
-        simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
-          readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
-          pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte]
-        rw [StateTransitionSpec.clientState_bind, hres1, ite_eq_right hprom]
-        rfl
+        exact hexec.trans (by rw [ite_eq_right hprom])
       have hgm'_eq : gm' = gm₁ := by dsimp only [gm', gm₁]; rw [hst]
       have hcost : memoryCost (pushBackSlotProg U V w n_max h_space d) s = 30 := by
-        simp only [pushBackSlotProg, pushBackSlotGenProg, p_bucketBits_mk, p_twoSlabSize_mk,
-          readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
-          pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte, ← PFunctor.FreeM.bind_eq_bind]
-        rw [memoryCost_bind, memoryCost_pushBackTailWriteProg, hres1, ite_eq_right hprom,
-          memoryCost_pure, Nat.add_zero]
+        simpa only [ite_eq_right hprom, Nat.add_zero] using hcharge
       have hinv1 : SlotStoreInv n_max gm₁ := by
         refine ⟨fun h0 => by omega, fun _ => htail1, fun _ => hslab1, fun _ b' hb' => ?_,
           fun _ => by omega⟩
@@ -1072,6 +1086,37 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
         ?_⟩
       rw [hcost]
       omega
+
+/-- Pure state effect and amortized `memoryCost` bound of `pushBackSlotProg`. -/
+theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
+    (hw : 0 < w) (s : Memory.State)
+    (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
+    (hb : b < numBuckets n_max)
+    (htot : totalSlots n_max (gmAt base U V w n_max h_space s.mem) < n_max)
+    (hq_lt : q_val < 2 ^ quotientBits U n_max)
+    (hv_lt : v_val < 2 ^ valBits V) :
+    let gm₀ := gmAt base U V w n_max h_space s.mem
+    let d := (((base, b), q_val), v_val)
+    let s' := (Memory.spec 0).clientState s (pushBackSlotProg U V w n_max h_space d)
+    let gm' := gmAt base U V w n_max h_space s'.mem
+    s'.frontier = s.frontier ∧
+    (∀ a, ¬(base + offQuot h_space ≤ a ∧
+        a < base + totalSpace U V w n_max h_space) → s'.mem a = s.mem a) ∧
+    lmAt base U V w n_max h_space s'.mem = lmAt base U V w n_max h_space s.mem ∧
+    SlotStoreInv n_max gm' ∧
+    totalSlots n_max gm' = totalSlots n_max gm₀ + 1 ∧
+    bCount n_max gm' b = bCount n_max gm₀ b + 1 ∧
+    (∀ b' < numBuckets n_max, b' ≠ b → bCount n_max gm' b' = bCount n_max gm₀ b') ∧
+    quotAt base U w n_max h_space s'.mem (slotOf n_max gm' b (bCount n_max gm₀ b)) = q_val ∧
+    valAt base U V w n_max h_space s'.mem (slotOf n_max gm' b (bCount n_max gm₀ b)) = v_val ∧
+    (∀ b' < numBuckets n_max, ∀ j < bCount n_max gm₀ b',
+      quotAt base U w n_max h_space s'.mem (slotOf n_max gm' b' j) =
+        quotAt base U w n_max h_space s.mem (slotOf n_max gm₀ b' j) ∧
+      valAt base U V w n_max h_space s'.mem (slotOf n_max gm' b' j) =
+        valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j)) ∧
+    memoryCost (pushBackSlotProg U V w n_max h_space d) s + 66 * slotPotential n_max gm' ≤
+      66 * slotPotential n_max gm₀ + 134 := by
+  exact pushBackSlotProg_effect_of_clientState hw s hinv hb htot hq_lt hv_lt _ rfl
 
 theorem realizes_pushBackSlotGen :
     Realizes .exact pushBackSlotGenProg
@@ -1178,15 +1223,47 @@ def PopBackSlotGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.Sta
     PopBackSlotGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
       PopBackSlotPre U V w₀ n_max h_space w d s := Iff.rfl
 
-/-- Pure state effect and amortized `memoryCost` bound of `popBackSlotProg`. -/
-theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
+-- Readback and state equations keep packed writes out of execution normalization.
+private theorem popBackSlotProg_execution {U V w n_max h_space base b : ℕ}
+    (s s₁ : Memory.State) (hb0 : bucketBits n_max ≠ 0)
+    (hs1 : (Memory.spec 0).clientState s
+      (removeLastTailItemProg U V w n_max h_space (base, b)) = s₁)
+    (r q : ℕ)
+    (hr : (Memory.spec 0).clientResult s₁
+      (readGMProg U V w n_max h_space (base, 4 + 3 * b + 1)) = r)
+    (hq : (Memory.spec 0).clientResult s₁
+      (readGMProg U V w n_max h_space (base, 4 + 3 * b)) = q) :
+    (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space (base, b)) =
+      (if r = 0 ∧ 0 < q then
+        (Memory.spec 0).clientState s₁ (demoteSlabProg U V w n_max h_space (base, b))
+      else s₁) ∧
+    memoryCost (popBackSlotProg U V w n_max h_space (base, b)) s =
+      40 + (if r = 0 ∧ 0 < q then
+        memoryCost (demoteSlabProg U V w n_max h_space (base, b)) s₁ else 0) := by
+  simp only [popBackSlotProg, popBackSlotGenProg, ite_bucketBits_mk, readGMGenProg_mk,
+    writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk, hb0, ↓reduceIte]
+  constructor
+  · rw [StateTransitionSpec.clientState_bind, hs1,
+      StateTransitionSpec.clientState_bind, clientState_readGMProg, hr,
+      StateTransitionSpec.clientState_bind, clientState_readGMProg, hq]
+    by_cases hr0 : r = 0 <;> by_cases hq0 : 0 < q <;> simp [hr0, hq0]
+  · simp only [← PFunctor.FreeM.bind_eq_bind]
+    rw [memoryCost_bind, memoryCost_removeLastTailItemProg, hs1,
+      memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hr,
+      memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hq]
+    by_cases hr0 : r = 0 <;> by_cases hq0 : 0 < q <;>
+      simp [hr0, hq0, memoryCost_pure, Nat.add_assoc]
+
+-- Keep the final state abstract while proving its invariant and resource bound.
+private theorem popBackSlotProg_effect_of_clientState {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
     (hb : b < numBuckets n_max)
     (hbc : 1 ≤ bCount n_max (gmAt base U V w n_max h_space s.mem) b) :
     let gm₀ := gmAt base U V w n_max h_space s.mem
     let d := (base, b)
-    let s' := (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d)
+    ∀ s' : Memory.State,
+      (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d) = s' →
     let gm' := gmAt base U V w n_max h_space s'.mem
     s'.frontier = s.frontier ∧
     (∀ a, ¬(base + offQuot h_space ≤ a ∧
@@ -1203,7 +1280,7 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
         valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j)) ∧
     memoryCost (popBackSlotProg U V w n_max h_space d) s + 66 * slotPotential n_max gm' ≤
       66 * slotPotential n_max gm₀ + 174 := by
-  intro gm₀ d s' gm'
+  intro gm₀ d s' hrun gm'
   change SlotStoreInv n_max gm₀ at hinv
   change 1 ≤ bCount n_max gm₀ b at hbc
   by_cases hb0 : bucketBits n_max = 0
@@ -1223,8 +1300,9 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
     let s₁ := (Memory.spec 0).clientState s
       (writeGMProg U V w n_max h_space ((base, 0), gm₀ 0 - 1))
     have hst : s' = s₁ := by
+      rw [← hrun]
       change (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d) = s₁
-      simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
+      simp only [popBackSlotProg, popBackSlotGenProg, ite_bucketBits_mk, readGMGenProg_mk,
         writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
       simp only [hb0, ↓reduceIte, d]
       rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
@@ -1255,7 +1333,7 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
         exact ⟨rfl, rfl⟩,
       ?_⟩
     have hcost : memoryCost (popBackSlotProg U V w n_max h_space d) s = 6 := by
-      simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
+      simp only [popBackSlotProg, popBackSlotGenProg, ite_bucketBits_mk, readGMGenProg_mk,
         writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
       simp [hb0, d, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
     have hpot' : slotPotential n_max gm' = 0 := by unfold slotPotential; simp [hb0]
@@ -1328,32 +1406,22 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
     have hres_q : (Memory.spec 0).clientResult s₁
         (readGMProg U V w n_max h_space (base, 4 + 3 * b)) = gm₁ (gmQIdx b) :=
       clientResult_readGMProg s₁ hq_idx_lt
+    obtain ⟨hexec, hcharge⟩ := popBackSlotProg_execution s s₁ hb0 rfl _ _ hres_r hres_q
+    rw [hrun] at hexec
+    have hguard : (gm₁ (gmRIdx b) = 0 ∧ 0 < gm₁ (gmQIdx b)) ↔
+        (gm₀ (gmRIdx b) = 1 ∧ 0 < gm₀ (gmQIdx b)) := by
+      rw [hrb1, hqb1]
+      omega
+    simp only [hguard] at hexec hcharge
     by_cases hdem : gm₀ (gmRIdx b) = 1 ∧ 0 < gm₀ (gmQIdx b)
     · have hr1_eq0 : gm₁ (gmRIdx b) = 0 := by rw [hrb1, hdem.1]
       have hq1_pos : 0 < gm₁ (gmQIdx b) := by rw [hqb1]; exact hdem.2
       have hst : s' = (Memory.spec 0).clientState s₁
           (demoteSlabProg U V w n_max h_space (base, b)) := by
-        change (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d) = _
-        simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
-          writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte]
-        rw [StateTransitionSpec.clientState_bind,
-          StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_r,
-          StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_q,
-          ite_eq_left hr1_eq0, ite_eq_left hq1_pos]
+        simpa only [hdem, ↓reduceIte] using hexec
       have hcost : memoryCost (popBackSlotProg U V w n_max h_space d) s =
           40 + memoryCost (demoteSlabProg U V w n_max h_space (base, b)) s₁ := by
-        simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
-          writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte, ← PFunctor.FreeM.bind_eq_bind]
-        rw [memoryCost_bind, memoryCost_removeLastTailItemProg,
-          memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hres_r,
-          memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hres_q,
-          ite_eq_left hr1_eq0, ite_eq_left hq1_pos]
-        dsimp only [d]
-        change 36 + (2 + (2 + memoryCost (demoteSlabProg U V w n_max h_space (base, b)) s₁)) =
-          40 + memoryCost (demoteSlabProg U V w n_max h_space (base, b)) s₁
-        omega
+        simpa only [hdem, ↓reduceIte, Nat.add_zero] using hcharge
       have hpre_dem : DemoteSlabInv U V w n_max h_space base b s₁ := by
         refine ⟨hb, htail1, hslab1, hr1_eq0, hq1_pos, fun b' hb' hne => ?_, ?_⟩
         · change gm₁ (gmRIdx b') < tailCapPerBucket n_max ∧
@@ -1407,42 +1475,9 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
       · rw [hcost]
         omega
     · have hst : s' = s₁ := by
-        change (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d) = s₁
-        simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
-          writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte]
-        rw [StateTransitionSpec.clientState_bind,
-          StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_r,
-          StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_q]
-        by_cases hr1_eq0 : gm₁ (gmRIdx b) = 0
-        · have hnot_q : ¬(0 < gm₁ (gmQIdx b)) := by
-            intro hq_pos
-            apply hdem
-            rw [hrb1] at hr1_eq0
-            rw [hqb1] at hq_pos
-            exact ⟨by omega, hq_pos⟩
-          rw [ite_eq_left hr1_eq0, ite_eq_right hnot_q]
-          rfl
-        · rw [ite_eq_right hr1_eq0]
-          rfl
+        simpa only [hdem, ↓reduceIte] using hexec
       have hcost : memoryCost (popBackSlotProg U V w n_max h_space d) s = 40 := by
-        simp only [popBackSlotProg, popBackSlotGenProg, p_bucketBits_mk, readGMGenProg_mk,
-          writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
-        simp only [hb0, ↓reduceIte, ← PFunctor.FreeM.bind_eq_bind]
-        rw [memoryCost_bind, memoryCost_removeLastTailItemProg,
-          memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hres_r,
-          memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hres_q]
-        by_cases hr1_eq0 : gm₁ (gmRIdx b) = 0
-        · have hnot_q : ¬(0 < gm₁ (gmQIdx b)) := by
-            intro hq_pos
-            apply hdem
-            rw [hrb1] at hr1_eq0
-            rw [hqb1] at hq_pos
-            exact ⟨by omega, hq_pos⟩
-          rw [ite_eq_left hr1_eq0, ite_eq_right hnot_q]
-          rfl
-        · rw [ite_eq_right hr1_eq0]
-          rfl
+        simpa only [hdem, ↓reduceIte, Nat.add_zero] using hcharge
       have hgm'_eq : gm' = gm₁ := by dsimp only [gm', gm₁]; rw [hst]
       have hinv1 : SlotStoreInv n_max gm₁ := by
         refine ⟨fun h0 => by omega, fun _ => htail1, fun _ => hslab1, fun _ b' hb' => ?_,
@@ -1482,6 +1517,33 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
         ?_⟩
       rw [hcost]
       omega
+
+/-- Pure state effect and amortized `memoryCost` bound of `popBackSlotProg`. -/
+theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
+    (hw : 0 < w) (s : Memory.State)
+    (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
+    (hb : b < numBuckets n_max)
+    (hbc : 1 ≤ bCount n_max (gmAt base U V w n_max h_space s.mem) b) :
+    let gm₀ := gmAt base U V w n_max h_space s.mem
+    let d := (base, b)
+    let s' := (Memory.spec 0).clientState s (popBackSlotProg U V w n_max h_space d)
+    let gm' := gmAt base U V w n_max h_space s'.mem
+    s'.frontier = s.frontier ∧
+    (∀ a, ¬(base + offQuot h_space ≤ a ∧
+        a < base + totalSpace U V w n_max h_space) → s'.mem a = s.mem a) ∧
+    lmAt base U V w n_max h_space s'.mem = lmAt base U V w n_max h_space s.mem ∧
+    SlotStoreInv n_max gm' ∧
+    totalSlots n_max gm' + 1 = totalSlots n_max gm₀ ∧
+    bCount n_max gm' b = bCount n_max gm₀ b - 1 ∧
+    (∀ b' < numBuckets n_max, b' ≠ b → bCount n_max gm' b' = bCount n_max gm₀ b') ∧
+    (∀ b' < numBuckets n_max, ∀ j < bCount n_max gm' b',
+      quotAt base U w n_max h_space s'.mem (slotOf n_max gm' b' j) =
+        quotAt base U w n_max h_space s.mem (slotOf n_max gm₀ b' j) ∧
+      valAt base U V w n_max h_space s'.mem (slotOf n_max gm' b' j) =
+        valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j)) ∧
+    memoryCost (popBackSlotProg U V w n_max h_space d) s + 66 * slotPotential n_max gm' ≤
+      66 * slotPotential n_max gm₀ + 174 := by
+  exact popBackSlotProg_effect_of_clientState hw s hinv hb hbc _ rfl
 
 theorem realizes_popBackSlotGen :
     Realizes .exact popBackSlotGenProg

@@ -171,11 +171,13 @@ private theorem promoteStepProg_clientState {U V w n_max h_space base b k : ℕ}
       (writeQuotProg U w n_max h_space ((base, n_max - 1 - t_u), q_top)) = s₁)
     (hs2 : (Memory.spec 0).clientState s₁
       (writeValProg U V w n_max h_space ((base, n_max - 1 - t_u), v_top)) = s₂)
-    (hs3 : (Memory.spec 0).clientState s₂ (removeLastTailItemProg U V w n_max h_space (base, b)) = s₃)
+    (hs3 : (Memory.spec 0).clientState s₂
+      (removeLastTailItemProg U V w n_max h_space (base, b)) = s₃)
     (hs4 : (Memory.spec 0).clientState s₃
       (writeQuotProg U w n_max h_space ((base, p_new * slabSize n_max + k), q_u)) = s₄)
     (hs5 : (Memory.spec 0).clientState s₄
-      (writeValProg U V w n_max h_space ((base, p_new * slabSize n_max + k), v_u)) = s₅) : (Memory.spec 0).clientState s
+      (writeValProg U V w n_max h_space ((base, p_new * slabSize n_max + k), v_u)) = s₅) :
+    (Memory.spec 0).clientState s
         (promoteStepProg U V w n_max h_space ((base, b), k)) = s₅ := by
   simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
     p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,

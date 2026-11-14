@@ -571,13 +571,13 @@ theorem readTotalSlotsGenProg_mk (U V w n_max h_space base : ℕ) :
 
 theorem clientState_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readTotalSlotsProg U V w n_max h_space base) = s := by
-  simp only [readTotalSlotsProg, readTotalSlotsGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [readTotalSlotsProg, readTotalSlotsGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_slabSize_mk]
   split_ifs <;> rfl
 
 theorem memoryCost_readTotalSlotsProg_le (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     memoryCost (readTotalSlotsProg U V w n_max h_space base) s ≤ 4 := by
-  simp only [readTotalSlotsProg, readTotalSlotsGenProg, readGMGenProg_mk, p_bucketBits_mk,
+  simp only [readTotalSlotsProg, readTotalSlotsGenProg, ite_bucketBits_mk, readGMGenProg_mk,
     p_slabSize_mk]
   split_ifs
   · change 2 ≤ 4; omega
@@ -587,7 +587,7 @@ theorem clientResult_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ)
     (Memory.spec 0).clientResult s (readTotalSlotsProg U V w n_max h_space base) =
       totalSlots n_max (gmAt base U V w n_max h_space s.mem) := by
   simp only [readTotalSlotsProg, totalSlots, readTotalSlotsGenProg, readGMGenProg_mk,
-    p_bucketBits_mk, p_slabSize_mk]
+    ite_bucketBits_mk, p_slabSize_mk]
   have h0_lt : 0 < globalMetaLen n_max := by
     unfold globalMetaLen
     exact Nat.lt_of_lt_of_le (by decide : 0 < 4) (Nat.le_add_right 4 _)

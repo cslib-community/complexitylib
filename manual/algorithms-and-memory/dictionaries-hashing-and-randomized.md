@@ -55,7 +55,12 @@ transport the loop guard and step together. For slab-directory conditionals, rep
 `if` using the private `ite_dirSlabs_mk` equality before simplifying parameter projections, as in
 `SuccinctSlabPool` and its admissibility clients in `SuccinctValidHistory`. This also specializes
 the hidden decision instance; simplifying only the proposition can leave an instance that
-`rw` or `split_ifs` cannot type-check at their transparency level.
+`rw` or `split_ifs` cannot type-check at their transparency level. The bucket guards in
+`SuccinctSlabOps` and its admissibility clients use `ite_bucketBits_mk` for the same reason.
+For composite slab effects, keep intermediate states abstract with explicit execution and
+readback equations, as in `pushBackSlotProg_execution` and `popBackSlotProg_execution`.
+The invariant helpers also take an abstract final state and its execution equation, so equality
+checking does not repeatedly evaluate the packed writes.
 
 ### FKS two-level perfect hashing (static, abstract cost model)
 
