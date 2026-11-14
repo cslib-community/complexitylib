@@ -3599,8 +3599,11 @@ public import CslibFrontier.Computability.Probabilistic.NativeEpoch
 public import CslibFrontier.Computability.Probabilistic.NativeFeedbackLoop
 public import CslibFrontier.Computability.Probabilistic.NativeGuardedContext
 public import CslibFrontier.Computability.Probabilistic.NativeInterface
+public import CslibFrontier.Computability.Probabilistic.NativeInterface.Interaction
+public import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
 public import CslibFrontier.Computability.Probabilistic.NativeOneTurn
 public import CslibFrontier.Computability.Probabilistic.NativeOpenExecution
+public import CslibFrontier.Computability.Probabilistic.NativeOpenExecution.Memory
 public import CslibFrontier.Computability.Probabilistic.NativeOpenSelection
 public import CslibFrontier.Computability.Probabilistic.NativeOutputBuffer
 public import CslibFrontier.Computability.Probabilistic.NativeQueryAll
@@ -6236,6 +6239,7 @@ public import CslibFrontier.Probability.Coding.SetSeparator
 public import CslibFrontier.Probability.Collision
 public import CslibFrontier.Probability.Concentration
 public import CslibFrontier.Probability.Conditioning
+public import CslibFrontier.Probability.Conditioning.Map
 public import CslibFrontier.Probability.CorrelatedSampling
 public import CslibFrontier.Probability.CorrelatedSampling.Embeddability
 public import CslibFrontier.Probability.CorrelatedSampling.Embedding
@@ -6390,6 +6394,7 @@ public import CslibFrontier.Probability.PMF.Interaction.Process
 public import CslibFrontier.Probability.PMF.Map
 public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.ObservedProcess
+public import CslibFrontier.Probability.PMF.ObservedProcess.Map
 public import CslibFrontier.Probability.PMF.ObservedProcess.Trajectory
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind

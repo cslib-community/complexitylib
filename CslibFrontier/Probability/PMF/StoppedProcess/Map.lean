@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PMF.StoppedProcess
+import CslibFrontier.Probability.PMF.ObservedProcess.Map
 import Mathlib.Tactic
 
 /-!
@@ -40,13 +41,6 @@ theorem terminal_map (stepS : S → PMF S) (haltS : S → Prop) [DecidablePred h
     (terminal stepS haltS absorbS s).map (Option.map f) =
       terminal stepT haltT absorbT (f s) := by
   classical
-  have hclock (n : ℕ) : (stateLaw stepS n s).map f = stateLaw stepT n (f s) := by
-    induction n with
-    | zero => simp [stateLaw]
-    | succ n ih =>
-      rw [stateLaw, PMF.map_bind, stateLaw, ← ih, PMF.bind_map]
-      simp only [hstep]
-      rfl
   apply option_ext
   intro t
   have hm : (terminal stepS haltS absorbS s).map (Option.map f) (some t) =
@@ -60,7 +54,7 @@ theorem terminal_map (stepS : S → PMF S) (haltS : S → Prop) [DecidablePred h
   apply iSup_congr
   intro n
   unfold stopped
-  rw [← hclock, PMF.map_apply]
+  rw [← stateLaw_map stepS stepT f hstep n s, PMF.map_apply]
   by_cases ht : haltT t
   · simp only [ht, ite_true]
     apply tsum_congr
