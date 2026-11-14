@@ -48,21 +48,21 @@ universe `U ≥ n` once `n ≥ quotientPermThreshold c`, without assuming `U ≥
   - [ArbitmanNaorSegev2010] (`arXiv:0912.5424v3`): Section 5.2 (PDF pp. 21–23 / printed pp. 20–22,
     1-round Feistel sharded permutation construction and intra-shard injectivity), Claim 5.4,
     Section 5.3 Theorem 5.6 (PDF p. 25 / printed p. 24, `(1 / 2) * (2 * δ) ^ t` contraction quoted
-    from \[KNR09\]), and Section 5.4 Claim 5.7 (PDF p. 26 / printed p. 25, bin load / capacity
-    bounds).
-  - [NaorReingold1999] (*J. Cryptology* 12(1):29–66, 1999): Section 2.3 Definitions 2.8–2.10
-    (p. 36 / PDF p. 8), Section 3.2 Definition 3.1 & Theorems 3.1–3.2 (pp. 38–39 / PDF pp. 10–11;
-    in their notation, $C_1$ denotes the uniform embedding distribution on distinct inputs),
-    Section 5.2 Theorem 5.2 (pp. 48–50 / PDF pp. 20–22), Section 6 Definition 6.1 (p. 52 / PDF
-    p. 24), and Section 8 Corollary 8.1 (pp. 60–61 / PDF pp. 32–33).
+    from [KaplanNaorReingold2009]), and Section 5.4 Claim 5.7 (PDF p. 26 / printed p. 25, bin load
+    / capacity bounds).
+  - [NaorReingold1999] (*J. Cryptology* 12(1):29–66, 1999): Section 2.3 Definition 2.10 item 2
+    (p. 36 / PDF p. 8, uniform distribution on tuples of distinct elements), Section 3.2
+    Definition 3.1 & Theorems 3.1–3.2 (pp. 38–39 / PDF pp. 10–11), Section 5.2 Theorem 5.2
+    (pp. 48–50 / PDF pp. 20–22), Section 6 Definition 6.1 (p. 52 / PDF p. 24), and Section 8
+    Corollary 8.1 (pp. 60–61 / PDF pp. 32–33).
 * **Original formalization adaptations**:
   - Rather than assuming an idealized uniformly random permutation on `[U]` simulated via
     `poly(n)`-independent permutations for `U = poly(n)` or large-key indirection,
     `quotientPermEquiv` combines **Case A** (`m + caseAGap c n ≤ a`, 2-round unbalanced Feistel
     `caseAEquiv`) and **Case B** (`a < m + caseAGap c n`, Arbitman–Naor–Segev 1-round Feistel
     sharding + `nrRounds c` unbalanced 3-round Feistel Naor–Reingold blocks).
-  - The construction is single-shard ($S = 1$) because all key quotients are mapped under a single
-    unified permutation instance rather than partitioned across multiple independent shards.
+  - Case B routes keys into `2 ^ ⌊m / 2⌋` shards that share one Naor–Reingold permutation instance;
+    the `κ`-wise tail bounds are stated for target bucket sets inside a single shard `σ`.
   - `QuotientPermSeed` instantiates round functions via `multiplyShiftReduced` / `oddMulModWord`
     (`CslibFrontier.Probability.KWiseIndependent.ReducedLimbs`) and a shared `DoubleTabTopSeed`
     (`CslibFrontier.Probability.KWiseIndependent.DoubleTabulation` [Thorup2013]), requiring an

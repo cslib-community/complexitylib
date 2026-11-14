@@ -232,9 +232,9 @@ theorem nrBlockSeedDist_eq {ι₀ ι₁ ι₂ : Type*} [Fintype ι₀] [Nonempty
 Section 3.2 Definition 3.1, Section 5.2, Section 6 Definition 6.1, and Section 8 Corollary 8.1,
 printed pp. 38, 49–50, 52, 60–61 / PDF pp. 10, 21–22, 24, 32–33).
 
-In Naor–Reingold's notation, $C_1$ corresponds to the uniform embedding distribution
-`PMF.uniformOfFintype (T ↪ Fin (2 ^ a'))` on distinct inputs, and the block bound bounds
-distinguishing advantage from $C_1$. -/
+Per Definition 2.10 item 2 of [NaorReingold1999], the uniform embedding distribution
+`PMF.uniformOfFintype (T ↪ Fin (2 ^ a'))` models the uniform distribution on tuples of distinct
+elements, and this theorem bounds distinguishing advantage from that ideal distribution. -/
 theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
     [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T]
     {a' k : ℕ}
