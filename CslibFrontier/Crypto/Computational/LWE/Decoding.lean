@@ -8,8 +8,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Unary
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.ZMod.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic.IntervalCases
 
@@ -18,17 +23,20 @@ import Mathlib.Tactic.IntervalCases
 
 For modulus `2 ^ w`, a bit `μ` is encoded as `μ * 2 ^ (w - 1)` (`encodeBit`) and decoded by
 selecting the half-open middle half `[2 ^ w / 4, 3 * 2 ^ w / 4)` of the canonical residue
-interval (`decode`). Correctness holds whenever the additive integer error has magnitude strictly
-below one quarter of `2 ^ w` (`decode_eq_of_error`). This module also hosts the common magnitude
-bound `natAbs_binarySum_le` for integer subset sums over Boolean coefficients.
+interval (`decodeResidue`, `decode`). Correctness holds whenever the additive integer error has
+magnitude strictly below one quarter of `2 ^ w` (`decode_eq_of_error`). This module also hosts the
+common magnitude bound `natAbs_binarySum_le` for integer subset sums over Boolean coefficients.
 
 ## Main definitions
 
 * `Cslib.Crypto.LWE.encodeBit`: half-modulus encoding `false ↦ 0`, `true ↦ 2 ^ (w - 1)`.
+* `Cslib.Crypto.LWE.decodeResidue`: scalar bit decoder on natural residue representatives.
 * `Cslib.Crypto.LWE.decode`: scalar bit decoder over `ZMod (2 ^ w)`.
 
 ## Main results
 
+* `Cslib.Crypto.LWE.computableInPolyTime_decodeResidue`: polynomial-time rounding of binary residue
+  representatives for unary width `w`.
 * `Cslib.Crypto.LWE.decode_eq_of_error`: errors of magnitude strictly below one quarter of the
   modulus preserve the encoded bit.
 * `Cslib.Crypto.LWE.decode_eq_xor_highBits`: for width at least two, decoding is exclusive-or of
@@ -49,31 +57,61 @@ bound `natAbs_binarySum_le` for integer subset sums over Boolean coefficients.
 
 namespace Cslib.Crypto.LWE
 
+open Turing.MultiTapeTM
+
 /-- Half-modulus encoding: `false ↦ 0` and `true ↦ 2 ^ (w - 1)`. -/
 def encodeBit (w : ℕ) (μ : Bool) : ZMod (2 ^ w) :=
   (μ.toNat : ZMod (2 ^ w)) * 2 ^ (w - 1)
 
+/-- Decode a natural residue representative modulo `2 ^ w` by selecting the half-open middle half
+`[2 ^ w / 4, 3 * 2 ^ w / 4)` of `[0, 2 ^ w)`. -/
+def decodeResidue (w value : ℕ) : Bool :=
+  decide (2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w)
+
+/-- Characterization of `decodeResidue` as the middle half of `[0, 2 ^ w)`. -/
+@[simp] theorem decodeResidue_eq_true_iff (w value : ℕ) :
+    decodeResidue w value = true ↔ 2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w := by
+  simp [decodeResidue]
+
+/-- At width zero, residue zero decodes to `false`. -/
+@[simp] theorem decodeResidue_zero_zero : decodeResidue 0 0 = false := rfl
+
+/-- Rounding a natural residue representative `value` modulo `2 ^ w` via `decodeResidue` is
+computable in polynomial time for unary `w` and binary `value`. -/
+@[fun_prop]
+theorem computableInPolyTime_decodeResidue {α : Type} {input : α ↪ List Bool}
+    {w value : α → ℕ}
+    (hw : ComputableInPolyTime w input encUnary)
+    (hvalue : ComputableInPolyTime value input encNat) :
+    ComputableInPolyTime (fun a => decodeResidue (w a) (value a)) input encBool := by
+  have hq := ComputableInPolyTime.binary_pow' (ComputableInPolyTime.const 2) hw
+  have hfour := ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 4) hvalue
+  exact ComputableInPolyTime.decide_and
+    (ComputableInPolyTime.binary_le' hq hfour)
+    (ComputableInPolyTime.binary_lt' hfour
+      (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 3) hq))
+
 /-- Decode the half-open middle half of the canonical residue interval as `true`. -/
 def decode (w : ℕ) (x : ZMod (2 ^ w)) : Bool :=
-  decide (2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w)
+  decodeResidue w x.val
 
 /-- Characterization of decoding to `true` as the middle half of the canonical residue interval. -/
 @[simp] theorem decode_eq_true_iff (w : ℕ) (x : ZMod (2 ^ w)) :
     decode w x = true ↔ 2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w := by
-  simp [decode]
+  simp [decode, decodeResidue]
 
 /-- Width zero has only the zero residue, which decodes to `false`. -/
 @[simp] theorem decode_zero (x : ZMod (2 ^ 0)) : decode 0 x = false := by
   have hx : x.val = 0 := by
     have h : x.val < 1 := ZMod.val_lt x
     omega
-  simp [decode, hx]
+  simp [decode, decodeResidue, hx]
 
 /-- At width one, the single bit is already the decoded message. -/
 theorem decode_one (x : ZMod (2 ^ 1)) : decode 1 x = x.val.testBit 0 := by
   have hx : x.val < 2 := ZMod.val_lt x
-  simp only [decode, pow_one, Nat.testBit_eq_decide_div_mod_eq, pow_zero, Nat.div_one,
-    Nat.mod_eq_of_lt hx]
+  simp only [decode, decodeResidue, pow_one, Nat.testBit_eq_decide_div_mod_eq, pow_zero,
+    Nat.div_one, Nat.mod_eq_of_lt hx]
   congr 1
   apply propext
   omega
@@ -95,7 +133,7 @@ theorem decode_eq_xor_highBits {w : ℕ} (hw : 2 ≤ w) (x : ZMod (2 ^ w)) :
       1 ≤ x.val / 2 ^ k ↔ 1 * 2 ^ k ≤ x.val)
   have hhi : x.val / 2 ^ k < 3 ↔ x.val < 3 * 2 ^ k := Nat.div_lt_iff_lt_mul hp
   have hdecode : decode (k + 2) x = decide (1 ≤ x.val / 2 ^ k ∧ x.val / 2 ^ k < 3) := by
-    simp only [decode, hq, hlo, hhi]
+    simp only [decode, decodeResidue, hq, hlo, hhi]
     congr 1
     apply propext
     omega
@@ -128,11 +166,11 @@ theorem decode_eq_of_error {w : ℕ} (hw : 0 < w) (μ : Bool) (error : ℤ)
   · simp only [Bool.toNat_false, Nat.cast_zero, zero_mul, zero_add]
     by_cases he : 0 ≤ error
     · have hval := hmod error he (by omega)
-      simp only [decode, decide_eq_false_iff_not]
+      simp only [decode, decodeResidue, decide_eq_false_iff_not]
       omega
     · have hval := hmod (error + (2 ^ w : ℕ)) (by omega) (by omega)
       rw [ZMod.val_intCast, Int.add_emod_right, ← ZMod.val_intCast] at hval
-      simp only [decode, decide_eq_false_iff_not]
+      simp only [decode, decodeResidue, decide_eq_false_iff_not]
       omega
   · simp only [Bool.toNat_true, Nat.cast_one, one_mul]
     have hval := hmod (2 ^ (w - 1) + error) (by omega) (by omega)

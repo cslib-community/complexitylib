@@ -31,7 +31,8 @@ jointly close to uniform by the leftover hash lemma for `x ↦ xᵀ A`
 left-or-right adversary making `Q` encryption queries by `Q * sqrt(2 ^ ((n + 1) * w) / 2 ^ m)`.
 Replacing the generated public key by a uniform matrix costs the advantage of two explicit
 decision-LWE distinguishers, one for each challenge bit. Native runtime certificates and the
-asymptotic single-challenge theorem are in `LWE.Regev.Security`.
+asymptotic single-challenge and adaptive `Q`-query left-or-right theorems are in
+`LWE.Regev.Security`.
 
 ## Main definitions
 

@@ -45,26 +45,8 @@ theorem computableInPolyTime_decryptResidue {secret ciphertext : α → List Boo
     (hciphertext : ComputableInPolyTime ciphertext input encBits) :
     ComputableInPolyTime
       (fun a => decryptResidue (n a) (w a) (secret a) (ciphertext a)) input encNat := by
-  have hterm : ComputableInPolyTime
-      (fun p : α × ℕ => Matrix.binaryEntry (n p.1 + 1) (w p.1) (ciphertext p.1)
-        (w p.1 - 1) (p.2 + 1) * Matrix.binaryEntry (n p.1) (w p.1) (secret p.1) 0 p.2)
-      (encPair input encUnary) encNat := by
-    apply binary_mul'
-    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
-        (by fun_prop) (by fun_prop)
-    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
-        (const 0) (snd input encUnary)
-  have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
-    (mapWithInput
-      (f := fun a j => Matrix.binaryEntry (n a + 1) (w a) (ciphertext a) (w a - 1) (j + 1) *
-        Matrix.binaryEntry (n a) (w a) (secret a) 0 j) (range.comp hn) hterm)
-  have hfirst := matrixBinaryEntry (by fun_prop) hw hciphertext
-    (by fun_prop) (const 0) (cols := fun a => n a + 1) (row := fun a => w a - 1)
   unfold decryptResidue
-  simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat] using
-    intBin_emodNat'
-      (intBin_sub.comp ((intBin_natCast.comp hfirst).prod (intBin_natCast.comp hsum)))
-      (binary_pow' (const 2) hw)
+  fun_prop
 
 /-- The total decoder is polynomial-time on the complete inputs, including malformed words. -/
 @[fun_prop]
@@ -75,16 +57,8 @@ theorem computableInPolyTime_decryptSerialized {secret ciphertext : α → List 
     (hciphertext : ComputableInPolyTime ciphertext input encBits) :
     ComputableInPolyTime
       (fun a => decryptSerialized (n a) (w a) (secret a) (ciphertext a)) input encBool := by
-  have hvalue := computableInPolyTime_decryptResidue hn hw hsecret hciphertext
-  have hq := binary_pow' (const 2) hw
-  have hfour := binary_mul' (const 4) hvalue
-  have htest : ComputableInPolyTime
-      (fun a => decide (2 ^ w a ≤ 4 * decryptResidue (n a) (w a) (secret a) (ciphertext a) ∧
-        4 * decryptResidue (n a) (w a) (secret a) (ciphertext a) < 3 * 2 ^ w a))
-      input encBool :=
-    decide_and (binary_le' hq hfour) (binary_lt' hfour (binary_mul' (const 3) hq))
-  simpa only [decryptSerialized, beq_iff_eq] using
-    (beq hw (const 0)).ite' (const false) htest
+  unfold decryptSerialized
+  fun_prop
 
 /-- Compute one actual NAND residue, keeping the complete binary sum before signed reduction. -/
 @[fun_prop]

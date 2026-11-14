@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
+module
+
 import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
 import CslibFrontier.Crypto.Computational.LWE.Regev.Security
+import CslibFrontier.Tactic.PPT
+import Mathlib.Tactic.NormNum
 
 /-!
 Regression clients for Regev and dual-Regev encryption: concrete encryptions and decryptions with
@@ -14,6 +18,9 @@ nonzero errors, a gadget preimage sampler satisfying the trapdoor interface, and
 GSW parameter family, which satisfies every correctness and security premise apart from its
 decision-LWE assumption.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Regev
 
@@ -105,12 +112,52 @@ private def keyAdversary : Encryption.Adversary where
 private theorem keyAdversary_isPPT : keyAdversary.IsPPT := by
   constructor <;> simp only [keyAdversary] <;> ppt
 
--- The honest encryption program is strict PPT for the growing parameter family.
+-- The honest encryption and decryption programs are strict PPT / polynomial-time for the
+-- growing parameter family, and decrypt every generated key and ciphertext with zero error.
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => encryptSerialized (Homomorphic.GSW.Parameters.dimension p.1)
       (Homomorphic.GSW.Parameters.samples p.1) (Homomorphic.GSW.Parameters.width p.1)
       p.2.1 p.2.2) :=
   isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+
+example : ComputableInPolyTime
+    (fun p : ℕ × List Bool × List Bool =>
+      decryptSerialized (Homomorphic.GSW.Parameters.dimension p.1)
+        (Homomorphic.GSW.Parameters.width p.1) p.2.1 p.2.2)
+    (encPair encUnary (encPair encBits encBits)) encBool :=
+  computableInPolyTime_decryptSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+
+-- Both bits round-trip on raw serialized keys and noisy ciphertexts via `decryptSerialized`.
+example :
+    decryptSerialized 1 4 (LWE.serializeSecret toySecret)
+      (encryptWithCoinsSerialized 1 2 4
+        (LWE.serializePublicMatrix (LWE.publicMatrixInt toyB toySecret toyError))
+        false [true, false]) = false ∧
+    decryptSerialized 1 4 (LWE.serializeSecret toySecret)
+      (encryptWithCoinsSerialized 1 2 4
+        (LWE.serializePublicMatrix (LWE.publicMatrixInt toyB toySecret toyError))
+        true [true, true]) = true ∧
+    decodeCiphertext 1 4
+      (serializeCiphertext
+        (encryptWithCoins (LWE.publicMatrixInt toyB toySecret toyError) true ![true, true])) =
+      encryptWithCoins (LWE.publicMatrixInt toyB toySecret toyError) true ![true, true] := by
+  decide +kernel
+
+example (security : ℕ) (μ : Bool) {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (LWE.keyGenSerialized
+      (Homomorphic.GSW.Parameters.dimension security) (Homomorphic.GSW.Parameters.samples security)
+      (Homomorphic.GSW.Parameters.width security)
+      (Homomorphic.GSW.Parameters.noise security))).support)
+    {ciphertext : List Bool}
+    (hc : ciphertext ∈ (ProbComp.eval (encryptSerialized
+      (Homomorphic.GSW.Parameters.dimension security) (Homomorphic.GSW.Parameters.samples security)
+      (Homomorphic.GSW.Parameters.width security) keys.1 μ)).support) :
+    decryptSerialized (Homomorphic.GSW.Parameters.dimension security)
+      (Homomorphic.GSW.Parameters.width security) keys.2 ciphertext = μ := by
+  have hmargin := Homomorphic.GSW.Parameters.fresh_margin security
+  rw [Nat.mul_assoc] at hmargin
+  exact keyGenSerialized_encryptSerialized_correct
+    (Homomorphic.GSW.Parameters.width_pos security) hmargin hkeys μ hc
 
 -- The asymptotic theorem applies to an actual family; only decision LWE remains assumed.
 example (hLWE : DecisionLWE Homomorphic.GSW.Parameters.dimension
@@ -130,6 +177,65 @@ example (hLWE : DecisionLWE Homomorphic.GSW.Parameters.dimension
     Homomorphic.GSW.Parameters.computableInPolyTime_width
     (Filter.Eventually.of_forall Homomorphic.GSW.Parameters.entropy_margin) hLWE
     keyAdversary keyAdversary_isPPT
+
+-- A stateful word-level adaptive multi-challenge adversary whose queries depend on the saved
+-- state and latest ciphertext word in the reverse transcript, updating the saved state at every
+-- query step.
+private def wordAdaptiveAdversary : Encryption.LoRAdversary where
+  start _ pk := pure pk
+  query _ st transcript :=
+    let b := (transcript.headD []).headD false
+    pure ((st.headD false, b), b :: st)
+  guess _ st transcript :=
+    pure (st.headD false ^^ (transcript.headD []).headD false)
+
+private theorem wordAdaptiveAdversary_isPPT : wordAdaptiveAdversary.IsPPT := by
+  have htr : ComputableInPolyTime
+      (fun x : ℕ × List Bool × List (List Bool) => x.2.2.headD [])
+      Encryption.encLoRStageInput encBits :=
+    (ComputableInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp
+      (by fun_prop)
+  refine ⟨?_, ?_, ?_, ⟨fun _ => 1, by fun_prop, ?_⟩⟩
+  · simp only [wordAdaptiveAdversary]; ppt
+  · simp only [wordAdaptiveAdversary]; ppt
+  · simp only [wordAdaptiveAdversary]; ppt
+  · intro _ st tr choice hchoice
+    simp only [wordAdaptiveAdversary, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hchoice
+    subst hchoice
+    simp
+
+-- Both the per-bit and hidden-bit multi-challenge Decision-LWE distinguishers are uniform strict
+-- PPT for any polynomial-time query schedule, and yield asymptotic Q-query security.
+example (bit : Bool) :
+    IsPPT encBool (lorDistinguisherSerialized Homomorphic.GSW.Parameters.dimension
+      Homomorphic.GSW.Parameters.samples Homomorphic.GSW.Parameters.width
+      (fun k => k + 2) wordAdaptiveAdversary bit) :=
+  isPPT_lorDistinguisherSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+    wordAdaptiveAdversary_isPPT bit
+
+example :
+    IsPPT encBool (lorLweDistinguisher Homomorphic.GSW.Parameters.dimension
+      Homomorphic.GSW.Parameters.samples Homomorphic.GSW.Parameters.width
+      (fun k => k + 2) wordAdaptiveAdversary) :=
+  isPPT_lorLweDistinguisher (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+    wordAdaptiveAdversary_isPPT
+
+example (hLWE : DecisionLWE Homomorphic.GSW.Parameters.dimension
+      Homomorphic.GSW.Parameters.samples Homomorphic.GSW.Parameters.width
+      (fun k => LWE.noiseLaw (Homomorphic.GSW.Parameters.width k)
+        (Homomorphic.GSW.Parameters.noise k))) :
+    Negligible (fun k => Game.advantage
+      (ProbComp.eval (lorGameSerialized Homomorphic.GSW.Parameters.dimension
+        Homomorphic.GSW.Parameters.samples Homomorphic.GSW.Parameters.width
+        Homomorphic.GSW.Parameters.noise (fun k => k + 2) wordAdaptiveAdversary false k))
+      (ProbComp.eval (lorGameSerialized Homomorphic.GSW.Parameters.dimension
+        Homomorphic.GSW.Parameters.samples Homomorphic.GSW.Parameters.width
+        Homomorphic.GSW.Parameters.noise (fun k => k + 2) wordAdaptiveAdversary true k))) :=
+  lorIndCPA_of_decisionLWE Homomorphic.GSW.Parameters.computableInPolyTime_dimension
+    Homomorphic.GSW.Parameters.computableInPolyTime_samples
+    Homomorphic.GSW.Parameters.computableInPolyTime_width (by fun_prop)
+    (Filter.Eventually.of_forall Homomorphic.GSW.Parameters.entropy_margin) hLWE
+    wordAdaptiveAdversary wordAdaptiveAdversary_isPPT
 
 /-! ### Dual Regev -/
 
@@ -172,8 +278,9 @@ private def dualToyCT : DualRegev.Ciphertext 2 4 :=
   (![2, 9], 11)
 
 open Cslib.Crypto.DualRegev in
--- Canonical serialization and zero-padded decoding roundtrip for public keys and ciphertexts,
--- including empty inputs and excess trailing padding.
+-- Canonical serialization and zero-padded decoding roundtrip for public keys, secrets, and
+-- ciphertexts, including empty inputs, excess trailing padding, and concrete `decryptSerialized`
+-- round-trips on `false` and `true` with nonzero errors.
 example :
     DualRegev.decodePublicKey 1 2 4 (DualRegev.serializePublicKey dualToyPK) = dualToyPK ∧
       (DualRegev.serializePublicKey dualToyPK).length = 12 ∧
@@ -181,7 +288,17 @@ example :
       DualRegev.decodePublicKey 1 2 4
         (DualRegev.serializePublicKey dualToyPK ++ [true, true]) = dualToyPK ∧
       DualRegev.decodeCiphertext 2 4 (DualRegev.serializeCiphertext dualToyCT) = dualToyCT ∧
-      (DualRegev.serializeCiphertext dualToyCT).length = 12 := by
+      (DualRegev.serializeCiphertext dualToyCT).length = 12 ∧
+      DualRegev.decodeSecret 2 (DualRegev.serializeSecret ![1, 0]) = ![1, 0] ∧
+      (DualRegev.serializeSecret ![1, 0]).length = 2 ∧
+      DualRegev.decryptSerialized 2 4 (DualRegev.serializeSecret ![1, 0])
+        (DualRegev.encryptWithCoinsSerialized 1 2 4
+          (DualRegev.serializePublicKey (DualRegev.publicKeyOf dualA ![1, 0]))
+          false ⟨[5], [1, -1], 1⟩) = false ∧
+      DualRegev.decryptSerialized 2 4 (DualRegev.serializeSecret ![1, 0])
+        (DualRegev.encryptWithCoinsSerialized 1 2 4
+          (DualRegev.serializePublicKey (DualRegev.publicKeyOf dualA ![1, 0]))
+          true ⟨[5], [1, 0], -1⟩) = true := by
   decide +kernel
 
 -- Distributional bridges connect the serialized algorithms to the typed key and encryption laws.
@@ -212,6 +329,22 @@ example :
         (Homomorphic.GSW.Parameters.noise p.1) p.2.1 p.2.2) :=
   DualRegev.isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
     (by fun_prop) (by fun_prop)
+
+example :
+    ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool =>
+        DualRegev.decryptSerialized (Homomorphic.GSW.Parameters.samples p.1)
+          (Homomorphic.GSW.Parameters.width p.1) p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBool :=
+  DualRegev.computableInPolyTime_decryptSerialized (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop)
+
+example (μ : Bool) {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (DualRegev.keyGenSerialized 1 2 4)).support)
+    {ciphertext : List Bool}
+    (hc : ciphertext ∈ (ProbComp.eval (DualRegev.encryptSerialized 1 2 4 1 keys.1 μ)).support) :
+    DualRegev.decryptSerialized 2 4 keys.2 ciphertext = μ :=
+  DualRegev.keyGenSerialized_encryptSerialized_correct (by decide) (by decide) hkeys μ hc
 
 -- The uniform hidden-bit (m + 1)-sample Decision-LWE reduction is uniform strict PPT.
 example :
