@@ -54,6 +54,17 @@ example : ¬Equiv .set (select divZeroEq (select (lit (.bool false)) emp))
 example : Equiv .ordered (select isAnn (select isOne emp)) (select isOne (select isAnn emp)) :=
   select_comm rfl (by decide) (by decide)
 
+-- Without safety of the inner predicate: `WHERE dept / 0 = 1` fails on `emp`, while after the
+-- exchange `WHERE FALSE` leaves it no row to fail on.
+example : ¬Equiv .set (select (lit (.bool false)) (select divZeroEq emp))
+    (select divZeroEq (select (lit (.bool false)) emp)) := by
+  refine fun h => not_equiv_of_toOption (rs := []) (ℓ := .set) ?_ ?_ h.symm <;> decide
+
+-- Without safety of the outer predicate: the same two queries, exchanged.
+example : ¬Equiv .set (select divZeroEq (select (lit (.bool false)) emp))
+    (select (lit (.bool false)) (select divZeroEq emp)) :=
+  not_equiv_of_toOption (rs := []) (by decide) (by decide)
+
 /-- `SELECT dept, dept + 1 FROM emp`. -/
 abbrev deptSucc : Fin 2 → Expr 2 := ![col 1, binary (.arith .add) (col 1) (int 1)]
 
@@ -83,6 +94,9 @@ example : Equiv .ordered (select (idOne.rename (Fin.natAdd 2)) empDept)
     (join (binary (.cmp .eq) (col 1) (col 2)) emp (select idOne dept)) :=
   select_join_right (Γ := Γemp) (Δ := Γdept) rfl rfl (by decide) (by decide)
 
+/-- `id / 0 = 1` over `dept`: unsafe, and failing on every department. -/
+abbrev idDivZeroEq : Expr 2 := binary (.cmp .eq) (binary (.arith .div) (col 0) (int 0)) (int 1)
+
 -- Without safety of the pushed predicate: joined with the empty table, the left side evaluates
 -- nothing, while the pushed `WHERE` evaluates `dept / 0` on every employee.
 example : ¬Equiv .set (select (divZeroEq.rename (Fin.castAdd 2))
@@ -90,11 +104,25 @@ example : ¬Equiv .set (select (divZeroEq.rename (Fin.castAdd 2))
     (join (binary (.cmp .eq) (col 1) (col 2)) (select divZeroEq emp) empty) :=
   not_equiv_of_toOption (rs := []) (by decide) (by decide)
 
+-- The same for the right input: joined with the empty table on the left, the left side evaluates
+-- nothing, while the pushed `WHERE` evaluates `id / 0` on every department.
+example : ¬Equiv .set (select (idDivZeroEq.rename (Fin.natAdd 2))
+      (join (binary (.cmp .eq) (col 1) (col 2)) empty dept))
+    (join (binary (.cmp .eq) (col 1) (col 2)) empty (select idDivZeroEq dept)) :=
+  not_equiv_of_toOption (rs := []) (by decide) (by decide)
+
 -- Without safety of the join predicate: pushing `WHERE FALSE` into the left input leaves no pair
 -- for `ON dept / 0 = 1` to fail on.
 example : ¬Equiv .set (select ((lit (.bool false)).rename (Fin.castAdd 2))
       (join (divZeroEq.rename (Fin.castAdd 2)) emp dept))
     (join (divZeroEq.rename (Fin.castAdd 2)) (select (lit (.bool false)) emp) dept) := by
+  refine fun h => not_equiv_of_toOption (rs := []) (ℓ := .set) ?_ ?_ h.symm <;> decide
+
+-- The same for the right input: pushing `WHERE FALSE` into `dept` leaves no pair for
+-- `ON dept / 0 = 1` to fail on.
+example : ¬Equiv .set (select ((lit (.bool false)).rename (Fin.natAdd 2))
+      (join (divZeroEq.rename (Fin.castAdd 2)) emp dept))
+    (join (divZeroEq.rename (Fin.castAdd 2)) emp (select (lit (.bool false)) dept)) := by
   refine fun h => not_equiv_of_toOption (rs := []) (ℓ := .set) ?_ ?_ h.symm <;> decide
 
 -- A `WHERE` over a cross join is the inner join.
