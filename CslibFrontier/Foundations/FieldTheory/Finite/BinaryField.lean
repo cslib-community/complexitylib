@@ -8,10 +8,10 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Foundations.Data.BitString.ZModTwo
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.RingTheory.AdjoinRoot
-import CslibFrontier.Foundations.Data.BitString.Basic
 import CslibFrontier.Foundations.Data.BitString.Binary
 import Mathlib.Algebra.CharP.Algebra
 import Mathlib.FieldTheory.Finite.GaloisField
@@ -368,7 +368,7 @@ theorem equivFin_symm_eq_mk_polyOfCode {w : ℕ} (hw : w ≠ 0) (m : Fin (2 ^ w)
 /-- Every `x : BinaryField w` is the class of `polyOfCode (equivFin hw x).val`. -/
 theorem mk_polyOfCode_val_equivFin {w : ℕ} (hw : w ≠ 0) (x : BinaryField w) :
     AdjoinRoot.mk (leastIrreducible w) (polyOfCode (equivFin hw x).val) = x := by
-  rw [← equivFin_symm_eq_mk_polyOfCode, Equiv.symm_apply_apply]
+  rw [← equivFin_symm_eq_mk_polyOfCode hw, Equiv.symm_apply_apply]
 
 /-- **The embedding of bit strings of length `b ≤ w`**: a bit string is the polynomial with these
 coefficients, padded with zeros to length `w`. -/
