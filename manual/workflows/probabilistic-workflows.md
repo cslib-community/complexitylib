@@ -18,10 +18,26 @@ This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draf
 printed page 319 (PDF page 335): the source's first coordinate is indexed by one
 in the book. Distance uses the probability convention (half the L1 distance).
 These are information-theoretic distributions; no sampler or runtime is asserted.
-Exercise 12 and the broader extractor objectives in issue #895 remain open.
+Exercise 12 is covered by the hashing corollary below; broader extractor objectives in issue #895 remain open.
 The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
 `n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
 From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
+## Apply the draft leftover hash lemma
+
+Import [Extractor/LeftoverHash.lean](../../CslibFrontier/Probability/Extractor/LeftoverHash.lean).
+For `hash : BitString t → BitString n → BitString k`, prove positive `δ` and
+`IsUniversalHash (PMF.uniformOfFintype (BitString t)) hash
+(ENNReal.ofReal ((1 + δ) / (2 : ℝ) ^ k))`.
+Apply `IsUniversalHash.isStrongExtractor_of_entropy_div` for a strong extractor,
+or `IsUniversalHash.isExtractor_append_of_entropy_div` for the book's output
+`Fin.append (hash s x) s`: digest first, seed last. Both require source min-entropy
+at least `(k : ℝ) / δ` and give error `Real.sqrt (2 * δ)`.
+These are Lemma 16.42 and Exercise 16.12 of the January 2007 draft, for all lengths
+and positive `δ`, including zero digest length. They assert no runtime or short seed.
+The [checked clients](../../CslibFrontierTests/LeftoverHashDraft.lean) use an 8-bit
+uniform source and Boolean matrix hash, and check zero digest, large error and order.
+Run `scripts/build.sh CslibFrontierTests.LeftoverHashDraft` in a configured checkout.
 
 ## Transport a distribution bound through a map
 
@@ -734,7 +750,25 @@ proves `E_u[τ_v] + deg v ≤ 2 |E|` for every edge (Goldreich, Exercise 6.19), 
 [checked clients](../../CslibFrontierTests/RandomWalkHitting.lean) state Exercise 6.19 in the
 source's form, compute `E_0[τ_1] = 1` and `E_0[τ⁺_0] = 2` on a single edge (so the edge bound is
 an equality there), and instantiate it on a triangle. Run
-`scripts/build.sh CslibFrontierTests.RandomWalkHitting`. If a proof needs `∑ y, P x y = 1`, use
+`scripts/build.sh CslibFrontierTests.RandomWalkHitting`.
+
+For regular multigraphs, import
+[MarkovChain/RotationMap.lean](../../CslibFrontier/Probability/MarkovChain/RotationMap.lean).
+`G.randomWalk` follows a uniformly random edge label of `G : RotationMap V D`, with
+`randomWalk_apply` giving `edgeCount x y / |D|`. Use it when the statement counts label
+sequences, as Arora and Barak's Chapter 7 does: `survival_randomWalk_mul_pow` identifies
+`survival` with the fraction of label sequences `k : Fin T → D` whose `walkAt` avoids the target.
+The uniform law is the unique stationary law on a connected graph
+(`isStationary_randomWalk_iff`), from the maximum principle `eq_of_forall_sum_edgeCount_mul_eq`
+in [Expander/Harmonic.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Harmonic.lean),
+which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives the expected return
+time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
+`ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
+`hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the
+textbook `100 k n²` and `1000 n³`-step statements. The
+[checked clients](../../CslibFrontierTests/RegularRandomWalk.lean) restate them in source form and
+compute the return time `2` on a single edge; run
+`scripts/build.sh CslibFrontierTests.RegularRandomWalk`. If a proof needs `∑ y, P x y = 1`, use
 `sum_apply`. Do not convert to `ℝ` before the finiteness lemmas are available, since `toReal`
 sends `⊤` to `0`.
 

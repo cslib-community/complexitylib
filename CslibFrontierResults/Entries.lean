@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
 import CslibFrontier.Probability.MarkovChain.RandomWalk
+import CslibFrontier.Probability.MarkovChain.RotationMap
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
@@ -267,6 +268,7 @@ import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 import CslibFrontier.Probability.BilinearFingerprint
+import CslibFrontier.Probability.Extractor.LeftoverHash
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -5792,6 +5794,28 @@ register_result "random-walk-edge-hitting-time" where
     deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
     bound and the log-space USTCON algorithm are not included."
 
+register_result "regular-random-walk-hitting-times" where
+  title := "Random walks on regular multigraphs: unique stationary law, return and hitting times"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 7, Exercise 9(b)(i), (c), (d)",
+      locator := "2007-01-08 draft, printed p. 133; PDF p. 149" }
+  ]
+  theorems := [
+    Cslib.RotationMap.isStationary_randomWalk_iff,
+    Cslib.RotationMap.returnTime_randomWalk_eq_card,
+    Cslib.RotationMap.returnTime_randomWalk_le_ten_mul_sq,
+    Cslib.RotationMap.hittingTime_randomWalk_le_hundred_mul,
+    Cslib.RotationMap.ten_mul_card_filter_walkAt_ne_le
+  ]
+  scope := "d-regular multigraphs presented by rotation maps (loops and parallel edges allowed), \
+    random walk along a uniform edge label as a MarkovChain. Exact extended-real expectations. \
+    (b)(i): on a connected graph the uniform PMF is the unique stationary law. (c): the expected \
+    return time to u equals the size of u's component, hence n when connected and at most 10 n^2. \
+    (d): with d <= n, E_{u,v} <= 100 k n^2 along a path of length k, and at most a tenth of the \
+    label sequences of length 1000 n^3 avoid t. Part (b)(ii) (visit-count concentration) and \
+    part (e) are not included."
+
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"
   topic := "pseudorandomness"
@@ -5825,6 +5849,20 @@ register_result "linear-space-ne-np" where
     cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
     cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
     polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
+
+register_result "arora-barak-draft-leftover-hash" where
+  title := "Draft leftover hash lemma with entropy k/delta"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 16.42; Chapter 16, Exercise 12",
+      locator := "January 8, 2007 draft; printed 308 / PDF 324; exercise printed 319 / PDF 335" }
+  ]
+  theorems := [Cslib.Probability.IsUniversalHash.isStrongExtractor_of_entropy_div,
+    Cslib.Probability.IsUniversalHash.isExtractor_append_of_entropy_div]
+  scope := "All n,k,t and positive delta. Uniform independent seed, distinct-input collision \
+    bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
+    sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
+    and large delta; no efficiency or short-seed assertion."
 
 register_result "tally-np-exp-nexp" where
   title := "Easy tally NP collapses EXP and NEXP"
