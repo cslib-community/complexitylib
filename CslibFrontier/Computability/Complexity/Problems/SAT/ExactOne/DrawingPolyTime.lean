@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawi
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SAT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 import CslibFrontier.Foundations.Geometry.Orthogonal.Macrocell
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
@@ -29,6 +30,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 Coordinates and original source labels use binary encodings. Clause, literal, and list indices
 use unary counters bounded by the emitted lists. The finite profile and collar choices are fixed
 independently of the input; there is no enumeration of the coordinate rectangle.
+
+The certificates use the plain polynomial-time calculus throughout: captured list scans handle
+source routes and clause blocks, and finite case analysis selects the fixed local templates.
 
 The input, a source formula with its supplied binary-coordinate drawing, is encoded by
 `DrawingFinitePolyTime.encInput`.
@@ -54,8 +58,6 @@ open DrawingFinitePolyTime (encInput)
 abbrev encSourceIndex : ((Graph × Graph.OrthogonalDrawing) × ℕ) ↪ List Bool :=
   encPair (encPair encGraph Graph.encOrthogonalDrawing) encUnary
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 local instance : ListEncoding encPoint encRoute :=
   inferInstanceAs (ListEncoding encPoint (encList encPoint))
 
@@ -64,8 +66,7 @@ local instance : SizedListEncoding encPoint encRoute :=
 
 private theorem point_scale (k : ℕ) :
     ComputableInPolyTime (fun p : Point => k • p) encPoint encPoint := by
-  refine .of_tidy ?_
-  change ComputableTidilyInPolyTime
+  change ComputableInPolyTime
     (fun p : Point => ((k : ℤ) * p.1, (k : ℤ) * p.2)) _ _
   unfold encPoint
   fun_prop
@@ -80,7 +81,6 @@ theorem drawingPosition :
       (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
         Graph.drawingPosition p.1.1 p.1.2 p.2)
       (encPair (encPair encGraph Graph.encOrthogonalDrawing) encNat) encPoint := by
-  refine .of_tidy ?_
   unfold Graph.drawingPosition encGraph Graph.encOrthogonalDrawing encRoute
   fun_prop
 
@@ -94,26 +94,26 @@ private theorem sourceEdge :
 theorem sourceStart :
     ComputableInPolyTime (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
       ExactOne.sourceStart p.1.1 p.1.2 p.2) encSourceIndex encPoint := by
-  have hp : ComputableTidilyInPolyTime
+  have hp : ComputableInPolyTime
       (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
         (p.1, (p.1.1.2.getD p.2 (0, 0)).2)) encSourceIndex
       (encPair (encPair encGraph Graph.encOrthogonalDrawing) encNat) := by fun_prop
   simpa only [Function.comp_def, ExactOne.sourceStart] using
-    ComputableInPolyTime.of_tidy (drawingPosition.tidy.comp hp)
+    (drawingPosition.comp hp)
 
 /-- Reading and, when necessary, reversing an actual source route is polynomial-time. -/
 @[fun_prop]
 theorem sourceRoute :
     ComputableInPolyTime (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
       ExactOne.sourceRoute p.1.1 p.1.2 p.2) encSourceIndex encRoute := by
-  have hs := sourceStart.tidy
-  have hr : ComputableTidilyInPolyTime
+  have hs := sourceStart
+  have hr : ComputableInPolyTime
       (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ => p.1.2.2.getD p.2 [])
       encSourceIndex encRoute := by fun_prop
-  have hhead := (ComputableTidilyInPolyTime.head? encPoint).comp hr
-  have hsome := (ComputableTidilyInPolyTime.optionSome encPoint).comp hs
-  exact .of_tidy ((hhead.decide_eq' hsome).ite_decide hr
-    ((ComputableTidilyInPolyTime.listReverse encPoint).comp hr))
+  have hhead := (ComputableInPolyTime.head? encPoint).comp hr
+  have hsome := (ComputableInPolyTime.optionSome encPoint).comp hs
+  exact ((hhead.decide_eq' hsome).ite_decide hr
+    (ComputableInPolyTime.listReverseWithInput hr))
 
 private theorem routeSecond :
     ComputableInPolyTime (fun r : Route => r.getD 1 (0, 0)) encRoute encPoint := by
@@ -124,24 +124,22 @@ private theorem routeSecond :
 theorem sourceDirection :
     ComputableInPolyTime (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
       ExactOne.sourceDirection p.1.1 p.1.2 p.2) encSourceIndex encPoint := by
-  have hp : ComputableTidilyInPolyTime
+  have hp : ComputableInPolyTime
       (fun p : (Graph × Graph.OrthogonalDrawing) × ℕ =>
         (ExactOne.sourceStart p.1.1 p.1.2 p.2,
           (ExactOne.sourceRoute p.1.1 p.1.2 p.2).getD 1 (0, 0)))
       encSourceIndex (encPair encPoint encPoint) := by fun_prop
   simpa only [Function.comp_def, ExactOne.sourceDirection] using
-    ComputableInPolyTime.of_tidy (computableInPolyTime_direction.tidy.comp hp)
+    (computableInPolyTime_direction.comp hp)
 
 private theorem route_dilate (k : ℕ) :
     ComputableInPolyTime (dilateRoute k) encRoute encRoute := by
-  refine .of_tidy ?_
   unfold dilateRoute encRoute
   fun_prop
 
 private theorem point_cut (k radius : ℕ) :
     ComputableInPolyTime (fun p : Point × Point => cutPoint k radius p.1 p.2)
       (encPair encPoint encPoint) encPoint := by
-  refine .of_tidy ?_
   unfold cutPoint
   fun_prop
 
@@ -159,19 +157,18 @@ private theorem cutStart_eq (k radius : ℕ) (r : Route) :
 theorem cutStart (k radius : ℕ) :
     ComputableInPolyTime (Orthogonal.cutStart k radius) encRoute encRoute := by
   have hget (i : ℕ) :=
-    (ComputableTidilyInPolyTime.listGetD (encA := encPoint) (encL := encRoute) (0, 0)).comp
-      ((ComputableTidilyInPolyTime.id' (encIn := encRoute)).prod
-        (ComputableTidilyInPolyTime.const i))
-  have hcut := (point_cut k radius).tidy.comp ((hget 0).prod (hget 1))
-  have htail := (route_dilate k).tidy.comp
-    (ComputableTidilyInPolyTime.tail (encA := encPoint))
-  have hlen := ComputableTidilyInPolyTime.length encPoint (encL := encRoute)
-  have htest := ComputableTidilyInPolyTime.unary_lt.comp
-    (hlen.prod (ComputableTidilyInPolyTime.const 2))
-  have h := htest.ite_decide (route_dilate k).tidy (hcut.cons' htail)
-  apply ComputableInPolyTime.of_tidy
-  change ComputableTidilyInPolyTime (fun r => Orthogonal.cutStart k radius r) _ _
-  simpa only [cutStart_eq, Function.comp_def] using h
+    (ComputableInPolyTime.listGetD (encA := encPoint) (encL := encRoute) (0, 0)).comp
+      ((ComputableInPolyTime.id' (encIn := encRoute)).prod
+        (ComputableInPolyTime.const i))
+  have hcut := (point_cut k radius).comp ((hget 0).prod (hget 1))
+  have htail := (route_dilate k).comp
+    (ComputableInPolyTime.tail (encA := encPoint))
+  have hlen := ComputableInPolyTime.length_list encPoint
+  have htest := ComputableInPolyTime.unary_lt.comp
+    (hlen.prod (ComputableInPolyTime.const 2))
+  have h := htest.ite_decide (route_dilate k) (hcut.cons' htail)
+  change ComputableInPolyTime (fun r => Orthogonal.cutStart k radius r) _ _
+  simpa only [cutStart_eq, Function.comp_def, encRoute] using h
 
 /-- The trimmed exterior of each indexed source edge is polynomial-time. -/
 @[fun_prop]
@@ -186,21 +183,20 @@ theorem sourceEdgeIndex :
     ComputableInPolyTime (fun p : CNF ℕ × (ℕ × ℕ) =>
       ExactOne.sourceEdgeIndex p.1 p.2.1 p.2.2)
       (encPair encCNF (encPair encUnary encUnary)) encUnary := by
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.idxOfWithInput
-  · exact (Cslib.Logic.PL.computableInPolyTime_occurrences encNat).tidy.comp
-      (ComputableTidilyInPolyTime.fst encCNF (encPair encUnary encUnary))
-  · change ComputableTidilyInPolyTime
+  apply ComputableInPolyTime.idxOfWithInput
+  · exact (Cslib.Logic.PL.computableInPolyTime_occurrences encNat).comp
+      (ComputableInPolyTime.fst encCNF (encPair encUnary encUnary))
+  · change ComputableInPolyTime
       (fun p : CNF ℕ × (ℕ × ℕ) => sourceOccurrence p.1 p.2.1 p.2.2)
       (encPair encCNF (encPair encUnary encUnary)) (Cslib.Logic.PL.encOccurrence encNat)
-    have hφ := ComputableTidilyInPolyTime.fst encCNF (encPair encUnary encUnary)
-    have hij := ComputableTidilyInPolyTime.snd encCNF (encPair encUnary encUnary)
-    have hi := (ComputableTidilyInPolyTime.fst encUnary encUnary).comp hij
-    have hj := (ComputableTidilyInPolyTime.snd encUnary encUnary).comp hij
-    have hc : ComputableTidilyInPolyTime
+    have hφ := ComputableInPolyTime.fst encCNF (encPair encUnary encUnary)
+    have hij := ComputableInPolyTime.snd encCNF (encPair encUnary encUnary)
+    have hi := (ComputableInPolyTime.fst encUnary encUnary).comp hij
+    have hj := (ComputableInPolyTime.snd encUnary encUnary).comp hij
+    have hc : ComputableInPolyTime
         (fun p : CNF ℕ × (ℕ × ℕ) => p.1.getD p.2.1 [])
         (encPair encCNF (encPair encUnary encUnary)) DrawingFinitePolyTime.encClause := by fun_prop
-    have hl : ComputableTidilyInPolyTime
+    have hl : ComputableInPolyTime
         (fun p : CNF ℕ × (ℕ × ℕ) => (p.1.getD p.2.1 []).getD p.2.2 (0, true))
         (encPair encCNF (encPair encUnary encUnary)) (encPair encNat encBool) := by fun_prop
     exact (hi.prod (hj.prod hl)).of_enc_eq fun _ => rfl
@@ -243,15 +239,15 @@ theorem positiveBoxOrigin :
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ =>
         ExactOne.positiveBoxOrigin p.1.1 p.1.2 p.2)
       (encPair encInput encUnary) encPoint := by
-  have hd := (CNF.computableInPolyTime_distinctVars encNat).tidy
-  have hn : ComputableTidilyInPolyTime
+  have hd := (CNF.computableInPolyTime_distinctVars encNat)
+  have hn : ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ => p.1.1.distinctVars.length + p.2)
       (encPair encInput encUnary) encUnary := by fun_prop
-  have hb := ComputableTidilyInPolyTime.unary_to_binary.comp hn
-  have hg := graphDrawing.tidy.comp (ComputableTidilyInPolyTime.fst encInput encUnary)
-  have hp := drawingPosition.tidy.comp (hg.prod hb)
-  have h := (point_scale positiveScale).tidy.comp hp
-  simpa only [Function.comp_def, ExactOne.positiveBoxOrigin] using ComputableInPolyTime.of_tidy h
+  have hb := ComputableInPolyTime.unary_to_binary.comp hn
+  have hg := graphDrawing.comp (ComputableInPolyTime.fst encInput encUnary)
+  have hp := drawingPosition.comp (hg.prod hb)
+  have h := (point_scale positiveScale).comp hp
+  simpa only [Function.comp_def, ExactOne.positiveBoxOrigin] using h
 
 /-- The actual dilated and trimmed inherited route is emitted without searching the plane. -/
 @[fun_prop]
@@ -260,10 +256,10 @@ theorem positiveExterior (j : ℕ) :
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ =>
         ExactOne.positiveExterior p.1.1 p.1.2 p.2 j)
       (encPair encInput encUnary) encRoute := by
-  have he := (exteriorRoute positiveScale positiveRadius).tidy.comp (sourceIndex j).tidy
-  have h := computableInPolyTime_translate.tidy.comp
-    ((ComputableTidilyInPolyTime.const positiveTranslation).prod he)
-  simpa only [Function.comp_def, ExactOne.positiveExterior] using ComputableInPolyTime.of_tidy h
+  have he := (exteriorRoute positiveScale positiveRadius).comp (sourceIndex j)
+  have h := computableInPolyTime_translate.comp
+    ((ComputableInPolyTime.const positiveTranslation).prod he)
+  simpa only [Function.comp_def, ExactOne.positiveExterior] using h
 
 private theorem take_zipIdx {A : Type*} (xs : List A) (i start : ℕ) :
     (xs.zipIdx start).take i = (xs.take i).zipIdx start := by
@@ -282,12 +278,14 @@ private theorem signedOffset_eq_length (φ : CNF ℕ) (i : ℕ) :
 theorem signedOffset :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ => CNF.PositiveExactOneCompile.signedOffset p.1 p.2)
       (encPair encCNF encUnary) encUnary := by
-  have ht : ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => p.1.take p.2)
-      (encPair encCNF encUnary) encCNF := by fun_prop
-  have hf := (CNF.FromSAT.computableInPolyTime_formula encNat).tidy.comp ht
-  have hl := (ComputableTidilyInPolyTime.length
+  have ht : ComputableInPolyTime (fun p : CNF ℕ × ℕ => p.1.take p.2)
+      (encPair encCNF encUnary) encCNF :=
+    ComputableInPolyTime.listTakeWithInput (ComputableInPolyTime.fst _ _)
+      (ComputableInPolyTime.snd _ _)
+  have hf := (CNF.FromSAT.computableInPolyTime_formula encNat).comp ht
+  have hl := (ComputableInPolyTime.length_list
     (encList (encPair (CNF.FromSAT.encVariable encNat) encBool))).comp hf
-  simpa only [Function.comp_def, signedOffset_eq_length] using ComputableInPolyTime.of_tidy hl
+  simpa only [Function.comp_def, signedOffset_eq_length] using hl
 
 private abbrev BlockInput := (CNF ℕ × Graph.OrthogonalDrawing) × (ℕ × Clause ℕ)
 
@@ -300,40 +298,35 @@ private abbrev encPlacedClause : PositivePlacedClause ↪ List Bool :=
   encPair (encList (encPair encRawVariable encBool)) (encPair encPoint (encList encRoute))
 
 private theorem blockIndex :
-    ComputableTidilyInPolyTime (fun p : BlockInput => (p.1, p.2.1))
+    ComputableInPolyTime (fun p : BlockInput => (p.1, p.2.1))
       encBlockInput (encPair encInput encUnary) := by
   unfold encBlockInput
   fun_prop
 
 private theorem blockOrigin :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : BlockInput => ExactOne.positiveBoxOrigin p.1.1 p.1.2 p.2.1)
       encBlockInput encPoint := by
-  simpa only [Function.comp_def] using positiveBoxOrigin.tidy.comp blockIndex
+  simpa only [Function.comp_def] using positiveBoxOrigin.comp blockIndex
 
 private theorem blockSignedOffset :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : BlockInput => CNF.PositiveExactOneCompile.signedOffset p.1.1 p.2.1)
       encBlockInput encUnary := by
-  have hp : ComputableTidilyInPolyTime (fun p : BlockInput => (p.1.1, p.2.1))
+  have hp : ComputableInPolyTime (fun p : BlockInput => (p.1.1, p.2.1))
       encBlockInput (encPair encCNF encUnary) := by fun_prop
-  simpa only [Function.comp_def] using signedOffset.tidy.comp hp
+  simpa only [Function.comp_def] using signedOffset.comp hp
 
 private theorem blockVariable (v : CNF.PositiveExactOneCompile.Variable ℕ) :
-    ComputableTidilyInPolyTime (fun p : BlockInput =>
+    ComputableInPolyTime (fun p : BlockInput =>
       profileVariableMap p.2.1 (CNF.PositiveExactOneCompile.signedOffset p.1.1 p.2.1) p.2.2 v)
       encBlockInput encRawVariable := by
   rcases v with (n | ⟨i, k⟩) | ⟨⟨i, j⟩, k⟩
-  · have hc : ComputableTidilyInPolyTime (fun p : BlockInput => p.2.2)
+  · have hc : ComputableInPolyTime (fun p : BlockInput => p.2.2)
         encBlockInput DrawingFinitePolyTime.encClause := by
       unfold encBlockInput
       fun_prop
-    have hd := (ComputableTidilyInPolyTime.dropUnary (encA := encPair encNat encBool)
-      (encL := encList (encPair encNat encBool))).comp
-        (hc.prod (ComputableTidilyInPolyTime.const n))
-    have h := (ComputableTidilyInPolyTime.headD (encA := encPair encNat encBool)
-      (encL := encList (encPair encNat encBool)) (0, true)).comp hd
-    have hn : ComputableTidilyInPolyTime (fun p : BlockInput => (p.2.2.getD n (0, true)).1)
+    have hn : ComputableInPolyTime (fun p : BlockInput => (p.2.2.getD n (0, true)).1)
         encBlockInput encNat := by fun_prop
     unfold profileVariableMap encRawVariable DrawingFinitePolyTime.encRawVariable
       CNF.PositiveExactOneCompile.encVariable CNF.PositiveExactOne.encVariable
@@ -356,28 +349,28 @@ private def incidenceFor (profile : ClauseProfile) (e : LocalIncidence) (p : Blo
   | _ => stem
 
 private theorem incidenceFor_poly (profile : ClauseProfile) (e : LocalIncidence) :
-    ComputableTidilyInPolyTime (incidenceFor profile e) encBlockInput encRoute := by
-  have hs := computableInPolyTime_translate.tidy.comp
-    (blockOrigin.prod (ComputableTidilyInPolyTime.const e.2.2))
-  have he (j : ℕ) := (positiveExterior j).tidy.comp blockIndex
+    ComputableInPolyTime (incidenceFor profile e) encBlockInput encRoute := by
+  have hs := computableInPolyTime_translate.comp
+    (blockOrigin.prod (ComputableInPolyTime.const e.2.2))
+  have he (j : ℕ) := (positiveExterior j).comp blockIndex
   unfold incidenceFor
   rcases (profileVariables profile).getD e.2.1 (.inl (.inl 0)) with (j | v) | v
-  · exact hs.listAppend' ((ComputableTidilyInPolyTime.tail (encA := encPoint)).comp (he j))
+  · exact hs.listAppend' ((ComputableInPolyTime.tail (encA := encPoint)).comp (he j))
   · exact hs
   · exact hs
 
 private theorem blockTag :
-    ComputableTidilyInPolyTime (fun p : BlockInput =>
+    ComputableInPolyTime (fun p : BlockInput =>
       (clauseProfile p.2.2, ExactOne.clausePorts p.1.1 p.1.2 p.2.1))
       encBlockInput DrawingFinitePolyTime.encProfilePorts := by
-  have hc : ComputableTidilyInPolyTime (fun p : BlockInput => p.2.2)
+  have hc : ComputableInPolyTime (fun p : BlockInput => p.2.2)
       encBlockInput DrawingFinitePolyTime.encClause := by fun_prop
-  have hp : ComputableTidilyInPolyTime (fun p : BlockInput => clauseProfile p.2.2)
+  have hp : ComputableInPolyTime (fun p : BlockInput => clauseProfile p.2.2)
       encBlockInput (encFinite ClauseProfile) := by fun_prop
-  have hs : ComputableTidilyInPolyTime
+  have hs : ComputableInPolyTime
       (fun p : BlockInput => ExactOne.clausePorts p.1.1 p.1.2 p.2.1)
       encBlockInput (encFinite PortAssignment) := by
-    simpa only [Function.comp_def] using clausePorts.tidy.comp blockIndex
+    simpa only [Function.comp_def] using clausePorts.comp blockIndex
   exact hp.prod hs
 
 private def placedBlockFor (tag : ClauseProfile × PortAssignment) (p : BlockInput) :
@@ -390,30 +383,30 @@ private def placedBlockFor (tag : ClauseProfile × PortAssignment) (p : BlockInp
       (g.incidenceRoutes.filter fun e => e.1 == a.2).map fun e => incidenceFor tag.1 e p)
 
 private theorem placedBlockFor_poly (tag : ClauseProfile × PortAssignment) :
-    ComputableTidilyInPolyTime (placedBlockFor tag) encBlockInput (encList encPlacedClause) := by
+    ComputableInPolyTime (placedBlockFor tag) encBlockInput (encList encPlacedClause) := by
   unfold placedBlockFor
-  apply ComputableTidilyInPolyTime.mapConst
+  apply ComputableInPolyTime.mapConst
   intro a _
-  have hc : ComputableTidilyInPolyTime (fun p : BlockInput => a.1.relabel
+  have hc : ComputableInPolyTime (fun p : BlockInput => a.1.relabel
       (profileVariableMap p.2.1 (CNF.PositiveExactOneCompile.signedOffset p.1.1 p.2.1) p.2.2))
       encBlockInput (encList (encPair encRawVariable encBool)) := by
     unfold Clause.relabel
-    apply ComputableTidilyInPolyTime.mapConst
+    apply ComputableInPolyTime.mapConst
     intro l _
-    exact (blockVariable l.1).prod (ComputableTidilyInPolyTime.const l.2)
-  have hp := computableInPolyTime_pointAdd.tidy.comp
-    (blockOrigin.prod (ComputableTidilyInPolyTime.const
+    exact (blockVariable l.1).prod (ComputableInPolyTime.const l.2)
+  have hp := computableInPolyTime_pointAdd.comp
+    (blockOrigin.prod (ComputableInPolyTime.const
       ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).clausePosition a.2)))
-  have hr := ComputableTidilyInPolyTime.mapConst
+  have hr := ComputableInPolyTime.mapConst
     ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).incidenceRoutes.filter
       fun e => e.1 == a.2) (fun e _ => incidenceFor_poly tag.1 e)
   exact hc.prod (hp.prod hr)
 
 private theorem positiveClauseBlock :
-    ComputableTidilyInPolyTime (fun p : BlockInput =>
+    ComputableInPolyTime (fun p : BlockInput =>
       ExactOne.positiveClauseBlock p.1.1 p.1.2 p.2.1 p.2.2)
       encBlockInput (encList encPlacedClause) := by
-  convert ComputableTidilyInPolyTime.finite_cases blockTag placedBlockFor_poly using 1
+  convert ComputableInPolyTime.finite_cases blockTag placedBlockFor_poly using 1
   funext p
   rfl
 
@@ -428,10 +421,10 @@ private def auxiliaryBlockFor (tag : ClauseProfile × PortAssignment) (p : Block
           (collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).variablePosition v.2)
 
 private theorem auxiliaryBlockFor_poly (tag : ClauseProfile × PortAssignment) :
-    ComputableTidilyInPolyTime (auxiliaryBlockFor tag) encBlockInput
+    ComputableInPolyTime (auxiliaryBlockFor tag) encBlockInput
       (encList (encPair encRawVariable encPoint)) := by
   have hlist (xs : List (CNF.PositiveExactOneCompile.Variable ℕ × ℕ)) :
-      ComputableTidilyInPolyTime (fun p : BlockInput => xs.filterMap fun v =>
+      ComputableInPolyTime (fun p : BlockInput => xs.filterMap fun v =>
         match v.1 with
         | .inl (.inl _) => none
         | _ => some (profileVariableMap p.2.1
@@ -440,10 +433,10 @@ private theorem auxiliaryBlockFor_poly (tag : ClauseProfile × PortAssignment) :
               (collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).variablePosition v.2))
         encBlockInput (encList (encPair encRawVariable encPoint)) := by
     induction xs with
-    | nil => exact ComputableTidilyInPolyTime.const []
+    | nil => exact ComputableInPolyTime.const []
     | cons v xs ih =>
-      have hp := computableInPolyTime_pointAdd.tidy.comp
-        (blockOrigin.prod (ComputableTidilyInPolyTime.const
+      have hp := computableInPolyTime_pointAdd.comp
+        (blockOrigin.prod (ComputableInPolyTime.const
           ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).variablePosition v.2)))
       rcases v with ⟨(j | a) | a, n⟩
       · exact ih
@@ -452,21 +445,21 @@ private theorem auxiliaryBlockFor_poly (tag : ClauseProfile × PortAssignment) :
   exact hlist _
 
 private theorem positiveAuxiliaryBlock :
-    ComputableTidilyInPolyTime (fun p : BlockInput =>
+    ComputableInPolyTime (fun p : BlockInput =>
       ExactOne.positiveAuxiliaryBlock p.1.1 p.1.2 p.2.1 p.2.2)
       encBlockInput (encList (encPair encRawVariable encPoint)) := by
-  convert ComputableTidilyInPolyTime.finite_cases blockTag auxiliaryBlockFor_poly using 1
+  convert ComputableInPolyTime.finite_cases blockTag auxiliaryBlockFor_poly using 1
   funext p
   rfl
 
 private theorem sourceClauses :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × Graph.OrthogonalDrawing => p.1.zipIdx)
+    ComputableInPolyTime (fun p : CNF ℕ × Graph.OrthogonalDrawing => p.1.zipIdx)
       encInput (encList (encPair DrawingFinitePolyTime.encClause encUnary)) := by
   unfold encInput encCNF DrawingFinitePolyTime.encClause
   fun_prop
 
 private theorem clauseFrame :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × (Clause ℕ × ℕ) =>
         (p.1, (p.2.2, p.2.1)))
       (encPair encInput (encPair DrawingFinitePolyTime.encClause encUnary)) encBlockInput := by
@@ -474,131 +467,132 @@ private theorem clauseFrame :
   fun_prop
 
 private theorem positivePlacedClauses :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => ExactOne.positivePlacedClauses p.1 p.2)
       encInput (encList encPlacedClause) := by
   have hf := positiveClauseBlock.comp clauseFrame
   simpa only [Function.comp_def, ExactOne.positivePlacedClauses] using
-    ComputableTidilyInPolyTime.flatMapWithInput sourceClauses hf
+    ComputableInPolyTime.flatMapWithInput sourceClauses hf
 
 private theorem positiveAuxiliaryPositions :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => ExactOne.positiveAuxiliaryPositions p.1 p.2)
       encInput (encList (encPair encRawVariable encPoint)) := by
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × (Clause ℕ × ℕ) =>
         ExactOne.positiveAuxiliaryBlock p.1.1 p.1.2 p.2.2 p.2.1)
       (encPair encInput (encPair DrawingFinitePolyTime.encClause encUnary))
       (encList (encPair encRawVariable encPoint)) := by
     simpa only [Function.comp_def] using positiveAuxiliaryBlock.comp clauseFrame
   unfold ExactOne.positiveAuxiliaryPositions
-  exact ComputableTidilyInPolyTime.flatMapWithInput
+  exact ComputableInPolyTime.flatMapWithInput
     (f := fun (p : CNF ℕ × Graph.OrthogonalDrawing) (c : Clause ℕ × ℕ) =>
       ExactOne.positiveAuxiliaryBlock p.1 p.2 c.2 c.1)
     (encA := encPair DrawingFinitePolyTime.encClause encUnary)
     (encB := encPair encRawVariable encPoint) (encIn := encInput) sourceClauses hf
 
 private theorem sourceVariables :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × Graph.OrthogonalDrawing => p.1.distinctVars)
+    ComputableInPolyTime (fun p : CNF ℕ × Graph.OrthogonalDrawing => p.1.distinctVars)
       encInput (encList encNat) :=
-  (CNF.computableInPolyTime_distinctVars encNat).tidy.comp
-    (ComputableTidilyInPolyTime.fst encCNF Graph.encOrthogonalDrawing)
+  (CNF.computableInPolyTime_distinctVars encNat).comp
+    (ComputableInPolyTime.fst encCNF Graph.encOrthogonalDrawing)
 
 private theorem sourceVariablePosition :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ => positiveScale •
         Graph.drawingPosition (SAT.incidenceGraph p.1.1) p.1.2 (p.1.1.distinctVars.idxOf p.2) +
           positiveTranslation) (encPair encInput encNat) encPoint := by
-  have hi : ComputableTidilyInPolyTime
+  have hi : ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ => p.1.1.distinctVars.idxOf p.2)
       (encPair encInput encNat) encUnary := by fun_prop
-  have hb := ComputableTidilyInPolyTime.unary_to_binary.comp hi
-  have hg := graphDrawing.tidy.comp (ComputableTidilyInPolyTime.fst encInput encNat)
-  have hp := drawingPosition.tidy.comp (hg.prod hb)
-  have h := computableInPolyTime_pointAdd.tidy.comp
-    (((point_scale positiveScale).tidy.comp hp).prod
-      (ComputableTidilyInPolyTime.const positiveTranslation))
+  have hb := ComputableInPolyTime.unary_to_binary.comp hi
+  have hg := graphDrawing.comp (ComputableInPolyTime.fst encInput encNat)
+  have hp := drawingPosition.comp (hg.prod hb)
+  have h := computableInPolyTime_pointAdd.comp
+    (((point_scale positiveScale).comp hp).prod
+      (ComputableInPolyTime.const positiveTranslation))
   simpa only [Function.comp_def] using h
 
 private theorem positiveSourcePositions :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => ExactOne.positiveSourcePositions p.1 p.2)
       encInput (encList (encPair encRawVariable encPoint)) := by
-  have hv : ComputableTidilyInPolyTime
+  have hv : ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ =>
         (Sum.inl (Sum.inl p.2) : CNF.PositiveExactOneCompile.Variable ℕ))
       (encPair encInput encNat) encRawVariable := by fun_prop
   simpa only [ExactOne.positiveSourcePositions] using
-    ComputableTidilyInPolyTime.mapWithInput sourceVariables (hv.prod sourceVariablePosition)
+    ComputableInPolyTime.mapWithInput sourceVariables (hv.prod sourceVariablePosition)
 
 private theorem positivePositionTable :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => ExactOne.positivePositionTable p.1 p.2)
       encInput (encList (encPair encRawVariable encPoint)) :=
   positiveSourcePositions.listAppend' positiveAuxiliaryPositions
 
 private theorem positiveVariablePoint :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × CNF.PositiveExactOneCompile.Variable ℕ =>
         ExactOne.positiveVariablePoint p.1.1 p.1.2 p.2)
       (encPair encInput encRawVariable) encPoint := by
-  have ht := positivePositionTable.comp (ComputableTidilyInPolyTime.fst encInput encRawVariable)
-  have hk := (ComputableTidilyInPolyTime.map
-    (ComputableTidilyInPolyTime.fst encRawVariable encPoint)).comp ht
-  have hp := (ComputableTidilyInPolyTime.map
-    (ComputableTidilyInPolyTime.snd encRawVariable encPoint)).comp ht
-  have hi := ComputableTidilyInPolyTime.idxOfWithInput hk
-    (ComputableTidilyInPolyTime.snd encInput encRawVariable)
+  have ht := positivePositionTable.comp (ComputableInPolyTime.fst encInput encRawVariable)
+  have hk := (ComputableInPolyTime.map
+    (ComputableInPolyTime.fst encRawVariable encPoint)).comp ht
+  have hp := (ComputableInPolyTime.map
+    (ComputableInPolyTime.snd encRawVariable encPoint)).comp ht
+  have hi := ComputableInPolyTime.idxOfWithInput hk
+    (ComputableInPolyTime.snd encInput encRawVariable)
   have eqIdx (xs : List (CNF.PositiveExactOneCompile.Variable ℕ))
       (v : CNF.PositiveExactOneCompile.Variable ℕ) :
       @List.idxOf _ instBEqOfDecidableEq v xs = xs.idxOf v := by
     induction xs with
     | nil => rfl
     | cons a xs ih => simp only [List.idxOf_cons, beq_iff_eq, ih]
-  have hd := (ComputableTidilyInPolyTime.dropUnary (encA := encPoint)).comp (hp.prod hi)
-  have h := (ComputableTidilyInPolyTime.headD (encA := encPoint) (0, 0)).comp hd
+  have hd := (ComputableInPolyTime.dropUnary (encA := encPoint)).comp (hp.prod hi)
+  have h := (ComputableInPolyTime.headD (encA := encPoint) (0, 0)).comp hd
   simpa only [Function.comp_def, ExactOne.positiveVariablePoint, List.headD_eq_head?_getD,
     List.head?_drop, List.getD_eq_getElem?_getD, eqIdx] using h
 
 private theorem rawVariables :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
         (CNF.PositiveExactOneCompile.rawFormula p.1).distinctVars)
       encInput (encList encRawVariable) := by
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => CNF.PositiveExactOneCompile.rawFormula p.1)
       encInput (encList (encList (encPair encRawVariable encBool))) := by fun_prop
   simpa only [Function.comp_def] using
-    (CNF.computableInPolyTime_distinctVars encRawVariable).tidy.comp hf
+    (CNF.computableInPolyTime_distinctVars encRawVariable).comp hf
 
 private theorem outputVariables :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
         (CNF.PositiveExactOneCompile.rawFormula p.1).distinctVars.map
           (ExactOne.positiveVariablePoint p.1 p.2)) encInput (encList encPoint) :=
-  ComputableTidilyInPolyTime.mapWithInput
+  ComputableInPolyTime.mapWithInput
     (encA := encRawVariable) (encB := encPoint) (encIn := encInput)
     (f := fun p v => ExactOne.positiveVariablePoint p.1 p.2 v) rawVariables positiveVariablePoint
 
 private theorem outputClauses :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
         (ExactOne.positivePlacedClauses p.1 p.2).map fun c => c.2.1)
       encInput (encList encPoint) := by
-  have h := (ComputableTidilyInPolyTime.map
-    ((ComputableTidilyInPolyTime.snd (encList (encPair encRawVariable encBool))
+  have h := (ComputableInPolyTime.map
+    ((ComputableInPolyTime.snd (encList (encPair encRawVariable encBool))
       (encPair encPoint (encList encRoute))).fst')).comp positivePlacedClauses
   simpa only [Function.comp_def] using h
 
 private theorem outputRoutes :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
         (ExactOne.positivePlacedClauses p.1 p.2).flatMap fun c => c.2.2)
       encInput (encList encRoute) := by
-  have hm := (ComputableTidilyInPolyTime.map
-    ((ComputableTidilyInPolyTime.snd (encList (encPair encRawVariable encBool))
+  have hm := (ComputableInPolyTime.map
+    ((ComputableInPolyTime.snd (encList (encPair encRawVariable encBool))
       (encPair encPoint (encList encRoute))).snd')).comp positivePlacedClauses
-  have h := (ComputableTidilyInPolyTime.flatten encRoute).comp hm
+  have h := ComputableInPolyTime.flatMapWithInput
+    (f := fun _ (routes : List Route) => routes) hm (ComputableInPolyTime.snd _ _)
   simpa only [Function.comp_def, List.flatten_eq_flatMap, List.flatMap_map, id_eq] using h
 
 /-- The actual emitted drawing is natively polynomial-time on binary coordinates and labels.
@@ -609,7 +603,6 @@ theorem computableInPolyTime_positiveDrawing :
       (fun p : CNF ℕ × Graph.OrthogonalDrawing => ExactOne.positiveDrawing p.1 p.2)
       encInput Graph.encOrthogonalDrawing := by
   have h := (outputVariables.listAppend' outputClauses).prod outputRoutes
-  apply ComputableInPolyTime.of_tidy
   simpa only [Function.comp_def, ExactOne.positiveDrawing, Graph.encOrthogonalDrawing,
     encRoute] using h
 
