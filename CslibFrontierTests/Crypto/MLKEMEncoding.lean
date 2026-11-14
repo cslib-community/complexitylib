@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Crypto.Computational.SIS.MLKEM.Encoding
 import CslibFrontier.Crypto.Computational.SIS.MLKEM.SeedExpansion
+meta import CslibFrontier.Crypto.Computational.SIS.MLKEM.Encoding
 meta import CslibFrontier.Crypto.Computational.SIS.MLKEM.SeedExpansion
 
 /-!
@@ -34,6 +36,14 @@ private def coefficients10 : Coefficients width10 := fun i =>
 example : byteDecode width10 (byteEncode width10 coefficients10) = coefficients10 :=
   byteDecode_byteEncode width10 coefficients10
 
+private def bytes10 : EncodedBytes width10 := fun i =>
+  ⟨(37 * i.val + 19) % 256, Nat.mod_lt _ (by decide)⟩
+
+#guard decide (byteEncode width10 (byteDecode width10 bytes10) = bytes10)
+
+example : byteEncode width10 (byteDecode width10 bytes10) = bytes10 :=
+  byteEncode_byteDecode width10 (by decide) bytes10
+
 private def upperCanonical12 : Coefficients width12 := fun i =>
   if i.val = 0 then 3328 else 0
 
@@ -45,17 +55,26 @@ private def noncanonical12 : EncodedBytes width12 := fun i =>
   if i.val = 0 then 0x01 else if i.val = 1 then 0x0D else 0
 
 -- The first raw field is 0xD01 = 3329, which ByteDecode_12 reduces to zero.
+#guard rawCoefficient width12 noncanonical12 0 == 3329
 #guard (byteDecode width12 noncanonical12 0).val == 0
 #guard decide (¬ IsCanonical width12 noncanonical12)
 #guard (byteEncode width12 (byteDecode width12 noncanonical12)).toList.take 3 == [0, 0, 0]
 
+example : IsCanonical width12 noncanonical12 ↔
+    ∀ i, rawCoefficient width12 noncanonical12 i < 3329 :=
+  isCanonical_width12_iff noncanonical12
+
 private def zeroSeed : Seed32 := fun _ => 0
+
+private def indexedSeed : Seed32 := fun i => ⟨i.val, by omega⟩
 
 #guard (matrixXofInput zeroSeed 1 2).toList.length == 34
 #guard (matrixXofInput zeroSeed 1 2).toList.drop 32 == [2, 1]
 #guard (matrixXofInput zeroSeed 1 2).toList != (matrixXofInput zeroSeed 2 1).toList
 
 #guard (prfInput zeroSeed 7).toList.length == 33
+#guard (prfInput indexedSeed 0xA5).toList.take 32 == indexedSeed.toList
+#guard (prfInput indexedSeed 0xA5).toList.drop 32 == [0xA5]
 #guard (prf eta2 zeroSeed 7).length == 128
 #guard (prf eta3 zeroSeed 7).length == 192
 #guard (prf eta3 zeroSeed 7).take 128 == prf eta2 zeroSeed 7

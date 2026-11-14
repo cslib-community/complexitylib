@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.SIS.MLKEM.Encoding
+public import CslibFrontier.Crypto.Primitives.ByteString
 public import CslibFrontier.Crypto.Primitives.Hash.Keccak.SHAKE128
 
 /-!

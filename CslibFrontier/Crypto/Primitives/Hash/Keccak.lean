@@ -12,7 +12,7 @@ public import CslibFrontier.Foundations.Data.BitString.Binary
 public import Mathlib.Algebra.Order.Floor.Div
 
 /-!
-# Keccak-p[1600, 24] and SHAKE256
+# Keccak-p[1600, 24] and byte-aligned SHAKE
 
 This module implements the concrete permutation and byte-aligned extendable-output function from
 [NIST FIPS 202][NISTFIPS202]. The state is a `5 × 5` array of 64-bit lanes. Lane bit `z` is the
@@ -21,10 +21,12 @@ coordinate (Sections 3.1.2--3.1.3). The five round steps follow Algorithms 1--7 
 in Sections 3.2--3.3; `keccakP1600Rounds24` is Algorithm 8's underlying function as specified in
 Section 4.
 
-`shake256` implements Algorithms 8--9 and Section 6.2 for byte-aligned messages: bytes are
-expanded least significant bit first, matching NIST's official SHAKE256 example state dumps; the
-SHAKE suffix `1111` and `pad10*1` are appended; the 1088-bit rate blocks are processed by the
-existing `Cslib.Crypto.Sponge.hashBlocks`; and output bytes are assembled in the same convention.
+`byteXof` implements Algorithms 8--9 and Section 6.2 for byte-aligned messages at any lane-aligned
+Keccak-p[1600] rate/capacity split. Bytes are expanded least significant bit first, matching NIST's
+official SHAKE example state dumps; the SHAKE suffix `1111` and `pad10*1` are appended; rate blocks
+are processed by the existing `Cslib.Crypto.Sponge.hashBlocks`; and output bytes are assembled in
+the same convention. `shake256` is the 1088-bit-rate specialization; SHAKE128 specializes the same
+machinery in `CslibFrontier.Crypto.Primitives.Hash.Keccak.SHAKE128`.
 
 This is a checked executable specification, not a constant-time or efficient implementation, a
 cryptographic security proof, or a claim of validation under FIPS 202. It maps to the published
@@ -33,22 +35,24 @@ August 2015 standard and does not claim agreement with a future revision or with
 ## Main definitions
 
 * `Cslib.Crypto.Keccak.State`: a `5 × 5` array of 64-bit lanes.
+* `Cslib.Crypto.Keccak.SpongeLayout`, `SpongeView`: a lane-aligned rate/capacity split.
 * `Cslib.Crypto.Keccak.theta`, `rho`, `pi`, `chi`, `iota`: the five FIPS 202 round steps.
 * `Cslib.Crypto.Keccak.keccakP1600Rounds24`: the 24-round state transformation.
-* `Cslib.Crypto.Keccak.keccakP1600Rounds24Sponge`: the transformation on the generic sponge
-  module's rate/capacity state split.
+* `Cslib.Crypto.Keccak.keccakP1600Rounds24View`: the transformation on a selected sponge split.
 * `Cslib.Crypto.Keccak.byteBitsLE`, `bytesToBitsLE`, `bitsToByteLE`: the explicit FIPS 202
   least-significant-bit-first byte boundary.
-* `Cslib.Crypto.Keccak.rateBytes`: the 136-byte view of one SHAKE256 rate block.
-* `Cslib.Crypto.Keccak.squeezeBytes`: the byte stream from a requested number of squeezing blocks.
+* `Cslib.Crypto.Keccak.rateBytesFor`, `squeezeBytesFor`, `byteXof`: shared byte-aligned XOF
+  machinery parameterized by the sponge layout.
 * `Cslib.Crypto.Keccak.shake256`: byte-aligned SHAKE256 with an output length in bytes.
 
 ## Main results
 
 * `Cslib.Crypto.Keccak.bitsToByteLE_byteBitsLE`, `byteBitsLE_bitsToByteLE`: the byte boundary
   round trips.
-* `Cslib.Crypto.Keccak.toSpongeState_ofSpongeState`, `ofSpongeState_toSpongeState`: the two state
+* `Cslib.Crypto.Keccak.toSpongeView_ofSpongeView`, `ofSpongeView_toSpongeView`: the selected state
   views are inverse.
+* `Cslib.Crypto.Keccak.length_byteXof`, `take_byteXof`: the shared byte XOF has the requested
+  length and preserves prefixes.
 * `Cslib.Crypto.Keccak.length_shake256`, `take_shake256`: SHAKE256 returns exactly the requested
   byte count, and longer requests preserve the preceding XOF bytes.
 
@@ -76,8 +80,27 @@ The vector representation makes each round materialize all lanes once. This avoi
 recomputation that would result from composing 24 rounds as nested state functions. -/
 abbrev State := Vector Lane 25
 
+/-- A lane-aligned rate/capacity split of the 25-lane Keccak-p[1600] state. -/
+structure SpongeLayout where
+  /-- The number of 64-bit lanes exposed by the rate. -/
+  rateLanes : ℕ
+  /-- The number of 64-bit lanes retained as capacity. -/
+  capacityLanes : ℕ
+  /-- A byte XOF has a nonempty rate. -/
+  rate_pos : 0 < rateLanes
+  /-- Rate and capacity together fill the Keccak-p[1600] state. -/
+  lane_count : rateLanes + capacityLanes = 25
+  deriving DecidableEq
+
+/-- The rate and capacity bit-string views selected by a lane-aligned sponge layout. -/
+abbrev SpongeView (layout : SpongeLayout) :=
+  BitString (64 * layout.rateLanes) × BitString (64 * layout.capacityLanes)
+
+/-- The SHAKE256 layout: 17 rate lanes and eight capacity lanes. -/
+@[expose] def shake256Layout : SpongeLayout := ⟨17, 8, by decide, by decide⟩
+
 /-- The sponge rate and capacity views used by SHAKE256. -/
-abbrev SpongeState := BitString 1088 × BitString 512
+abbrev SpongeState := SpongeView shake256Layout
 
 /-- Reduce a natural-number state coordinate modulo five. -/
 @[expose] def coordinate (n : ℕ) : Fin 5 :=
@@ -166,93 +189,121 @@ private theorem getLsbD_laneOfBits (bits : BitString 64) (i : ℕ) (hi : i < 64)
   rw [laneOfBits, BitVec.getLsbD_ofFin]
   exact BitString.testBit_equivFin bits ⟨i, hi⟩
 
-/-- Convert the SHAKE256 rate/capacity split into the FIPS 202 lane array. -/
-@[expose] def ofSpongeState (state : SpongeState) : State :=
+/-! ### Shared lane-aligned sponge adapter -/
+
+/-- Convert a lane-aligned rate/capacity split into the FIPS 202 lane array. -/
+@[expose] def ofSpongeView (layout : SpongeLayout) (state : SpongeView layout) : State :=
   Vector.ofFn fun lane =>
-    if hlane : lane.val < 17 then
+    if hlane : lane.val < layout.rateLanes then
       laneOfBits fun z => state.1 ⟨64 * lane.val + z.val, by omega⟩
     else
-      laneOfBits fun z => state.2 ⟨64 * (lane.val - 17) + z.val, by omega⟩
+      laneOfBits fun z => state.2 ⟨64 * (lane.val - layout.rateLanes) + z.val, by
+        have hlaneVal := lane.isLt
+        have hlayout := layout.lane_count
+        omega⟩
 
-/-- A lane in the rate region reads the corresponding 64 rate coordinates. -/
-theorem get_ofSpongeState_rate (state : SpongeState) (lane : Fin 25)
-    (h : lane.val < 17) :
-    (ofSpongeState state).get lane =
+/-- A rate lane reads the corresponding 64 rate coordinates. -/
+theorem get_ofSpongeView_rate (layout : SpongeLayout) (state : SpongeView layout)
+    (lane : Fin 25) (h : lane.val < layout.rateLanes) :
+    (ofSpongeView layout state).get lane =
       laneOfBits fun z => state.1 ⟨64 * lane.val + z.val, by omega⟩ := by
-  change (ofSpongeState state)[lane.val] = _
-  simp [ofSpongeState, h]
+  change (ofSpongeView layout state)[lane.val] = _
+  simp [ofSpongeView, h]
 
-/-- A lane in the capacity region reads the corresponding 64 capacity coordinates. -/
-theorem get_ofSpongeState_capacity (state : SpongeState) (lane : Fin 25)
-    (h : ¬lane.val < 17) :
-    (ofSpongeState state).get lane =
-      laneOfBits fun z => state.2 ⟨64 * (lane.val - 17) + z.val, by omega⟩ := by
-  change (ofSpongeState state)[lane.val] = _
-  simp [ofSpongeState, h]
+/-- A capacity lane reads the corresponding 64 capacity coordinates. -/
+theorem get_ofSpongeView_capacity (layout : SpongeLayout) (state : SpongeView layout)
+    (lane : Fin 25) (h : ¬lane.val < layout.rateLanes) :
+    (ofSpongeView layout state).get lane =
+      laneOfBits fun z => state.2 ⟨64 * (lane.val - layout.rateLanes) + z.val, by
+        have hlaneVal := lane.isLt
+        have hlayout := layout.lane_count
+        omega⟩ := by
+  change (ofSpongeView layout state)[lane.val] = _
+  simp [ofSpongeView, h]
 
-/-- Convert the FIPS 202 lane array into SHAKE256's 1088-bit rate and 512-bit capacity split. -/
-@[expose] def toSpongeState (A : State) : SpongeState :=
+/-- Convert the FIPS 202 lane array into a selected rate/capacity split. -/
+@[expose] def toSpongeView (layout : SpongeLayout) (A : State) : SpongeView layout :=
   (fun i =>
-      (A.get ⟨i.val / 64, by omega⟩).getLsbD (i.val % 64),
+      (A.get ⟨i.val / 64, by
+        have hi := i.isLt
+        have hlayout := layout.lane_count
+        omega⟩).getLsbD (i.val % 64),
     fun i =>
-      (A.get ⟨17 + i.val / 64, by omega⟩).getLsbD (i.val % 64))
+      (A.get ⟨layout.rateLanes + i.val / 64, by
+        have hi := i.isLt
+        have hlayout := layout.lane_count
+        omega⟩).getLsbD (i.val % 64))
 
-/-- Converting a rate/capacity split to lanes and back preserves every state bit. -/
-theorem toSpongeState_ofSpongeState (state : SpongeState) :
-    toSpongeState (ofSpongeState state) = state := by
+/-- Converting a selected sponge view to lanes and back preserves every state bit. -/
+theorem toSpongeView_ofSpongeView (layout : SpongeLayout) (state : SpongeView layout) :
+    toSpongeView layout (ofSpongeView layout state) = state := by
   apply Prod.ext <;> funext i
-  · have hlane : i.val / 64 < 17 := by omega
-    change ((ofSpongeState state).get ⟨i.val / 64, by omega⟩).getLsbD (i.val % 64) = state.1 i
-    rw [get_ofSpongeState_rate _ _ hlane,
+  · have hlane : i.val / 64 < layout.rateLanes := by
+      have hi := i.isLt
+      omega
+    change ((ofSpongeView layout state).get ⟨i.val / 64, by
+      have hlayout := layout.lane_count
+      omega⟩).getLsbD (i.val % 64) = state.1 i
+    rw [get_ofSpongeView_rate _ _ _ hlane,
       getLsbD_laneOfBits _ _ (Nat.mod_lt _ (by decide))]
-    have hindex : 64 * (i.val / 64) + i.val % 64 = i.val := by
-      simpa [Nat.mul_comm] using Nat.div_add_mod i.val 64
     apply congrArg state.1
-    exact Fin.ext hindex
-  · have hlane : ¬17 + i.val / 64 < 17 := by omega
-    change ((ofSpongeState state).get ⟨17 + i.val / 64, by omega⟩).getLsbD (i.val % 64) = state.2 i
-    rw [get_ofSpongeState_capacity _ _ hlane,
+    apply Fin.ext
+    simpa [Nat.mul_comm] using Nat.div_add_mod i.val 64
+  · have hlane : ¬layout.rateLanes + i.val / 64 < layout.rateLanes := by omega
+    change ((ofSpongeView layout state).get ⟨layout.rateLanes + i.val / 64, by
+      have hi := i.isLt
+      have hlayout := layout.lane_count
+      omega⟩).getLsbD (i.val % 64) = state.2 i
+    rw [get_ofSpongeView_capacity _ _ _ hlane,
       getLsbD_laneOfBits _ _ (Nat.mod_lt _ (by decide))]
-    have hindex : 64 * (i.val / 64) + i.val % 64 = i.val := by
-      simpa [Nat.mul_comm] using Nat.div_add_mod i.val 64
     apply congrArg state.2
     apply Fin.ext
-    simpa only [Nat.add_sub_cancel_left] using hindex
+    simpa only [Nat.add_sub_cancel_left, Nat.mul_comm] using Nat.div_add_mod i.val 64
 
-/-- Converting a lane state to the rate/capacity split and back preserves every lane. -/
-theorem ofSpongeState_toSpongeState (A : State) :
-    ofSpongeState (toSpongeState A) = A := by
+/-- Converting a lane state to a selected sponge view and back preserves every lane. -/
+theorem ofSpongeView_toSpongeView (layout : SpongeLayout) (A : State) :
+    ofSpongeView layout (toSpongeView layout A) = A := by
   refine Vector.ext fun lane hlane => ?_
   apply BitVec.eq_of_getLsbD_eq
   intro z hz
-  by_cases hrate : lane < 17
+  by_cases hrate : lane < layout.rateLanes
   · have hdiv : (64 * lane + z) / 64 = lane := by omega
     have hmod : (64 * lane + z) % 64 = z := by omega
-    change ((ofSpongeState (toSpongeState A)).get ⟨lane, hlane⟩).getLsbD z =
-      (A.get ⟨lane, hlane⟩).getLsbD z
-    rw [get_ofSpongeState_rate _ _ hrate, getLsbD_laneOfBits _ z hz]
-    change (A.get ⟨(64 * lane + z) / 64, by omega⟩).getLsbD ((64 * lane + z) % 64) = _
-    have hlaneEq : (⟨(64 * lane + z) / 64, by omega⟩ : Fin 25) = ⟨lane, hlane⟩ :=
-      Fin.ext hdiv
+    change ((ofSpongeView layout (toSpongeView layout A)).get
+      ⟨lane, hlane⟩).getLsbD z = (A.get ⟨lane, hlane⟩).getLsbD z
+    rw [get_ofSpongeView_rate _ _ _ hrate, getLsbD_laneOfBits _ z hz]
+    change (A.get ⟨(64 * lane + z) / 64, by
+      have hlayout := layout.lane_count
+      omega⟩).getLsbD ((64 * lane + z) % 64) = _
+    have hlaneEq : (⟨(64 * lane + z) / 64, by
+        have hlayout := layout.lane_count
+        omega⟩ : Fin 25) = ⟨lane, hlane⟩ := Fin.ext hdiv
     rw [hlaneEq, hmod]
-  · have hdiv : (64 * (lane - 17) + z) / 64 = lane - 17 := by omega
-    have hmod : (64 * (lane - 17) + z) % 64 = z := by omega
-    change ((ofSpongeState (toSpongeState A)).get ⟨lane, hlane⟩).getLsbD z =
-      (A.get ⟨lane, hlane⟩).getLsbD z
-    rw [get_ofSpongeState_capacity _ _ hrate, getLsbD_laneOfBits _ z hz]
-    change (A.get ⟨17 + (64 * (lane - 17) + z) / 64, by omega⟩).getLsbD
-      ((64 * (lane - 17) + z) % 64) = _
-    have hlaneEq : (⟨17 + (64 * (lane - 17) + z) / 64, by omega⟩ : Fin 25) =
-        ⟨lane, hlane⟩ := by
+  · have hdiv : (64 * (lane - layout.rateLanes) + z) / 64 =
+        lane - layout.rateLanes := by omega
+    have hmod : (64 * (lane - layout.rateLanes) + z) % 64 = z := by omega
+    change ((ofSpongeView layout (toSpongeView layout A)).get
+      ⟨lane, hlane⟩).getLsbD z = (A.get ⟨lane, hlane⟩).getLsbD z
+    rw [get_ofSpongeView_capacity _ _ _ hrate, getLsbD_laneOfBits _ z hz]
+    change (A.get ⟨layout.rateLanes +
+      (64 * (lane - layout.rateLanes) + z) / 64, by
+        have hlayout := layout.lane_count
+        omega⟩).getLsbD ((64 * (lane - layout.rateLanes) + z) % 64) = _
+    have hlaneEq : (⟨layout.rateLanes +
+        (64 * (lane - layout.rateLanes) + z) / 64, by
+          have hlayout := layout.lane_count
+          omega⟩ : Fin 25) = ⟨lane, hlane⟩ := by
       apply Fin.ext
-      change 17 + (64 * (lane - 17) + z) / 64 = lane
       rw [hdiv]
       omega
     rw [hlaneEq, hmod]
 
-/-- FIPS 202 `KECCAK-p[1600, 24]` on SHAKE256's rate/capacity state split. -/
-@[expose] def keccakP1600Rounds24Sponge (state : SpongeState) : SpongeState :=
-  toSpongeState (keccakP1600Rounds24 (ofSpongeState state))
+/-- Keccak-p[1600, 24] on a lane-aligned sponge view. -/
+@[expose] def keccakP1600Rounds24View (layout : SpongeLayout) (state : SpongeView layout) :
+    SpongeView layout :=
+  toSpongeView layout (keccakP1600Rounds24 (ofSpongeView layout state))
+
+/-! ### Shared byte-aligned SHAKE machinery -/
 
 /-- Expand a byte into FIPS 202 bit-string order, least significant bit first. -/
 @[expose] def byteBitsLE (byte : Fin 256) : List Bool :=
@@ -272,7 +323,7 @@ theorem ofSpongeState_toSpongeState (A : State) :
     exact Nat.lt_of_lt_of_le (BitString.lsbValue_lt (bits.take 8))
       (Nat.pow_le_pow_right (by decide) (List.length_take_le 8 bits))⟩
 
-/-- Expanding one byte least-significant-bit first and reading it back recovers the byte. -/
+/-- Expanding one byte least-significant bit first and reading it back recovers the byte. -/
 @[simp] theorem bitsToByteLE_byteBitsLE (byte : Fin 256) :
     bitsToByteLE (byteBitsLE byte) = byte := by
   apply Fin.ext
@@ -287,38 +338,46 @@ theorem ofSpongeState_toSpongeState (A : State) :
   rw [List.take_of_length_le (by omega)]
   simpa [h] using BitString.lowBits_lsbValue bits
 
-/-- Read the 1088-bit SHAKE256 rate as 136 consecutive little-endian bytes. -/
-@[expose] def rateBytes (rate : BitString 1088) : List (Fin 256) :=
-  List.ofFn fun byte : Fin 136 =>
+/-- Read the rate selected by `layout` as consecutive little-endian bytes. -/
+@[expose] def rateBytesFor (layout : SpongeLayout) (rate : BitString (64 * layout.rateLanes)) :
+    List (Fin 256) :=
+  List.ofFn fun byte : Fin (8 * layout.rateLanes) =>
     bitsToByteLE (List.ofFn fun bit : Fin 8 => rate ⟨8 * byte.val + bit.val, by omega⟩)
 
-/-- One SHAKE256 rate block contains exactly 136 output bytes. -/
-@[simp] theorem length_rateBytes (rate : BitString 1088) : (rateBytes rate).length = 136 := by
-  simp only [rateBytes, List.length_ofFn]
+/-- A lane-aligned rate exposes eight bytes per lane. -/
+@[simp] theorem length_rateBytesFor (layout : SpongeLayout)
+    (rate : BitString (64 * layout.rateLanes)) :
+    (rateBytesFor layout rate).length = 8 * layout.rateLanes := by
+  simp only [rateBytesFor, List.length_ofFn]
 
-/-- Absorb already-padded rate blocks, squeeze `count` states, and expose their rate parts as a
-byte stream. -/
-@[expose] def squeezeBytes (blocks : List (BitString 1088)) (count : ℕ) : List (Fin 256) :=
-  (Sponge.hashBlocks keccakP1600Rounds24Sponge Prod.fst count blocks).flatMap rateBytes
+/-- Absorb padded blocks and expose `count` squeezed rate states as bytes. -/
+@[expose] def squeezeBytesFor (layout : SpongeLayout)
+    (blocks : List (BitString (64 * layout.rateLanes))) (count : ℕ) : List (Fin 256) :=
+  (Sponge.hashBlocks (keccakP1600Rounds24View layout) Prod.fst count blocks).flatMap
+    (rateBytesFor layout)
 
-/-- `count` SHAKE256 squeezing blocks contain exactly `136 * count` bytes. -/
-@[simp] theorem length_squeezeBytes (blocks : List (BitString 1088)) (count : ℕ) :
-    (squeezeBytes blocks count).length = 136 * count := by
-  have hflat : ∀ states : List (BitString 1088),
-      (states.flatMap rateBytes).length = 136 * states.length := by
+/-- `count` squeezing blocks contain `8 * rateLanes * count` bytes. -/
+@[simp] theorem length_squeezeBytesFor (layout : SpongeLayout)
+    (blocks : List (BitString (64 * layout.rateLanes))) (count : ℕ) :
+    (squeezeBytesFor layout blocks count).length = (8 * layout.rateLanes) * count := by
+  have hflat : ∀ states : List (BitString (64 * layout.rateLanes)),
+      (states.flatMap (rateBytesFor layout)).length =
+        (8 * layout.rateLanes) * states.length := by
     intro states
     induction states with
-    | nil => rfl
+    | nil => simp
     | cons state states ih =>
-      rw [List.flatMap_cons, List.length_append, length_rateBytes, ih, List.length_cons]
+      rw [List.flatMap_cons, List.length_append, length_rateBytesFor, ih, List.length_cons]
       omega
   have hcount :
-      (Sponge.hashBlocks keccakP1600Rounds24Sponge Prod.fst count blocks).length = count :=
+      (Sponge.hashBlocks (keccakP1600Rounds24View layout) Prod.fst count blocks).length = count :=
     Sponge.length_squeeze _ _ _ _
-  rw [squeezeBytes, hflat, hcount]
+  rw [squeezeBytesFor, hflat, hcount]
 
-private theorem take_flatMap_rateBytes (states : List (BitString 1088)) (count : ℕ) :
-    (states.flatMap rateBytes).take (136 * count) = (states.take count).flatMap rateBytes := by
+private theorem take_flatMap_rateBytesFor (layout : SpongeLayout)
+    (states : List (BitString (64 * layout.rateLanes))) (count : ℕ) :
+    (states.flatMap (rateBytesFor layout)).take ((8 * layout.rateLanes) * count) =
+      (states.take count).flatMap (rateBytesFor layout) := by
   induction states generalizing count with
   | nil => simp
   | cons state states ih =>
@@ -327,48 +386,137 @@ private theorem take_flatMap_rateBytes (states : List (BitString 1088)) (count :
     | succ count =>
       simp only [List.flatMap_cons, List.take_succ_cons]
       rw [Nat.mul_succ,
-        show 136 * count + 136 = (rateBytes state).length + 136 * count by simp [Nat.add_comm],
+        show (8 * layout.rateLanes) * count + 8 * layout.rateLanes =
+            (rateBytesFor layout state).length + (8 * layout.rateLanes) * count by
+          simp [Nat.add_comm],
         List.take_length_add_append, ih]
+
+/-- Requesting more squeezing blocks preserves every byte of the earlier blocks. -/
+theorem take_squeezeBytesFor (layout : SpongeLayout)
+    (blocks : List (BitString (64 * layout.rateLanes))) {m n : ℕ} (h : m ≤ n) :
+    (squeezeBytesFor layout blocks n).take ((8 * layout.rateLanes) * m) =
+      squeezeBytesFor layout blocks m := by
+  rw [squeezeBytesFor, take_flatMap_rateBytesFor,
+    Sponge.take_hashBlocks _ _ h, squeezeBytesFor]
+
+/-- Byte-aligned SHAKE with the rate and capacity selected by `layout`.
+
+The output length is measured in bytes. Every specialization uses the SHAKE suffix `1111` and
+FIPS 202's `pad10*1`; `layout` changes only the rate/capacity split. -/
+@[expose] def byteXof (layout : SpongeLayout) (input : List (Fin 256)) (outputBytes : ℕ) :
+    List (Fin 256) :=
+  let suffixed := bytesToBitsLE input ++ [true, true, true, true]
+  let padded := suffixed ++ pad10star1 (64 * layout.rateLanes) suffixed.length
+  let blocks := Sponge.toBlocks (64 * layout.rateLanes) padded
+  let rateBytes := 8 * layout.rateLanes
+  let outputBlockCount := outputBytes ⌈/⌉ rateBytes
+  (squeezeBytesFor layout blocks outputBlockCount).take outputBytes
+
+/-- A byte-aligned XOF returns exactly the requested byte count. -/
+@[simp] theorem length_byteXof (layout : SpongeLayout) (input : List (Fin 256))
+    (outputBytes : ℕ) : (byteXof layout input outputBytes).length = outputBytes := by
+  rw [byteXof, List.length_take, length_squeezeBytesFor, Nat.min_eq_left]
+  exact le_smul_ceilDiv (a := 8 * layout.rateLanes) (b := outputBytes) (by
+    have hr := layout.rate_pos
+    omega)
+
+/-- Byte-aligned XOF output is prefix-consistent across requested lengths. -/
+theorem take_byteXof (layout : SpongeLayout) (input : List (Fin 256)) {m n : ℕ} (h : m ≤ n) :
+    (byteXof layout input n).take m = byteXof layout input m := by
+  rw [byteXof, List.take_take, Nat.min_eq_left h, byteXof]
+  have hk : m ⌈/⌉ (8 * layout.rateLanes) ≤ n ⌈/⌉ (8 * layout.rateLanes) := by
+    rw [Nat.ceilDiv_eq_add_pred_div, Nat.ceilDiv_eq_add_pred_div]
+    exact Nat.div_le_div_right (by
+      have hr := layout.rate_pos
+      omega)
+  have hm : m ≤ (8 * layout.rateLanes) * (m ⌈/⌉ (8 * layout.rateLanes)) :=
+    le_smul_ceilDiv (a := 8 * layout.rateLanes) (b := m) (by
+      have hr := layout.rate_pos
+      omega)
+  calc
+    (squeezeBytesFor layout _ (n ⌈/⌉ (8 * layout.rateLanes))).take m =
+        ((squeezeBytesFor layout _ (n ⌈/⌉ (8 * layout.rateLanes))).take
+          ((8 * layout.rateLanes) * (m ⌈/⌉ (8 * layout.rateLanes)))).take m := by
+      rw [List.take_take, Nat.min_eq_left hm]
+    _ = (squeezeBytesFor layout _ (m ⌈/⌉ (8 * layout.rateLanes))).take m := by
+      rw [take_squeezeBytesFor _ _ hk]
+
+/-! ### SHAKE256 specialization -/
+
+/-- Convert the SHAKE256 rate/capacity split into the FIPS 202 lane array. -/
+@[expose] def ofSpongeState (state : SpongeState) : State :=
+  ofSpongeView shake256Layout state
+
+/-- A SHAKE256 rate lane reads the corresponding 64 rate coordinates. -/
+theorem get_ofSpongeState_rate (state : SpongeState) (lane : Fin 25) (h : lane.val < 17) :
+    (ofSpongeState state).get lane =
+      laneOfBits fun z => state.1 ⟨64 * lane.val + z.val, by omega⟩ := by
+  simpa [ofSpongeState, shake256Layout] using
+    get_ofSpongeView_rate shake256Layout state lane h
+
+/-- A SHAKE256 capacity lane reads the corresponding 64 capacity coordinates. -/
+theorem get_ofSpongeState_capacity (state : SpongeState) (lane : Fin 25) (h : ¬lane.val < 17) :
+    (ofSpongeState state).get lane =
+      laneOfBits fun z => state.2 ⟨64 * (lane.val - 17) + z.val, by omega⟩ := by
+  simpa [ofSpongeState, shake256Layout] using
+    get_ofSpongeView_capacity shake256Layout state lane h
+
+/-- Convert the FIPS 202 lane array into SHAKE256's 1088-bit rate and 512-bit capacity split. -/
+@[expose] def toSpongeState (A : State) : SpongeState :=
+  toSpongeView shake256Layout A
+
+/-- Converting a SHAKE256 sponge split to lanes and back preserves every state bit. -/
+theorem toSpongeState_ofSpongeState (state : SpongeState) :
+    toSpongeState (ofSpongeState state) = state := by
+  simpa [toSpongeState, ofSpongeState] using toSpongeView_ofSpongeView shake256Layout state
+
+/-- Converting a lane state to the SHAKE256 split and back preserves every lane. -/
+theorem ofSpongeState_toSpongeState (A : State) :
+    ofSpongeState (toSpongeState A) = A := by
+  simpa [toSpongeState, ofSpongeState] using ofSpongeView_toSpongeView shake256Layout A
+
+/-- FIPS 202 `KECCAK-p[1600, 24]` on SHAKE256's rate/capacity split. -/
+@[expose] def keccakP1600Rounds24Sponge (state : SpongeState) : SpongeState :=
+  keccakP1600Rounds24View shake256Layout state
+
+/-- Read the 1088-bit SHAKE256 rate as 136 consecutive little-endian bytes. -/
+@[expose] def rateBytes (rate : BitString 1088) : List (Fin 256) :=
+  rateBytesFor shake256Layout rate
+
+/-- One SHAKE256 rate block contains exactly 136 output bytes. -/
+@[simp] theorem length_rateBytes (rate : BitString 1088) : (rateBytes rate).length = 136 := by
+  simpa [rateBytes, shake256Layout] using length_rateBytesFor shake256Layout rate
+
+/-- Squeeze SHAKE256 rate states as bytes. -/
+@[expose] def squeezeBytes (blocks : List (BitString 1088)) (count : ℕ) : List (Fin 256) :=
+  squeezeBytesFor shake256Layout blocks count
+
+/-- `count` SHAKE256 squeezing blocks contain exactly `136 * count` bytes. -/
+@[simp] theorem length_squeezeBytes (blocks : List (BitString 1088)) (count : ℕ) :
+    (squeezeBytes blocks count).length = 136 * count := by
+  simpa [squeezeBytes, shake256Layout] using
+    length_squeezeBytesFor shake256Layout blocks count
 
 /-- Requesting more SHAKE256 squeezing blocks preserves every byte of the earlier blocks. -/
 theorem take_squeezeBytes (blocks : List (BitString 1088)) {m n : ℕ} (h : m ≤ n) :
     (squeezeBytes blocks n).take (136 * m) = squeezeBytes blocks m := by
-  rw [squeezeBytes, take_flatMap_rateBytes, Sponge.take_hashBlocks _ _ h, squeezeBytes]
+  simpa [squeezeBytes, shake256Layout] using take_squeezeBytesFor shake256Layout blocks h
 
-/-- Byte-aligned SHAKE256 from FIPS 202 Section 6.2.
-
-The second argument is the requested output length in bytes. The output length affects only how
-much of the XOF stream is returned, not the preceding bytes. -/
+/-- Byte-aligned SHAKE256 from FIPS 202 Section 6.2. -/
 @[expose] def shake256 (input : List (Fin 256)) (outputBytes : ℕ) : List (Fin 256) :=
-  let suffixed := bytesToBitsLE input ++ [true, true, true, true]
-  let padded := suffixed ++ pad10star1 1088 suffixed.length
-  let blocks := Sponge.toBlocks 1088 padded
-  let outputBlockCount := outputBytes ⌈/⌉ 136
-  (squeezeBytes blocks outputBlockCount).take outputBytes
+  byteXof shake256Layout input outputBytes
 
 /-- SHAKE256 returns exactly the requested number of bytes. -/
 @[simp] theorem length_shake256 (input : List (Fin 256)) (outputBytes : ℕ) :
     (shake256 input outputBytes).length = outputBytes := by
-  rw [shake256, List.length_take, length_squeezeBytes, Nat.min_eq_left]
-  exact le_smul_ceilDiv (a := 136) (b := outputBytes) (by decide)
+  simpa [shake256] using length_byteXof shake256Layout input outputBytes
 
 /-- SHAKE256 is prefix-consistent: requesting more output never changes preceding bytes. -/
 theorem take_shake256 (input : List (Fin 256)) {m n : ℕ} (h : m ≤ n) :
     (shake256 input n).take m = shake256 input m := by
-  rw [shake256, List.take_take, Nat.min_eq_left h, shake256]
-  have hk : m ⌈/⌉ 136 ≤ n ⌈/⌉ 136 := by
-    rw [Nat.ceilDiv_eq_add_pred_div, Nat.ceilDiv_eq_add_pred_div]
-    exact Nat.div_le_div_right (by omega)
-  have hm : m ≤ 136 * (m ⌈/⌉ 136) :=
-    le_smul_ceilDiv (a := 136) (b := m) (by decide)
-  calc
-    (squeezeBytes _ (n ⌈/⌉ 136)).take m =
-        ((squeezeBytes _ (n ⌈/⌉ 136)).take (136 * (m ⌈/⌉ 136))).take m := by
-      rw [List.take_take, Nat.min_eq_left hm]
-    _ = (squeezeBytes _ (m ⌈/⌉ 136)).take m := by
-      rw [take_squeezeBytes _ hk]
+  simpa [shake256] using take_byteXof shake256Layout input h
 
-/-- Requesting no bytes returns the empty output. -/
+/-- Requesting no bytes returns the empty SHAKE256 output. -/
 @[simp] theorem shake256_zero_output (input : List (Fin 256)) : shake256 input 0 = [] := rfl
 
 end Cslib.Crypto.Keccak

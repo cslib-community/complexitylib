@@ -302,8 +302,9 @@ byte/state views are proved inverse, and `take_shake256` and `take_shake128` pro
 consistency. The [SHAKE256 client](../../CslibFrontierTests/Crypto/Keccak.lean) checks NIST's 0-bit
 and 1600-bit-message examples, both sides of its 136-byte rate boundary, and a Falcon-512 KAT
 prefix. The [SHAKE128 client](../../CslibFrontierTests/Crypto/SHAKE128.lean) checks NIST's 0-bit
-example and the prefix API. These are executable specifications, not collision/preimage results,
-constant-time implementations or FIPS validations.
+and 1600-bit-message examples, crosses its 168-byte rate boundary, and checks the prefix API.
+These are executable specifications, not collision/preimage results, constant-time implementations
+or FIPS validations.
 
 The shared byte and SHA-2 boundary used by the FIPS 205 SHA2 parameter sets is in
 [`ByteString.lean`](../../CslibFrontier/Crypto/Primitives/ByteString.lean) and
