@@ -151,7 +151,7 @@ theorem computableInPolyTime_ofAdj {vs : γ → List V} {adj : γ → V → V �
       (encPair encIn (encPair encV encV)) encBool) :
     ComputableInPolyTime (fun a => ofAdj (vs a) (adj a)) encIn encGraph := by
   have hz : ComputableInPolyTime (fun a => (vs a).zipIdx) encIn (encList (encPair encV encUnary)) :=
-    (ComputableTidilyInPolyTime.zipIdx encV).computableInPolyTime.comp hvs
+    (ComputableInPolyTime.zipIdx encV).comp hvs
   have hb := ComputableInPolyTime.unary_to_binary
   have hlen : ComputableInPolyTime (fun a => (vs a).length) encIn encUnary := by
     fun_prop

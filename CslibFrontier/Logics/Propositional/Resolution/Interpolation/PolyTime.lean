@@ -144,7 +144,7 @@ private theorem candidates_polyTime {V : Type} {encV : V ↪ List Bool} :
     ComputableInPolyTime (candidates (V := V)) (encList (encList (encPair encV encBool)))
       (encList (encStep V encV)) := by
   have hzip :=
-    (ComputableTidilyInPolyTime.zipIdx (encList (encPair encV encBool))).computableInPolyTime
+    (ComputableInPolyTime.zipIdx (encList (encPair encV encBool)))
   unfold candidates
   refine flatMapWithInput hzip (flatMapWithInput (hzip.comp (fst _ _))
     (mapWithInput (fst _ _).snd'.fst' ?_))
@@ -271,8 +271,8 @@ private theorem codeOf_polyTime {Op : Type} {encOp : Op ↪ List Bool}
     (encList (encList (encPair (encSum encNat (encSum encY encZ)) encBool)))))
   have hrev := (ComputableTidilyInPolyTime.listReverse
     (encList (encPair (encSum encNat (encSum encY encZ)) encBool))).computableInPolyTime
-  have hzip := (ComputableTidilyInPolyTime.zipIdx
-    (encList (encPair (encSum encNat (encSum encY encZ)) encBool))).computableInPolyTime
+  have hzip := (ComputableInPolyTime.zipIdx
+    (encList (encPair (encSum encNat (encSum encY encZ)) encBool)))
   have htake := (ComputableTidilyInPolyTime.takeUnary
     (encList (encPair (encSum encNat (encSum encY encZ)) encBool))).computableInPolyTime
   have hbin := ComputableTidilyInPolyTime.unary_to_binary.computableInPolyTime

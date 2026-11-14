@@ -100,6 +100,23 @@ public theorem listTakeWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn
     (unary_sub' ((length_list encA).comp hlist) hcount))).of_enc_eq fun a => by
     simp only [Function.comp_def, ← List.reverse_take, List.reverse_reverse]
 
+/-- Replace a computed list entry at a unary index. Out-of-range indices preserve the list;
+the replacement and both slices are charged in their original element encoding. -/
+@[fun_prop]
+public theorem listSetWithInput {γ α : Type} {encIn : γ ↪ List Bool} (encA : α ↪ List Bool)
+    {list : γ → List α} {idx : γ → ℕ} {val : γ → α}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (hidx : ComputableInPolyTime idx encIn encUnary)
+    (hval : ComputableInPolyTime val encIn encA) :
+    ComputableInPolyTime (fun x => (list x).set (idx x) (val x)) encIn (encList encA) := by
+  simp_rw [List.set_eq_take_append_cons_drop]
+  exact ite_decide
+    (unary_lt' hidx ((length_list encA).comp hlist))
+    (listAppend'
+      (listTakeWithInput hlist hidx)
+      (cons' hval (listDropWithInput hlist (unary_add.comp (hidx.prod (const 1))))))
+    hlist
+
 /-- Count occurrences of a computed value in a computed framed list using lawful Boolean equality,
 returning the count in unary. -/
 @[fun_prop, program_certificate hlist]

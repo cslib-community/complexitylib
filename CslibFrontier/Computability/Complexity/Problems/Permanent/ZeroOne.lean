@@ -172,8 +172,7 @@ theorem computableInPolyTime_natTableEdges :
   have hL := computableInPolyTime_natChainLength
   have hz : ComputableInPolyTime (fun A => (natTableTriples A).zipIdx) encNatTable
       (encList (encPair encWeightedEdge encUnary)) :=
-    ComputableInPolyTime.of_tidy
-      ((ComputableTidilyInPolyTime.zipIdx _).comp hts.tidy)
+    ((ComputableInPolyTime.zipIdx _).comp hts)
   have hlevel := computableInPolyTime_chainLevel
   rw [show natTableEdges = _ from funext natTableEdges_eq]
   refine flatMapWithInput hz ?_

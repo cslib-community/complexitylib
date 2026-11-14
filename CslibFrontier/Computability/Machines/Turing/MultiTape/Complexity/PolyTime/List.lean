@@ -57,7 +57,7 @@ counting folds a counter directly instead of constructing the matching sublist.
   a polynomial-time list with a parameterized test.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.length`, `.range`, `.replicate`: unary lengths,
   ranges and lists of a computed length, charging each repeated value.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.zipIdx`: number list entries with unary indices.
+* `Turing.MultiTapeTM.ComputableInPolyTime.zipIdx`: number list entries with unary indices.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.zip`: pair entries of framed lists.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.anyWith`, `.allWith`: Boolean scans with a
   parameter, applied explicitly like the fold rules.
@@ -713,23 +713,6 @@ theorem zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
   simp_rw [heq, List.getD_eq_getElem?_getD]
   fun_prop
 
-/-- Number the entries of a framed list with unary indices, charging the list and every index. -/
-@[fun_prop]
-theorem zipIdx {α : Type} (enc : α ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun list : List α => list.zipIdx)
-      (encList enc) (encList (encPair enc encUnary)) := by
-  rcases isEmpty_or_nonempty α with h | h
-  · exact of_finite _
-  · obtain ⟨fallback⟩ := h
-    have heq (list : List α) : list.zipIdx =
-        (List.range list.length).map (fun i => (list.getD i fallback, i)) := by
-      apply List.ext_getElem (by simp)
-      intro i hi hi'
-      simp only [List.length_zipIdx] at hi
-      simp only [List.getElem_zipIdx, List.getElem_map, List.getElem_range,
-        List.getD_eq_getElem _ _ hi, Nat.zero_add]
-    simp_rw [heq, List.getD_eq_getElem?_getD]
-    fun_prop
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
@@ -995,7 +978,37 @@ theorem zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
       (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) :=
   .of_tidy (ComputableTidilyInPolyTime.zip encA encB)
 
+/-- Number the entries of a framed list with unary indices, charging the list and every index. -/
+@[fun_prop]
+theorem zipIdx {α : Type} (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun list : List α => list.zipIdx)
+      (encList enc) (encList (encPair enc encUnary)) := by
+  rcases isEmpty_or_nonempty α with h | h
+  · exact of_finite _
+  · obtain ⟨fallback⟩ := h
+    have heq (list : List α) : list.zipIdx =
+        (List.range list.length).map (fun i => (list.getD i fallback, i)) := by
+      apply List.ext_getElem (by simp)
+      intro i hi hi'
+      simp only [List.length_zipIdx] at hi
+      simp only [List.getElem_zipIdx, List.getElem_map, List.getElem_range,
+        List.getD_eq_getElem _ _ hi, Nat.zero_add]
+    simp_rw [heq, List.getD_eq_getElem?_getD]
+    fun_prop
+
 end Turing.MultiTapeTM.ComputableInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+/-- Legacy tidy certificate for numbered entries; the implementation uses plain list rules.
+Retained for the recognition clients being migrated in #5470. -/
+@[fun_prop]
+theorem zipIdx {α : Type} (enc : α ↪ List Bool) :
+    ComputableTidilyInPolyTime (fun list : List α => list.zipIdx)
+      (encList enc) (encList (encPair enc encUnary)) :=
+  (ComputableInPolyTime.zipIdx enc).tidy
+
+end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 namespace Turing.MultiTapeTM
 

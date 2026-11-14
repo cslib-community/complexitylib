@@ -104,7 +104,7 @@ theorem computableInPolyTime_toLongPath :
     ComputableInPolyTime toLongPath (encList encPathInstance) encLongPath := by
   have hz : ComputableInPolyTime (fun l : List PathInstance => l.zipIdx)
       (encList encPathInstance) (encList (encPair encPathInstance encUnary)) :=
-    (ComputableTidilyInPolyTime.zipIdx encPathInstance).computableInPolyTime
+    (ComputableInPolyTime.zipIdx encPathInstance)
   have hc := computableInPolyTime_pendantCopy
   have hU : ComputableInPolyTime pendantUnion (encList encPathInstance) encGraph := by
     have hV := flatMapWithInput (f := fun _ p => (pendantCopy p.1 p.2).vertices) hz

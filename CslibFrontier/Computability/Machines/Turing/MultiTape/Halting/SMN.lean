@@ -141,7 +141,7 @@ theorem computableInPolyTime_writeEntries :
       (encPair eDesc encBits) eTable := by
   have hz : ComputableInPolyTime (fun dp : Desc × List Bool => dp.2.reverse.zipIdx)
       (encPair eDesc encBits) (encList (encPair encBool encUnary)) :=
-    (ComputableTidilyInPolyTime.zipIdx encBool).computableInPolyTime.comp
+    (ComputableInPolyTime.zipIdx encBool).comp
       (bitsToList.comp (bitsReverse.comp (snd _ _)))
   have hlen : ComputableInPolyTime (fun dp : Desc × List Bool => dp.2.length)
       (encPair eDesc encBits) encUnary :=
