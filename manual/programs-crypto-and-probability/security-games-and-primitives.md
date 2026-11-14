@@ -1273,8 +1273,17 @@ native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
 than the ciphertext bound and otherwise run `Scheme.decapsNotBotM` and `Scheme.decapsBotM`. Their
 native certificates (`WordPKE.IsEfficient.isPPTOn_keyGenNotBot`,
 `WordPKE.IsEfficient.isOraclePPTOn_encaps`, `WordPKE.IsEfficient.isOraclePPTOn_decapsNotBot`,
-`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`. The certified reduction
-and the asymptotic theorem are #5293's next steps.
+`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`.
+[`FujisakiOkamoto/WordReduction.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordReduction.lean)
+gives the IND-CPA reduction for this family as an `Encryption.AdversaryOf`
+(`WordPKE.romFilterCpaReductionWord`, and `WordPKE.romCpaReductionWord` for `FO-notbot`). It wraps a
+word adversary `A : ℕ → List Bool → WordOracleComp CCAOp Bool` with oracles `G`, `H` and
+decapsulation. Its native keyless simulator `WordPKE.simFilterWordHandler` answers requests in the
+domain with the typed `Scheme.simFilterHandler` of the bundle, and answers any other request with
+the empty word without changing its state. `WordPKE.IsEfficient.isPPT_romCpaReductionWord` proves
+the reduction uniform strict PPT from `IsOraclePPT encBool A`, covering the lazy `G`/`H`
+simulation. Relating its advantage to the typed `cpaAdvantage` and the asymptotic theorem remain
+for #5293.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
