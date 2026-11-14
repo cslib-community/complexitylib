@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Karn Seth
+Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Karn Seth, Renfei Zhou
 -/
 
 module
@@ -41,6 +41,8 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
   function to a finite subset gives the uniform distribution on that subset.
+* `Cslib.Probability.PMF.uniformOfFintype_pi_map_comp_embedding`: pulling back a uniform
+  dependent function along an embedding gives the uniform distribution on the domain.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_bind_adaptiveUpdate`: resampling the value at a
   point chosen from the function itself.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
@@ -151,6 +153,24 @@ theorem uniformOfFintype_pi_bind_restrict {ι : Type*} [Fintype ι] [DecidableEq
       (uniformOfFintype ((i : I) → π i)).bind f := by
   rw [← uniformOfFintype_pi_map_restrict I, PMF.bind_map]
   rfl
+
+/-- Pulling back a uniform dependent function along an embedding gives the uniform distribution
+on the domain. -/
+theorem uniformOfFintype_pi_map_comp_embedding {ι κ : Type*} [Fintype ι] [Fintype κ]
+    [DecidableEq ι] [DecidableEq κ] (e : κ ↪ ι) :
+    (uniformOfFintype (ι → α)).map (fun f i => f (e i)) =
+      uniformOfFintype (κ → α) := by
+  set I : Finset ι := Finset.univ.image e
+  let eIdx : κ ≃ I := Equiv.ofBijective
+    (fun i => ⟨e i, Finset.mem_image_of_mem e (Finset.mem_univ i)⟩) (by
+      rw [Fintype.bijective_iff_injective_and_card, Fintype.card_coe,
+        Finset.card_image_of_injective _ e.injective, Finset.card_univ]
+      exact ⟨fun _ _ h => e.injective (congrArg Subtype.val h), rfl⟩)
+  let pull : (I → α) ≃ (κ → α) := Equiv.piCongrLeft' (fun _ => α) eIdx.symm
+  have hcomp : (fun (f : ι → α) i => f (e i)) = pull ∘ I.restrict := by
+    funext f i; change f (e i) = pull (I.restrict f) i; simp [pull, Finset.restrict, eIdx]
+  rw [hcomp, ← _root_.PMF.map_comp, uniformOfFintype_pi_map_restrict I,
+    uniformOfFintype_map_equiv pull]
 
 variable [Fintype γ] [Nonempty γ] [Finite δ]
 

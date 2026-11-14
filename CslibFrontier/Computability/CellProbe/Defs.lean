@@ -848,6 +848,14 @@ theorem runInterval_cons (D : IndexedScheme Op Result cells w) (t₀ : ℕ) (m :
   rfl
 
 @[simp]
+theorem length_runInterval_fst (D : IndexedScheme Op Result cells w) (t₀ : ℕ) (m : Mem cells w)
+    (ops : List Op) :
+    (D.runInterval t₀ m ops).1.length = ops.length := by
+  induction ops generalizing t₀ m with
+  | nil => rfl
+  | cons _ _ ih => simp [runInterval_cons, ih]
+
+@[simp]
 theorem probesInterval_nil (D : IndexedScheme Op Result cells w) (t₀ : ℕ) (m : Mem cells w) :
     D.probesInterval t₀ m [] = 0 :=
   rfl

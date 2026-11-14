@@ -4961,7 +4961,9 @@ public import CslibFrontier.DataStructure.CountMin.Basic
 public import CslibFrontier.DataStructure.CountMin.LinearHash
 public import CslibFrontier.DataStructure.CountMin.Probability
 public import CslibFrontier.DataStructure.CountMin.Program
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.Consistency
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.InnerGame
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import CslibFrontier.DataStructure.Dictionary.CuckooHashing
 public import CslibFrontier.DataStructure.Dictionary.CuckooHashing.Basic
@@ -5502,6 +5504,7 @@ public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
+public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.IntersectionTail
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
 public import CslibFrontier.Foundations.Combinatorics.InclusionExclusion
@@ -5779,6 +5782,7 @@ public import CslibFrontier.Foundations.Data.Finset.Markov
 public import CslibFrontier.Foundations.Data.Finset.Median
 public import CslibFrontier.Foundations.Data.Finset.NatGap
 public import CslibFrontier.Foundations.Data.Finset.OffDiag
+public import CslibFrontier.Foundations.Data.Finset.OrderEmb
 public import CslibFrontier.Foundations.Data.Finset.OrderGlue
 public import CslibFrontier.Foundations.Data.Finset.OrderedFilter
 public import CslibFrontier.Foundations.Data.Finset.PaleyZygmund
