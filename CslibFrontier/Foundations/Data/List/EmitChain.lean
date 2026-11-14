@@ -67,7 +67,7 @@ theorem eq_flatMap_range_of_emit {α β : Type*}
           simp only [mem_range] at hi
           omega
         rw [hcarry i, getD_cons_succ, getD_eq_getElem _ _ hi', getD_eq_getElem _ _ hi']
-        rw [Nat.add_comm 1 i]
+        congr 1 <;> omega
       · rw [hcarry]
 
 end List
