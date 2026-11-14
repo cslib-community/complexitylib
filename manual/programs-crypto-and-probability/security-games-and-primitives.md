@@ -871,6 +871,37 @@ uses `circulant_mulVec_comm` and `circulant_mulVec_assoc` to cancel the two publ
 one-bit truncation, proves a length-three repetition decoder corrects one error, refutes the same
 contract for a constant decoder, checks key/coin support and runs the packaged PKE.
 
+Import [`Computational/HQC/INDCPA.lean`](../../CslibFrontier/Crypto/Computational/HQC/INDCPA.lean)
+for the exact finite game argument in HQC v5.1, Theorem 6.3 and Equation (10), printed pp. 61–64.
+`indCpaGame` uses the shared `TwoStage` interface: after seeing the expanded public key, the first
+stage chooses both messages and a saved state, so the challenge messages may depend on that key.
+This is strictly more faithful to the source game than the fixed-message
+`ExplicitCoinPKE.indCpaAdvantage` experiment. `eval_indCpaGame_eq_twoRealGame` identifies Game1
+with the real 2-DQCSD-P reduction game; `twoUniformGame_eq_threeRealGame` identifies Game2 with
+the real 3-DQCSD-PT reduction game; and `threeUniformGame_eq_uniform` proves that the comparison
+game is a fair hidden-bit game because its uniform retained component masks the selected encoded
+message. The resulting `indCpaAdvantage_le` bound is
+`AdvIND-CPA ≤ Adv2-DQCSD-P + Adv3-DQCSD-PT`.
+
+The public parity `b₁` is sampled from the public word, so both reduction laws explicitly mix
+the two fixed-parity branches. The second identity also requires `omegaE = omegaR`; all published
+v5.1 parameter sets have that equality, while `PKEParams` deliberately permits other finite
+instances. The source defines IND-CPA advantage as the signed bias `Pr[win] - 1/2`; the Lean
+definition takes its absolute value, which is invariant under flipping the final guess and bounds
+the signed quantity. There is also a source inconsistency: the displayed Game3 body on printed
+p. 63 repeats Game2's fixed-weight sampling, whereas the adjacent transition text, the
+3-DQCSD-PT definition and the proof paragraph use the uniform comparison law and conclude that
+the challenge bit is hidden. The formal game follows that stated comparison-law transition.
+
+This is not yet an asymptotic native-quantum PKE security endpoint. The specification supplies no
+gate, query or runtime loss for the two reductions, so connecting these finite advantages to the
+canonical `NativeQuantumTwoDQCSDP` and `NativeQuantumThreeDQCSDPT` assumptions still needs
+encoded-circuit/resource certificates and an explicit fair-mixture handoff. The [checked ordinary
+client](../../CslibFrontierTests/Crypto/HQCINDCPA.lean) uses positive weights, proper truncation and
+key-dependent challenge messages, then applies all three identities and the final bound.
+Production seed/XOF expansion, the biased sampler, Theorem 6.4's salted Fujisaki–Okamoto/QROM
+argument, IND-CCA2 and complete HQC-KEM security remain out of scope.
+
 Import [`HQC/Correctness.lean`](../../CslibFrontier/Crypto/Primitives/HQC/Correctness.lean) for
 the decryption-failure bridge from Definition 6.2.1 and Equations (11), (13) and (14), §6.2.2,
 pp. 64–65. The definition, Equations (11)/(13), and the source's exact-failure sentence are on
