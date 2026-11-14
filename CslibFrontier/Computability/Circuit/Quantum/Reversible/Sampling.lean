@@ -133,15 +133,6 @@ theorem isClassical_samplerClassicalCodes (n : ℕ)
     omega), ?_⟩
   exact isClassical_outputCopyCodes (by unfold samplerOutputStart; omega) (by rfl)
 
-/-- A Hadamard layer whose target block fits in the register consists of well-formed gates. -/
-theorem wellFormed_hadamardCodes {W o p : ℕ} (hW : o + p ≤ W) :
-    ∀ g ∈ hadamardCodes o p, g.WellFormed W := by
-  intro g hg
-  obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hg
-  have hj := List.mem_range.mp hj
-  simp only [WellFormed, and_true]
-  omega
-
 /-- Every gate emitted by the reversible sampler is valid for its declared register width. -/
 theorem wellFormed_samplerCodes (n : ℕ) (code : List (Op × List ℕ) × List ℕ) :
     ∀ g ∈ samplerCodes n code, g.WellFormed (samplerWidth n code) := by

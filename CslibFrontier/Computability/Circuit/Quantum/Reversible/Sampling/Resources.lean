@@ -26,6 +26,7 @@ separate from the online gate and qubit costs recorded here.
 
 ## Main results
 
+* `Cslib.Quantum.Reversible.samplerWidth_circuit`: exact active width for a typed circuit.
 * `Cslib.Quantum.Reversible.length_samplerCodes_le`: at most `n + 3 * G + m` gates.
 * `Cslib.Quantum.Reversible.length_encoding_samplerCodes_le`: encoded instruction length.
 * `Cslib.Quantum.Reversible.within_samplerCodes`: separate qubit, gate, and zero-query budgets.
@@ -36,6 +37,12 @@ public section
 namespace Cslib.Quantum.Reversible
 
 open Circuits Circuits.Boolean GateCode Turing.MultiTapeTM
+
+/-- A typed circuit sampler retains every input and gate value, one fixed-zero qubit, and one
+fresh qubit for every output. -/
+theorem samplerWidth_circuit {n m : ℕ} (C : Circuit signature n m) :
+    samplerWidth n C.code = n + C.size + 1 + m := by
+  simp [samplerWidth, samplerOutputStart, samplerZero, Circuit.code]
 
 /-- The complete sampler uses at most one Hadamard per seed, three reversible gates per Boolean
 gate, and one CNOT per copied output. -/

@@ -30,6 +30,7 @@ Hadamard gates on fresh qubits, followed by a classical circuit reading them
 
 * `Cslib.Quantum.eval_hadamardCodes_ket`: the layer on zero qubits prepares the uniform
   superposition.
+* `Cslib.Quantum.wellFormed_hadamardCodes`: every emitted gate is valid when the target block fits.
 * `Cslib.Quantum.computableInPolyTime_hadamardCodes`: the codes are computable in polynomial time
   from the block in unary.
 
@@ -100,6 +101,15 @@ theorem eval_hadamardCodes_ket {o p : ℕ} (h : o + p ≤ N) (X : Fin N → Bool
       smul_smul, ← pow_succ]
     rw [← (Fin.snocEquiv fun _ => Bool).sum_comp, Fintype.sum_prod_type, sum_comm]
     rfl
+
+/-- A Hadamard layer whose target block fits in the register consists of well-formed gates. -/
+theorem wellFormed_hadamardCodes {W o p : ℕ} (hW : o + p ≤ W) :
+    ∀ g ∈ hadamardCodes o p, g.WellFormed W := by
+  intro g hg
+  obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hg
+  have hj := List.mem_range.mp hj
+  simp only [WellFormed, and_true]
+  omega
 
 /-- The Hadamard codes on a block are computable in polynomial time from the block in unary. -/
 theorem computableInPolyTime_hadamardCodes {γ : Type} {enc : γ ↪ List Bool} {o p : γ → ℕ}
