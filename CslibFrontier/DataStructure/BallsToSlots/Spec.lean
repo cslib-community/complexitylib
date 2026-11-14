@@ -34,7 +34,7 @@ import Mathlib.Tactic.Ring
 This module formalizes the pure *balls-to-slots* (probe-complexity) problem of Bender,
 Farach-Colton, J. Kuszmaul, W. Kuszmaul, and Liu, *"On the Optimal Time/Space Tradeoff for Hash
 Tables"*, *Proc. 54th ACM STOC*, pp. 1284–1297, 2022 (`arXiv:2111.00602v2`, Section 2.1, printed
-p. 2 / PDF p. 3, and Section 3, printed p. 8 / PDF p. 9)
+p. 3 / PDF p. 4, and Section 3, printed p. 8 / PDF p. 9)
 [BenderFarachColtonKuszmaulKuszmaulLiu2022], aligned with `Cslib`'s `StateTransitionSpec` grid:
 * **Slot assignments (`SlotAssignment α M`)**: injective maps `Fin M → Option α` with `slotOf`,
   `present`, `freeSlots`, `delete`, and `put`. *(Adaptation: Section 3 permits `M` special slots
@@ -43,7 +43,7 @@ p. 2 / PDF p. 3, and Section 3, printed p. 8 / PDF p. 9)
 * **Operations & costs**: `Op α` (`insert`, `delete`, `query`), 0-indexed `probeIndex` with integer
   floor probe cost `slotProbeComplexity = 1 + Nat.log 2 (probeIndex + 1)` (differing from Section
   2.1's real-logarithm `1 + log₂ i` by `< 1` per ball), and `switchingCost` (Section 2.1, printed
-  p. 2 / PDF p. 3, and Section 3.1, printed p. 8 / PDF p. 9).
+  p. 3 / PDF p. 4, and Section 3.1, printed p. 8 / PDF p. 9).
 
 General `k`-wise fiber conditioning, disjoint-restriction concentration, and two-stage product
 union-tail bounds live in `CslibFrontier.Probability.KWiseIndependent.Restriction`,
@@ -380,7 +380,7 @@ theorem probeSeq_probeIndex {α : Type*} {M : ℕ} (probeSeq : α → ℕ → Fi
 /-- Integer probe complexity `1 + ⌊log₂ (probeIndex + 1)⌋` of storing ball `x` in slot `r`.
 Uses the floor logarithm `Nat.log 2` for 1-based probe index `i = probeIndex + 1`, differing from
 the real-logarithm measure `1 + log₂ i` of [BenderFarachColtonKuszmaulKuszmaulLiu2022] (Section 2.1,
-printed p. 2 / PDF p. 3, and Section 3, printed p. 8 / PDF p. 9) by strictly less than `1` per ball
+printed p. 3 / PDF p. 4, and Section 3, printed p. 8 / PDF p. 9) by strictly less than `1` per ball
 and agreeing asymptotically. -/
 noncomputable def slotProbeComplexity {α : Type*} {M : ℕ} (probeSeq : α → ℕ → Fin M)
     (x : α) (r : Fin M) : ℕ := 1 + Nat.log 2 (probeIndex probeSeq x r + 1)

@@ -29,6 +29,8 @@ This module provides exact natural-number fiber-cardinality identities for restr
 * `Cslib.Probability.IsKWiseIndependentHash.card_filter_eq_of_card_le`: for `Fintype.card X ≤ k` and
   `y : X → Y` with `[Nonempty Y]`,
   `#{i : ι | h i = y} * Fintype.card Y ^ Fintype.card X = Fintype.card ι`.
+* `Cslib.Probability.IsKWiseIndependentHash.card_fiber_eq`: single-point fiber identity
+  `Fintype.card Y * Fintype.card {θ // h θ x = v₀} = Fintype.card ι`.
 * `Cslib.Probability.IsKWiseIndependentHash.fiber`: conditioning a `(k + 1)`-wise independent
   family on `h θ x = v₀` yields a nonempty fiber carrying a `k`-wise independent family on
   `{z : X // z ≠ x}`.
@@ -80,6 +82,18 @@ theorem card_filter_eq_of_card_le [Fintype X] {k : ℕ} {h : ι → X → Y}
   rw [hset, hT_card, Nat.mul_comm] at h1
   exact h1
 
+/-- Exact single-point fiber cardinality `|Y| * |{θ // h θ x = v₀}| = |ι|` under `(k + 1)`-wise
+independence. -/
+theorem card_fiber_eq {k : ℕ} {h : ι → X → Y} (hh : IsKWiseIndependentHash (k + 1) h)
+    (x : X) (v₀ : Y) :
+    Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι := by
+  classical
+  have hc := hh.card_filter_restrict_eq (T := {x}) (by simp) (fun _ => v₀)
+  have hs : #{θ : ι | ({x} : Finset X).restrict (h θ) = fun _ => v₀} =
+      Fintype.card {θ : ι // h θ x = v₀} := by
+    rw [Fintype.card_subtype]; congr 1; ext θ; simp [funext_iff, Finset.restrict]
+  rwa [Finset.card_singleton, pow_one, hs] at hc
+
 /-- Conditioning a `(k + 1)`-wise independent hash family `h : ι → X → Y` on `h θ x = v₀` yields a
 nonempty seed fiber `{θ : ι // h θ x = v₀}` carrying a `k`-wise independent hash family on
 `{z : X // z ≠ x}`. -/
@@ -89,12 +103,8 @@ theorem fiber {k : ℕ} {h : ι → X → Y} (hh : IsKWiseIndependentHash (k + 1
       (fun (θ : {θ : ι // h θ x = v₀}) (z : {z : X // z ≠ x}) => h θ.1 z.1) := by
   classical
   have : Nonempty ι := hh.nonempty
-  have hcard1 : Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι := by
-    have hc := hh.card_filter_restrict_eq (T := {x}) (by simp) (fun _ => v₀)
-    have hs : #{θ : ι | ({x} : Finset X).restrict (h θ) = fun _ => v₀} =
-        Fintype.card {θ : ι // h θ x = v₀} := by
-      rw [Fintype.card_subtype]; congr 1; ext θ; simp [funext_iff, Finset.restrict]
-    rwa [Finset.card_singleton, pow_one, hs] at hc
+  have hcard1 : Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι :=
+    hh.card_fiber_eq x v₀
   have hF_pos : 0 < Fintype.card {θ : ι // h θ x = v₀} := by
     by_contra h0; have := Fintype.card_pos (α := ι)
     rw [Nat.eq_zero_of_not_pos h0, mul_zero] at hcard1; omega
@@ -145,12 +155,8 @@ theorem dens_le_of_hash_fiber {ι α Y : Type*} [Fintype ι] [Fintype Y] [Decida
     (dens {θ : ι | Bad θ} : ℝ) ≤ B := by
   classical
   have : Nonempty ι := hh.nonempty
-  have hcard1 (v₀ : Y) : Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι := by
-    have hc := hh.card_filter_restrict_eq (T := {x}) (by simp) (fun _ => v₀)
-    have hs : #{θ : ι | ({x} : Finset α).restrict (h θ) = fun _ => v₀} =
-        Fintype.card {θ : ι // h θ x = v₀} := by
-      rw [Fintype.card_subtype]; congr 1; ext θ; simp [funext_iff, Finset.restrict]
-    rwa [Finset.card_singleton, pow_one, hs] at hc
+  have hcard1 (v₀ : Y) : Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι :=
+    hh.card_fiber_eq x v₀
   rw [Finset.dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
     div_le_iff₀ (by exact_mod_cast Fintype.card_pos (α := ι))]
   have hY_ne : (Fintype.card Y : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero

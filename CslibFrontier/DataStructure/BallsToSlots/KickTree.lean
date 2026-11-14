@@ -19,8 +19,10 @@ import CslibFrontier.Foundations.Probability.TwoStage
 import CslibFrontier.Probability.KWiseIndependent.Concentration
 import CslibFrontier.Probability.KWiseIndependent.Restriction
 import Mathlib.Algebra.BigOperators.Field
+import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -40,11 +42,14 @@ Lemma 1 (pp. 10–11 / PDF pp. 11–12) and Theorems 2–3 (p. 12 / PDF p. 13) 3
 and `2m`-th moment / `(1 - δ)`-w.h.p. multi-tree concentration.
 
 Namespace `Cslib.DataStructure.BallsToSlots` (and `KickTree`) holds this Section 3 pure
-balls-to-slots model, while `Cslib.DataStructure.Dictionary.KickTree` holds the Sections 5–6
-dictionary layers. Adaptations: (1) XOR probe deduplication `g(x) ^^^ (idx % M)` over primary slots;
-(2) shifted dyadic `capExp_i = 2 * iterLog (i + 2) M` and `binExp_{i+1} = 6 * iterLog (i + 2) M`
-(clamped by `effectiveDepth`) for 3-wise Chebyshev sufficiency; (3) `2m`-th moment insertion-set
-snapshot bounds in place of full-independence Chernoff bounds.
+balls-to-slots model, while the upcoming `Cslib.DataStructure.Dictionary.KickTree` (tracked in #5129
+and #5186) will hold the Sections 5–6 dictionary layers. Adaptations: (1) XOR probe deduplication
+`g(x) ^^^ (idx % M)` over primary slots; (2) dyadic schedule `capExp i = 2 * iterLog (i + 2) M` and
+`binExp (i + 1) = 6 * iterLog (i + 2) M` (clamped by `effectiveDepth`), rounding the paper's
+`s_d ≈ (log^(d) n)^6` and `Pr[depthCap < i + 1] ≈ (log^(i+1) n)^(-2)` to powers of two (where `+2`
+aligns 0-based indexing with `Nat.iterLog` and Chebyshev's `L^4 / L^6 = 1 / L^2` yields a geometric
+series); (3) `2m`-th moment insertion-set snapshot bounds in place of full-independence Chernoff
+bounds.
 
 ## Main definitions
 * `Cslib.DataStructure.BallsToSlots.KickTree.Params`, `State`, `Params.ValidState`,
@@ -725,10 +730,13 @@ section StandardSchedule
 theorem effectiveDepth_le (m₀ k : ℕ) : effectiveDepth m₀ k ≤ k := by
   unfold effectiveDepth; split_ifs <;> [exact Nat.zero_le k; exact min_le_left _ _]
 /-- Canonical `k`-kick tree parameters ([BenderFarachColtonKuszmaulKuszmaulLiu2022], §3.1).
-Shifting `capExp i = 2 * iterLog (i + 2) (2 ^ m₀)` and `binExp (i + 1) = 6 * iterLog (i + 2)
-(2 ^ m₀)` by one log level makes the 3-wise Chebyshev failure bound
-`6 * 2 ^ (2 * capExp i) / 2 ^ (binExp (i + 1)) = 6 / 2 ^ (2 * iterLog (i + 2) (2 ^ m₀))` decay
-geometrically against `binExp i ≤ 12 * 2 ^ (iterLog (i + 2) (2 ^ m₀))`, preserving the
+Rounds the paper's schedule `s_d ≈ (log^(d) n)^6` and `Pr[depthCap < i + 1] ≈ (log^(i+1) n)^(-2)`
+to powers of two via `capExp i = 2 * iterLog (i + 2) (2 ^ m₀)` and
+`binExp (i + 1) = 6 * iterLog (i + 2) (2 ^ m₀)` (the `+2` offset aligns 0-based `Fin` indexing with
+`Nat.iterLog`, where `iterLog 1 (2 ^ m₀) = m₀`). Under 3-wise independence, the Chebyshev ratio
+`L^4 / L^6 = 1 / L^2` gives a failure bound
+`6 * 2 ^ (2 * capExp i) / 2 ^ (binExp (i + 1)) = 6 / 2 ^ (2 * iterLog (i + 2) (2 ^ m₀))`
+that decays geometrically against `binExp i ≤ 12 * 2 ^ (iterLog (i + 2) (2 ^ m₀))`, preserving the
 `O(max (Nat.iterLog (k + 1) (2 ^ m₀)) 1)` bottom-level bound up to an `O(1)` geometric series. -/
 @[expose] def standardParams (m₀ k : ℕ) : Params where
   slotBits := m₀; depth := effectiveDepth m₀ k
@@ -765,7 +773,8 @@ theorem switchingCost_standardInsert_le {α : Type*} [DecidableEq α] (m₀ k : 
     switchingCost st.assignment (standardInsert m₀ k f st x).assignment ≤ k + 1 :=
   ((standardParams m₀ k).switchingCost_insert_le f hst x).trans
     (Nat.add_le_add_right (effectiveDepth_le m₀ k) 1)
-/-- Schedule inequality on `standardParams m₀ k`: `effectiveDepth m₀ k - d ≤ binExp d`. -/
+/-- Schedule inequality on `standardParams m₀ k` ([BenderFarachColtonKuszmaulKuszmaulLiu2022] §3.1,
+printed p. 9 / PDF p. 10): `effectiveDepth m₀ k - d ≤ binExp d`. -/
 theorem depthSteps_le_binExp (m₀ k : ℕ) (d : Fin ((standardParams m₀ k).depth + 1)) :
     effectiveDepth m₀ k - d.val ≤ (standardParams m₀ k).binExp d := by
   by_cases hD : effectiveDepth m₀ k = 0; · omega
@@ -867,13 +876,23 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
           (pow_le_pow_right₀ (by norm_num) hsub_L)
         _ = 84 * ((1 : ℝ) / 2) ^ (D - i.val) := by rw [div_eq_mul_inv, ← inv_pow, one_div]
     have hgeom (n : ℕ) : ∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n - j) ≤ 1 := by
-      induction n with | zero => simp | succ n ih =>
-        rw [Finset.sum_range_succ, Nat.add_sub_self_left, pow_one]
-        have hhalf : (∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n + 1 - j)) =
-            (1 / 2) * ∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n - j) := by
-          rw [Finset.mul_sum]; refine Finset.sum_congr rfl fun j hj => ?_
-          rw [show n + 1 - j = n - j + 1 by rw [Finset.mem_range] at hj; omega, pow_succ']
-        linarith
+      cases n with
+      | zero => simp
+      | succ n =>
+        have hpow (j : ℕ) (hj : j ∈ Finset.range (n + 1)) :
+            ((1 : ℝ) / 2) ^ (n + 1 - j) = (1 / (2 : ℝ)) ^ (n - j + 1) := by
+          congr 1; rw [Finset.mem_range] at hj; omega
+        have hr : (∑ j ∈ Finset.range (n + 1), (1 / (2 : ℝ)) ^ (n - j + 1)) =
+            ∑ j ∈ Finset.range (n + 1), (1 / (2 : ℝ)) ^ (j + 1) :=
+          Finset.sum_range_reflect (fun k => (1 / (2 : ℝ)) ^ (k + 1)) (n + 1)
+        calc ∑ j ∈ Finset.range (n + 1), ((1 : ℝ) / 2) ^ (n + 1 - j)
+            = ∑ j ∈ Finset.range (n + 1), (1 / (2 : ℝ)) ^ (n - j + 1) := Finset.sum_congr rfl hpow
+          _ = ∑ j ∈ Finset.range (n + 1), (1 / (2 : ℝ)) ^ (j + 1) := hr
+          _ = (1 / 2 : ℝ) * ∑ j ∈ Finset.range (n + 1), (1 / (2 : ℝ)) ^ j := by
+            simp_rw [pow_succ' (1 / (2 : ℝ)), ← Finset.mul_sum]
+          _ ≤ (1 / 2 : ℝ) * 2 :=
+            mul_le_mul_of_nonneg_left (sum_geometric_two_le (n + 1)) (by norm_num)
+          _ = 1 := by ring
     have hsum_le : (𝔼 θ, ∑ i : Fin P.depth, err i θ) ≤ 84 := by
       rw [Finset.expect_sum_comm]; refine (Finset.sum_le_sum fun i _ => hterm_le i).trans ?_
       rw [← Finset.mul_sum, Fin.sum_univ_eq_sum_range (fun j => ((1 : ℝ) / 2) ^ (D - j)) P.depth]
@@ -937,9 +956,9 @@ theorem expect_totalProbeComplexity_standardRun_le {ι α : Type*} [Fintype ι] 
 /-- **`2m`-th moment concentration across partitioned `k`-kick trees** over arbitrary-length
 operation histories, adapting [BenderFarachColtonKuszmaulKuszmaulLiu2022] Theorem 3 (Section 3.1,
 printed p. 12 / PDF p. 13) with four explicit deviations: (a) the partition into disjoint-footprint
-sub-histories `R` is assumed as an explicit hypothesis; (b) there are no special slots or local
-query routing in this pure primary-slot model; (c) the tail bound is polynomial (`2m`-th moment
-Markov) rather than an exponential Chernoff bound; and (d) it assumes `max 3 (2 * m * 4 ^ m₀)`-wise
+sub-histories `R` is assumed as an explicit hypothesis; (b) there are no special slots in this
+pure primary-slot model; (c) the tail bound is polynomial (`2m`-th moment Markov) rather than an
+exponential Chernoff bound; and (d) it assumes `max 3 (2 * m * 4 ^ m₀)`-wise
 (`max 3 (2 * m * 2 ^ (2 * m₀))`-wise) independence rather than full independence. -/
 theorem dens_sum_totalProbeComplexity_standardRun_gt_le {ι α β : Type*} [Fintype ι] [DecidableEq α]
     {m k_indep : ℕ} (hm : 1 ≤ m) (m₀ k : ℕ) {h : ι → α → Fin (2 ^ (standardParams m₀ k).hashBits)}

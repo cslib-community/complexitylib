@@ -30,13 +30,15 @@ Exercises concrete execution and hypothesis satisfiability of `Cslib.DataStructu
 `ballProbeComplexity ≤ 1 + m₀`. Consequently, the proved per-ball expectation bound
 `96 * max (Nat.iterLog (k + 1) (2 ^ m₀)) 1` improves on the deterministic ceiling `1 + m₀` once
 `96 * max (Nat.iterLog (k + 1) (2 ^ m₀)) 1 < 1 + m₀` — starting at `m₀ ≥ 96` for `k ≥ 3` (where
-`effectiveDepth 96 3 = 3` and `Nat.iterLog 4 (2 ^ 96) = 1`, giving `96 < 97`), and at `m₀ ≥ 288`
-for `k = 2` (`96 * 3 = 288 < 289`). Likewise, the tail event `{μ + Δ ≤ ∑ b ∈ R, ...}` in
-`dens_sum_totalProbeComplexity_standardRun_gt_le` is empty whenever `m₀ < 96`, and its Markov bound
-is `< 1` when `#R` is large relative to `2 ^ m₀ * (1 + m₀)`. At `m₀ = 32, k = 2` the expectation
-bound `192` exceeds `33`, and at `m₀ = 2, k = 1` (`effectiveDepth 2 1 = 0`) the tail event is
-empty; Section 3 below therefore checks hypothesis satisfiability and API applicability rather than
-numerical tightness at those small sizes.
+`effectiveDepth 96 3 = 3` and `Nat.iterLog 4 (2 ^ 96) = 1`, giving `96 < 97`), and for all
+`m₀ ≥ 288` for `k = 2` (`96 * 3 = 288 < 289`; holding also on `192 ≤ m₀ ≤ 255` where
+`iterLog 3 = 2`, failing on `256 ≤ m₀ ≤ 287`, and holding for all `m₀ ≥ 288`). Likewise, the tail
+event `{μ + Δ ≤ ∑ b ∈ R, ...}` in `dens_sum_totalProbeComplexity_standardRun_gt_le` is empty
+whenever `m₀ < 96`, and its Markov bound is `< 1` when `#R` is large relative to
+`2 ^ m₀ * (1 + m₀)`. At `m₀ = 32, k = 2` the expectation bound `192` exceeds `33`, and at
+`m₀ = 2, k = 1` (`effectiveDepth 2 1 = 0`) the tail event is empty; Section 3 below therefore
+checks hypothesis satisfiability and API applicability rather than numerical tightness at those
+small sizes.
 -/
 
 public section
