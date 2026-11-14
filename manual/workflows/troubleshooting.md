@@ -102,6 +102,9 @@ timeout interrupts only the fixture's owned audit for cleanup and fails explicit
 establish a production cleanup regression. The failure includes partial PID-file contents,
 process states, worker timings/results and captured audit output. Use those records to distinguish
 slow startup from a failed worker before changing cleanup code.
+These records describe the state before the fixture's rescue backstop: after assessing the audit,
+it terminates and reaps retained owned launchers and their descendants. Rescue does not turn a
+failing control into a pass, and arbitrary integers from PID files are never rescue targets.
 
 From an isolated checkout with the pinned Lean toolchain installed, run both real controls and
 their portable readiness regressions with:

@@ -591,6 +591,38 @@ class InterruptReadinessTests(ProcessAssertions, Fixture):
         self.assertIn("'returncode': 0", str(error.exception))
         self.assertIn("launcher diagnostic", str(error.exception))
 
+    def test_early_audit_failure_reaps_its_live_owned_launcher(self) -> None:
+        for mode in ("return", "raise"):
+            with self.subTest(mode=mode):
+                children = []
+
+                def fail_early(*_args):
+                    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
+                    children.append(child)
+                    self.assertIsNone(child.poll(), "the control must leave a live owned child")
+                    print("intentional live-launcher failure")
+                    if mode == "raise":
+                        raise RuntimeError("intentional audit exception")
+                    return 1
+
+                error_type = RuntimeError if mode == "raise" else AssertionError
+                message = "intentional audit exception" if mode == "raise" else "audit returned 1"
+                try:
+                    with patch.object(c, "main", side_effect=fail_early), \
+                         self.assertRaisesRegex(error_type, message) as error:
+                        RealLakeTests._assert_interrupt_cleans_up_descendants(self, signal.SIGTERM)
+                    self.assertIsNotNone(children[0].returncode, "fixture must reap its launcher")
+                    self.assert_processes_stopped([children[0].pid])
+                    # The diagnostic records the pre-rescue failure, not the cleaned-up state.
+                    notes = "\n".join(getattr(error.exception, "__notes__", []))
+                    self.assertIn("'returncode': None", str(error.exception) + notes)
+                finally:
+                    # Protect the test runner even when the regression is reintroduced.
+                    for child in children:
+                        if child.poll() is None:
+                            child.kill()
+                        child.wait(timeout=2)
+
     def test_timeout_fails_with_partial_diagnostics_and_joins_watcher(self) -> None:
         self.write("slowa.pid", "101")
         self.write("slowb.pid", "partial")
@@ -833,33 +865,54 @@ theorem warnA : 1 = 2 := by sorry
         failure: BaseException | None = None
         audit_result = None
         try:
-            watcher.thread.start()
-            with patch.object(c, "elaborate", side_effect=record_elaboration), \
-                 patch.object(c.subprocess, "Popen", side_effect=record_launcher), \
-                 redirect_stdout(output), redirect_stderr(output):
-                try:
-                    audit_result = c.main(
-                        ["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
-                except BaseException as error:
-                    failure = error
-            finished = time.monotonic()
+            try:
+                watcher.thread.start()
+                with patch.object(c, "elaborate", side_effect=record_elaboration), \
+                     patch.object(c.subprocess, "Popen", side_effect=record_launcher), \
+                     redirect_stdout(output), redirect_stderr(output):
+                    try:
+                        audit_result = c.main(
+                            ["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
+                    except BaseException as error:
+                        failure = error
+                finished = time.monotonic()
+            finally:
+                watcher.stop()
+            launcher_states = {proc.pid: {"command": proc.args, "state": c._process_state(proc.pid),
+                                         "returncode": proc.poll()} for proc in launchers}
+            diagnostics = (f"{watcher.diagnostics()}; launchers={launcher_states!r}; "
+                           f"worker results={worker_results!r}; "
+                           f"audit output={output.getvalue()!r}")
+            self.assertFalse(watcher.thread.is_alive(), diagnostics)
+            if failure is not None and not isinstance(failure, KeyboardInterrupt):
+                failure.add_note(diagnostics)
+                raise failure
+            self.assertIsInstance(failure, KeyboardInterrupt,
+                                  f"audit returned {audit_result!r} before signal: {diagnostics}")
+            self.assert_processes_stopped(sorted(watcher.pids | set(launcher_states)))
+            self.assertTrue(watcher.ready,
+                            f"readiness timeout before two live Lean children: {diagnostics}")
+            elapsed = watcher.cleanup_elapsed(finished)
+            self.assertLess(elapsed, 6.0, f"post-signal cleanup took {elapsed:.2f}s: {diagnostics}")
         finally:
-            watcher.stop()
-        launcher_states = {proc.pid: {"command": proc.args, "state": c._process_state(proc.pid),
-                                     "returncode": proc.poll()} for proc in launchers}
-        diagnostics = (f"{watcher.diagnostics()}; launchers={launcher_states!r}; "
-                       f"worker results={worker_results!r}; "
-                       f"audit output={output.getvalue()!r}")
-        self.assertFalse(watcher.thread.is_alive(), diagnostics)
-        if failure is not None and not isinstance(failure, KeyboardInterrupt):
-            failure.add_note(diagnostics)
-            raise failure
-        self.assertIsInstance(failure, KeyboardInterrupt,
-                              f"audit returned {audit_result!r} before signal: {diagnostics}")
-        self.assert_processes_stopped(sorted(watcher.pids | set(launcher_states)))
-        self.assertTrue(watcher.ready, f"readiness timeout before two live Lean children: {diagnostics}")
-        elapsed = watcher.cleanup_elapsed(finished)
-        self.assertLess(elapsed, 6.0, f"post-signal cleanup took {elapsed:.2f}s: {diagnostics}")
+            # Assess the audit before rescuing it: a production cleanup failure must still fail.
+            # Only retained launcher handles (and their descendants) are cleanup targets, never
+            # arbitrary integers read from PID files.
+            original_error = sys.exc_info()[1]
+            rescue_errors = []
+            for proc in launchers:
+                try:
+                    if proc.poll() is None:
+                        c.terminate_process(proc)
+                    proc.wait(timeout=2)
+                except Exception as error:
+                    rescue_errors.append(f"launcher {proc.pid}: {error!r}")
+            if rescue_errors:
+                message = f"fixture-owned launcher rescue failed: {rescue_errors!r}"
+                if original_error is not None:
+                    original_error.add_note(message)
+                else:
+                    self.fail(message)
 
     def test_interrupt_watcher_is_cancelled_after_early_failure(self) -> None:
         with patch.object(c, "main", side_effect=RuntimeError("early failure")), \
