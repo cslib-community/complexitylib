@@ -356,6 +356,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     exact ⟨hc ▸ h₁, h₃, by rw [← hc]; omega⟩
   have hE' := hE.mono_time (T' := cheap k) (4 + 2 * CE) fun p => by
     obtain ⟨hc, hq, ht⟩ := hfacts p
+    have hu := length_unframe_le p.1
     have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     simp only [Function.comp_apply, length_frame, encBits_apply] at ⊢
     have he : (4 + 2 * CE) * (cheap k p + 1) =
