@@ -93,6 +93,8 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
   have hip : x.regs innerPower ≤ 10 ^ L := hx.inner_power.trans (hpow 4 (by decide))
   have hrFit : Fits w (x.regs residue / 7) :=
     hfit.of_le ((Nat.div_le_self _ _).trans (by have := hx.residue_le; omega))
+  have hmFit : Fits w (x.regs maskPower * 2) := hfit.of_le (by omega)
+  have hjFit : Fits w (x.regs level + 1) := hfit.of_le (by omega)
   have hrest : L - x.regs level = L - (x.regs level + 1) + 1 := by omega
   have hpres : ∀ i ∈ splitParameterRegisters, splitBody.Preserves i := by
     simp only [splitBody, Code.Preserves, Op.dest, Op.bin]
@@ -110,7 +112,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
       level (x.regs level + 1))
     have he : ExecWithin w splitBody x y 11 := by
       ram_eval [splitBody, y, hx.fixed.one, hx.fixed.two, hx.fixed.three, hx.fixed.seven,
-        hrFit, hmul, hadd, hpower, houter,
+        hrFit, hmFit, hjFit, hmul, hadd, hpower, houter,
         digit, residue, temporary, outerAcc, outerPower, maskPower, level, one, two,
         three, seven, Fin.mk.injEq]
     have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)
@@ -154,7 +156,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
       maskPower (x.regs maskPower * 2)).set level (x.regs level + 1))
     have he : ExecWithin w splitBody x y 11 := by
       ram_eval [splitBody, y, hx.fixed.one, hx.fixed.two, hx.fixed.three, hx.fixed.four,
-        hx.fixed.seven, hrFit, hsub, hmul, hadd, hpower, hmask, houter,
+        hx.fixed.seven, hrFit, hmFit, hjFit, hsub, hmul, hadd, hpower, hmask, houter,
         digit, residue, temporary, innerAcc, innerPower, maskAcc, maskPower, level,
         one, two, three, four, seven, Fin.mk.injEq]
     have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)

@@ -124,11 +124,12 @@ theorem exec_push {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base +
     ∃ y, Exec w program (prepare 0 v x) y 7 ∧
       Rep w base capacity (v :: vs) y ∧ Modifies (footprint base capacity) x.mem y.mem := by
   have h1 : Fits w 1 := h2.of_le (by decide)
+  have haddr : Fits w (base + vs.length) := hcap.of_le (by omega)
   have hinc : Fits w (vs.length + 1) := hcap.of_le (by omega)
   let y := (((((prepare 0 v x).set zero 0).set one 1).set
     addr (base + vs.length)).write (base + vs.length) v |>.set len (vs.length + 1)).set out 0
   have he : Exec w program (prepare 0 v x) y 7 := by
-    ram_eval [program, prepare, writeAt, y, hr.pointer, hr.length_eq, h1, hinc]
+    ram_eval [program, prepare, writeAt, y, hr.pointer, hr.length_eq, h1, haddr, hinc]
   refine ⟨y, he, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · exact he.bounded ((hr.bounded.set (fits_zero w)).set hw)
   · simp +decide [y, Data.set, Data.write, prepare, hr.pointer]

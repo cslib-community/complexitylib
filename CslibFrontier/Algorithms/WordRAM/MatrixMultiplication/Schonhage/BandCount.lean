@@ -63,6 +63,7 @@ theorem exec_countMasks {w : ℕ} (L m : ℕ) (x : Data 96)
     have hu2 : u.regs two = 2 := (hureg two).trans h2
     have hut : u.regs mask = y.regs mask := hureg mask
     have huc : u.regs count = prefixCount L m (y.regs mask) := (hureg count).trans hcount
+    have hfnext : Fits w (y.regs mask + 1) := hfit.of_le (by omega)
     have hfc : Fits w (prefixCount L m (y.regs mask) + 1) :=
       hfit.of_le (by have := prefixCount_le L m (y.regs mask); omega)
     let z := (u.set count (prefixCount L m (y.regs mask + 1))).set mask (y.regs mask + 1)
@@ -70,7 +71,7 @@ theorem exec_countMasks {w : ℕ} (L m : ℕ) (x : Data 96)
         if population = inner then [ count ← count + one ] else [ count ← count ];
         mask ← mask + one ]) u z 4 := by
       by_cases h : MaskTable.population L (y.regs mask) = m <;>
-        ram_eval [z, prefixCount_succ, h, hpop, hui, hu1, hut, huc, hfc,
+        ram_eval [z, prefixCount_succ, h, hpop, hui, hu1, hut, huc, hfnext, hfc,
           population, inner, count, one, mask, Fin.mk.injEq]
     refine ⟨z, hu.seq hz, ?_, by simp [z]⟩
     · simpa +decide [P, z, levels, inner, masks, one, two, mask, count,

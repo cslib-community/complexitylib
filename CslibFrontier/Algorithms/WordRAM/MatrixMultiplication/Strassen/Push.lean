@@ -38,6 +38,7 @@ theorem exec_locateChild {w : ℕ} (x : Data 64) (h1 : x.regs Reg.one = 1)
       ∀ i, i ≠ Reg.quarter → i ≠ Reg.formA → i ≠ Reg.formB → i ≠ Reg.product →
         i ≠ Reg.childScratch → i ≠ Reg.childDepth → y.regs i = x.regs i := by
   have hq : Fits w (x.regs Reg.size / 4) := hw.of_le (by omega)
+  have hf : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4) := hw.of_le (by omega)
   have hp : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4 + x.regs Reg.size / 4) :=
     hw.of_le (by omega)
   have hs : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4 +
@@ -46,7 +47,7 @@ theorem exec_locateChild {w : ℕ} (x : Data 64) (h1 : x.regs Reg.one = 1)
   refine ⟨?locatedState, ?locateRun, ?locateMem, ?locatedQuarter, ?locatedA, ?locatedB,
     ?locatedProduct, ?locatedScratch, ?locatedDepth, ?locatedRegs⟩
   case locateRun =>
-    ram_eval [locateChild, h1, h4, hq, hp, hs, hd, Reg.quarter, Reg.formA,
+    ram_eval [locateChild, h1, h4, hq, hf, hp, hs, hd, Reg.quarter, Reg.formA,
       Reg.formB, Reg.product, Reg.childScratch, Reg.childDepth, Reg.one, Reg.four,
       Reg.size, Reg.depth, Reg.scratch]
   case locateMem => rfl
@@ -93,6 +94,10 @@ theorem exec_push {w : ℕ} (phase : Fin 8) (x : Data 64)
       y.mem (x.regs Reg.frame + 6) = phase.val ∧
       (∀ a, a < x.regs Reg.frame + 6 ∨ x.regs Reg.frame + 14 ≤ a → y.mem a = x.mem a) ∧
       ∀ i, ¬PushLocal i → y.regs i = x.regs i := by
+  have h6 : Fits w 6 := hw.of_le (by omega)
+  have hphase : Fits w phase.val := hw.of_le (by omega)
+  have hparent : Fits w (x.regs Reg.frame + 6) := hw.of_le (by omega)
+  have hchild : Fits w (x.regs Reg.frame + 7) := hw.of_le (by omega)
   let r := x.write (x.regs Reg.frame + 6) phase.val
   let s := (((((((((((r.set Reg.tag 6).set Reg.address (x.regs Reg.frame + 6)).set
     Reg.phase phase.val).set Reg.frame (x.regs Reg.frame + 7)).set Reg.inputA
@@ -100,8 +105,8 @@ theorem exec_push {w : ℕ} (phase : Fin 8) (x : Data 64)
     (x.regs Reg.product)).set Reg.scratch (x.regs Reg.childScratch)).set Reg.depth
     (x.regs Reg.childDepth)).set Reg.size (x.regs Reg.quarter)).set Reg.phase 0)
   have hpre : ExecWithin w (pushArguments phase.val) x s 12 := by
-    ram_eval [pushArguments, s, r, h1, h7, Reg.tag, Reg.address, Reg.phase, Reg.frame, Reg.inputA,
-      Reg.inputB,
+    ram_eval [pushArguments, s, r, h1, h7, h6, hphase, hparent, hchild,
+      Reg.tag, Reg.address, Reg.phase, Reg.frame, Reg.inputA, Reg.inputB,
       Reg.output, Reg.scratch, Reg.depth, Reg.size, Reg.formA, Reg.formB,
       Reg.product, Reg.childScratch, Reg.childDepth, Reg.quarter, Reg.frameWidth,
       Reg.one, Fin.mk.injEq]

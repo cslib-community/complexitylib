@@ -138,12 +138,13 @@ theorem exec {w : ℕ} (x : Data 15)
     by_cases h : n * n = 0
     · simp [h]
     · exact Nat.le_mul_of_pos_right _ (by omega)
+  have hafit : Fits w (n * n) := hN.of_le (by omega)
   have hn4 : Fits w ((n * n) * (n * n)) := hN.of_le (by omega)
   have hquot : Fits w ((n * n) * (n * n) / D) := hn4.of_le (Nat.div_le_self ..)
   let c := b.set middleRoot S |>.set area (n * n)
     |>.set arg ((n * n) * (n * n)) |>.set arg ((n * n) * (n * n) / D)
   have hbetween : ExecWithin w between b c 4 := by
-    ram_eval [between, c, hbroot, hbsize, hbD, hn4, hquot,
+    ram_eval [between, c, hbroot, hbsize, hbD, hafit, hn4, hquot,
       middleRoot, area, arg, root, size, dimension, Fin.mk.injEq]
   have hcarg : c.regs arg = (n * n) * (n * n) / D := by simp [c]
   obtain ⟨d, hd, hdroot, -, hdm, -⟩ := NatSqrt.exec_rename sqrtReg sqrtReg_injective c (by

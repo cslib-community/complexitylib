@@ -51,11 +51,14 @@ theorem exec_indexedSetup {w c u e p : ℕ} (d : Fin 9) (x : Data registers)
       (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
   have hd : d.val ≤ 8 := by omega
   have hdm : d.val * p ≤ 9 * p := Nat.mul_le_mul_right p (by omega)
+  have hfd : Fits w d.val := hfit.of_le (by omega)
+  have hfc : Fits w (c + d.val * p) := hfit.of_le (by omega)
+  have hfu : Fits w (u + 1) := hfit.of_le (by omega)
   let y := ((((x.set Reg.temporary d.val).set Reg.temporary (d.val * p)).set
     Reg.childCode (c + d.val * p)).set Reg.childUsed (u + 1)).set Reg.childStars e
   have hy : ExecWithin w (indexedSetup d) x y 5 := by
-    ram_eval [indexedSetup, y, hc, hu, he, hp, h1, Reg.temporary, Reg.childCode, Reg.childUsed,
-      Reg.childStars, Reg.code,
+    ram_eval [indexedSetup, y, hc, hu, he, hp, h1, hfd, hfc, hfu,
+      Reg.temporary, Reg.childCode, Reg.childUsed, Reg.childStars, Reg.code,
       Reg.used, Reg.stars, Reg.power, BoxTable.Reg.one, Fin.mk.injEq]
   exact ⟨y, hy, by simp [y, Reg.childCode, Reg.childUsed, Reg.childStars],
     by simp [y, Reg.childUsed, Reg.childStars], by simp [y], rfl,
@@ -70,12 +73,14 @@ theorem exec_p0Setup {w c u e p : ℕ} (x : Data registers)
     ∃ y, ExecWithin w p0Setup x y 6 ∧ y.regs Reg.childCode = c + 9 * p ∧
       y.regs Reg.childUsed = u ∧ y.regs Reg.childStars = (if u = 0 then e + 1 else e) ∧
       y.mem = x.mem ∧ (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
+  have hfc : Fits w (c + 9 * p) := hfit.of_le (by omega)
+  have hfe : Fits w (e + 1) := hfit.of_le (by omega)
   let y := (((x.set Reg.temporary (9 * p)).set Reg.childCode (c + 9 * p)).set
     Reg.childUsed u).set Reg.childStars (if u = 0 then e + 1 else e)
   have hy : ExecWithin w p0Setup x y 6 := by
     by_cases hz : u = 0
-    all_goals ram_eval [p0Setup, y, hc, hu, he, hp, h1, h9, h0, hz, Reg.temporary, Reg.childCode,
-      Reg.childUsed, Reg.childStars, Reg.code,
+    all_goals ram_eval [p0Setup, y, hc, hu, he, hp, h1, h9, h0, hz, hfc, hfe,
+      Reg.temporary, Reg.childCode, Reg.childUsed, Reg.childStars, Reg.code,
       Reg.used, Reg.stars, Reg.power, BoxTable.Reg.one, BoxTable.Reg.nine,
       BoxTable.Reg.nil, Fin.mk.injEq]
   exact ⟨y, hy, by simp [y, Reg.childCode, Reg.childUsed, Reg.childStars],
@@ -91,11 +96,12 @@ theorem exec_privateSetup {w c u e p d : ℕ} (x : Data registers) (hd : d ≤ 9
       y.regs Reg.childUsed = u ∧ y.regs Reg.childStars = e ∧ y.mem = x.mem ∧
       (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
   have hdm : d * p ≤ 9 * p := Nat.mul_le_mul_right p hd
+  have hfc : Fits w (c + d * p) := hfit.of_le (by omega)
   let y := (((x.set Reg.temporary (d * p)).set Reg.childCode (c + d * p)).set
     Reg.childUsed u).set Reg.childStars e
   have hy : ExecWithin w privateSetup x y 4 := by
-    ram_eval [privateSetup, y, hc, hu, he, hp, hdigit, Reg.temporary, Reg.childCode, Reg.childUsed,
-      Reg.childStars, Reg.code,
+    ram_eval [privateSetup, y, hc, hu, he, hp, hdigit, hfc,
+      Reg.temporary, Reg.childCode, Reg.childUsed, Reg.childStars, Reg.code,
       Reg.used, Reg.stars, Reg.power, Reg.digit, Fin.mk.injEq]
   exact ⟨y, hy, by simp [y, Reg.childCode, Reg.childUsed, Reg.childStars],
     by simp [y, Reg.childUsed, Reg.childStars], by simp [y], rfl,
@@ -122,11 +128,14 @@ theorem exec_expandSetup {w q k p : ℕ} (x : Data registers)
       (∀ i, ¬ExpandSetupLocal i → y.regs i = x.regs i) := by
   have hdiv : q / p ≤ q := Nat.div_le_self _ _
   have hmod : q / p % 10 < 10 := Nat.mod_lt _ (by decide)
+  have hfd : Fits w (q / p) := hfit.of_le (by omega)
+  have hfk : Fits w (k + 1) := hfit.of_le (by omega)
+  have hfp : Fits w (p * 10) := hfit.of_le (by omega)
   let y := (((x.set Reg.digit (q / p)).set Reg.digit (q / p % 10)).set
     Reg.depth (k + 1)).set Reg.childPower (p * 10)
   have hy : ExecWithin w expandSetup x y 4 := by
-    ram_eval [expandSetup, y, hq, hk, hp, h1, h10, Reg.digit, Reg.depth, Reg.childPower, Reg.query,
-      Reg.power,
+    ram_eval [expandSetup, y, hq, hk, hp, h1, h10, hfd, hfk, hfp,
+      Reg.digit, Reg.depth, Reg.childPower, Reg.query, Reg.power,
       BoxTable.Reg.one, BoxTable.Reg.ten, Fin.mk.injEq]
   exact ⟨y, hy, by simp [y, Reg.digit, Reg.depth, Reg.childPower],
     by simp [y, Reg.depth, Reg.childPower], by simp [y], rfl,

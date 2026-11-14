@@ -43,13 +43,16 @@ theorem exec_loadRecord {w R j c e p : ℕ} (x : Data registers)
     ∃ y, ExecWithin w loadRecord x y 7 ∧ y.regs Reg.completion = c ∧
       y.regs Reg.stars = e ∧ y.regs Reg.starPower = p ∧ y.mem = x.mem ∧
       (∀ i, ¬RecordLocal i → y.regs i = x.regs i) := by
+  have hf0 : Fits w (j * 3) := hfit.of_le (by omega)
+  have hf1 : Fits w (R + j * 3) := hfit.of_le (by omega)
+  have hf2 : Fits w (R + j * 3 + 1) := hfit.of_le (by omega)
   have hf3 : Fits w (R + j * 3 + 1 + 1) := by simpa only [Nat.add_assoc] using hfit
   have hp' : x.mem (R + j * 3 + 1 + 1) = p := by simpa only [Nat.add_assoc] using hp
   let y := (((((((x.set Reg.address (j * 3)).set Reg.address (R + j * 3)).set
     Reg.completion c).set Reg.address (R + j * 3 + 1)).set Reg.stars e).set
     Reg.address (R + j * 3 + 1 + 1)).set Reg.starPower p)
   have hy : ExecWithin w loadRecord x y 7 := by
-    ram_eval [loadRecord, y, hR, hj, h1, h3, hc, he, hp', hf3,
+    ram_eval [loadRecord, y, hR, hj, h1, h3, hc, he, hp', hf0, hf1, hf2, hf3,
       Reg.address, Reg.records, Reg.current, Reg.one, Reg.three, Reg.completion,
       Reg.stars, Reg.starPower, Fin.mk.injEq]
   exact ⟨y, hy, by simp [y, Reg.completion, Reg.starPower, Reg.stars, Reg.address],
@@ -130,6 +133,16 @@ theorem exec_addChild {w D V c e T p d r : ℕ} {a b : ℤ}
     (Nat.mul_le_mul_left e hTpos)
   have hcc : cc ≤ c := Nat.sub_le ..
   have hcs : cs ≤ e * T + c := Nat.add_le_add hmt hcc
+  have hf9 : Fits (w + 2) (9 - d) := hfit.of_le (by omega)
+  have hfmp : Fits (w + 2) ((9 - d) * p) := hfit.of_le (by omega)
+  have hfcc : Fits (w + 2) cc := hfit.of_le (by omega)
+  have hfe : Fits (w + 2) (e - 1) := hfit.of_le (by omega)
+  have hfmt : Fits (w + 2) ((e - 1) * T) := hfit.of_le (by omega)
+  have hfcs : Fits (w + 2) cs := hfit.of_le (by omega)
+  have hfD : Fits (w + 2) (D + cs) := hfit.of_le (by omega)
+  have hfr : Fits (w + 2) r := hfit.of_le (by omega)
+  have hfV : Fits (w + 2) (V + r) := hfit.of_le (by omega)
+  have hfd : Fits (w + 2) (d + 1) := hfit.of_le (by omega)
   let z := ((((((((((((x.set Reg.temporary (9 - d)).set Reg.temporary ((9 - d) * p)).set
     Reg.childCode cc).set Reg.childSlot (e - 1)).set Reg.childSlot ((e - 1) * T)).set
     Reg.childSlot cs).set Reg.address (D + cs)).set Reg.childRank (r + 1)).set
@@ -137,7 +150,8 @@ theorem exec_addChild {w D V c e T p d r : ℕ} {a b : ℤ}
     Signed.left (Signed.encode a))
   have hload : ExecWithin (w + 2) childLoad x z 12 := by
     ram_eval [childLoad, z, cc, cs, hD, hV, hc, he, hT, hp, hd, hacc, h9, h1,
-      hrank, hvalue, Reg.temporary, Reg.childCode, Reg.childSlot, Reg.address, Reg.childRank,
+      hrank, hvalue, hf9, hfmp, hfcc, hfe, hfmt, hfcs, hfD, hfr, hfV,
+      Reg.temporary, Reg.childCode, Reg.childSlot, Reg.address, Reg.childRank,
       Reg.completion, Reg.stars, Reg.span, Reg.starPower, Reg.directory, Reg.values,
       Reg.term, Reg.accumulator, Reg.nine, Reg.one, Signed.left, Signed.right,
       Fin.mk.injEq, Nat.add_sub_cancel]
@@ -154,7 +168,7 @@ theorem exec_addChild {w D V c e T p d r : ℕ} {a b : ℤ}
       Reg.address, Reg.childRank, Signed.left, Signed.right] using h1
   let y := (u.set Reg.accumulator (Signed.encode (a + b))).set Reg.term (d + 1)
   have hfinish : ExecWithin (w + 2) childFinish u y 2 := by
-    ram_eval [childFinish, y, hud, hu1, hsum', Reg.term, Reg.accumulator,
+    ram_eval [childFinish, y, hud, hu1, hsum', hfd, Reg.term, Reg.accumulator,
       Reg.one, Fin.mk.injEq]
   have hy : ExecWithin (w + 2) addChild x y 29 := hload.seq (hu.seq hfinish)
   exact ⟨y, hy, by simp [y, Reg.accumulator, Reg.term], by simp [y], hframe.1,

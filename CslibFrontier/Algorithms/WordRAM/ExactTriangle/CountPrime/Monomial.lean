@@ -62,6 +62,7 @@ theorem exec_writeCoefficients {w : ℕ} (x : Data 128)
       simpa only [Cond.holds_lt, hmod] using hc
     have ha : Fits w (y.regs Reg.block + y.regs Reg.coefficient) := hw.of_le (by
       rw [hbase]; omega)
+    have hn : Fits w (y.regs Reg.coefficient + 1) := hw.of_le (by omega)
     let z := ((y.set Reg.address (y.regs Reg.block + y.regs Reg.coefficient)).write
       (y.regs Reg.block + y.regs Reg.coefficient)
       (if y.regs Reg.coefficient = y.regs Reg.residue then 2 else 0)).set
@@ -92,7 +93,7 @@ theorem exec_writeCoefficients {w : ℕ} (x : Data 128)
               (x := before))
       have hlast : ExecWithin (B := .standard) w
           (ram[ Reg.coefficient ← Reg.coefficient + Reg.one ]) middle z 1 := by
-        ram_eval [middle, before, z, hy1, Reg.address, Reg.coefficient, Reg.one]
+        ram_eval [middle, before, z, hy1, hn, Reg.address, Reg.coefficient, Reg.one]
       exact hfirst.seq (hcase.seq hlast)
     refine ⟨z, he, ⟨?_, ?_, ?_, ?_⟩, ?_⟩
     · intro i hc ha

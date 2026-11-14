@@ -75,11 +75,12 @@ theorem exec_returnOutput {W b o n M : ℕ} (x : Data 163) (hb : x.regs Reg.base
       y.mem = ArrayNormalize.normalizePrefix x.mem (b + o) M n ∧
       y.regs Reg.result = b + o ∧
       ∀ i : Fin 163, 7 ≤ i.val → y.regs i = x.regs i := by
+  have haddr : Fits W (b + o) := hfit.of_le (by omega)
   let z := ((x.set Reg.result (b + o)).set Reg.second n).set Reg.third M
   have hz : ExecWithin W
       (ram[ Reg.result ← Reg.base + Reg.output;
         Reg.second ← Reg.queryCount; Reg.third ← Reg.modulus ]) x z 3 := by
-    ram_eval [z, hb, ho, hn, hm, Reg.result, Reg.second, Reg.third, Reg.base,
+    ram_eval [z, hb, ho, hn, hm, haddr, Reg.result, Reg.second, Reg.third, Reg.base,
       Reg.output, Reg.queryCount, Reg.modulus, QueriedProduct.Reg.output,
       QueriedProduct.Reg.queryCount, Fin.mk.injEq]
   obtain ⟨y, hy, ym, yr, yh⟩ :=

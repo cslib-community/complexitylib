@@ -123,6 +123,7 @@ theorem exec_readCell {w L m N : ℕ} (side : Bool) (a : Fin (7 ^ L)) (β : ℕ)
       have hnd : Fits w (N * D m) := hinput.of_le (by unfold inputEnd; omega)
       have hleftMul : Fits w (r * D m) := hnd.of_le (by omega)
       have hleftAdd : Fits w (r * D m + p.inner) := hnd.of_le hleft.le
+      have hrightMul : Fits w (p.inner * N) := hnd.of_le (by omega)
       have hrightAdd : Fits w (p.inner * N + r) := hnd.of_le hright.le
       have hrightOff : Fits w (p.inner * N + r + N * D m) :=
         hinput.of_le (by unfold inputEnd; omega)
@@ -164,7 +165,7 @@ theorem exec_readCell {w L m N : ℕ} (side : Bool) (a : Fin (7 ^ L)) (β : ℕ)
             hx.columns, hx.fixed.zero, hx.fixed.one, hx.fixed.four, hx.fixed.rows,
             hm, ho, hi, hb, hlookup, haddr, hqpos, hr,
             small_fits hfit (by decide : 0 ≤ 256), hqfit, hbfit, hβfit, hblockfit,
-            hrowfit, hrfit, hnd, hleftMul, hleftAdd, hrightAdd,
+            hrowfit, hrfit, hnd, hleftMul, hleftAdd, hrightMul, hrightAdd,
             hrightOff, hleftFour, hrightFour, hleftAddress, hrightAddress,
             hcell, matrixAddress, matrixOffset,
             inverse, snapshot, root, outerSize, columns, zero, one, four, rows,

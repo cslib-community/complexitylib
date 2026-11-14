@@ -168,10 +168,11 @@ theorem exec_layout_at {w N U src : ℕ} (x : Data 64)
   have hac : Fits w (src + N + t * t + t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hfree : Fits w (src + N + t * t + t * t + t * t) :=
     hsize.of_le (by dsimp [t] at *; omega)
+  have hu4 : Fits w (U + U + 1 + (U + U + 1)) := hfill.of_le (by omega)
   refine ⟨?y, ?run, ?parameters, ?counter, ?found, ?memory⟩
   case run =>
     ram_eval [layout, hr, ho, hN, hU, hb, ht, ha, hs, hbc, hac, hfree,
-      t, sideLength, len, upper, base, matAB, matBC, matAC,
+      hu4, t, sideLength, len, upper, base, matAB, matBC, matAC,
       free, side, inst, stop, found, one, filler, encodedFiller, area, sqrtRoot, Fin.mk.injEq]
   case parameters =>
     constructor <;>

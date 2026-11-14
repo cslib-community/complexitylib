@@ -291,6 +291,7 @@ private theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
     |>.set srcRight (N + N + N + N) |>.set srcLeft (N + N + N + N + N)
     |>.set addr 5 |>.set srcLeft (N + N + N + N + N + 5)
     |>.set srcRight (N + N + N + N + 5)
+  have hT : Fits w (K * H) := hfit.of_le (by omega)
   have hN : Fits w N := hfit.of_le (by dsimp [N]; omega)
   have h2N : Fits w (N + N) := hfit.of_le (by dsimp [N]; omega)
   have h3N : Fits w (N + N + N) := hfit.of_le (by dsimp [N]; omega)
@@ -302,8 +303,7 @@ private theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
   have h2M : Fits w (M + M) := hfit.of_le (by dsimp [M]; omega)
   have hstride : Fits w (M + M + 6) := hfit.of_le (by dsimp [M]; omega)
   refine ⟨y, ?_, rfl, ?_⟩
-  · ram_eval [setup, y, hn, hp, hB, hH, hK, hd, hout, hD, hN, h2N, h3N, h4N, h5N, h4N5, h5N5, hM,
-    h2M, hstride, N, M,
+  · ram_eval [setup, y, hn, hp, hB, hH, hK, hd, hout, hD, hT, hN, h2N, h3N, h4N, h5N, h4N5, h5N5, hM, h2M, hstride, N, M,
       size, dimension, modulus, pieceLength, pieces, chunks, descriptors, output,
       produced, heap, total, one, three, six, area, stride, temp, srcLeft, srcRight, addr,
       Fin.mk.injEq]
@@ -395,8 +395,10 @@ private theorem exec_select {w : ℕ} (x : Data 64)
   have hj : j < x.regs pieces := Nat.mod_lt _ hH
   have hfirst : f ≤ x.regs pieces * x.regs pieceLength :=
     Nat.mul_le_mul_right _ hj.le
+  have ha : Fits w (k * 3 + x.regs descriptors) := hfit.of_le (by omega)
   have ha1 : Fits w (a + 1) := hfit.of_le (by dsimp [a]; omega)
   have ha2 : Fits w (a + 1 + 1) := hfit.of_le (by dsimp [a]; omega)
+  have hf : Fits w f := hfit.of_le (by omega)
   have hsub : Fits w (x.regs size - f) := hfit.of_le (by omega)
   have hl : Fits w l := hsub.of_le (min_le_right ..)
   let y := x.set chunkIndex k |>.set pieceIndex j |>.set addr (k * 3)
@@ -408,14 +410,14 @@ private theorem exec_select {w : ℕ} (x : Data 64)
   · by_cases h : x.regs pieceLength < x.regs size - f
     · have he : l = x.regs pieceLength := min_eq_left h.le
       rw [he] at hl
-      ram_eval [select, y, k, j, f, a, l, he, h, ho, ht, ha1, ha2, hsub, hl, chunkIndex, produced,
-        pieces, pieceIndex, addr, three,
+      ram_eval [select, y, k, j, f, a, l, he, h, ho, ht, ha,
+        ha1, ha2, hf, hsub, hl, chunkIndex, produced, pieces, pieceIndex, addr, three,
         descriptors, rho, one, queries, queryCount, first, pieceLength, size, length,
         Fin.mk.injEq]
     · have he : l = x.regs size - f := min_eq_right (by omega)
       rw [he] at hl
-      ram_eval [select, y, k, j, f, a, l, he, h, ho, ht, ha1, ha2, hsub, hl, chunkIndex, produced,
-        pieces, pieceIndex, addr, three,
+      ram_eval [select, y, k, j, f, a, l, he, h, ho, ht, ha,
+        ha1, ha2, hf, hsub, hl, chunkIndex, produced, pieces, pieceIndex, addr, three,
         descriptors, rho, one, queries, queryCount, first, pieceLength, size, length,
         Fin.mk.injEq]
   · simp +decide [y, k, chunkIndex, pieceIndex, addr, rho, queries, queryCount, first, length]
@@ -567,12 +569,14 @@ theorem exec_visit {w : ℕ} (x : Data 64) (L R : ℕ → ℕ)
   have hprefix (i : Fin 64) (hi : 32 ≤ i.val) (hi' : i.val < 50) :
       c.regs i = x.regs i := (ha.seq (hb.seq hc)).regs_eq (prefix_preserves i hi hi')
   let y := c.set heap (x.regs heap + x.regs stride) |>.set produced (x.regs produced + 1)
+  have hheapFit : Fits w (x.regs heap + x.regs stride) := hfit.of_le (by omega)
+  have hcountFit : Fits w (x.regs produced + 1) := hfit.of_le (by omega)
   have hadvance : ExecWithin w advance c y 2 := by
     have hh := hprefix heap (by decide) (by decide)
     have hs := hprefix stride (by decide) (by decide)
     have hp := hprefix produced (by decide) (by decide)
     have h1 := hprefix one (by decide) (by decide)
-    ram_eval [advance, y, hh, hs, hp, h1, ho, heap, stride, produced,
+    ram_eval [advance, y, hh, hs, hp, ho, hheapFit, hcountFit, heap, stride, produced,
       one, Fin.mk.injEq]
   refine ⟨y, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · convert ha.seq (hb.seq (hc.seq hadvance)) using 1 <;>

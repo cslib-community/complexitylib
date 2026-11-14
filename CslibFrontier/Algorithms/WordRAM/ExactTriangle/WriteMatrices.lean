@@ -233,6 +233,8 @@ private theorem exec_readLabel {w row v : ℕ} (side : Bool) (A : Args) (R : ℕ
   have hr := hinput pos hpos
   have hmul : Fits w (row * A.n) := hs.of_le (by dsimp [pos] at hpos; omega)
   have hfirst : Fits w (row * A.n + A.first) := hs.of_le (by dsimp [pos] at hpos; omega)
+  have hindex : Fits w pos := hs.of_le (by omega)
+  have haddr : Fits w (A.src + pos) := hs.of_le (by omega)
   have hsub : Fits w (A.p - R pos) := hp.of_le (by omega)
   have hadd : Fits w (R pos + A.rho) := hp.of_le (by omega)
   have hmodsub : Fits w ((A.p - R pos) % A.p) := hsub.of_le (Nat.mod_le ..)
@@ -244,7 +246,7 @@ private theorem exec_readLabel {w row v : ℕ} (side : Bool) (A : Args) (R : ℕ
   refine ⟨y, ?_, ?_, ?_, rfl⟩
   · cases side <;>
       ram_eval [readLabel, z, t, y, hrow, hv, hx.size, hx.first, hx.src, hx.modulus, hx.rho,
-        hmul, hfirst, hsub, hadd, hmodsub, hmodadd, hr, pos, line, vertex,
+        hmul, hfirst, hindex, haddr, hsub, hadd, hmodsub, hmodadd, hr, pos, line, vertex,
         size, first, src, modulus, rho, addr, value, Fin.mk.injEq]
   · cases side <;> simp [y, t, pos]
   · intro i hi hv
@@ -331,11 +333,13 @@ private theorem exec_body {w q : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ)
   obtain ⟨z, hzg, hzv, hzi, hzo, hzm⟩ := hgate
   have hzd : z.regs dst = A.dst :=
     (hzg.regs_eq (by cases side <;> decide)).trans hba.dst
+  have haddr : Fits w (A.dst + q) := hdst.of_le (by omega)
+  have hinc : Fits w (q + 1) := hdst.of_le (by omega)
   let y := (z.set addr (A.dst + q)).write (A.dst + q) (entry side A R q)
     |>.set idx (q + 1)
   have htail : ExecWithin w
       (ram[ addr ← dst + idx; *addr ← value; idx ← idx + one ]) z y 3 := by
-    ram_eval [y, hzd, hzi, hzv, hzo, addr, dst, idx, value, one, Fin.mk.injEq]
+    ram_eval [y, hzd, hzi, hzv, hzo, haddr, hinc, addr, dst, idx, value, one, Fin.mk.injEq]
   refine ⟨y, ?_, by simp [y], ?_⟩
   · simpa only [body, gate, Nat.reduceAdd] using hb.seq (hzg.seq htail)
   · change Function.update z.mem (A.dst + q) (entry side A R q) = _
@@ -385,6 +389,7 @@ theorem exec {w : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ) (x : Data 17)
     · intro a ha
       rw [hzm, Function.update_of_ne (by omega)]
       exact hyout a (by omega)
+  have h1 : Fits w 1 := hmod.of_le (by omega)
   have ha : Fits w (A.n * A.D) := hdst.of_le (by omega)
   let x₀ := x.set zero 0 |>.set one 1 |>.set idx 0 |>.set area (A.n * A.D)
   have hx₀ : I x₀ := by
@@ -407,7 +412,7 @@ theorem exec {w : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ) (x : Data 17)
       rfl
   have hinit : ExecWithin w
       (ram[ zero ← #0; one ← #1; idx ← #0; area ← size * dimension ]) x x₀ 4 := by
-    ram_eval [x₀, hx.size, hx.dimension, ha, zero, one, idx, area, size, dimension,
+    ram_eval [x₀, hx.size, hx.dimension, ha, h1, zero, one, idx, area, size, dimension,
       Fin.mk.injEq]
   obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
     (fun y => A.n * A.D - y.regs idx) hbody hx₀

@@ -241,10 +241,11 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
     hrun₁.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ hj)
   have hy₁n : y₁.regs n = N := by
     rw [hpres₁ n (by decide)]; simp +decide [x₁, hN]
+  have hL1 : Fits w (L + 1) := hfitN.of_le (by omega)
   let x₂ := ((y₁.set lim (L + 1)).set flag 0).set k 2
   have hrun₂ : ExecWithin (B := .standard) w (ram[ lim ← lres + one; flag ← #0; k ← #2 ])
       y₁ x₂ 3 := by
-    ram_eval [x₂, hy₁r, hy₁o, h2]
+    ram_eval [x₂, hy₁r, hy₁o, hL1, h2]
   have hx₂ : P (x₂.regs k) x₂ := by
     have hgood : ¬Good 2 := fun ⟨c, hc2, hc, _⟩ => by omega
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, hy₁m⟩ <;>

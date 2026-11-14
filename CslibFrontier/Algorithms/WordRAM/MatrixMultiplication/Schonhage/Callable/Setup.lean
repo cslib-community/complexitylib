@@ -63,6 +63,8 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
   have hc : Nat.clog 2 (N + Q + 3) ≤ sourceWidth N Q := by unfold sourceWidth; omega
   have h0 : Fits W 0 := fits_zero _
   have h2 : Fits W 2 := hfit.of_le (by omega)
+  have hb4 : Fits W (b + 4) := hfit.of_le (by omega)
+  have hsize : Fits W (N + Q + 3) := hfit.of_le (by omega)
   have hs1 : Fits W (N + Q + 3 + 1) := hfit.of_le (by omega)
   have hc1 : Fits W (Nat.clog 2 (N + Q + 3) + 1) := hfit.of_le (by omega)
   have hexp : Fits W (128 * Nat.clog 2 (N + Q + 3)) := by
@@ -78,8 +80,8 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
       ∃ s, ExecWithin W readSize x s 9 ∧ s.regs Reg.result = N + Q + 3 ∧
         s.mem = x.mem ∧ s.regs Reg.base = b := by
     refine ⟨?s, ?run, ?result, ?memory, ?base⟩
-    case run => ram_eval [readSize, hb, hN, hQ, Reg.result, Reg.second, Reg.base, Reg.address,
-      Fin.mk.injEq]
+    case run => ram_eval [readSize, hb, hN, hQ, hb4, hsize,
+        Reg.result, Reg.second, Reg.base, Reg.address, Fin.mk.injEq]
     case result => simp +decide
     case memory => rfl
     case base => simpa +decide [Reg.base, Function.update_apply] using hb

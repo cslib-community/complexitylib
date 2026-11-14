@@ -239,13 +239,15 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
     |>.set heap (x.regs heap + (C ⌈/⌉ x.regs capacity) * 3)
     |>.set written (x.regs written + C ⌈/⌉ x.regs capacity)
     |>.set cursor (x.regs cursor + 1)
+  have hh : Fits w (x.regs heap + C ⌈/⌉ x.regs capacity * 3) := hheap.of_le (by omega)
+  have hw : Fits w (x.regs written + C ⌈/⌉ x.regs capacity) := hwritten.of_le (by omega)
   have hf : ExecWithin w advance b z 4 := by
     have bho := hb one (by decide) (by decide)
     have bht := hb three (by decide) (by decide)
     have bhh := hb heap (by decide) (by decide)
     have bhw := hb written (by decide) (by decide)
     have bhc := hb cursor (by decide) (by decide)
-    ram_eval [advance, z, hc, bho, bht, bhh, bhw, bhc, ho, ht, hcursor,
+    ram_eval [advance, z, hc, bho, bht, bhh, bhw, bhc, ho, ht, hh, hw, hcursor,
       temp, three, heap, written, cursor, one, chunkCount, Fin.mk.injEq]
   refine ⟨z, (hd.seq (he.seq hf)).mono (by omega), ?_, ?_, ?_, ?_, ?_⟩
   · simp +decide [z, cursor]

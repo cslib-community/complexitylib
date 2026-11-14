@@ -81,6 +81,7 @@ theorem exec_entryHeader {W n D g p : ℕ} (values : List ℤ)
       x.regs Reg.groups = g ∧ x.regs Reg.prime = p ∧ x.regs Reg.ab = 5 ∧
       x.regs Reg.bc = 5 + n * n ∧ x.regs Reg.ac = 5 + n * n + n * n ∧
       x.regs Reg.base = workspaceBase n := by
+  have hb : Fits W (5 + n * n + n * n + n * n) := hfit.of_le (by omega)
   generalize hstart : (Data.init (PreparationInput.input n D g p values) : Data 640) = initial
   have hDread : initial.mem 1 = D := by rw [← hstart]; simp [Data.init, PreparationInput.input]
   have hgread : initial.mem 2 = g := by rw [← hstart]; simp [Data.init, PreparationInput.input]
@@ -89,7 +90,7 @@ theorem exec_entryHeader {W n D g p : ℕ} (values : List ℤ)
   refine ⟨?x, ?run, ?mem, ?sizeValue, ?dimensionValue, ?groupsValue, ?primeValue,
     ?ab, ?bc, ?ac, ?base⟩
   case run => ram_eval [entryHeader, hDread, hgread, hnread, hpread,
-    Reg.one, Reg.address,
+    hb, Reg.one, Reg.address,
     Reg.dimension, Reg.groups, Reg.n, Reg.prime, Reg.area, Reg.ab, Reg.bc, Reg.ac, Reg.base,
     Fin.mk.injEq]
   case mem => rfl

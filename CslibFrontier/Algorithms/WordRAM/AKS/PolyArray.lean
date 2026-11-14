@@ -89,10 +89,11 @@ private theorem clear_step {w b r : ℕ} {m : ℕ → ℕ} (hfb : Fits w (b + r)
   obtain ⟨hyb, hyr, hyo, hyz, hym⟩ := hy
   obtain ⟨I, hI⟩ : ∃ I, y.regs i = I := ⟨_, rfl⟩
   have hlt : I < r := by simpa only [hI] using hc
+  have hf₁ : Fits w (b + I) := hfb.of_le (by omega)
   have hf₂ : Fits w (I + 1) := hfb.of_le (by omega)
   let z := ((y.set addr (b + I)).write (b + I) 0).set i (I + 1)
   have hrun : ExecWithin (B := .standard) w clearBody y z 3 := by
-    ram_eval [clearBody, z, hyb, hI, hyo, hyz, hf₂]
+    ram_eval [clearBody, z, hyb, hI, hyo, hyz, hf₁, hf₂]
   refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · simp +decide [z, hyb]
   · simp +decide [z, hyr]
@@ -141,6 +142,7 @@ theorem exec {w : ℕ} (x : Data 10) {b r n e a : ℕ} (hb : x.regs base = b) (h
   have her' : e % r < r := Nat.mod_lt _ hr0
   have hamod : a % n < n := Nat.mod_lt _ hn0
   have hf₁ : Fits w (a % n) := hfa.of_le (Nat.mod_le _ _)
+  have hf₂ : Fits w (b + e % r) := hfb.of_le (by omega)
   -- The cell at `e mod r` after the first store.
   obtain ⟨c, hc⟩ : ∃ c, c = if e % r = 0 then a % n else 0 := ⟨_, rfl⟩
   obtain ⟨y', hy'⟩ : ∃ y', (y.set t (a % n)).write b (a % n) = y' := ⟨_, rfl⟩
@@ -159,11 +161,12 @@ theorem exec {w : ℕ} (x : Data 10) {b r n e a : ℕ} (hb : x.regs base = b) (h
     · rw [Function.update_of_ne (by omega), hym]
       simp [hc, h, show b + e % r < b + r by omega]
   have hcn : c < n := by rw [hc]; split_ifs <;> omega
+  have hf₃ : Fits w (c + 1) := hfn.of_le (by omega)
   have hf₄ : Fits w ((c + 1) % n) := hfn.of_le (by have := Nat.mod_lt (c + 1) hn0; omega)
   let z := ((((y'.set addr (b + e % r)).set t c).set t (c + 1)).set t ((c + 1) % n)).write
     (b + e % r) ((c + 1) % n)
   have hrun₃ : ExecWithin (B := .standard) w addMonomial y' z 5 := by
-    ram_eval [addMonomial, z, hy'b, hy'e, hy'o, hy'n, hcell, hf₄]
+    ram_eval [addMonomial, z, hy'b, hy'e, hy'o, hy'n, hcell, hf₂, hf₃, hf₄]
   refine ⟨z, (hrun₀.seq (hrun₁.seq (hrun₂.seq hrun₃))).mono ?_, ?_, ?_, ?_, ?_, ?_⟩
   · have : x₀.regs i = 0 := by simp +decide [x₀]
     rw [this]; omega
@@ -237,6 +240,8 @@ private theorem step {w a b r : ℕ} {m : ℕ → ℕ} (hfa : Fits w (a + r)) (h
   obtain ⟨K, hK⟩ : ∃ K, y.regs k = K := ⟨_, rfl⟩
   have hlt : K < r := by simpa only [hK] using hc
   rw [hK] at hyf
+  have hf₁ : Fits w (a + K) := hfa.of_le (by omega)
+  have hf₂ : Fits w (b + K) := hfb.of_le (by omega)
   have hf₃ : Fits w (K + 1) := hfa.of_le (by omega)
   have hiff : (∀ k' < K + 1, m (a + k') = m (b + k')) ↔
       (∀ k' < K, m (a + k') = m (b + k')) ∧ m (a + K) = m (b + K) := by
@@ -252,8 +257,8 @@ private theorem step {w a b r : ℕ} {m : ℕ → ℕ} (hfa : Fits w (a + r)) (h
   have hrun : ExecWithin (B := .standard) w body y z 9 := by
     by_cases heq : m (a + K) = m (b + K)
     · refine ExecWithin.mono (T := 8) ?_ (by omega)
-      ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₃]
-    · ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₃]
+      ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₁, hf₂, hf₃]
+    · ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₁, hf₂, hf₃]
   refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · simp +decide [z, hya]
   · simp +decide [z, hyb]

@@ -411,11 +411,12 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     have hencoded : Fits (w + 2) (2 * M) := by
       rw [← henc]
       exact (encode_fits hMf).mono (by omega)
+    have hraw : Fits (w + 2) M := hencoded.of_le (by omega)
     have hyf : y.regs factor = x.regs factor := hy.1 _ (by decide)
     let u := (y.set rawModulus M).set modulus (2 * M)
     have hprep : ExecWithin (w + 2)
         (ram[ rawModulus ← factor * cursor; modulus ← rawModulus * two ]) y u 2 := by
-      ram_eval [u, M, hyf, htwo, hencoded, rawModulus, modulus, factor, cursor, two,
+      ram_eval [u, M, hyf, htwo, hraw, hencoded, rawModulus, modulus, factor, cursor, two,
         CountCall.modulus, Fin.mk.injEq, Nat.mul_comm]
     have huc (i : Fin 64) (hi : Control i) : u.regs i = y.regs i := by
       have hr : i ≠ rawModulus := by intro h; subst i; norm_num [Control, rawModulus] at hi

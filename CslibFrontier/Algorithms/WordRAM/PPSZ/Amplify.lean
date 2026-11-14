@@ -201,12 +201,14 @@ theorem ampSetup_exec (s a b c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
       RoundFrame φ 6 ((s :: a :: b :: c :: encode φ).length + 1) (ampSetupData s a b c φ).mem
         (ampSetupData s a b c φ) := by
   have hL : 5 ≤ (s :: a :: b :: c :: encode φ).length := by simp [encode]
+  have hf9 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
   have hf10 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1) :=
     hw.of_le (by omega)
   have hf11 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s) :=
     hw.of_le (by omega)
   have hf12 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s + s) :=
     hw.of_le (by omega)
+  have hf14 : Fits w (a * n + b) := hw.of_le (by omega)
   have hf16 : Fits w ((a * n + b - 1) / b) := hw.of_le (by
     have := Nat.div_le_self (a * n + b - 1) b; omega)
   have hm0 : (Data.init (s :: a :: b :: c :: encode φ) : Data 32).mem 0 =
@@ -218,8 +220,7 @@ theorem ampSetup_exec (s a b c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   have hm5 : (Data.init (s :: a :: b :: c :: encode φ) : Data 32).mem 5 = n := rfl
   refine ⟨?run, ?frame⟩
   case run =>
-    ram_eval [ampSetup, ampSetupData, ppszExp, Data.init_regs, hm0, hm1, hm2, hm3, hm4, hm5, hf10,
-      hf11, hf12, hf16]
+    ram_eval [ampSetup, ampSetupData, ppszExp, Data.init_regs, hm0, hm1, hm2, hm3, hm4, hm5, hf9, hf10, hf11, hf12, hf14, hf16]
   case frame =>
     refine ⟨by simp +decide [ampSetupData], by simp +decide [ampSetupData],
       by simp +decide [ampSetupData], by simp +decide [ampSetupData],

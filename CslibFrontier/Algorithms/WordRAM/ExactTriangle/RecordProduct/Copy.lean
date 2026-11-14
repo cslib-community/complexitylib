@@ -37,6 +37,8 @@ theorem exec_copyInputs {W b A Q s t q : ℕ} (x : Data 320)
       (∀ a < 2 * Q, y.mem (b + 5 + 2 * A + a) = x.mem (q + a)) ∧
       (∀ a, a < b + 5 ∨ b + 5 + 2 * A + 2 * Q ≤ a → y.mem a = x.mem a) ∧
       ∀ i : Fin 320, i.val < 96 → i ≠ Reg.address → y.regs i = x.regs i := by
+  have hbAA : Fits W (b + 5 + A + A) := hfit.of_le (by omega)
+  have hQQ : Fits W (Q + Q) := hfit.of_le (by omega)
   let l := x.set Reg.source s |>.set Reg.address 5 |>.set Reg.destination (b + 5)
     |>.set Reg.length A
   have hl : ExecWithin W deliverLeft x l 4 := by
@@ -81,7 +83,7 @@ theorem exec_copyInputs {W b A Q s t q : ℕ} (x : Data 320)
   let z := c.set Reg.source q |>.set Reg.destination (b + 5 + A + A)
     |>.set Reg.length (Q + Q)
   have hz : ExecWithin W deliverQueries c z 3 := by
-    ram_eval [deliverQueries, z, cq, cdst, cA, cQ, Reg.source,
+    ram_eval [deliverQueries, z, cq, cdst, cA, cQ, hbAA, hQQ, Reg.source,
       Reg.queries, Reg.destination, Reg.area, Reg.length, Reg.count]
   obtain ⟨y, hy, ym, ysrc, ydst, ylen, yr⟩ := exec_copy z
     (by simp +decide [z, Reg.source, Reg.destination, Reg.length])

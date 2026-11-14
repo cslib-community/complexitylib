@@ -42,6 +42,8 @@ theorem exec_pop {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
       y.regs mode = (if x.regs level = 0 then x.regs mode else 2) ∧
       y.regs active = (if x.regs level = 0 then 0 else x.regs active) ∧
       (∀ i, ¬PopLocal i → y.regs i = x.regs i) := by
+  have h2 : Fits w 2 := hw.of_le (by omega)
+  have hd : Fits w (x.regs level - 1) := hw.of_le (by omega)
   by_cases hroot : x.regs level = 0
   · let y := x.set active 0
     have he : ExecWithin w pop x y 2 := by
@@ -51,7 +53,7 @@ theorem exec_pop {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
     all_goals simp +decide [y, hroot, active, level, mode]
   · let y := (x.set level (x.regs level - 1)).set mode 2
     have he : ExecWithin w pop x y 4 := by
-      ram_eval [pop, y, hroot, h0, h1, level, mode, one, Fin.mk.injEq]
+      ram_eval [pop, y, hroot, h0, h1, h2, hd, level, mode, one, Fin.mk.injEq]
     refine ⟨y, he, rfl, ?_, ?_, ?_, fun i hi => he.regs_eq (pop_preserves i hi)⟩
     all_goals simp +decide [y, hroot, active, level, mode]
 
@@ -70,11 +72,13 @@ theorem exec_storeTerm {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
     ∃ y, ExecWithin w storeTerm x y 4 ∧ y.regs mode = 1 ∧
       y.mem = Function.update x.mem (x.regs frame + 3) (x.regs term) ∧
       (∀ i, i ≠ address → i ≠ mode → y.regs i = x.regs i) := by
+  have hmode : Fits w 1 := hf.of_le (by omega)
+  have hadd : Fits w (x.regs frame + 3) := hf.of_le (by omega)
   let y := ((((x.set address (x.regs frame + 4)).set address (x.regs frame + 3)).write
     (x.regs frame + 3) (x.regs term)).set mode 1)
   have hsub : x.regs frame + 4 - 1 = x.regs frame + 3 := by omega
   have he : ExecWithin w storeTerm x y 4 := by
-    ram_eval [storeTerm, y, h1, h4, hf, hsub, address, mode, one,
+    ram_eval [storeTerm, y, h1, h4, hf, hmode, hadd, hsub, address, mode, one,
       frame, frameWidth, term, Fin.mk.injEq]
   refine ⟨y, he, by simp [y], rfl, ?_⟩
   intro i ha hm

@@ -39,7 +39,10 @@ The evaluator infers intermediate word bounds from `Fits` hypotheses using linea
 Keep the endpoint bound in context rather than providing one certificate for every address.
 The inference uses only hypotheses mentioning `Fits`, with a limit of sixteen such hypotheses;
 ordinary inequalities alone do not supply missing endpoint bounds. Retain explicit certificates
-for nonlinear arithmetic or bounds that need other hypotheses. See
+for nonlinear arithmetic or bounds that need other hypotheses. For example, a loop invariant
+`i < n` and `Fits w (base + n)` need an explicit certificate for `base + i`;
+the evaluator does not use the invariant. Above the sixteen-fact limit, pass the exact
+certificates for written values in the `ram_eval` simp list, including constants. See
 [`Fits`](../../CslibFrontier/Tactic/Fits.lean) for the inference contract.
 
 ## Proving a constant-cost counting loop

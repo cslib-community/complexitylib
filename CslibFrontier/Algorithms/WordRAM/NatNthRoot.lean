@@ -103,10 +103,11 @@ theorem exec {w : ℕ} (x : Data 6) (hm : 1 ≤ x.regs m) (h1 : Fits w 1)
       have hpow : y.regs p = b ^ y.regs i := hyp.resolve_right (fun h => hover h.1)
       have hmul : Fits w (y.regs p * y.regs m) := by
         rw [hym]; exact hprod.of_le (Nat.mul_le_mul_right _ (by omega))
+      have hinc : Fits w (y.regs i + 1) := hk.of_le (by omega)
       refine ⟨?z, ?run, ?inv, ?decrease⟩
       case run =>
         refine ExecWithin.branch_neg hc' ?_
-        ram_eval [hmul, hyo]
+        ram_eval [hmul, hinc, hyo]
       case inv =>
         refine ⟨?_, ?_, ?_, ?_, ?_, ?_, hymem⟩
         · simpa +decide [Function.update_apply] using hym

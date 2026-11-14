@@ -109,6 +109,9 @@ theorem exec_lookup {w L m t C D V : ℕ} (x : Data registers) (π : Cube L)
   have hvalue : z.mem (V + r) = Signed.encode (slotValue a b s) := by
     rw [hmem]
     exact hvalues s hs hv
+  have hfprod : Fits w (π.starLevels.card * 10 ^ L) := hfit.of_le (by omega)
+  have hfD : Fits w (D + s) := hfit.of_le (by omega)
+  have hfV : Fits w (V + r) := hfit.of_le (by omega)
   have hnH : ¬m - t < π.starLevels.card + π.P0Levels.card := not_lt.mpr hπ.1
   have hnr : ¬r + 1 = 0 := by omega
   let z' := z.set Reg.temporary (z.regs Reg.temporary)
@@ -118,7 +121,7 @@ theorem exec_lookup {w L m t C D V : ℕ} (x : Data registers) (π : Cube L)
   have hy : ExecWithin w lookupFinish z y 16 := by
     ram_eval [lookupFinish, y, z', zH, zT, zD, zV, hzs, hzc, hzf, hzi,
       hzp.nil, hzp.one, hnH, hslot, hword, hvalue, hnr,
-      Nat.add_sub_cancel,
+      hfprod, hfD, hfV, Nat.add_sub_cancel,
       Reg.height, Reg.population, Reg.invalid, Reg.nil, Reg.temporary,
       Reg.childSlot, Reg.stars, Reg.span, Reg.completion, Reg.address, Reg.directory,
       Reg.childRank, Reg.one, Reg.values, Reg.answer, Reg.found, Fin.mk.injEq]

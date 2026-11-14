@@ -174,12 +174,13 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
     (Finset.card_filter_le _ _).trans (Finset.card_range A).le
   let ph := if Nat.gcd R A = 1 then y.regs phi + 1 else y.regs phi
   let z := (y₄.set phi ph).set a (A + 1)
+  have hfph : Fits w (y.regs phi + 1) := hfR.of_le (by omega)
   have hfA1 : Fits w (A + 1) := hfR.of_le (by omega)
   have hrun₅ : ExecWithin (B := .standard) w
       (ram[ if ga = one then [ phi ← phi + one ] else [ phi ← phi ]; a ← a + one ]) y₄ z 4 := by
     by_cases hg1 : Nat.gcd R A = 1
     · refine ExecWithin.mono (T := 3) ?_ (by omega)
-      ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfA1]
+      ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfph, hfA1]
     · ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfA1]
   have hza : z.regs a = A + 1 := by simp [z]
   refine ⟨z, (hrun₁.seq (hrun₂.seq (hrun₃.seq (hrun₄.seq hrun₅)))).mono (by omega), ?_, ?_⟩

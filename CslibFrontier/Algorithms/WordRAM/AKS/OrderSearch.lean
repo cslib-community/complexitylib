@@ -132,6 +132,7 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
     have hf₁ : Fits w (N ^ K % R * (N % R)) := hfR.of_le hmul.le
     have hf₂ : Fits w (N ^ (K + 1) % R) := hfR.of_le
       ((Nat.mod_lt _ hR0).le.trans (Nat.le_mul_self R))
+    have hf₃ : Fits w (K + 1) := hfL.of_le (by omega)
     have hiff (o : ℕ) : ((∀ j, 1 ≤ j → j ≤ K + 1 → N ^ j % R ≠ 1) ↔
         (∀ j, 1 ≤ j → j ≤ K → N ^ j % R ≠ 1) ∧ N ^ (K + 1) % R ≠ 1) := by
       constructor
@@ -145,8 +146,8 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
     have hrun : ExecWithin (B := .standard) w powBody y z 6 := by
       by_cases hP : N ^ (K + 1) % R = 1
       · refine ExecWithin.mono (T := 5) ?_ (by omega)
-        ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, h1f]
-      · ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, h1f]
+        ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, hf₃, h1f]
+      · ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, hf₃, h1f]
     have hzk : z.regs k = K + 1 := by simp +decide [z]
     refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
     · simp +decide [z, hyL]

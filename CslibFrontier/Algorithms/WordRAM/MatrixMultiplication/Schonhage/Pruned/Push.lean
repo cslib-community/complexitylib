@@ -66,9 +66,13 @@ theorem exec_push {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
     level (x.regs nextLevel)).set mode 0)
   have hf (k : ℕ) (hk : k ≤ 3) : Fits w (x.regs frames + x.regs nextLevel * 4 + k) :=
     hw.of_le (by omega)
+  have hf0 : Fits w (x.regs frames + x.regs nextLevel * 4) := hw.of_le (by omega)
+  have hp : Fits w (x.regs leafPrefix + x.regs term * x.regs stride) := hw.of_le (by omega)
+  have hs : Fits w (x.regs stride * 10) := hw.of_le (by omega)
   have hexact : Exec w push x y 15 := by
-    ram_eval [push, y, f, p, s, h0, h1, h4, h10, hf 1 (by decide), hf 2 (by decide), hf 3 (by
-      decide), childFrame, temporary₂, childPrefix, childStride, address, level, mode, frames,
+    ram_eval [push, y, f, p, s, h0, h1, h4, h10, hf0,
+      hf 1 (by decide), hf 2 (by decide), hf 3 (by decide), hp, hs,
+      childFrame, temporary₂, childPrefix, childStride, address, level, mode, frames,
       nextLevel, leafPrefix, term, stride, ten, one, frameWidth, childCount, nil,
       Fin.mk.injEq, Nat.add_zero]
   have he := hexact.within

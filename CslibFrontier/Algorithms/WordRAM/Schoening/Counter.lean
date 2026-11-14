@@ -386,6 +386,7 @@ theorem mulAddLoop_spec {a Bd : ℕ} (haB : a ≤ Bd) (hf : Fits w (2 * Bd)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = d := by simpa using hh.get pre.length (by simp)
     obtain ⟨v, hv⟩ : ∃ v, d * a + cy = v := ⟨_, rfl⟩
+    have hf2 : Fits w (d * a) := hf.of_le (by omega)
     have hf3 : Fits w v := hf.of_le (by omega)
     have hf4 : Fits w (v >>> 1) := hf3.of_le (by rw [Nat.shiftRight_eq_div_pow]; omega)
     have hf5 : Fits w (v &&& 1) := hf3.of_le (by rw [Nat.and_one_is_mod]; omega)
@@ -394,7 +395,7 @@ theorem mulAddLoop_spec {a Bd : ℕ} (haB : a ≤ Bd) (hf : Fits w (2 * Bd)) :
       v).set carry (v >>> 1)).set val (v &&& 1)).write (B + pre.length) (v &&& 1)).set idx
       (pre.length + 1))
     have hbody : ExecWithin w mulAddBody x y₁ 8 := by
-      ram_eval [mulAddBody, y₁, hB, hv, hone, ha, hc, hi, hmem, hf3, hf4, hf5, hf6]
+      ram_eval [mulAddBody, y₁, hB, hv, hone, ha, hc, hi, hmem, hf2, hf3, hf4, hf5, hf6]
     have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) (v % 2) := by
       simp [y₁, Nat.and_one_is_mod]
     have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
@@ -542,13 +543,16 @@ theorem divLoop_spec {d : ℕ} (hd : 0 < d) (hfd : Fits w (2 * d)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = b := by simpa using hh.get pre.length (by simp)
     obtain ⟨t, ht⟩ : ∃ t, r + r + b = t := ⟨_, rfl⟩
+    have hf2 : Fits w (B + pre.length) := hfit.of_le (by omega)
+    have hf3 : Fits w (r + r) := hfd.of_le (by omega)
     have hf4 : Fits w t := hfd.of_le (by omega)
     have hf5 : Fits w (t / d) := hf4.of_le (Nat.div_le_self _ _)
     have hf6 : Fits w (t % d) := hf4.of_le (Nat.mod_le _ _)
     let y₁ : Data 24 := (((((((x.set idx pre.length).set addr (B + pre.length)).set val b).set tmp
       (r + r)).set tmp t).set val (t / d)).set rmd (t % d)).write (B + pre.length) (t / d)
     have hbody : ExecWithin w divBody x y₁ 8 := by
-      ram_eval [divBody, y₁, hB, ht, hone, hdv, hi, hr, hmem, Nat.add_sub_cancel, hf4, hf5, hf6]
+      ram_eval [divBody, y₁, hB, ht, hone, hdv, hi, hr, hmem, Nat.add_sub_cancel, hf2, hf3,
+        hf4, hf5, hf6]
     have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) (t / d) := by simp [y₁]
     have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
     obtain ⟨y, hy, hyh, hyr, hyb, hym⟩ := ih (t / d :: qs) y₁ (t % d) (by simp +decide [y₁, hz])

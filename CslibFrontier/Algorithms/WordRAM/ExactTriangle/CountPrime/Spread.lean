@@ -76,12 +76,13 @@ theorem exec_spreadTable {w k : ℕ} (x : Data 128)
       rw [hbase]; omega)
     have hprod : Fits w (Nat.Morton.spread (y.regs Reg.index / 2) * 4) :=
       hw.of_le (by omega)
+    have hsum : Fits w (Nat.Morton.spread (y.regs Reg.index)) := hw.of_le (by omega)
     have hwrite : Fits w (y.regs Reg.spread + y.regs Reg.index) := hw.of_le (by
       rw [hbase]; omega)
+    have hinc : Fits w (y.regs Reg.index + 1) := hw.of_le (by omega)
     refine ⟨?z, ?run, ?inv, ?decrease⟩
     case run =>
-      ram_eval [spreadStep, hy1, hy2, hy4, hread, hreadaddr, hprod, hrec, hwrite, Reg.index,
-        Reg.address, Reg.temporary, Reg.position,
+      ram_eval [spreadStep, hy1, hy2, hy4, hread, hreadaddr, hprod, hrec, hsum, hwrite, hinc, Reg.index, Reg.address, Reg.temporary, Reg.position,
         Reg.spread, Reg.one, Reg.two, Reg.four, Fin.mk.injEq]
     case inv =>
       refine ⟨?_, ?_, ?_, ?_, ?_⟩

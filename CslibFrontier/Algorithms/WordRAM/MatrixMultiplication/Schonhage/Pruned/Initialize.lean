@@ -54,6 +54,7 @@ theorem exec_initialize {w L Q : ℕ} (x : Data registers) (hL : x.mem 1 = L)
     (hpower.regs_eq (by decide : powers.Preserves queryCount)).trans (by simp [h])
   let u := ((((((p.set arrayA 3).set arrayB (3 + 10 ^ L)).set queries (3 + 10 ^ L + 10 ^ L)).set
     output (3 + 10 ^ L + 10 ^ L + Q)).set scratch (3 + 10 ^ L + 10 ^ L + Q + Q)).set epoch 0)
+  have hB : Fits w (3 + 10 ^ L) := hfit.of_le (by omega)
   have hqueries : Fits w (3 + 10 ^ L + 10 ^ L) :=
     hfit.of_le (by unfold addressBound; nlinarith only [hp])
   have hout : Fits w (3 + 10 ^ L + 10 ^ L + Q) :=
@@ -61,7 +62,7 @@ theorem exec_initialize {w L Q : ℕ} (x : Data registers) (hL : x.mem 1 = L)
   have hs : Fits w (3 + 10 ^ L + 10 ^ L + Q + Q) :=
     hfit.of_le (by unfold addressBound; nlinarith only [hp])
   have hparameters : ExecWithin w parameters p u 6 := by
-    ram_eval [parameters, u, hspan, hpQ, hqueries, hout, hs, arrayA, arrayB, queries,
+    ram_eval [parameters, u, hspan, hpQ, hB, hqueries, hout, hs, arrayA, arrayB, queries,
       output, scratch, epoch, span, queryCount, Fin.mk.injEq]
   have unchanged (i : Fin registers) (hi : parameters.Preserves i) : u.regs i = p.regs i :=
     hparameters.regs_eq hi
