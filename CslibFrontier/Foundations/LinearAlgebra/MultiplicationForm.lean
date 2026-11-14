@@ -55,7 +55,7 @@ variable {K E ι : Type*} [Field K] [Field E] [Algebra K E]
 
 This is the form whose Gram matrix is the symmetrizer in the field-extension construction of
 [QRUOV2026, §3.2, Theorem 1, printed p. 13]. -/
-@[expose] noncomputable def mulForm (φ : E →ₗ[K] K) : BilinForm K E :=
+noncomputable def mulForm (φ : E →ₗ[K] K) : BilinForm K E :=
   LinearMap.compr₂ (Algebra.lmul K E).toLinearMap φ
 
 @[simp]
@@ -76,13 +76,7 @@ theorem mulForm_separatingLeft {φ : E →ₗ[K] K} (hφ : φ ≠ 0) :
     (mulForm φ).SeparatingLeft := by
   intro x hx
   by_contra hx0
-  have hφ_value : ∃ z : E, φ z ≠ 0 := by
-    by_contra h
-    apply hφ
-    ext z
-    have hz : φ z = 0 := not_ne_iff.mp fun hz ↦ h ⟨z, hz⟩
-    simpa only [LinearMap.zero_apply] using hz
-  obtain ⟨z, hz⟩ := hφ_value
+  obtain ⟨z, hz⟩ := DFunLike.ne_iff.mp hφ
   have hzero := hx (x⁻¹ * z)
   rw [mulForm_apply, ← mul_assoc, mul_inv_cancel₀ hx0, one_mul] at hzero
   exact hz hzero

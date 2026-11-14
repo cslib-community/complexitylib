@@ -69,7 +69,7 @@ printed p. 22]. -/
 abbrev BaseField := ZMod 127
 
 /-- The degree-3 modulus `x³ - x - 1` from [QRUOV2026, Table 3, printed p. 22]. -/
-@[expose] noncomputable def modulus : BaseField[X] := X ^ 3 - X - 1
+noncomputable def modulus : BaseField[X] := X ^ 3 - X - 1
 
 /-- The QR-UOV cubic is monic. -/
 theorem modulus_monic : modulus.Monic := by
@@ -98,15 +98,15 @@ instance : Fact (Irreducible modulus) := ⟨modulus_irreducible⟩
 abbrev Extension := AdjoinRoot modulus
 
 /-- The power basis `1, x, x²` of the QR-UOV coefficient extension. -/
-@[expose] noncomputable def basis : Basis (Fin 3) BaseField Extension :=
+noncomputable def basis : Basis (Fin 3) BaseField Extension :=
   (AdjoinRoot.powerBasis' modulus_monic).basis.reindex (finCongr modulus_natDegree)
 
 /-- The coefficient-zero functional in the power basis. -/
-@[expose] noncomputable def coeffZero : Extension →ₗ[BaseField] BaseField :=
+noncomputable def coeffZero : Extension →ₗ[BaseField] BaseField :=
   basis.coord 0
 
 /-- The multiplication Gram matrix obtained from the coefficient-zero functional. -/
-@[expose] noncomputable def symmetrizer : Matrix (Fin 3) (Fin 3) BaseField :=
+noncomputable def symmetrizer : Matrix (Fin 3) (Fin 3) BaseField :=
   (Algebra.mulForm coeffZero).toMatrix basis
 
 /-- The coefficient-zero functional is nonzero. -/
