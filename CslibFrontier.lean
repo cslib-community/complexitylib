@@ -2630,6 +2630,7 @@ public import CslibFrontier.Computability.Complexity.Problems.PlanarPositiveOneI
 public import CslibFrontier.Computability.Complexity.Problems.PlanarThreeSATThree
 public import CslibFrontier.Computability.Complexity.Problems.Primes
 public import CslibFrontier.Computability.Complexity.Problems.Primes.MillerRabin
+public import CslibFrontier.Computability.Complexity.Problems.QUADEQ
 public import CslibFrontier.Computability.Complexity.Problems.SAT
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Declared
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawing
@@ -4337,6 +4338,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.Scheme
 public import CslibFrontier.Crypto.Computational.EvenMansour
 public import CslibFrontier.Crypto.Computational.Factoring.PollardRho
 public import CslibFrontier.Crypto.Computational.Falcon.Verification
+public import CslibFrontier.Crypto.Computational.Falcon.VerificationFrontend
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.Basic
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract
 public import CslibFrontier.Crypto.Computational.GGM.Circuit
@@ -5353,6 +5355,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.Family
 public import CslibFrontier.Foundations.Combinatorics.Expander.FourthMoment
 public import CslibFrontier.Foundations.Combinatorics.Expander.Harmonic
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hitting
+public import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hom
 public import CslibFrontier.Foundations.Combinatorics.Expander.IteratedProd
 public import CslibFrontier.Foundations.Combinatorics.Expander.KilledWalk
@@ -6661,6 +6664,7 @@ public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Compositi
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement
+public import CslibFrontier.Logics.Propositional.CSP.Quadratic
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.ContractionRows
 public import CslibFrontier.Logics.Propositional.CSP.Table.CyclicDifference

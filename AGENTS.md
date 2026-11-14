@@ -295,9 +295,11 @@ MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
-Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
-validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
-`scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
+Use MCP goal inspection, diagnostics and theorem search while iterating. When a build is needed,
+use `scripts/build.sh <affected modules and representative clients> --wfail --iofail`;
+reserve `scripts/check.sh --quick --no-full-fallback` for local validation checkpoints.
+`scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and `scripts/worktree.sh create`
+run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
 Use `scripts/worktree.sh` for isolated worktrees; follow its
@@ -331,9 +333,10 @@ output.
 The split overlaps work rather than removing it: it adds another checkout and runner plus the
 aggregator's scheduling time, and saves only source-check time that would otherwise extend the
 slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
-After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
-restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
-affected sources, including unchanged importing clients, built import aggregates and executable
+After the Lean gates, full mode also re-elaborates built root-package sources whose individual
+artifacts Lake restored without diagnostic logs. This recovers warnings and informational output;
+it is not part of an ordinary targeted build. Quick mode checks the affected sources, including
+unchanged importing clients, built import aggregates and executable
 helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
@@ -341,16 +344,18 @@ generated research data. They catch source/link drift and malformed visual marku
 replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
-repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
-need direct checks of the changed behavior. Required CI and merge-group checks still apply.
+repeat it locally merely to satisfy a second reporting requirement. Run local full validation
+(`scripts/check.sh`) only when explicitly requested or hosted coverage is unavailable; changes
+to validation machinery also need direct checks of the changed behavior. Required CI and
+merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
 any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
-For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
-transitive importing clients, then checks import aggregates. The comparison uses the merge base
+At local validation checkpoints, `scripts/check.sh --quick --no-full-fallback [--base REF]`
+builds changed Lean modules and their transitive importing clients, then checks import aggregates.
+The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene and the source-only changed-file lints
 (`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
@@ -358,14 +363,16 @@ when a library module changed, the encoding readability and projection chain rat
 only sources and take seconds. Run the same changed-file lints when building targets directly
 instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, aggregate edits other than the import
-lines `lake exe mk_all` adds for new modules, unsupported layouts and ambiguous change/import
+not full validation. Without `--no-full-fallback`, non-Lean changes, deletions/renames, aggregate
+edits other than the import lines `lake exe mk_all` adds for new modules, unsupported layouts and
+ambiguous change/import
 analysis fall back to the full check. The exceptions are the ratchet baselines
 `scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
-which no Lean gate reads: a change to one runs its ratchet instead. On a shared host, use
-`--quick --no-full-fallback`: it reports such a change and exits with status 3, so you can build
-the changed modules and clients directly and leave the full run to CI. Quick success alone does
-not satisfy the full validation requirement above; documentation-only checks need not invoke
+which no Lean gate reads: a change to one runs its ratchet instead. With `--no-full-fallback`,
+an unsupported change exits with status 3: run focused checks for the changed files and
+representative clients, and leave the full run to hosted CI. Do not respond to status 3 by
+starting a full local check unless the full-validation condition above applies. Quick success
+alone does not satisfy the full validation requirement above; documentation-only checks need not invoke
 quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
