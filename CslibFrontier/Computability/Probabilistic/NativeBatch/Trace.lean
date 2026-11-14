@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.NativeBatch
+import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
@@ -49,10 +50,7 @@ variable (machine : MultiTapePTM k Bool Control Unit)
 private theorem prepare_state
     (world : World k Control Unit (ServerState n Private) input) (bit : Bool) :
     server (.pending (instruction machine world bit)) = world.memory.privateState := by
-  unfold instruction
-  split
-  · rfl
-  · split <;> rfl
+  exact congrArg Memory.privateState (instruction_memory machine world bit)
 
 /-- No accepted batch is dispatched during silent execution, including actual
 rejected native transactions. All hidden oracle state and accepted receipts persist. -/

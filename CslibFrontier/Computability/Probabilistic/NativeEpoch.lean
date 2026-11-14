@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.NativeInterface
 public import CslibFrontier.Probability.PMF.StoppedProcess.Boundary
+import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
 
@@ -143,16 +144,6 @@ inside the checkpoint and may change during silent computation. -/
 @[expose] def checkpointMemory (phase : Phase k Control Operation Private input) :
     Memory Operation Private := (worldOf phase).memory
 
-omit [DecidableEq Operation] in
-private theorem instruction_memory (world : World k Control Operation Private input) (bit : Bool) :
-    checkpointMemory (.pending (instruction machine world bit)) = world.memory := by
-  cases hs : world.config.tapes.state with
-  | none => simp [instruction, hs, checkpointMemory, worldOf]
-  | some control =>
-    simp only [instruction, hs]
-    cases machine.tr control world.config.tapes.inputSymbol world.config.tapes.workTapeSymbols
-      world.config.answerSymbols bit <;> rfl
-
 /-- Silent execution cannot obtain a response, change oracle private state or
 add a resource receipt, even while its actual native work tapes change. -/
 theorem silent_memory (phase : Phase k Control Operation Private input) :
@@ -168,7 +159,7 @@ theorem silent_memory (phase : Phase k Control Operation Private input) :
         Bool.false_eq_true, prepare, PMF.map_comp, Function.comp_def]
       change (PMF.uniformOfFintype Bool).map (fun bit =>
         checkpointMemory (.pending (instruction machine world bit))) = PMF.pure world.memory
-      simp only [instruction_memory]
+      simp only [checkpointMemory, instruction_memory]
       exact PMF.map_const _ _
   | pending chosen =>
     cases chosen <;>
