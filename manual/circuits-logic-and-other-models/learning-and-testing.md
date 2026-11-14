@@ -222,6 +222,26 @@ and use `Cslib.HomomorphismTesting`. Here `rejection f` is the uniform independe
 that `f x + f y ≠ f (x + y)`, and `distance f` is the attained minimum normalized Hamming
 disagreement over bundled additive homomorphisms. `min_le_rejection` proves
 `min (1/6) (distance f / 2) ≤ rejection f` (Goldreich draft Exercise 9.21).
+For Exercise 9.20, `three_mul_distance_sub_six_sq_le_rejection` gives the unconditional
+bound `3 * distance f - 6 * distance f ^ 2 ≤ rejection f`, including trivial groups.
+It is increasing only up to distance `1/4`, positive between `0` and `1/2`, and
+nonpositive from `1/2` onward. Do not substitute an arbitrary lower bound on distance into
+this quadratic: it is not globally monotone. Use the attained distance or supply the
+additional range argument. Exercise 9.21's bound remains useful at larger distances.
+
+For a supplied bundled homomorphism `h`, `OnlyFirstDisagreement f h x y` means disagreement
+at `x` and agreement at both `y` and `x + y`. `three_mul_onlyFirst_le_rejection` is part (1);
+`disagreement_sub_two_sq_le_onlyFirst` is part (2), with `d` the actual normalized Hamming
+disagreement with `h`. Neither requires nearestness, a small rejection probability, or a
+small distance. `three_mul_disagreement_sub_six_sq_le_rejection` combines them, so callers
+need no event algebra. Pairwise independence of the three sampled positions gives means
+`d²` for each pair of disagreement indicators; the shared triple intersection cancels when
+comparing the three exactly-one events. Translation invariance suffices: permuting the
+three positions naively would incorrectly assume disagreement is invariant under negation.
+The checked clients below include actual distances `1/4` and `1/2` on `ZMod 4 → ZMod 3`,
+where the zero homomorphism is the only homomorphism, and a distance-one nonzero constant
+on a trivial domain. These are probability statements, without an efficiency claim.
+
 Choose any `φ` satisfying `IsPlurality f φ`, whose existence is `exists_plurality`.
 `concentration` bounds the probability that the two-read vote `f (x + y) - f y` equals `φ x`
 by at least `1 - 2 * rejection f`, for every `x`. If rejection is strictly below `1/6`,
