@@ -41,6 +41,20 @@ root = "Tool"
 """
 
 
+class ProcessAssertions:
+    def assert_processes_stopped(self, pids: list[int], timeout: float = 1.0) -> None:
+        """Wait until every PID is absent or unable to execute, retaining states in failures."""
+        deadline = time.monotonic() + timeout
+        while True:
+            running = {pid: state for pid in pids
+                       if (state := c._process_state(pid)) not in (None, "Z", "X")}
+            if not running:
+                return
+            if time.monotonic() >= deadline:
+                self.fail(f"child processes still running after cleanup: {running}")
+            time.sleep(0.01)
+
+
 class Fixture(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
@@ -73,6 +87,45 @@ class Fixture(unittest.TestCase):
 
     def trace(self, module_path: str, **fields) -> None:
         self.write(f".lake/build/lib/lean/{module_path}.trace", json.dumps(fields))
+
+
+@unittest.skipUnless(sys.platform == "linux" and hasattr(os, "fork"),
+                     "Linux process states required")
+class ProcessStateTests(ProcessAssertions, unittest.TestCase):
+    def test_proc_stat_parser_handles_parentheses_and_non_utf8_command(self) -> None:
+        self.assertEqual(c._parse_proc_stat_state(b"123 (bad\xff)name) S 1 2 3"), "S")
+        self.assertIsNone(c._parse_proc_stat_state(b"123 malformed"))
+
+    def test_unreadable_proc_state_uses_conservative_presence_fallback(self) -> None:
+        with patch.object(Path, "read_bytes", side_effect=OSError("unreadable")):
+            self.assertEqual(c._process_state(os.getpid()), "?")
+            self.assertTrue(c._process_is_running(os.getpid()))
+
+    def test_zombie_has_stopped_even_while_kill_zero_reports_it(self) -> None:
+        pid = os.fork()
+        if pid == 0:
+            os._exit(0)
+        try:
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline and c._process_state(pid) != "Z":
+                time.sleep(0.01)
+            self.assertEqual(c._process_state(pid), "Z")
+            os.kill(pid, 0)
+            self.assertFalse(c._process_is_running(pid))
+        finally:
+            os.waitpid(pid, 0)
+
+    def test_live_process_is_still_running(self) -> None:
+        proc = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            self.assertTrue(c._process_is_running(proc.pid))
+            with self.assertRaisesRegex(AssertionError, "still running"):
+                self.assert_processes_stopped([proc.pid], timeout=0.05)
+        finally:
+            proc.terminate()
+            proc.wait(timeout=5)
 
 
 class RestoredFileTests(Fixture):
@@ -424,7 +477,7 @@ class IsolatedLakeFixture(Fixture):
                               timeout=120)
 
 
-class RealLakeTests(IsolatedLakeFixture):
+class RealLakeTests(ProcessAssertions, IsolatedLakeFixture):
     """Lake restores a warned module without its messages; the warning audit catches it."""
 
     def test_warning_dropped_by_a_cache_restore_is_reported(self) -> None:
@@ -577,11 +630,12 @@ theorem warnA : 1 = 2 := by sorry
         scope.write_text(json.dumps(["Demo/SlowA.lean", "Demo/SlowB.lean"]))
 
         captured_pids: list[int] = []
+        cancelled = threading.Event()
 
         def trigger_interrupt() -> None:
             deadline = time.monotonic() + 10.0
             pid_files = [self.root / "slowa.pid", self.root / "slowb.pid"]
-            while time.monotonic() < deadline:
+            while time.monotonic() < deadline and not cancelled.is_set():
                 pids = []
                 for pf in pid_files:
                     if pf.is_file():
@@ -591,32 +645,37 @@ theorem warnA : 1 = 2 := by sorry
                             pass
                 if len(pids) == 2:
                     captured_pids.extend(pids)
-                    break
-                time.sleep(0.02)
-            os.kill(os.getpid(), sig)
+                    if not cancelled.is_set():
+                        os.kill(os.getpid(), sig)
+                    return
+                cancelled.wait(0.02)
+            if not cancelled.is_set():
+                os.kill(os.getpid(), sig)
 
         watcher = threading.Thread(target=trigger_interrupt, daemon=True)
         watcher.start()
 
         started = time.monotonic()
-        with self.assertRaises(KeyboardInterrupt):
-            c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
-        elapsed = time.monotonic() - started
+        try:
+            with self.assertRaises(KeyboardInterrupt):
+                c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
+            elapsed = time.monotonic() - started
+        finally:
+            cancelled.set()
+            watcher.join(timeout=1)
+        self.assertFalse(watcher.is_alive(), "interrupt watcher should stop before the test exits")
 
         self.assertEqual(len(captured_pids), 2, "both lean child processes should have recorded PIDs")
         self.assertLess(elapsed, 6.0, f"interrupt cleanup took too long: {elapsed:.2f}s")
 
-        for child_pid in captured_pids:
-            alive = True
-            deadline = time.monotonic() + 1.0
-            while time.monotonic() < deadline:
-                try:
-                    os.kill(child_pid, 0)
-                    time.sleep(0.05)
-                except OSError:
-                    alive = False
-                    break
-            self.assertFalse(alive, f"child lean process {child_pid} was not terminated")
+        self.assert_processes_stopped(captured_pids)
+
+    def test_interrupt_watcher_is_cancelled_after_early_failure(self) -> None:
+        with patch.object(c, "main", side_effect=RuntimeError("early failure")), \
+             patch.object(os, "kill") as kill, \
+             self.assertRaisesRegex(RuntimeError, "early failure"):
+            self._assert_interrupt_cleans_up_descendants(signal.SIGTERM)
+        kill.assert_not_called()
 
     @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
     def test_parallel_real_lake_sigint_cleans_up_descendant_process_tree(self) -> None:

@@ -226,6 +226,51 @@ def _descendant_pids(pid: int) -> list[int]:
     return descendants
 
 
+def _parse_proc_stat_state(stat: bytes) -> str | None:
+    """Parse the state field after `/proc/PID/stat`'s final parenthesized command name."""
+    rparen = stat.rfind(b")")
+    fields = stat[rparen + 1:].split() if rparen != -1 else []
+    state = fields[0] if fields else b""
+    if len(state) != 1 or not state.isascii():
+        return None
+    return chr(state[0])
+
+
+def _process_state(pid: int) -> str | None:
+    """The Linux process-state letter for `pid`, `?` when it exists but the state is unavailable,
+    or `None` when it no longer exists.
+
+    `os.kill(pid, 0)` reports a zombie as present even though it has already stopped executing.
+    Read `/proc` first where available so cleanup checks can distinguish that state. On systems
+    without `/proc`, fall back to the portable presence probe.
+    """
+    proc_root = Path("/proc")
+    try:
+        stat = (proc_root / str(pid) / "stat").read_bytes()
+    except FileNotFoundError:
+        if proc_root.is_dir():
+            return None
+    except OSError:
+        pass
+    else:
+        if state := _parse_proc_stat_state(stat):
+            return state
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return None
+    except PermissionError:
+        return "?"
+    except OSError:
+        return None
+    return "?"
+
+
+def _process_is_running(pid: int) -> bool:
+    """Whether `pid` can still execute, as opposed to being absent, zombie or dead."""
+    return _process_state(pid) not in (None, "Z", "X")
+
+
 def terminate_process(proc: subprocess.Popen) -> None:
     """Terminate `proc` and its descendant process tree without leaving orphaned children."""
     pid = getattr(proc, "pid", None)
@@ -253,9 +298,7 @@ def terminate_process(proc: subprocess.Popen) -> None:
 
     survivors = set(descendants) | set(_descendant_pids(pid))
     for child in reversed(list(survivors)):
-        try:
-            os.kill(child, 0)
-        except OSError:
+        if not _process_is_running(child):
             continue
         try:
             os.kill(child, signal.SIGKILL)
