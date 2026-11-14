@@ -115,6 +115,12 @@ private theorem two_le_bucketCount (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1
     simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd
   nlinarith
 
+private theorem neg_one_emod_natCast {m : ℕ} (hm : 0 < m) :
+    (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
+  rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
+    Int.emod_eq_of_lt (by omega) (by omega)]
+  ring
+
 /-- The exceptional negative representatives next to zero are precisely the wrap-around bucket. -/
 private theorem highBits_intCast_eq_zero_of_neg (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
     (hq : 4 * γ₂ < q) {c : ℤ} (hc₁ : -(γ₂ : ℤ) ≤ c) (hc₂ : c < 0) :
@@ -201,10 +207,7 @@ theorem useHint_true_ne_highBits (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
     · rw [Int.emod_eq_of_lt (by omega) (by omega)]
       omega
     · have hrzero : highBits q γ₂ r = 0 := by omega
-      have hmod : (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-        rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-          Int.emod_eq_of_lt (by omega) (by omega)]
-        ring
+      have hmod := neg_one_emod_natCast (m := m) (by omega)
       rw [hrzero, zero_sub, hmod]
       omega
 
@@ -344,10 +347,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
           push_cast
           omega)
       · have hr₁zero : highBits q γ₂ r = 0 := by omega
-        have hmod : (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-          rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-            Int.emod_eq_of_lt (by omega) (by omega)]
-          ring
+        have hmod := neg_one_emod_natCast (m := m) (by omega)
         rw [hr₁zero, zero_sub, hmod]
         have heq :
             ((((m : ℤ) - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
@@ -488,10 +488,7 @@ theorem useHint_makeHint (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1) (hq : 4 
           rw [hsum']
           exact highBits_intCast_mul_add hγ hdvd (by omega) (by omega)
             (by push_cast; linarith) (by push_cast; linarith)
-        have hmod : (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-          rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-            Int.emod_eq_of_lt (by omega) (by omega)]
-          ring
+        have hmod := neg_one_emod_natCast (m := m) (by omega)
         rw [hrzero, zero_sub, hmod, hv]
 
 /-- Apply `MakeHint` coefficientwise. -/
