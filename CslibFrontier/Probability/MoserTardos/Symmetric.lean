@@ -124,6 +124,60 @@ private theorem symNbhd_card_le (vbl : ι → Finset V) {d : ℕ}
     #(symNbhd vbl i) ≤ d := by
   simpa [symNbhd] using hd i
 
+/-- Convert the slack symmetric Local Lemma hypothesis `Real.exp 1 * q * (d + 1) ≤ 1 - ε`
+(`ε ∈ (0, 1]`) into a dependency neighborhood `Γ` and asymmetric weights `x i ∈ [0, 1)` with total
+weight `∑ i, x i / (1 - x i)` bounded by `card ι / d` (when `1 ≤ d`) and `card ι`. -/
+theorem exists_slack_weights_of_symmetric (vbl : ι → Finset V)
+    {d : ℕ} (hd : ∀ i, #{j : ι | j ≠ i ∧ ¬Disjoint (vbl i) (vbl j)} ≤ d)
+    {b : ι → ℝ} (hb0 : ∀ i, 0 ≤ b i) {q ε : ℝ} (hq : ∀ i, b i ≤ q)
+    (hε : ε ∈ Set.Ioc 0 1) (hlll : Real.exp 1 * q * (d + 1) ≤ 1 - ε) :
+    ∃ (Γ : ι → Finset ι) (x : ι → ℝ),
+      (∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i) ∧
+      (∀ i, x i ∈ Set.Ico 0 1) ∧
+      (∀ i, b i ≤ (1 - ε) * (x i * ∏ j ∈ Γ i, (1 - x j))) ∧
+      (1 ≤ d → ∑ i : ι, x i / (1 - x i) ≤ (Fintype.card ι : ℝ) / d) ∧
+      (∑ i : ι, x i / (1 - x i) ≤ (Fintype.card ι : ℝ)) := by
+  rcases eq_or_lt_of_le hε.2 with rfl | hε_lt
+  · have hq0 : q ≤ 0 := by
+      have hexp : (0 : ℝ) < Real.exp 1 * ((d : ℝ) + 1) := by positivity
+      have hmul : q * (Real.exp 1 * ((d : ℝ) + 1)) ≤ 0 := by linarith
+      exact nonpos_of_mul_nonpos_left hmul hexp
+    refine ⟨symNbhd vbl, fun _ => 0, mem_symNbhd vbl, fun _ => ⟨le_rfl, zero_lt_one⟩,
+      fun i => ?_, fun _ => ?_, ?_⟩
+    · have hbi : b i = 0 := le_antisymm ((hq i).trans hq0) (hb0 i)
+      simp [hbi]
+    · simp only [sub_zero, div_one, sum_const_zero]
+      positivity
+    · simp
+  · have hr_pos : 0 < 1 - ε := sub_pos.2 hε_lt
+    let q' := q / (1 - ε)
+    have hlll' : Real.exp 1 * q' * (d + 1) ≤ 1 := by
+      have heq : Real.exp 1 * q' * ((d : ℝ) + 1) = (Real.exp 1 * q * ((d : ℝ) + 1)) / (1 - ε) := by
+        dsimp [q']; ring
+      rw [heq]
+      exact (div_le_one hr_pos).2 hlll
+    obtain ⟨x, hx, hP', hx1, hx0⟩ := exists_weights_of_symmetric (symNbhd vbl)
+      (symNbhd_card_le vbl hd) (fun i => div_nonneg (hb0 i) hr_pos.le)
+      (fun i => div_le_div_of_nonneg_right (hq i) hr_pos.le) hlll'
+    refine ⟨symNbhd vbl, x, mem_symNbhd vbl, hx, fun i => ?_, fun hdpos => ?_, ?_⟩
+    · have := mul_le_mul_of_nonneg_left (hP' i) hr_pos.le
+      rwa [mul_div_cancel₀ _ hr_pos.ne'] at this
+    · have hsum : ∑ i : ι, x i / (1 - x i) = (Fintype.card ι : ℝ) / d := by
+        simp_rw [hx1 hdpos, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one_div]
+      exact hsum.le
+    · rcases Nat.eq_zero_or_pos d with rfl | hdpos
+      · have hle1 : ∀ i, x i / (1 - x i) ≤ 1 := fun i => by
+          have hexp : (2 : ℝ) ≤ Real.exp 1 := by linarith [Real.add_one_le_exp (1 : ℝ)]
+          have hinv : 1 / (Real.exp 1 - 1) ≤ 1 := div_le_self zero_le_one (by linarith)
+          exact (hx0 rfl i).2.trans hinv
+        calc ∑ i : ι, x i / (1 - x i) ≤ ∑ _i : ι, (1 : ℝ) := Finset.sum_le_sum fun i _ => hle1 i
+          _ = (Fintype.card ι : ℝ) := by simp
+      · have hsum : ∑ i : ι, x i / (1 - x i) = (Fintype.card ι : ℝ) / d := by
+          simp_rw [hx1 hdpos, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one_div]
+        rw [hsum]
+        have hd1 : (1 : ℝ) ≤ d := by exact_mod_cast hdpos
+        exact div_le_self (by positivity) hd1
+
 variable [Fintype V] {α : V → Type*} [∀ v, MeasurableSpace (α v)]
   (μ : ∀ v, Measure (α v)) [∀ v, IsProbabilityMeasure (μ v)] (vbl : ι → Finset V)
 
