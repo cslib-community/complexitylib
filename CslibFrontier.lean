@@ -3588,10 +3588,14 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.History
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.InitialEpoch
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction.Envelopes
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction.Rewards
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction.Selection
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Memory
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.PathCost
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative.Conditioning
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.RecordedObservation
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Retained
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.TerminalResources
@@ -6387,6 +6391,7 @@ public import CslibFrontier.Probability.PMF.Chebyshev
 public import CslibFrontier.Probability.PMF.Coin
 public import CslibFrontier.Probability.PMF.Coin.Complement
 public import CslibFrontier.Probability.PMF.Disintegration
+public import CslibFrontier.Probability.PMF.Disintegration.Map
 public import CslibFrontier.Probability.PMF.Disintegration.Support
 public import CslibFrontier.Probability.PMF.Event
 public import CslibFrontier.Probability.PMF.EventBind
@@ -6395,6 +6400,7 @@ public import CslibFrontier.Probability.PMF.Filter
 public import CslibFrontier.Probability.PMF.Finiteness
 public import CslibFrontier.Probability.PMF.Interaction
 public import CslibFrontier.Probability.PMF.Interaction.Process
+public import CslibFrontier.Probability.PMF.Interaction.Selection
 public import CslibFrontier.Probability.PMF.Map
 public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.ObservedProcess
@@ -6552,6 +6558,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Runtime
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeProvenance
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Selector
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceEncoding
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceEnvelopes
 public import CslibFrontier.Probability.StochasticOracle.PartialCover
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverAsymptotics
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverDisintegration

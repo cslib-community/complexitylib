@@ -2446,6 +2446,54 @@ removing its separate clock induction. From a warm checkout, run:
 scripts/build.sh CslibFrontierTests.NativeAcceptedInteraction CslibFrontierTests.NativeBatchSuccess CslibFrontierTests.NativeRetentionDeadline
 ```
 
+To transfer primitive bounds on that fixed source to actual native conditional
+means, import
+`CslibFrontier.Computability.Probabilistic.NativeBatch.Interaction.Envelopes`.
+`selectionViews` retains each actually selected private checkpoint and enriched
+history while erasing latent source state. `selection_trace` and
+`selection_observations` recover the existing native selected checkpoint and
+observation laws. `selectionViews_valid` derives the actual request and boundary
+properties from execution; these are not caller-supplied admission identities.
+
+`conditional_filteredSource` expresses native conditional dispatch as a mixture
+over selected private views, followed by the same `source.filter` at each view's
+enriched history. A coarse native observation may mix several such histories;
+the theorem does not replace that mixture with a single history filter.
+`conditional_reward` averages any history-dependent nonnegative receipt score
+under these fixed-source response laws. It covers unbounded invoices, infinite
+means and null-observation prior completion. `conditional_reward_le` and
+`conditional_reward_ge` transfer upper and lower primitive means at positive-mass
+native observations. `conditional_records` transfers supported receipt properties
+and retains the exact preceding receipt history. The positive-mass premise is
+needed to identify that history and the actual issued-source flag.
+
+The general probability facts are in `PMF.Interaction.Selection` and
+`PMF.Disintegration.Map`. The actual selected law preserves correlation between
+the query and fresh private storage while keeping the source under its history
+filter. Conditioning on any observation of that private view retains the attached
+source filter. Deterministic state projections commute with the posterior, including
+null completion; supported posterior states remain within prior support.
+`Selected.checkpointState` forgets the old private configuration after selection,
+retaining all checkpoint/receipt data used by native observation and response.
+
+For the existing native token optimum, import
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceEnvelopes`.
+`SourceEnvelopes.LowerBounds` states primitive newly revealed-cardinality,
+progress-probability and invoice-mean bounds under the one fixed source's
+`draw` kernel. Its domain is the actual supported selections of the existing
+finite-control, selection-only native class. It does not impose bounds on forged
+snapshots, nor assume a native conditional mean or lower-optimum conclusion.
+`LowerBounds.toNative` derives the existing native lower envelopes using the
+transfer theorems; `SourceEnvelopes.lower` then applies the established native
+optimum bound. The original issued-turn cap, optional failure readback and
+successful-only provenance admission are preserved.
+
+These are conditional resource theorems: privacy/filtering does not establish
+numerical productivity or invoice envelopes for a source. Chosen-policy upper
+productivity and retention, concrete source instantiation and the full common-oracle
+comparison remain further work. The Operator's Manual's source-envelope API does
+not expand the model to arbitrary measurable kernels or compile arbitrary PMFs.
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches
