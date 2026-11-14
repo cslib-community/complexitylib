@@ -4,6 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+
 import CslibFrontier.Probability.StochasticOracle.NativeResidualRealMinima
 import CslibFrontier.Probability.StochasticOracle.NativeResidualPathCost
 import CslibFrontier.Computability.Probabilistic.NativeQueryAll
@@ -19,6 +24,9 @@ conditional batch mean: the initial invoice is deterministic, while later calls
 share a fair zero-or-two multiplier. A second example correlates the near invoice
 with the newly drawn residual, so its mean is fixed only before that response.
 -/
+
+-- Anonymous checks and private fixtures intentionally expose no test API.
+set_option linter.privateModule false
 
 noncomputable section
 namespace CslibFrontierTests.StochasticOracleConditionalInvoice

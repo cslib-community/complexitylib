@@ -378,6 +378,23 @@ world. Missing terminal mass and malformed/nonhalting output remain failures. -/
   ((result.bind fun world => NativeOpenSelection.result (decodeFamily m) world).map
     (fun C => C.map candidates.toEmbedding)).getD ∅
 
+private theorem terminal_readback
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) :
+    (Trace.law limits (sample T points candidates P invoice) machine
+      (limits.turns + 1) world).map (readOutput T candidates) =
+      (NativeUnboundedExecution.terminal machine
+        (environment limits (sample T points candidates P invoice)) world).map
+          (terminalOutput T candidates) := by
+  rw [← Trace.law_native_terminal limits (sample T points candidates P invoice) machine world hi,
+    PMF.map_comp]
+  apply PMF.bind_congr_on_support
+  intro state hs
+  rcases Trace.law_done limits (sample T points candidates P invoice) machine world hi state hs
+      with hd | ⟨next, he, _⟩
+  · simp [readOutput, terminalOutput, hd, Function.comp_def]
+  · simp [readOutput, terminalOutput, he, Function.comp_def, worldOf]
+
 /-- With two permitted source turns, the constructed policy reads precisely the
 original stopped native output, including divergent mass. Local computation is
 not assigned a fixed clock and no termination or desired-output law is assumed. -/
@@ -392,18 +409,7 @@ theorem terminal_law (world : World tapes Control Unit (ServerState (z + 1) Unit
   change (joint T points candidates P limits invoice machine world).map
     ((readOutput T candidates) ∘ Outcome.hidden) = _
   rw [← PMF.map_comp, joint_hidden]
-  have h := Trace.law_native_terminal limits
-    (sample T points candidates P invoice)
-    machine world hi
-  rw [ht] at h
-  rw [← h, PMF.map_comp]
-  apply PMF.bind_congr_on_support
-  intro state hs
-  have hd := Trace.law_done limits (sample T points candidates P invoice)
-    machine world hi state (by simpa only [ht] using hs)
-  rcases hd with hd | ⟨next, he, _⟩
-  · simp [readOutput, terminalOutput, hd, Function.comp_def]
-  · simp [readOutput, terminalOutput, he, Function.comp_def, worldOf]
+  simpa only [ht] using terminal_readback T points candidates P limits invoice machine world hi
 
 open scoped Classical in
 /-- Harmless selection-only completion of the observed output table. Intersection
@@ -849,17 +855,7 @@ theorem one_terminal_law (world : World tapes Control Unit (ServerState (z + 1) 
   change (oneJoint T points candidates P limits invoice machine world).map
     ((readOutput T candidates) ∘ OneOutcome.hidden) = _
   rw [← PMF.map_comp, one_hidden]
-  have h := Trace.law_native_terminal limits
-    (sample T points candidates P invoice) machine world hi
-  rw [ht] at h
-  rw [← h, PMF.map_comp]
-  apply PMF.bind_congr_on_support
-  intro state hs
-  have hd := Trace.law_done limits (sample T points candidates P invoice)
-    machine world hi state (by simpa only [ht] using hs)
-  rcases hd with hd | ⟨next, he, _⟩
-  · simp [readOutput, terminalOutput, hd, Function.comp_def]
-  · simp [readOutput, terminalOutput, he, Function.comp_def, worldOf]
+  simpa only [ht] using terminal_readback T points candidates P limits invoice machine world hi
 
 private theorem one_available
     (world : World tapes Control Unit (ServerState (z + 1) Unit) input)

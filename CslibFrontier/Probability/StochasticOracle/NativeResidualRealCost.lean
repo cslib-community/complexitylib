@@ -28,8 +28,9 @@ invoice PMF `ν` with the source batch means (`NativeResidualInvoice.HasMean`).
 Coordinates may be correlated; `FixedMeanInvoice.law` (`hasMean`) is one instance.
 The conditional-kernel results also allow the law to depend on history, selected
 batch and residual; only the actual selected-batch mean is required.
-The invoice vector is drawn independently of the residual index `J` and the
-preceding history. The compiled program reads ordinary report bytes, never a real-number encoding.
+For the fixed-PMF `NativeResidualInvoice` declarations, the invoice vector is drawn
+independently of the residual index `J` and the preceding history. The compiled
+program reads ordinary report bytes, never a real-number encoding.
 
 ## Main definitions
 

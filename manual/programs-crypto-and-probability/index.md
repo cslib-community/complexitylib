@@ -1075,8 +1075,11 @@ derives it for the constructed real-mean oracle.
 
 `NativeResidualInvoice.expected_score_eq_charge` proves that the declared-price
 receipt ledger and actual accrued token ledger have equal expectations at every
-finite epoch horizon, including paths that subsequently diverge. The behavioral
-one/two-turn lower proofs therefore apply without an integer-price identity.
+finite epoch horizon, including paths that subsequently diverge. Both fixed and
+conditional invoice ledgers use `NativeBatch.Quantitative.expected_eq_of_response`:
+prove that both receipt scores have the same primitive expected response increment,
+then obtain equality at every finite horizon without repeating an epoch induction.
+The behavioral one/two-turn lower proofs therefore apply without an integer-price identity.
 `NativeResidualOptimum.one_lower_of_mean` and `two_lower_of_mean` quantify over the
 existing native competitor class; `NativeResidualRealMinima.native_optimum` and
 `native_one_optimum` match those lower bounds with the actual attained strategies.
@@ -1108,6 +1111,7 @@ give universal lower bounds on the same admitted native competitor class.
 The [checked clients](../../CslibFrontierTests/StochasticOracleConditionalInvoice.lean)
 use deterministic unit invoices initially and shared fair zero-or-two invoices
 after a receipt, and near invoices $0,1,2$ coupled to a uniform three-way residual.
+These are ordinary `module` clients, so their imports also check the exported API.
 They verify primitive means, actual history dependence, a native-query ledger
 identity, native OPT $2$ for both kernels and ratio $3/2$ for the response-coupled
 three-block instance. The same rational-table program has expected bill $2$ and
@@ -1485,7 +1489,7 @@ The complementary all-specialist case is now provided by
 [NativeResidualAll](../../CslibFrontier/Probability/StochasticOracle/NativeResidualAll.lean).
 For every positive source turn budget, the fixed `NativeResidualRouting.controller false`
 preforms all specialist requests from the original role metadata, before seeing
-any reply. `source` derives the actual accepted batch transaction;
+any reply. `source_conditional` derives the actual accepted batch transaction;
 `completed_retained` proves certification and retention for distinct specialist
 replies in their actual report order. `native_law` composes this transaction with
 the original-input clockless native program. `native_certified` and

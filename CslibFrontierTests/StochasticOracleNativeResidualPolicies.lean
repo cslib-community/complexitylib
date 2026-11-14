@@ -4,6 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+
 import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 import CslibFrontier.Computability.Probabilistic.NativeQueryAll
 import CslibFrontierTests.StochasticOracleResidualCover
@@ -19,6 +24,9 @@ one. The same unbounded machine instantiates the derived policy/readback and
 nonreuse/behavioral-admission theorems. Wrong subinstance bytes are canceled and billed.
 No native optimum or successful-cover conclusion is assumed.
 -/
+
+-- Anonymous checks and private fixtures intentionally expose no test API.
+set_option linter.privateModule false
 
 noncomputable section
 namespace CslibFrontierTests.StochasticOracleNativeResidualPolicies

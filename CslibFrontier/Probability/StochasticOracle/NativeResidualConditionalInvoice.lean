@@ -303,25 +303,11 @@ theorem expected_score_eq_charge (P : Parameters z) (limits : Limits (z + 1))
       (NativeResidualInvoice.score P) turns world =
     Quantitative.expected limits (sample T points candidates P ν) machine
       Trace.charge turns world := by
-  induction turns with
-  | zero => simp [Quantitative.expected, Quantitative.mean, Trace.law,
-      ObservedProcess.stateLaw, Trace.initial, Trace.accrued]
-  | succ turns ih =>
-    change Quantitative.mean ((Trace.law limits (sample T points candidates P ν)
-      machine turns world).bind (Trace.step limits (sample T points candidates P ν)
-        machine)) (Trace.accrued (NativeResidualInvoice.score P)) = _
-    change _ = Quantitative.mean ((Trace.law limits (sample T points candidates P ν)
-      machine turns world).bind (Trace.step limits (sample T points candidates P ν)
-        machine)) (Trace.accrued Trace.charge)
-    rw [Quantitative.step_mean_of_response limits (sample T points candidates P ν) machine
-      (NativeResidualInvoice.score P)
-      (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
-      (fun state hit hb => response_mean_score T points candidates P limits ν machine state hit hb),
-      Quantitative.step_mean_of_response limits (sample T points candidates P ν) machine
-      Trace.charge
-      (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
-      (fun state hit hb => response_mean_charge T points candidates P limits ν hν
-        machine state hit hb)]
-    exact congrArg (· + _) ih
+  exact Quantitative.expected_eq_of_response limits (sample T points candidates P ν) machine
+    (NativeResidualInvoice.score P) Trace.charge
+    (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
+    (fun state hit hb => response_mean_score T points candidates P limits ν machine state hit hb)
+    (fun state hit hb => response_mean_charge T points candidates P limits ν hν
+      machine state hit hb) turns world
 
 end Cslib.Probability.StochasticOracle.NativeResidualConditionalInvoice

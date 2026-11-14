@@ -239,7 +239,7 @@ theorem response_mean_score (P : Parameters z) (limits : Limits (z + 1))
     response_score T points candidates P limits invoices machine state next hit hb r hn)]
   rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
-private theorem step_mean (P : Parameters z) (limits : Limits (z + 1))
+private theorem response_mean (P : Parameters z) (limits : Limits (z + 1))
     (invoices : PMF (Fin (z + 1) → ℕ)) (machine : MultiTapePTM tapes Bool Control Unit)
     (resource : Trace.Record (z + 1) → ℝ≥0∞)
     (H : ∀ (state : Trace.State (z + 1) tapes Unit Control input) hit,
@@ -248,16 +248,11 @@ private theorem step_mean (P : Parameters z) (limits : Limits (z + 1))
         (response T points candidates limits invoices machine state hit r)
         (Trace.accrued resource) = Trace.accrued resource state +
           ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
-    (prior : PMF (Trace.State (z + 1) tapes Unit Control input)) :
-    Quantitative.mean (prior.bind (Trace.step limits (sample T points candidates P invoices)
-      machine)) (Trace.accrued resource) = Quantitative.mean prior (Trace.accrued resource) +
-      ∑' picked, Quantitative.select limits (sample T points candidates P invoices)
-        machine prior picked * ENNReal.ofReal
-          (batchCost P (NativeResidualOracle.selectedCalls limits picked.checkpoint)) := by
-  apply Quantitative.step_mean_of_response limits
-    (sample T points candidates P invoices) machine resource
-    (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
-  intro state hit hb
+    (state : Trace.State (z + 1) tapes Unit Control input) hit
+    (hb : ∀ phase, hit = some phase → sourceBoundary limits phase) :
+    Quantitative.mean (Trace.respond limits (sample T points candidates P invoices)
+      machine state hit) (Trace.accrued resource) = Trace.accrued resource state +
+        ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)) := by
   unfold Quantitative.mean
   rw [response_factor, PMF.tsum_bind_mul]
   have hres (r : Option (Fin z)) :
@@ -280,22 +275,14 @@ theorem expected_score_eq_charge (P : Parameters z) (limits : Limits (z + 1))
       (score P) turns world =
     Quantitative.expected limits (sample T points candidates P invoices) machine
       Trace.charge turns world := by
-  induction turns with
-  | zero => simp [Quantitative.expected, Quantitative.mean, Trace.law,
-      ObservedProcess.stateLaw, Trace.initial, Trace.accrued]
-  | succ turns ih =>
-    change Quantitative.mean ((Trace.law limits (sample T points candidates P invoices)
-      machine turns world).bind (Trace.step limits (sample T points candidates P invoices)
-        machine)) (Trace.accrued (score P)) = _
-    change _ = Quantitative.mean ((Trace.law limits (sample T points candidates P invoices)
-      machine turns world).bind (Trace.step limits (sample T points candidates P invoices)
-        machine)) (Trace.accrued Trace.charge)
-    rw [step_mean T points candidates P limits invoices machine (score P)
+  exact Quantitative.expected_eq_of_response limits (sample T points candidates P invoices)
+    machine (score P) Trace.charge
+    (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
+    (response_mean T points candidates P limits invoices machine (score P)
       (fun state hit hb r => response_mean_score T points candidates P limits invoices
-        machine state hit hb r),
-      step_mean T points candidates P limits invoices machine Trace.charge
-        (fun state hit hb r => response_mean_charge T points candidates P limits invoices
-          hmean machine state hit hb r)]
-    exact congrArg (· + _) ih
+        machine state hit hb r))
+    (response_mean T points candidates P limits invoices machine Trace.charge
+      (fun state hit hb r => response_mean_charge T points candidates P limits invoices hmean
+        machine state hit hb r)) turns world
 
 end Cslib.Probability.StochasticOracle.NativeResidualInvoice

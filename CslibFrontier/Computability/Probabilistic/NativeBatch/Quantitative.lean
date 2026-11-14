@@ -32,6 +32,7 @@ comparisons, not the remaining source success/count/binomial/certification bound
 * `selection_factor`: actual complete policy law, conditioned after source-batch selection.
 * `expected_accrued`: accrued resources equal the sum of selected conditional expectations.
 * `step_mean_of_response`: average primitive score increments after native batch selection.
+* `expected_eq_of_response`: equal primitive increments give equal finite-horizon expectations.
 * `conditional_comparison`: local supported epoch comparisons transfer to the whole policy.
 * `cost_upper_budget`: finite total expectation derived from conditional envelopes.
 * `universal_cost_lower`: one fixed oracle and seed, every admitted native competitor.
@@ -293,6 +294,32 @@ theorem step_mean_of_response (score : Record n → ℝ≥0∞)
 @[expose] def expected (score : Record n → ℝ≥0∞) (turns : ℕ)
     (world : World k Control Unit (ServerState n Private) input) : ℝ≥0∞ :=
   mean (law limits sample machine turns world) (accrued score)
+
+/-- Scores with the same primitive expected response increment have the same actual
+accrued expectation at every finite horizon. The initial trace has no receipts;
+earlier increments persist after halt or divergence. No integrability is needed. -/
+theorem expected_eq_of_response (left right : Record n → ℝ≥0∞)
+    (increment : Option (Phase k Control Unit (ServerState n Private) input) → ℝ≥0∞)
+    (Hleft : ∀ (state : State n k Private Control input) hit,
+      (∀ phase, hit = some phase → sourceBoundary limits phase) →
+      mean (respond limits sample machine state hit) (accrued left) =
+        accrued left state + increment hit)
+    (Hright : ∀ (state : State n k Private Control input) hit,
+      (∀ phase, hit = some phase → sourceBoundary limits phase) →
+      mean (respond limits sample machine state hit) (accrued right) =
+        accrued right state + increment hit)
+    (turns : ℕ) (world : World k Control Unit (ServerState n Private) input) :
+    expected limits sample machine left turns world =
+      expected limits sample machine right turns world := by
+  induction turns with
+  | zero => simp [expected, mean, law, ObservedProcess.stateLaw, Trace.initial, accrued]
+  | succ turns ih =>
+    change mean ((law limits sample machine turns world).bind (step limits sample machine))
+      (accrued left) = mean
+        ((law limits sample machine turns world).bind (step limits sample machine)) (accrued right)
+    rw [step_mean_of_response limits sample machine left increment Hleft,
+      step_mean_of_response limits sample machine right increment Hright]
+    exact congrArg (· + _) ih
 
 /-- Expected actual resource at one selected source epoch. -/
 @[expose] def marginal (score : Record n → ℝ≥0∞) (turn : ℕ)
