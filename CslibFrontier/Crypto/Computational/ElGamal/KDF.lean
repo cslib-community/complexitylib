@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import CslibFrontier.Crypto.Computational.DiffieHellman.EncodingBounds
+public import CslibFrontier.Crypto.Computational.DiscreteLog.Decodable
 public import CslibFrontier.Crypto.Computational.ElGamal
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -553,3 +554,27 @@ theorem DDH.negligible_hashedElGamalCPAGame_linearHashKDF {F : PrimeOrderGroupFa
       (F.computableInPolyTime_linearHashKDF hkey_poly hbound_poly) hA
 
 end Cslib.Crypto.PrimeOrderGroupFamily
+
+namespace Cslib.Crypto.DecodablePrimeOrderGroupFamily
+
+open Turing.MultiTapeTM
+
+/-- Augment a `DecodablePrimeOrderGroupFamily` with a public bit-string seed in its description
+(`Desc := F.Desc × List Bool`), mirroring `PrimeOrderGroupFamily.withSeed`. Decoding and
+membership testing delegate to the underlying family description `d.1 : F.Desc`. -/
+abbrev withSeed (F : DecodablePrimeOrderGroupFamily) : DecodablePrimeOrderGroupFamily where
+  toPrimeOrderGroupFamily := F.toPrimeOrderGroupFamily.withSeed
+  decode d w := F.decode d.1 w
+  decode_encode d x := F.decode_encode d.1 x
+  encode_eq_of_decode_eq_some h := F.encode_eq_of_decode_eq_some h
+  computableInPolyTime_isElem :=
+    (F.computableInPolyTime_isElem.comp
+      (((ComputableInPolyTime.fst F.encDesc encBits).comp
+        (ComputableInPolyTime.fst (encPair F.encDesc encBits) encBits)).prod
+        (ComputableInPolyTime.snd (encPair F.encDesc encBits) encBits))).of_enc_eq
+      fun _ => rfl
+
+@[simp] theorem isElem_withSeed (F : DecodablePrimeOrderGroupFamily) (d : F.Desc)
+    (s w : List Bool) : F.withSeed.isElem ((d, s), w) = F.isElem (d, w) := rfl
+
+end Cslib.Crypto.DecodablePrimeOrderGroupFamily

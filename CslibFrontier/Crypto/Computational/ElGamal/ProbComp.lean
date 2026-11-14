@@ -525,12 +525,36 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
       F.elGamalMsgCPAGameOn valid encodeMsg (fun m => PMF.pure (d m)) adversary bit n =
       (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
-    simp only [elGamalMsgCPAGameOn, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
-      k]
+    simp only [elGamalMsgCPAGameOn, elGamalMsgCPAGameWith, PMF.monad_bind_eq_bind,
+      PMF.monad_pure_eq_pure, PMF.pure_bind, k]
     pmf_swap with α choice
     split_ifs <;> simp only [PMF.bind_const]
   rw [hgame0, hgame1]
   exact F.advantage_bind_sampleExp_pair_le n (d n) k
+
+/-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** when `valid` admits
+only group elements under `encodeMsg` at `d n`
+(`AdmitsGroupElementsOn (fun n => PMF.pure (d n))`). -/
+theorem DDH.indcpaOn_elGamalEncryptProb_on {F : PrimeOrderGroupFamily}
+    {Msg : Type} {encMsg : Msg ↪ List Bool}
+    {valid : ℕ → List Bool → Msg → Msg → Bool}
+    {encodeMsg : F.Desc → Msg → List Bool} {d : ℕ → F.Desc}
+    (hDDH : F.DDH (fun n => PMF.pure (d n)))
+    (hvalid : ComputableInPolyTime
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
+      (encChallengePairInput encMsg) encBool)
+    (hsound : F.AdmitsGroupElementsOn (fun n => PMF.pure (d n)) encodeMsg valid)
+    (hencMsg : ComputableInPolyTime (fun p : F.Desc × Msg => encodeMsg p.1 p.2)
+      (encPair F.encDesc encMsg) encBits) :
+    INDCPAOn valid encMsg (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) := by
+  intro adversary hA
+  have hmid := hDDH.negligible_elGamalMsgCPAGameOn_on hvalid hsound hencMsg hA
+  have h2 : Negligible fun n => (2 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 2
+  refine negligible_of_le ((h2.add hmid).add h2) fun n => ?_
+  dsimp only [Pi.add_apply]
+  exact Game.advantage_four_hop_le
+    (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary false n)
+    (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary true n)
 
 /-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** ([BonehShoup2023],
 Exercise 11.5(a), p. 459): for any polynomial-time group description family `d : ℕ → F.Desc`,
@@ -549,15 +573,8 @@ theorem DDH.indcpaOn_elGamalEncryptProb {F : PrimeOrderGroupFamily}
     (hsound : F.AdmitsGroupElements encodeMsg valid)
     (hencMsg : ComputableInPolyTime (fun p : F.Desc × Msg => encodeMsg p.1 p.2)
       (encPair F.encDesc encMsg) encBits) :
-    INDCPAOn valid encMsg (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) := by
-  intro adversary hA
-  have hmid := hDDH.negligible_elGamalMsgCPAGameOn hvalid hsound hencMsg hA
-  have h2 : Negligible fun n => (2 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 2
-  refine negligible_of_le ((h2.add hmid).add h2) fun n => ?_
-  dsimp only [Pi.add_apply]
-  exact Game.advantage_four_hop_le
-    (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary false n)
-    (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary true n)
+    INDCPAOn valid encMsg (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) :=
+  hDDH.indcpaOn_elGamalEncryptProb_on hvalid hsound.on hencMsg
 
 /-- **Bit ElGamal satisfies `Encryption.INDCPA` under DDH** ([BonehShoup2023], Exercise 11.5(a),
 p. 459): specialization of `DDH.indcpaOn_elGamalEncryptProb` to `encodeBit`. -/
