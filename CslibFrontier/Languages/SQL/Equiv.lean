@@ -25,6 +25,14 @@ expressions, provided the substituted expressions are safe and have the column t
 (`Expr.Equiv.subst`). The side condition is needed: `TRUE` and `x IS NULL OR x IS NOT NULL` are
 equivalent, but substituting `1 / 0` for `x` makes only the second fail.
 
+The laws that the expression simplifier (`Cslib.SQL.Expr.simplify`) applies are proved here, each
+with the side condition strict evaluation needs: `NOT` over a comparison or a null test, double
+negation of a boolean or an integer, `TRUE` and `FALSE` as operands of `AND` and `OR`, the
+identities of `+`, `-` and `*`, `IN` over an empty or one-element list, and `CASE` with a literal
+condition. A law that inspects an operand's value needs the operand's type (`p AND TRUE` is `p`
+only for a boolean `p`), and a law that drops an operand needs it to be safe (`p AND FALSE` is
+`FALSE` only when `p` cannot fail).
+
 It adapts and redesigns the expression equivalence of `sql_equiv` (revision `38030a6b`) by Evelyn
 Mitchell, which quantified over all rows and compared results including errors; here equivalence
 quantifies over the rows of a typing context and does not distinguish errors.
@@ -42,6 +50,12 @@ quantifies over the rows of a typing context and does not distinguish errors.
 * `Cslib.SQL.Expr.Equiv.rename`, `Cslib.SQL.Expr.Equiv.subst`, `Cslib.SQL.Expr.Equiv.subst_right`:
   compatibility with renaming and substitution.
 * `Cslib.SQL.Expr.Equiv.evalTruth`: equivalent predicates select the same rows.
+* `Cslib.SQL.Expr.Equiv.of_eval_eq_ok`: an expression with the same value on every row is that
+  literal (constant folding).
+* `Cslib.SQL.Expr.Equiv.not_cmp`, `Cslib.SQL.Expr.Equiv.not_not`, `Cslib.SQL.Expr.Equiv.and_true`,
+  `Cslib.SQL.Expr.Equiv.and_false`, `Cslib.SQL.Expr.Equiv.add_zero`,
+  `Cslib.SQL.Expr.Equiv.inList_nil`, `Cslib.SQL.Expr.Equiv.inList_singleton`,
+  `Cslib.SQL.Expr.Equiv.caseWhen_true` and their siblings: the simplifier's laws.
 -/
 
 @[expose] public section
@@ -143,6 +157,170 @@ theorem subst {Δ : Fin m → SqlType} {σ : Fin n → Expr m} (hσ : ∀ i, (σ
   choose d hd hdτ using fun i => exists_eval_eq_ok_of_divSafe hr (hσ i) (hσs i)
   rw [eval_subst hd, eval_subst hd]
   exact h d hdτ
+
+/-! ### Laws
+
+The rewrites of the expression simplifier (`Cslib.SQL.Expr.simplify`). A law that inspects an
+operand's value needs the operand's type; a law that drops an operand needs it to be safe, since
+strict evaluation fails when the dropped operand fails. -/
+
+/-- An expression that succeeds with the same datum on every conforming row is that literal. -/
+theorem of_eval_eq_ok {e : Expr n} {d : Datum} (h : ∀ r : Row n, r.Conforms Γ → e.eval r = .ok d)
+    (τ : SqlType) : Equiv Γ e (ofDatum τ d) :=
+  of_eval_eq fun r hr => (h r hr).trans (eval_ofDatum τ d r).symm
+
+/-- A rewrite whose left side evaluates `e` and continues with `g`, where `g` returns its argument
+on datums of `e`'s type. -/
+private theorem of_eval_bind_eq_self {e e' : Expr n} {τ : SqlType} (he : e.typeOf Γ = some τ)
+    {g : Datum → Except EvalError Datum} (hrw : ∀ r, e'.eval r = e.eval r >>= g)
+    (hg : ∀ d, d.HasType τ → g d = .ok d) : Equiv Γ e' e :=
+  of_eval_eq fun r hr => by
+    rw [hrw]
+    rcases h : e.eval r with err | d
+    · rfl
+    · exact hg d (hasType_of_eval_eq_ok hr he h)
+
+/-- A rewrite whose left side evaluates the `divSafe` expression `e` and continues with `g`, where
+`g` returns `c` on datums of `e`'s type, and whose right side is `c`. -/
+private theorem of_eval_bind_eq_const {e e' e'' : Expr n} {τ : SqlType}
+    (he : e.typeOf Γ = some τ) (hs : e.divSafe) {g : Datum → Except EvalError Datum} {c : Datum}
+    (hrw : ∀ r, e'.eval r = e.eval r >>= g) (hg : ∀ d, d.HasType τ → g d = .ok c)
+    (hc : ∀ r, e''.eval r = .ok c) : Equiv Γ e' e'' :=
+  of_eval_eq fun r hr => by
+    obtain ⟨d, hd, hdτ⟩ := exists_eval_eq_ok_of_divSafe hr he hs
+    rw [hrw, hd, hc]
+    exact hg d hdτ
+
+/-- `NOT (a op b)` is `a (negate op) b`; for instance `NOT (a < b)` is `a >= b`. -/
+theorem not_cmp (op : CmpOp) (a b : Expr n) :
+    Equiv Γ (Expr.unary .not (Expr.binary (.cmp op) a b)) (Expr.binary (.cmp op.negate) a b) :=
+  of_eval_eq fun r _ => by
+    simp only [eval_unary, eval_binary, evalBinOp_cmp_negate, bind_assoc]
+
+/-- `NOT (e IS NULL)` is `e IS NOT NULL`. -/
+theorem not_isNull (e : Expr n) :
+    Equiv Γ (Expr.unary .not (Expr.unary .isNull e)) (Expr.unary .isNotNull e) :=
+  of_eval_eq fun r _ => by
+    simp only [eval_unary, bind_assoc, not_evalUnOp_isNull]
+
+/-- `NOT (e IS NOT NULL)` is `e IS NULL`. -/
+theorem not_isNotNull (e : Expr n) :
+    Equiv Γ (Expr.unary .not (Expr.unary .isNotNull e)) (Expr.unary .isNull e) :=
+  of_eval_eq fun r _ => by
+    simp only [eval_unary, bind_assoc, not_evalUnOp_isNotNull]
+
+/-- `NOT (NOT p)` is `p` for a boolean `p`. -/
+theorem not_not {p : Expr n} (hp : p.typeOf Γ = some .bool) :
+    Equiv Γ (Expr.unary .not (Expr.unary .not p)) p :=
+  of_eval_bind_eq_self hp (fun r => by simp only [eval_unary, bind_assoc]) fun _ hd =>
+    evalUnOp_not_not hd
+
+/-- `-(-x)` is `x` for an integer `x`. -/
+theorem neg_neg {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.unary .neg (Expr.unary .neg x)) x :=
+  of_eval_bind_eq_self hx (fun r => by simp only [eval_unary, bind_assoc]) fun _ hd =>
+    evalUnOp_neg_neg hd
+
+/-- `p AND TRUE` is `p` for a boolean `p`. -/
+theorem and_true {p : Expr n} (hp : p.typeOf Γ = some .bool) :
+    Equiv Γ (Expr.binary .and p (lit (.bool true))) p :=
+  of_eval_bind_eq_self hp (fun _ => rfl) fun _ hd => evalBinOp_and_true hd
+
+/-- `TRUE AND p` is `p` for a boolean `p`. -/
+theorem true_and {p : Expr n} (hp : p.typeOf Γ = some .bool) :
+    Equiv Γ (Expr.binary .and (lit (.bool true)) p) p :=
+  of_eval_bind_eq_self hp (fun _ => rfl) fun _ hd =>
+    (evalBinOp_and_comm _ _).trans (evalBinOp_and_true hd)
+
+/-- `p OR FALSE` is `p` for a boolean `p`. -/
+theorem or_false {p : Expr n} (hp : p.typeOf Γ = some .bool) :
+    Equiv Γ (Expr.binary .or p (lit (.bool false))) p :=
+  of_eval_bind_eq_self hp (fun _ => rfl) fun _ hd => evalBinOp_or_false hd
+
+/-- `FALSE OR p` is `p` for a boolean `p`. -/
+theorem false_or {p : Expr n} (hp : p.typeOf Γ = some .bool) :
+    Equiv Γ (Expr.binary .or (lit (.bool false)) p) p :=
+  of_eval_bind_eq_self hp (fun _ => rfl) fun _ hd =>
+    (evalBinOp_or_comm _ _).trans (evalBinOp_or_false hd)
+
+/-- `p AND FALSE` is `FALSE` for a safe predicate `p`. Safety is needed: `(1 / 0 = 1) AND FALSE`
+fails. -/
+theorem and_false {p : Expr n} (hp : p.IsSafePredicate Γ) :
+    Equiv Γ (Expr.binary .and p (lit (.bool false))) (lit (.bool false)) :=
+  of_eval_bind_eq_const hp.1 hp.2 (fun _ => rfl) (fun _ hd => evalBinOp_and_false hd)
+    fun _ => rfl
+
+/-- `FALSE AND p` is `FALSE` for a safe predicate `p`. -/
+theorem false_and {p : Expr n} (hp : p.IsSafePredicate Γ) :
+    Equiv Γ (Expr.binary .and (lit (.bool false)) p) (lit (.bool false)) :=
+  of_eval_bind_eq_const hp.1 hp.2 (fun _ => rfl)
+    (fun _ hd => (evalBinOp_and_comm _ _).trans (evalBinOp_and_false hd)) fun _ => rfl
+
+/-- `p OR TRUE` is `TRUE` for a safe predicate `p`. -/
+theorem or_true {p : Expr n} (hp : p.IsSafePredicate Γ) :
+    Equiv Γ (Expr.binary .or p (lit (.bool true))) (lit (.bool true)) :=
+  of_eval_bind_eq_const hp.1 hp.2 (fun _ => rfl) (fun _ hd => evalBinOp_or_true hd)
+    fun _ => rfl
+
+/-- `TRUE OR p` is `TRUE` for a safe predicate `p`. -/
+theorem true_or {p : Expr n} (hp : p.IsSafePredicate Γ) :
+    Equiv Γ (Expr.binary .or (lit (.bool true)) p) (lit (.bool true)) :=
+  of_eval_bind_eq_const hp.1 hp.2 (fun _ => rfl)
+    (fun _ hd => (evalBinOp_or_comm _ _).trans (evalBinOp_or_true hd)) fun _ => rfl
+
+/-- `x + 0` is `x` for an integer `x`. -/
+theorem add_zero {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.binary (.arith .add) x (lit (.int 0))) x :=
+  of_eval_bind_eq_self hx (fun _ => rfl) fun _ hd => evalBinOp_add_zero hd
+
+/-- `0 + x` is `x` for an integer `x`. -/
+theorem zero_add {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.binary (.arith .add) (lit (.int 0)) x) x :=
+  of_eval_bind_eq_self hx (fun _ => rfl) fun _ hd =>
+    (evalBinOp_add_comm _ _).trans (evalBinOp_add_zero hd)
+
+/-- `x - 0` is `x` for an integer `x`. -/
+theorem sub_zero {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.binary (.arith .sub) x (lit (.int 0))) x :=
+  of_eval_bind_eq_self hx (fun _ => rfl) fun _ hd => evalBinOp_sub_zero hd
+
+/-- `x * 1` is `x` for an integer `x`. -/
+theorem mul_one {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.binary (.arith .mul) x (lit (.int 1))) x :=
+  of_eval_bind_eq_self hx (fun _ => rfl) fun _ hd => evalBinOp_mul_one hd
+
+/-- `1 * x` is `x` for an integer `x`. -/
+theorem one_mul {x : Expr n} (hx : x.typeOf Γ = some .int) :
+    Equiv Γ (Expr.binary (.arith .mul) (lit (.int 1)) x) x :=
+  of_eval_bind_eq_self hx (fun _ => rfl) fun _ hd =>
+    (evalBinOp_mul_comm _ _).trans (evalBinOp_mul_one hd)
+
+/-- `e IN ()` is `FALSE` for a safe `e`, also when `e` is `NULL`. -/
+theorem inList_nil {e : Expr n} (he : e.IsSafe Γ) :
+    Equiv Γ (Expr.inList e []) (lit (.bool false)) :=
+  have ⟨_, hτ⟩ := Option.isSome_iff_exists.mp he.1
+  of_eval_bind_eq_const hτ he.2 (fun _ => rfl) (fun _ _ => rfl) fun _ => rfl
+
+/-- `e IN (v)` is `e = v`. -/
+theorem inList_singleton (e : Expr n) (v : Datum) (τ : SqlType) :
+    Equiv Γ (Expr.inList e [v]) (Expr.binary (.cmp .eq) e (ofDatum τ v)) :=
+  of_eval_eq fun r _ => by
+    simp only [eval_inList, eval_binary, eval_ofDatum, Datum.inList_singleton]
+    rcases e.eval r with _ | d
+    · rfl
+    · rcases CmpOp.eq.eval d v <;> rfl
+
+/-- `CASE WHEN TRUE THEN a ELSE b END` is `a`. -/
+theorem caseWhen_true (a b : Expr n) : Equiv Γ (Expr.caseWhen (lit (.bool true)) a b) a :=
+  of_eval_eq fun r _ => eval_caseWhen_of_true r rfl a b
+
+/-- `CASE WHEN FALSE THEN a ELSE b END` is `b`. -/
+theorem caseWhen_false (a b : Expr n) : Equiv Γ (Expr.caseWhen (lit (.bool false)) a b) b :=
+  of_eval_eq fun r _ => eval_caseWhen_of_ne_true r rfl (by decide) a b
+
+/-- `CASE WHEN NULL THEN a ELSE b END` is `b`. -/
+theorem caseWhen_null (τ : SqlType) (a b : Expr n) : Equiv Γ (Expr.caseWhen (null τ) a b) b :=
+  of_eval_eq fun r _ => eval_caseWhen_of_ne_true r rfl (by decide) a b
 
 end Equiv
 

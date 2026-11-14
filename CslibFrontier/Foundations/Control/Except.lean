@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Batteries, `Batteries/Data/Except.lean`)
 
 public import CslibFrontier.Init
+import Batteries.Data.List.Lemmas
 
 /-!
 # Sequencing and observing `Except`
@@ -30,6 +31,10 @@ failed with the same error. Batteries characterizes the successful results of `L
 * `Except.toOption_eq_some_iff`: an observed success is a success.
 * `Except.toOption_mapM`, `Except.toOption_filterMapM`: the observation of a list of
   computations.
+* `Except.mapM_eq_ok_map`, `Except.toOption_mapM_congr`: `List.mapM` of succeeding steps, and of
+  steps with the same observations.
+* `Except.exists_mem_eq_ok_of_mapM_eq_ok`: the results of a successful `List.mapM` come from its
+  steps.
 * `Except.exists_mem_eq_error_of_mapM_eq_error`,
   `Except.exists_mem_eq_error_of_filterMapM_eq_error`: a failing list of computations has a
   failing step.
@@ -54,6 +59,8 @@ theorem bind_eq_ok {x : Except ε α} {f : α → Except ε β} {b : β} :
 @[simp] theorem toOption_ok (a : α) : (Except.ok a : Except ε α).toOption = some a := rfl
 
 @[simp] theorem toOption_error (e : ε) : (Except.error e : Except ε α).toOption = none := rfl
+
+@[simp] theorem toOption_pure (a : α) : (pure a : Except ε α).toOption = some a := rfl
 
 theorem toOption_bind (x : Except ε α) (f : α → Except ε β) :
     (x >>= f).toOption = x.toOption.bind fun a => (f a).toOption := by
@@ -80,6 +87,21 @@ theorem toOption_mapM (f : α → Except ε β) (l : List α) :
     · simp only [List.mapM_cons, h, ok_bind, toOption_bind, ih]
       split_ifs <;> simp_all [pure, Except.pure]
 
+/-- `List.mapM` of steps that succeed returns their results. -/
+theorem mapM_eq_ok_map {f : α → Except ε β} {g : α → β} {l : List α}
+    (h : ∀ a ∈ l, f a = .ok (g a)) : l.mapM f = .ok (l.map g) :=
+  List.mapM_eq_ok_iff_forall₂.mpr <| by induction l <;> simp_all
+
+/-- `List.mapM` of steps with the same observations on the list has the same observation. -/
+theorem toOption_mapM_congr {f g : α → Except ε β} {l : List α}
+    (h : ∀ a ∈ l, (f a).toOption = (g a).toOption) :
+    (l.mapM f).toOption = (l.mapM g).toOption := by
+  induction l with
+  | nil => rfl
+  | cons a l ih =>
+    simp only [List.mapM_cons, toOption_bind, h a List.mem_cons_self,
+      ih fun b hb => h b (List.mem_cons_of_mem a hb)]
+
 /-- `List.filterMapM` succeeds exactly when every step succeeds, and then keeps the present
 results. -/
 theorem toOption_filterMapM (f : α → Except ε (Option β)) (l : List α) :
@@ -96,6 +118,17 @@ theorem toOption_filterMapM (f : α → Except ε (Option β)) (l : List α) :
       split_ifs <;> simp_all
     · simp only [List.filterMapM_cons, h, ok_bind, toOption_bind, ih]
       split_ifs <;> simp_all [pure, Except.pure]
+
+/-- Every result of a successful `List.mapM` is the result of one of its steps. -/
+theorem exists_mem_eq_ok_of_mapM_eq_ok {f : α → Except ε β} {l : List α} {bs : List β}
+    (h : l.mapM f = .ok bs) {b : β} (hb : b ∈ bs) : ∃ a ∈ l, f a = .ok b := by
+  have h' := congrArg Except.toOption h
+  rw [toOption_mapM] at h'
+  split_ifs at h'
+  · simp only [toOption_ok, Option.some.injEq] at h'
+    obtain ⟨a, ha, hab⟩ := List.mem_filterMap.mp (h' ▸ hb)
+    exact ⟨a, ha, toOption_eq_some_iff.mp hab⟩
+  · simp at h'
 
 /-- When `List.mapM` fails, some step fails with that error. -/
 theorem exists_mem_eq_error_of_mapM_eq_error {f : α → Except ε β} {l : List α} {e : ε}

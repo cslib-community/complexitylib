@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.KEM
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
+import CslibFrontier.Crypto.Game.CloseTo
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Represented
 import CslibFrontier.Languages.Probabilistic.Simulation
@@ -33,11 +34,10 @@ Section and figure locators follow `CslibFrontier.Crypto.Protocols.KEM.FujisakiO
 the full version of [HofheinzHoevelmannsKiltz2017] served by IACR ePrint 2017/604, dated
 **2 November 2021**:
 
-* **§2.1** and **§2.1, Definition 2.2 / Figure 4**: `ExplicitCoinPKE` and its single-stage
-  fixed-message distinguishing experiment `ExplicitCoinPKE.indCpaGame` /
-  `ExplicitCoinPKE.indCpaAdvantage` (using caller-supplied messages `m₀, m₁ : M` and
-  probability-difference `Game.advantage` rather than Def. 2.2 / Fig. 4's two-stage
-  key-dependent-message guessing experiment).
+* **§2.1** and **§2.1, Definition 2.2 / Figure 4**: `ExplicitCoinPKE` and its two-stage IND-CPA
+  advantage `ExplicitCoinPKE.cpaAdvantage`, the shared experiment `Cslib.Crypto.PKE.cpaExperiment`
+  of `ExplicitCoinPKE.toPKE` with the two-world advantage (twice HHK17's
+  `|Pr[b' = b] - 1/2|`).
 * **§3.1, Figure 5**: derandomization and mandatory re-encryption check `T[PKE, G]` (`encT`,
   `decT`).
 * **§3.2.2, Figure 12**: implicit-rejection KEM `FO-notbot = U-notbot ∘ T` (`ImplicitSK`,
@@ -50,10 +50,11 @@ In addition to the `ExplicitCoinPKE` and `Scheme` modeling choices documented in
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto`, this module makes two ROM-specific modeling
 choices:
 
-* **Deterministic oracle adversaries (`ROAdversary`)**: adversaries are deterministic oracle
-  programs `KEM.Challenge PK CT K → OracleComp (ROResp R K) Bool` with no private-coin channel;
-  randomized oracle adversaries reduce to these by fixing coins (see `ProbOracleComp.coinLaw` /
-  `fixCoins`).
+* **Adversaries with explicit coins (`RandomizedROAdversary`)**: an adversary draws its coins
+  `ω ← A.coins` once and then runs the deterministic oracle program
+  `A.run ω : KEM.Challenge PK CT K → OracleComp (ROResp R K) Bool` (`ROAdversary`). The game hops
+  are proved for deterministic programs; `RandomizedROAdversary.advantage_play_le` averages them
+  over the coins. Query bounds hold for every coin value.
 * **Standard KEM IND-CCA experiment (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, not
   separately located in the source map above)**: the real-or-random key experiment draws the
   random challenge key via `kRand ← S.sampleKey` (rather than a uniform draw on `K`), leaves
@@ -76,27 +77,26 @@ On top of those definitions, this module formalizes:
    `FO-notbot` instance with `roIndCcaGame` and `eagerIndCcaGame`; the `FO^⊥` instance is in
    `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot`.
 2. **Keyless ROM simulator and IND-CPA reduction** (`Scheme.simHandler`,
-   `Scheme.romCpaReduction`, `Scheme.simHitProb`). Neither is a verbatim construction from
-   [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`. `simHandler` is
-   adapted from the `G`/`H` simulations in two proofs of the full version: the proof of the §3.1
-   theorem for `T` (IND-CPA security of the PKE implies OW-PCVA security of `T[PKE, G]`), which
-   answers `G` lazily, and the proof of the §3.2.2 IND-CCA theorem for `U-notbot`, which answers
-   decapsulation queries and the matching `H` queries from a ciphertext-indexed table. Here
-   `simHandler` answers `H(false, m, c)` via a lazy table `H_q(c)` whenever the §3.1 Fig. 5
-   re-encryption check `Enc(pk, m; G(m)) = c` holds, and answers punctured decapsulation queries
-   `c ≠ cStar` from `H_q(c)` without using `sk` (its consistency with `roHandler` /
-   `eagerIndCcaGame` is proved in the `NotBot` modules). `romCpaReduction` is modelled on the
-   IND-CPA adversary in the proof of the §3.1 theorem for `T`, with two differences: the challenge
-   messages `m₀, m₁ : M` are explicit parameters rather than sampled uniformly inside the reduction,
-   and the wrapped adversary is an `FO-notbot` IND-CCA adversary rather than an OW-PCVA adversary
-   against `T[PKE, G]`. It runs `A` against `simHandler` on an `ExplicitCoinPKE.indCpaGame`
-   challenge `(pk, cStar)` and outputs whether `m₁` was recorded in `gCache`. We prove that the
-   reduction's IND-CPA advantage unfolds to the difference of simulator hit probabilities
-   (`Scheme.indCpaAdvantage_romCpaReduction`), the query-budget row bound
-   `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-   `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`. The IND-CCA bound for `FO-notbot`
-   relating `indCcaRomAdvantage` to these terms is `Scheme.indCcaRomAdvantage_le` in
-   `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot`.
+   `Scheme.romCpaReduction`, `Scheme.simFilterOwExperiment`). Neither is a verbatim construction
+   from [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`.
+   `simHandler` is adapted from the `G`/`H` simulations in two proofs of the full version: the
+   proof of Theorem 3.2 (§3.1, IND-CPA security of the PKE implies OW-PCVA security of
+   `T[PKE, G]`), which answers `G` lazily, and the proof of Theorem 3.4 (§3.2.2, IND-CCA security
+   of `U-notbot`), which answers decapsulation queries and the matching `H` queries from a
+   ciphertext-indexed table. Here `simHandler` answers `H(false, m, c)` via a lazy table `H_q(c)`
+   whenever the §3.1 Fig. 5 re-encryption check `Enc(pk, m; G(m)) = c` holds, and answers
+   punctured decapsulation queries `c ≠ cStar` from `H_q(c)` without using `sk` (its consistency
+   with `roHandler` / `eagerIndCcaGame` is proved in the `NotBot` modules). `romCpaReduction A` is
+   one two-stage IND-CPA adversary: its first stage draws both challenge messages
+   `m₀, m₁ ← S.sampleMsg`, as `D₁` of Fig. 8 (proof of Theorem 3.2) does, and its second stage
+   draws the coins of `A`, runs `A` against `simHandler` on the challenge and outputs whether `m₁`
+   was queried to `G`. With challenge bit `true` this is the one-wayness experiment
+   `simFilterOwExperiment` (`Scheme.eval_cpaExperiment_romFilterCpaReduction_true`); with bit
+   `false` the target `m₁` is independent of the challenge, so the reduction outputs `true` with
+   probability at most `(qG + qH) / |M|`
+   (`Scheme.succProbability_romFilterCpaReduction_false_le`). Together they give
+   `Scheme.succProbability_simFilterOwExperiment_le`. The IND-CCA bound for `FO-notbot` is
+   `Scheme.indCcaRomAdvantage_le` in `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot`.
 
 ## Main definitions
 
@@ -105,6 +105,9 @@ On top of those definitions, this module formalizes:
   `Cslib.Crypto.Protocols.FujisakiOkamoto.ROAdversary`: query/response family and deterministic
   oracle adversary for the ROM IND-CCA experiment with random oracles `G`, `H` and decapsulation
   oracle.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.RandomizedROAdversary`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.RandomizedROAdversary.play`: an adversary with explicit
+  coins, and a game played with its coins drawn first.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.ROQuery.dispatch`: the oracle interface in any monad.
   Every lazy, eager and simulated handler of the FO games and proof hybrids is this dispatcher
   applied to its own `G`, `H` and decapsulation implementations.
@@ -128,9 +131,11 @@ On top of those definitions, this module formalizes:
   program, the instance of `romIndCcaExperiment` that gives `roIndCcaGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.SimState`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simHandler`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romCpaReduction`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simHitProb`: keyless ROM simulator,
-  IND-CPA reduction, and simulator `G`-query hit probability.
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simFilterHit`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romCpaReduction`: keyless ROM simulator, its run
+  on a challenge, and the two-stage IND-CPA reduction.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simFilterOwExperiment`: the one-wayness
+  experiment of the challenge hop.
 
 ## Main results
 
@@ -145,13 +150,13 @@ On top of those definitions, this module formalizes:
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_eq_eager`:
   the lazy executable game `roIndCcaGame` has the same output distribution and advantage as
   `eagerIndCcaGame`.
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCpaAdvantage_romCpaReduction`:
-  the IND-CPA advantage of `romCpaReduction` unfolds to the absolute difference of simulator
-  `G`-query hit probabilities `simHitProb`.
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.sum_simHitProb_le`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`:
-  query-count row bound `∑_{m₁} simHitProb m₀ m₁ ≤ qG + qH` and OW-to-CPA averaging bound
-  relating `|M|⁻¹ ∑_m simHitProb m m` to `indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁)`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.RandomizedROAdversary.advantage_play_le`: a per-coin
+  bound averages over the adversary's coins.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_cpaExperiment_romFilterCpaReduction_true`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.succProbability_romFilterCpaReduction_false_le`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.succProbability_simFilterOwExperiment_le`: the two
+  sides of the reduction's IND-CPA experiment, and the bound
+  `Pr[OW] ≤ Adv^{IND-CPA}(romFilterCpaReduction d A) + (qG + qH) / |M|`.
 
 ## References
 
@@ -203,8 +208,8 @@ of the games and proof hybrids is this dispatcher applied to its own `G`, `H` an
 
 /-- A deterministic IND-CCA oracle adversary in the Random Oracle Model receives the challenge
 `⟨pk, c*, k*⟩` and interacts with `G`, `H`, and the decapsulation oracle before outputting a
-Boolean guess. Randomized oracle adversaries reduce to these by fixing coins (see
-`ProbOracleComp.coinLaw`). -/
+Boolean guess. A randomized adversary is a coin draw followed by one of these
+(`RandomizedROAdversary`). -/
 abbrev ROAdversary (PK M R CT K : Type) : Type :=
   KEM.Challenge PK CT K → OracleComp (ROResp (M := M) (CT := CT) R K) Bool
 
@@ -250,6 +255,89 @@ execution makes at most `qG` queries to `G`, `qH` queries to `H`, and `qD` queri
 def ROFullQueryBounds (A : ROAdversary PK M R CT K) (qG qH qD : ℕ) : Prop :=
   ROQueryBounds A qG qH ∧
   ∀ ch : KEM.Challenge PK CT K, OracleComp.IsCostBounded ROQuery.dCost (A ch) qD
+
+/-- A randomized ROM IND-CCA adversary with explicit coins: it draws its coins `ω ← coins` once,
+before it receives the challenge, and then runs the deterministic oracle adversary `run ω`. This
+is the explicit-coin adversary model of `Cslib.Crypto.Protocols.ROMSignature.Forger`; a
+deterministic adversary is the case of a single coin value (`ofDeterministic`). -/
+structure RandomizedROAdversary (PK M R CT K : Type) where
+  /-- The adversary's coins. -/
+  Coins : Type
+  /-- Draw the adversary's coins. -/
+  coins : ProbComp Coins
+  /-- The deterministic adversary run with fixed coins. -/
+  run : Coins → ROAdversary PK M R CT K
+
+namespace RandomizedROAdversary
+
+/-- A deterministic adversary, as a randomized adversary with a single coin value. -/
+def ofDeterministic (A : ROAdversary PK M R CT K) : RandomizedROAdversary PK M R CT K where
+  Coins := Unit
+  coins := pure ()
+  run _ := A
+
+/-- Play a game for deterministic adversaries: draw the coins `ω` and play the game with
+`A.run ω`. -/
+def play (A : RandomizedROAdversary PK M R CT K)
+    (game : ROAdversary PK M R CT K → Bool → ProbComp Bool) (b : Bool) : ProbComp Bool := do
+  let ω ← A.coins
+  game (A.run ω) b
+
+@[simp] theorem play_ofDeterministic (A : ROAdversary PK M R CT K)
+    (game : ROAdversary PK M R CT K → Bool → ProbComp Bool) (b : Bool) :
+    (ofDeterministic A).play game b = game A b :=
+  rfl
+
+/-- Every coin value obeys the query bounds `(qG, qH)` on `G` and `H`. -/
+def QueryBounds (A : RandomizedROAdversary PK M R CT K) (qG qH : ℕ) : Prop :=
+  ∀ ω, ROQueryBounds (A.run ω) qG qH
+
+/-- Every coin value obeys the query bounds `(qG, qH, qD)` on `G`, `H` and decapsulation. -/
+def FullQueryBounds (A : RandomizedROAdversary PK M R CT K) (qG qH qD : ℕ) : Prop :=
+  ∀ ω, ROFullQueryBounds (A.run ω) qG qH qD
+
+/-- **Averaging over the adversary's coins.** If, for every coin value `ω`, the advantage of
+`A.run ω` in `game` is at most `e + 2 · Pr[ow (A.run ω)]`, then the advantage of `A` is at most
+`e + 2 · Pr[ow (A.run ω)]` with `ω ← A.coins` drawn inside the experiment. -/
+theorem advantage_play_le (A : RandomizedROAdversary PK M R CT K)
+    (game : ROAdversary PK M R CT K → Bool → ProbComp Bool)
+    (ow : ROAdversary PK M R CT K → Experiment) {e : ℝ} (he : 0 ≤ e)
+    (h : ∀ ω, (Experiment.advantage (game (A.run ω) false) (game (A.run ω) true) : ℝ) ≤
+      e + 2 * Pr[ow (A.run ω)]) :
+    (Experiment.advantage (A.play game false) (A.play game true) : ℝ) ≤
+      e + 2 * Pr[A.coins >>= fun ω => ow (A.run ω)] := by
+  set err : A.Coins → ℝ≥0∞ := fun ω => ENNReal.ofReal e + 2 * ProbComp.eval (ow (A.run ω)) true
+  have hstep (ω : A.Coins) :
+      (Experiment.advantage (game (A.run ω) false) (game (A.run ω) true) : ℝ≥0∞) ≤ err ω := by
+    calc (Experiment.advantage (game (A.run ω) false) (game (A.run ω) true) : ℝ≥0∞)
+        = ENNReal.ofReal (Experiment.advantage (game (A.run ω) false)
+            (game (A.run ω) true) : ℝ) := (ENNReal.ofReal_coe_nnreal).symm
+      _ ≤ ENNReal.ofReal (e + 2 * Pr[ow (A.run ω)]) := ENNReal.ofReal_le_ofReal (h ω)
+      _ = err ω := by
+        rw [ENNReal.ofReal_add he (by positivity), ENNReal.ofReal_mul (by norm_num),
+          ENNReal.ofReal_toReal (PMF.apply_ne_top _ _), ENNReal.ofReal_ofNat]
+  have hclose : CloseTo (ProbComp.eval (A.play game false)) (ProbComp.eval (A.play game true))
+      (∑' ω, ProbComp.eval A.coins ω * err ω) := by
+    simp only [play, ProbComp.eval_bind]
+    exact CloseTo.bind_right_tsum _ fun ω _ => Game.closeTo_iff_coe_advantage_le.mpr (hstep ω)
+  have hsum : ∑' ω, ProbComp.eval A.coins ω * err ω =
+      ENNReal.ofReal e + 2 * ProbComp.eval (A.coins >>= fun ω => ow (A.run ω)) true := by
+    simp only [err, mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+      ProbComp.eval_bind, PMF.bind_apply]
+    rw [← ENNReal.tsum_mul_left]
+    congr 1
+    exact tsum_congr fun ω => mul_left_comm _ _ _
+  have hle := Game.closeTo_iff_coe_advantage_le.mp hclose
+  rw [hsum] at hle
+  have htop : ENNReal.ofReal e + 2 * ProbComp.eval (A.coins >>= fun ω => ow (A.run ω)) true ≠ ⊤ :=
+    ENNReal.add_ne_top.mpr ⟨ENNReal.ofReal_ne_top,
+      ENNReal.mul_ne_top ENNReal.ofNat_ne_top (PMF.apply_ne_top _ _)⟩
+  have hreal := ENNReal.toReal_mono htop hle
+  rwa [ENNReal.coe_toReal, ENNReal.toReal_add ENNReal.ofReal_ne_top
+    (ENNReal.mul_ne_top ENNReal.ofNat_ne_top (PMF.apply_ne_top _ _)), ENNReal.toReal_ofReal he,
+    ENNReal.toReal_mul, ENNReal.toReal_ofNat] at hreal
+
+end RandomizedROAdversary
 
 /-- Association-list caches for the lazy random oracles `G : M → R` and
 `H : Bool × M × CT → K` in the executable ROM IND-CCA game. -/
@@ -357,12 +445,11 @@ def roIndCcaGame (S : Scheme PK SK M R CT K)
     (OracleComp.interpret (S.roHandler dk cStar) (A ⟨pk, cStar, kStar⟩)).run st₀
   return guess
 
-/-- The ROM IND-CCA advantage of an adversary `A` against `FO-notbot`. -/
+/-- The ROM IND-CCA advantage of a randomized adversary `A` against `FO-notbot`: the adversary
+draws its coins and plays `roIndCcaGame`. -/
 noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
-    (A : ROAdversary PK M R CT K) : ℝ≥0 :=
-  Game.advantage
-    (ProbComp.eval (S.roIndCcaGame A false))
-    (ProbComp.eval (S.roIndCcaGame A true))
+    (A : RandomizedROAdversary PK M R CT K) : ℝ≥0 :=
+  Experiment.advantage (A.play S.roIndCcaGame false) (A.play S.roIndCcaGame true)
 
 omit [DecidableEq M] [DecidableEq CT] in
 /-- The eager random oracle `G : M → R`: an independent coin `S.pke.sampleCoins` at every
@@ -447,35 +534,45 @@ def simHandler (S : Scheme PK SK M R CT K) (pk : PK) (cStar : CT) (q : ROQuery M
     StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
   S.simFilterHandler (fun _ _ => true) pk cStar q
 
-/-- IND-CPA adversary built from a ROM IND-CCA adversary `A` and decapsulation filter `d`:
-given an IND-CPA challenge `pk` and `cStar`, samples a challenge key `kStar ← S.sampleKey`, runs
-`A ⟨pk, cStar, kStar⟩` against `S.simFilterHandler (d pk) pk cStar`, and outputs whether `m1` was
-queried to `G`. -/
+/-- The simulator run inside the IND-CPA reduction: given the public key `pk`, a target message `m`
+and a challenge ciphertext `cStar`, draw a challenge key `kStar ← S.sampleKey`, run the
+deterministic adversary `A ⟨pk, cStar, kStar⟩` against `S.simFilterHandler (d pk) pk cStar` from
+empty caches, and output whether `m` was queried to `G`. -/
+def simFilterHit (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
+    (A : ROAdversary PK M R CT K) (pk : PK) (m : M) (cStar : CT) : ProbComp Bool := do
+  let kStar ← S.sampleKey
+  let (_, st) ←
+    (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar) (A ⟨pk, cStar, kStar⟩)).run {}
+  return (st.gCache.lookup m).isSome
+
+/-- **The IND-CPA reduction** of the FO proofs, for the keyless simulator with decapsulation
+filter `d`, as one two-stage IND-CPA adversary. The first stage receives `pk`, draws the challenge
+messages `m₀, m₁ ← S.sampleMsg` itself and keeps `(pk, m₁)`. The second stage receives the
+challenge `cStar`, draws the coins `ω` of `A`, runs `A.run ω` against the simulator
+(`simFilterHit`) and outputs whether `m₁` was queried to `G`.
+
+The first stage is `D₁` of the IND-CPA adversary `D = (D₁, D₂)` in the proof of Theorem 3.2 of
+[HofheinzHoevelmannsKiltz2017] (§3.1, IND-CPA security of the PKE implies OW-PCVA security of
+`T[PKE, G]`; IACR ePrint 2017/604, full version dated 2 November 2021, Fig. 8), which draws
+`(m₀, m₁)` uniformly. There are two differences. `D₂` compares the `G`-queries on `m₀` and `m₁`
+and breaks ties with a coin, whereas this second stage checks `m₁` only. The wrapped adversary is
+an IND-CCA adversary against the KEM, whose decapsulation queries are simulated as in the proof of
+Theorem 3.4 (§3.2.2), rather than an OW-PCVA adversary against `T[PKE, G]`. -/
 def romFilterCpaReduction (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
-    (A : ROAdversary PK M R CT K) (_m0 m1 : M) : PK → CT → ProbComp Bool :=
-  fun pk cStar => do
-    let kStar ← S.sampleKey
-    let (_, st) ←
-      (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar) (A ⟨pk, cStar, kStar⟩)).run {}
-    return (st.gCache.lookup m1).isSome
+    (A : RandomizedROAdversary PK M R CT K) : TwoStage PK (MessagePair M) CT Bool (PK × M) where
+  choose pk := do
+    let m₀ ← S.sampleMsg
+    let m₁ ← S.sampleMsg
+    return (⟨m₀, m₁⟩, (pk, m₁))
+  guess := fun (pk, m₁) cStar => do
+    let ω ← A.coins
+    S.simFilterHit d (A.run ω) pk m₁ cStar
 
-/-- IND-CPA adversary built from a ROM IND-CCA adversary `A` against domain-separated `FO-notbot`:
-given an IND-CPA challenge `pk` and `cStar`, samples a challenge key `kStar ← S.sampleKey`, runs
-`A ⟨pk, cStar, kStar⟩` against `S.simHandler pk cStar`, and outputs whether `m1` was
-queried to `G`.
-
-It is modelled on the IND-CPA adversary in the proof of the §3.1 theorem for `T` in
-[HofheinzHoevelmannsKiltz2017] (IND-CPA security of the PKE implies OW-PCVA security of
-`T[PKE, G]`; IACR ePrint 2017/604, full version dated 2 November 2021), with two adaptations:
-the challenge messages `m0, m1 : M` are explicit parameters rather than sampled uniformly inside
-the reduction (the average over `M` is taken separately, in
-`avg_simHitProb_le_indCpaAdvantage_romCpaReduction`), and the wrapped adversary is an `FO-notbot`
-IND-CCA adversary rather than an OW-PCVA adversary against `T[PKE, G]`. The first message `_m0`
-is unused in the body; it is kept as an explicit parameter so that
-`S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁)` names both challenge messages. -/
-def romCpaReduction (S : Scheme PK SK M R CT K)
-    (A : ROAdversary PK M R CT K) (m0 m1 : M) : PK → CT → ProbComp Bool :=
-  S.romFilterCpaReduction (fun _ _ _ => true) A m0 m1
+/-- **The IND-CPA reduction for `FO-notbot`**: `romFilterCpaReduction` with the unfiltered
+simulator `simHandler`. -/
+def romCpaReduction (S : Scheme PK SK M R CT K) (A : RandomizedROAdversary PK M R CT K) :
+    TwoStage PK (MessagePair M) CT Bool (PK × M) :=
+  S.romFilterCpaReduction (fun _ _ _ => true) A
 
 /-! ### Section 2: One ROM IND-CCA Experiment and Eager/Lazy Equivalence
 
@@ -744,15 +841,16 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
   rw [← romIndCcaExperiment_notBot, ← eagerRomIndCcaExperiment_notBot]
   exact S.eval_romIndCcaExperiment_eq_eager _ _ A b
 
-/-- The ROM IND-CCA advantage of `A` against `FO-notbot` equals the distinguishing advantage
-between `S.eagerIndCcaGame A false` and `S.eagerIndCcaGame A true`. -/
+/-- The ROM IND-CCA advantage of a deterministic adversary `A` against `FO-notbot` equals the
+distinguishing advantage between `S.eagerIndCcaGame A false` and `S.eagerIndCcaGame A true`. -/
 theorem indCcaRomAdvantage_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) :
-    S.indCcaRomAdvantage A =
+    S.indCcaRomAdvantage (.ofDeterministic A) =
       Game.advantage (S.eagerIndCcaGame A false) (S.eagerIndCcaGame A true) := by
-  simp [indCcaRomAdvantage, eval_roIndCcaGame_eq_eagerIndCcaGame]
+  simp only [indCcaRomAdvantage, Experiment.advantage, RandomizedROAdversary.play_ofDeterministic,
+    eval_roIndCcaGame_eq_eagerIndCcaGame]
 
-/-! ### Section 3: Simulator Hit Probability and IND-CPA Averaging for `romCpaReduction` -/
+/-! ### Section 3: The One-Wayness Experiment and the IND-CPA Reduction -/
 
 omit [DecidableEq CT] in
 /-- A supported transition of `simHashG` adds at most one entry to `gCache`. -/
@@ -853,166 +951,105 @@ theorem simHandler_gCache_length_le (S : Scheme PK SK M R CT K) (pk : PK) (cStar
     st'.gCache.length ≤ st.gCache.length + q.ghCost :=
   S.simFilterHandler_gCache_length_le (fun _ _ => true) pk cStar q st res st' hmem
 
-omit [DecidableEq M] in
-/-- If each row of an `|M| × |M|` matrix sums to at most `Q` and `2 ≤ |M|`, some off-diagonal pair
-`(m₀, m₁)` bounds the diagonal average by `|p m₀ m₁ - p m₁ m₁| + Q / |M|`. -/
-private theorem avg_pair_abs [Fintype M] (hM : 2 ≤ Fintype.card M)
-    (p : M → M → ℝ) (Q : ℝ) (hrow : ∀ a, ∑ b : M, p a b ≤ Q) :
-    ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
-      (∑ m : M, p m m) / (Fintype.card M : ℝ) ≤
-        |p m₀ m₁ - p m₁ m₁| + Q / (Fintype.card M : ℝ) := by
-  classical
-  set N := Fintype.card M with hN
-  set T := ∑ m : M, p m m with hT
-  have hNpos : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
-  have hne : (Finset.univ : Finset M).Nonempty := by
-    rw [Finset.univ_nonempty_iff, ← Fintype.card_pos_iff]; omega
-  have ⟨a₀, _⟩ := hne
-  have herase₀ : (Finset.univ.erase a₀).Nonempty := by
-    rw [← Finset.card_pos, Finset.card_erase_of_mem (Finset.mem_univ a₀), Finset.card_univ]; omega
-  obtain ⟨b₀, hb₀⟩ := herase₀
-  have hab₀ : a₀ ≠ b₀ := (Finset.ne_of_mem_erase hb₀).symm
-  by_contra hcon
-  push Not at hcon
-  have h0lt : 0 < (T - Q) / (N : ℝ) := by
-    have h₀ := hcon a₀ b₀ hab₀
-    have habs : 0 ≤ |p a₀ b₀ - p b₀ b₀| := abs_nonneg _
-    linarith [div_sub_div_same T Q (N : ℝ)]
-  have hentry : ∀ a b : M, p b b - p a b < (T - Q) / (N : ℝ) := by
-    intro a b
-    by_cases hab : a = b
-    · subst hab; simpa only [sub_self] using h0lt
-    · have h1 := hcon a b hab
-      have h2 : p b b - p a b ≤ |p a b - p b b| := by
-        rw [abs_sub_comm]; exact le_abs_self _
-      linarith [div_sub_div_same T Q (N : ℝ)]
-  have hlt : ∑ a : M, ∑ b : M, (p b b - p a b) < ∑ _a : M, ∑ _b : M, ((T - Q) / (N : ℝ)) :=
-    Finset.sum_lt_sum_of_nonempty hne fun a _ =>
-      Finset.sum_lt_sum_of_nonempty hne fun b _ => hentry a b
-  have hR : (∑ _a : M, ∑ _b : M, ((T - Q) / (N : ℝ))) = (N : ℝ) * (T - Q) := by
-    simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, ← hN]
-    field_simp
-  have hL : (∑ a : M, ∑ b : M, (p b b - p a b)) = (N : ℝ) * T - ∑ a : M, ∑ b : M, p a b := by
-    simp only [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, ← hN, ← hT]
-  have hrows : (∑ a : M, ∑ b : M, p a b) ≤ (N : ℝ) * Q := by
-    calc (∑ a : M, ∑ b : M, p a b) ≤ ∑ _a : M, Q := Finset.sum_le_sum fun a _ => hrow a
-      _ = (N : ℝ) * Q := by simp [← hN]
-  rw [hL, hR] at hlt
-  linarith
+/-- **The one-wayness experiment of the challenge hop**: draw a key pair and a message
+`m ← S.sampleMsg`, encrypt `m` with fresh coins, and run the simulator of `simFilterHit` on the
+encryption. The experiment outputs whether the simulator queried `G` at `m`. -/
+def simFilterOwExperiment (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
+    (A : ROAdversary PK M R CT K) : Experiment := do
+  let (pk, _) ← S.pke.keyGen
+  let m ← S.sampleMsg
+  let cStar ← S.pke.encrypt pk m
+  S.simFilterHit d A pk m cStar
 
-/-- Probability that `S.romFilterCpaReduction d A m₀ m₁` records `m₁` in `gCache` when challenged
-on an encryption of `m₀` in `S.pke.indCpaGame`. -/
-noncomputable def simFilterHitProb (S : Scheme PK SK M R CT K)
-    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K) (m₀ m₁ : M) : ℝ :=
-  ((ProbComp.eval (S.pke.indCpaGame m₀ m₁ false (S.romFilterCpaReduction d A m₀ m₁))) true).toReal
+/-- With challenge bit `true`, the IND-CPA experiment of `romFilterCpaReduction d A` encrypts the
+message that the reduction looks for, and the other message is never used: the experiment is the
+one-wayness experiment of `A.run ω` for coins `ω ← A.coins`. -/
+theorem eval_cpaExperiment_romFilterCpaReduction_true (S : Scheme PK SK M R CT K)
+    (d : PK → List (M × R) → CT → Bool) (A : RandomizedROAdversary PK M R CT K) :
+    ProbComp.eval
+        (S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) true) =
+      ProbComp.eval (A.coins >>= fun ω => S.simFilterOwExperiment d (A.run ω)) := by
+  simp only [PKE.cpaExperiment, ProbComp.eval_bind, eval_lrExperiment, romFilterCpaReduction,
+    ExplicitCoinPKE.toPKE, simFilterOwExperiment, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind, MessagePair.select_true, ↓reduceIte, PMF.bind_const]
+  pmf_swap
 
-/-- Probability that `S.romCpaReduction A m₀ m₁` records `m₁` in `gCache` when challenged on an
-encryption of `m₀` in `S.pke.indCpaGame`. -/
-noncomputable def simHitProb (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
-    (m₀ m₁ : M) : ℝ :=
-  ((ProbComp.eval (S.pke.indCpaGame m₀ m₁ false (S.romCpaReduction A m₀ m₁))) true).toReal
-
-/-- The fixed-message IND-CPA advantage of `S.romFilterCpaReduction d A m₀ m₁` on `(m₀, m₁)`
-unfolds to the absolute difference between the simulator `G`-query hit probabilities on `m₁`
-under challenge encryptions of `m₀` and `m₁`. -/
-theorem indCpaAdvantage_romFilterCpaReduction (S : Scheme PK SK M R CT K)
-    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K) (m₀ m₁ : M) :
-    (S.pke.indCpaAdvantage m₀ m₁ (S.romFilterCpaReduction d A m₀ m₁) : ℝ) =
-      |S.simFilterHitProb d A m₀ m₁ - S.simFilterHitProb d A m₁ m₁| := by
-  have htrue : S.pke.indCpaGame m₀ m₁ true (S.romFilterCpaReduction d A m₀ m₁) =
-      S.pke.indCpaGame m₁ m₁ false (S.romFilterCpaReduction d A m₁ m₁) := rfl
-  simp only [ExplicitCoinPKE.indCpaAdvantage, Game.coe_advantage,
-    Game.coe_succProbability, simFilterHitProb, htrue]
-
-/-- The fixed-message IND-CPA advantage of `S.romCpaReduction A m₀ m₁` on `(m₀, m₁)` unfolds to
-the absolute difference between the simulator `G`-query hit probabilities on `m₁` under challenge
-encryptions of `m₀` and `m₁`. -/
-theorem indCpaAdvantage_romCpaReduction (S : Scheme PK SK M R CT K)
-    (A : ROAdversary PK M R CT K) (m₀ m₁ : M) :
-    (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) =
-      |S.simHitProb A m₀ m₁ - S.simHitProb A m₁ m₁| :=
-  S.indCpaAdvantage_romFilterCpaReduction (fun _ _ _ => true) A m₀ m₁
-
-/-- **Query-count row bound on filtered simulator hit probabilities**: for any adversary `A`
-satisfying `ROQueryBounds A qG qH`, any decapsulation filter `d`, and any challenge message `m₀`,
-the sum over all target messages `m₁ : M` of `S.simFilterHitProb d A m₀ m₁` is at most `qG + qH`. -/
-theorem sum_simFilterHitProb_le [Fintype M] (S : Scheme PK SK M R CT K)
-    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K)
-    {qG qH : ℕ} (hq : ROQueryBounds A qG qH) (m₀ : M) :
-    ∑ m₁ : M, S.simFilterHitProb d A m₀ m₁ ≤ (qG : ℝ) + (qH : ℝ) := by
+/-- With challenge bit `false`, the IND-CPA experiment of `romFilterCpaReduction d A` encrypts
+`m₀`, and the reduction looks for an independent uniform message `m₁`. The simulator caches at most
+`qG + qH` messages, so the reduction outputs `true` with probability at most `(qG + qH) / |M|`. -/
+theorem succProbability_romFilterCpaReduction_false_le [Fintype M] [Nonempty M]
+    (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
+    (A : RandomizedROAdversary PK M R CT K) {qG qH : ℕ} (hq : A.QueryBounds qG qH)
+    (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M) :
+    Pr[S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) false] ≤
+      ((qG : ℝ) + qH) / Fintype.card M := by
+  simp only [PKE.cpaExperiment, ProbComp.eval_bind, eval_lrExperiment,
+    romFilterCpaReduction, ExplicitCoinPKE.toPKE, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind, MessagePair.select_false, ↓reduceIte]
+  pmf_hoist (occ := 2) (ProbComp.eval S.sampleMsg)
   let runDist : PMF (Bool × SimState M R CT K) :=
     (ProbComp.eval S.pke.keyGen).bind fun keys =>
-    (ProbComp.eval S.pke.sampleCoins).bind fun rStar =>
+    (ProbComp.eval S.sampleMsg).bind fun m₀ =>
+    (ProbComp.eval (S.pke.encrypt keys.1 m₀)).bind fun cStar =>
+    (ProbComp.eval A.coins).bind fun ω =>
     (ProbComp.eval S.sampleKey).bind fun kStar =>
-      let cStar := S.pke.encDet keys.fst m₀ rStar
       (OracleComp.interpret (m := StateT (SimState M R CT K) PMF)
-        (fun q st => ProbComp.eval (S.simFilterHandler (d keys.fst) keys.fst cStar q st))
-        (A ⟨keys.fst, cStar, kStar⟩)).run {}
-  have heq (m₁ : M) :
-      ProbComp.eval (S.pke.indCpaGame m₀ m₁ false (S.romFilterCpaReduction d A m₀ m₁)) =
-        runDist.map fun p => (p.snd.gCache.lookup m₁).isSome := by
-    simp only [ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt, romFilterCpaReduction,
-      Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-      OracleComp.map_run_interpret ProbComp.isMonadHom_eval, runDist, PMF.map, PMF.bind_bind,
-      PMF.pure_bind, Function.comp_def]
+        (fun q st => ProbComp.eval (S.simFilterHandler (d keys.1) keys.1 cStar q st))
+        (A.run ω ⟨keys.1, cStar, kStar⟩)).run {}
+  have heq (m₁ : M) : ((ProbComp.eval S.pke.keyGen).bind fun keys =>
+      (ProbComp.eval S.sampleMsg).bind fun m₀ =>
+      (ProbComp.eval (S.pke.encrypt keys.1 m₀)).bind fun cStar =>
+      (ProbComp.eval A.coins).bind fun ω =>
+        ProbComp.eval (S.simFilterHit d (A.run ω) keys.1 m₁ cStar)) =
+      runDist.map fun x => (x.2.gCache.lookup m₁).isSome := by
+    simp only [runDist, simFilterHit, ProbComp.eval_bind, ProbComp.eval_pure,
+      OracleComp.map_run_interpret ProbComp.isMonadHom_eval, PMF.map_bind]
+    rfl
   have hcard : ∀ x ∈ runDist.support,
-      (Finset.univ.filter fun m => (x.snd.gCache.lookup m).isSome = true).card ≤ qG + qH := by
+      (Finset.univ.filter fun m => (x.2.gCache.lookup m).isSome = true).card ≤ qG + qH := by
     intro x hx
     simp only [runDist, PMF.mem_support_bind_iff] at hx
-    obtain ⟨keys, -, rStar, -, kStar, -, hrun⟩ := hx
-    set pk := keys.fst
-    set cStar := S.pke.encDet pk m₀ rStar
-    have hlen := (hq.ghCost ⟨pk, cStar, kStar⟩).measure_le
-      (fun q st => ProbComp.eval (S.simFilterHandler (d pk) pk cStar q st))
+    obtain ⟨keys, -, m₀, -, cStar, -, ω, -, kStar, -, hrun⟩ := hx
+    have hlen := ((hq ω).ghCost ⟨keys.1, cStar, kStar⟩).measure_le
+      (fun q st => ProbComp.eval (S.simFilterHandler (d keys.1) keys.1 cStar q st))
       (fun st : SimState M R CT K => st.gCache.length)
-      (S.simFilterHandler_gCache_length_le (d pk) pk cStar)
-      hrun
-    exact (RandomOracle.card_filter_lookup_isSome_le x.snd.gCache).trans (by simpa using hlen)
-  calc ∑ m₁ : M, S.simFilterHitProb d A m₀ m₁
-      = ∑ m₁ : M, ((runDist.map fun p => (p.snd.gCache.lookup m₁).isSome) true).toReal := by
-        refine Finset.sum_congr rfl fun m₁ _ => ?_
-        rw [simFilterHitProb, heq m₁]
-    _ ≤ ((qG + qH : ℕ) : ℝ) := sum_toReal_indicator_le runDist _ (qG + qH) hcard
-    _ = (qG : ℝ) + (qH : ℝ) := Nat.cast_add qG qH
+      (S.simFilterHandler_gCache_length_le (d keys.1) keys.1 cStar) hrun
+    exact (RandomOracle.card_filter_lookup_isSome_le x.2.gCache).trans (by simpa using hlen)
+  have hsum := sum_toReal_indicator_le runDist (fun x m => (x.2.gCache.lookup m).isSome)
+    (qG + qH) hcard
+  nth_rewrite 1 [hmsg]
+  rw [PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum fun _ _ =>
+    ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)]
+  simp only [heq, ENNReal.toReal_mul, PMF.uniformOfFintype_apply, ENNReal.toReal_inv,
+    ENNReal.toReal_natCast, ← Finset.mul_sum]
+  rw [inv_mul_eq_div, ← Nat.cast_add]
+  gcongr
 
-/-- **Query-count row bound on simulator hit probabilities**: for any adversary `A` satisfying
-`ROQueryBounds A qG qH` and any challenge message `m₀`, the sum over all target messages `m₁ : M`
-of `S.simHitProb A m₀ m₁` is at most `qG + qH`. -/
-theorem sum_simHitProb_le [Fintype M] (S : Scheme PK SK M R CT K)
-    (A : ROAdversary PK M R CT K) {qG qH : ℕ} (hq : ROQueryBounds A qG qH) (m₀ : M) :
-    ∑ m₁ : M, S.simHitProb A m₀ m₁ ≤ (qG : ℝ) + (qH : ℝ) :=
-  S.sum_simFilterHitProb_le (fun _ _ _ => true) A hq m₀
-
-/-- **OW-to-CPA averaging bound for `romFilterCpaReduction`**: when `2 ≤ Fintype.card M` and `A`
-satisfies `ROQueryBounds A qG qH`, there exist distinct messages `m₀ ≠ m₁` such that the average
-diagonal simulator hit probability `|M|⁻¹ ∑_m S.simFilterHitProb d A m m` is bounded by
-`S.pke.indCpaAdvantage m₀ m₁ (S.romFilterCpaReduction d A m₀ m₁) + (qG + qH) / |M|`. -/
-theorem avg_simFilterHitProb_le_indCpaAdvantage_romFilterCpaReduction [Fintype M]
+/-- **One-wayness from IND-CPA** (the step `Pr[QUERY] ≤ …` of the proof of Theorem 3.2 of
+[HofheinzHoevelmannsKiltz2017], for the two-world advantage): for uniform messages and an adversary
+whose every coin value makes at most `qG` queries to `G` and `qH` queries to `H`, the averaged
+one-wayness experiment is bounded by the two-stage IND-CPA advantage of the single reduction
+`romFilterCpaReduction d A`:
+`Pr[OW] ≤ Adv^{IND-CPA}(romFilterCpaReduction d A) + (qG + qH) / |M|`. -/
+theorem succProbability_simFilterOwExperiment_le [Fintype M] [Nonempty M]
     (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
-    (A : ROAdversary PK M R CT K) {qG qH : ℕ} (hM : 2 ≤ Fintype.card M)
-    (hq : ROQueryBounds A qG qH) :
-    ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
-      (∑ m : M, S.simFilterHitProb d A m m) / (Fintype.card M : ℝ) ≤
-        (S.pke.indCpaAdvantage m₀ m₁ (S.romFilterCpaReduction d A m₀ m₁) : ℝ) +
-          ((qG : ℝ) + (qH : ℝ)) / (Fintype.card M : ℝ) := by
-  obtain ⟨m₀, m₁, hne, hpair⟩ :=
-    avg_pair_abs hM (S.simFilterHitProb d A) ((qG : ℝ) + (qH : ℝ))
-      (S.sum_simFilterHitProb_le d A hq)
-  refine ⟨m₀, m₁, hne, ?_⟩
-  rwa [S.indCpaAdvantage_romFilterCpaReduction d A m₀ m₁]
-
-/-- **OW-to-CPA averaging bound for `romCpaReduction`**: when `2 ≤ Fintype.card M` and `A`
-satisfies `ROQueryBounds A qG qH`, there exist distinct messages `m₀ ≠ m₁` such that the average
-diagonal simulator hit probability `|M|⁻¹ ∑_m S.simHitProb A m m` is bounded by
-`S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) + (qG + qH) / |M|`. -/
-theorem avg_simHitProb_le_indCpaAdvantage_romCpaReduction [Fintype M]
-    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
-    {qG qH : ℕ} (hM : 2 ≤ Fintype.card M) (hq : ROQueryBounds A qG qH) :
-    ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
-      (∑ m : M, S.simHitProb A m m) / (Fintype.card M : ℝ) ≤
-        (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) +
-          ((qG : ℝ) + (qH : ℝ)) / (Fintype.card M : ℝ) :=
-  S.avg_simFilterHitProb_le_indCpaAdvantage_romFilterCpaReduction (fun _ _ _ => true) A hM hq
+    (A : RandomizedROAdversary PK M R CT K) {qG qH : ℕ}
+    (hq : A.QueryBounds qG qH) (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M) :
+    Pr[A.coins >>= fun ω => S.simFilterOwExperiment d (A.run ω)] ≤
+      (S.pke.cpaAdvantage (S.romFilterCpaReduction d A) : ℝ) +
+        ((qG : ℝ) + qH) / Fintype.card M := by
+  have hfalse := S.succProbability_romFilterCpaReduction_false_le d A hq hmsg
+  have hadv := (Experiment.coe_advantage
+    (S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) false)
+    (S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) true))
+  rw [← ExplicitCoinPKE.cpaAdvantage] at hadv
+  have htrue : Pr[A.coins >>= fun ω => S.simFilterOwExperiment d (A.run ω)] =
+      Pr[S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) true] := by
+    rw [eval_cpaExperiment_romFilterCpaReduction_true]
+  rw [htrue, hadv]
+  linarith [neg_abs_le (Pr[S.pke.toPKE.cpaExperiment (fun _ _ _ => true)
+      (S.romFilterCpaReduction d A) false] -
+    Pr[S.pke.toPKE.cpaExperiment (fun _ _ _ => true) (S.romFilterCpaReduction d A) true])]
 
 end Scheme
 
