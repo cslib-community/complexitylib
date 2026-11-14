@@ -35,16 +35,16 @@ local notation "rChunk" w₀:arg b:arg b':arg => reducedChunkBits (reducedTrinom
 # Unit Tests for In-Epoch Resizable Succinct Operations and Infrastructure
 
 This test suite covers both concrete evaluations and symbolic specifications:
-1. Concrete footprint bounds `compactedEpochWords` for $n = 8$ and empty $n = 0$.
-2. Initial empty dictionary `CompactedRep` representation with concrete `V = 2 ^ w` witness.
-3. Non-empty `CompactedRep` construction from `CompactedSplitRep`.
-4. Symbolic key reconstruction on live slots from `CompactedRep`.
-5. `RuntimeReducedKWise` Horner evaluation (`evalHashGenProg`) on polynomial coefficients.
-6. Concrete circular window growth (`winGrowRight`) evaluation.
-7. Symbolic state transition and resulting window mapping of `winGrowRightGenProg`.
-8. Physical-to-dense slot mapping of `denseOfPhysGenProg`.
-9. `WinGrowRightPre` safety precondition construction across the `module` boundary.
-10. `realizesBounded_winGrowRightGen` verification across the `module` boundary.
+1. Concrete footprint bounds `compactedEpochWords` for $n = 8$ and empty $n = 0$ (Tests 1, 2).
+2. Concrete initial empty dictionary `CompactedRep` representation with `V = 2 ^ w` (Test 3).
+3. Symbolic non-empty `CompactedRep` construction from `CompactedSplitRep` (Test 4).
+4. Symbolic key reconstruction on live slots from `CompactedRep` (Test 5).
+5. Symbolic `RuntimeReducedKWise` Horner evaluation on polynomial coefficients (Test 6).
+6. Concrete circular window growth (`winGrowRight`) evaluation (Test 7).
+7. Symbolic state transition and resulting window mapping of `winGrowRightGenProg` (Test 8).
+8. Symbolic physical-to-dense slot mapping of `denseOfPhysGenProg` (Test 9).
+9. Module client verification: `WinGrowRightPre` safety precondition construction (Test 10).
+10. Module client verification: `realizesBounded_winGrowRightGen` verification (Test 11).
 -/
 
 /-- Test 1 (Concrete evaluation): Space bound calculation for positive active epoch size
@@ -52,19 +52,23 @@ $n = 8 > 0$, $N = 16$. -/
 theorem test_compacted_words_positive_eval :
     compactedEpochWords 64 16 64 16 8 ≤ Dynamic.succinctWords 1355 441 64 16 64 8 := by
   have hw : 0 < 64 := by decide
-  have hU : 64 ≤ 2 ^ 64 := by decide
+  have hU : Fits 64 64 := by decide
+  have hU_pos : 0 < 64 := by decide
+  have hV_pos : 0 < 16 := by decide
   have hev : EpochValid 64 8 16 := by
     right
     refine ⟨by decide, by decide, by decide, by decide⟩
-  exact compactedEpochWords_le_succinctWords hw hU hev
+  exact compactedEpochWords_le_succinctWords hw hU hU_pos hV_pos hev
 
 /-- Test 2 (Concrete evaluation): Space bound calculation for empty dictionary $n = 0$, $N = 0$. -/
 theorem test_compacted_words_empty_eval :
     compactedEpochWords 64 16 64 0 0 ≤ Dynamic.succinctWords 1355 441 64 16 64 0 := by
   have hw : 0 < 64 := by decide
-  have hU : 64 ≤ 2 ^ 64 := by decide
+  have hU : Fits 64 64 := by decide
+  have hU_pos : 0 < 64 := by decide
+  have hV_pos : 0 < 16 := by decide
   have hev : EpochValid 64 0 0 := Or.inl ⟨rfl, rfl⟩
-  exact compactedEpochWords_le_succinctWords hw hU hev
+  exact compactedEpochWords_le_succinctWords hw hU hU_pos hV_pos hev
 
 /-- Concrete memory layout for an empty initial resting dictionary state with `V = 2 ^ 64`. -/
 def testEmptyMem (a : ℕ) : ℕ :=
@@ -98,11 +102,11 @@ theorem test_compactedRep_empty_witness :
       have : a ≠ 4 := by omega
       simp only [*, ↓reduceIte]
   have hhdr : RootHeaderValid 64 (2 ^ 64) 64 0 0 0 0 testXEmpty.mem := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨by decide, by decide, by decide, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     all_goals decide
   exact compactedRep_empty hx rfl hhdr
 
-/-- Test 4 (Witness specification): Non-empty `CompactedRep` constructed via
+/-- Test 4 (Symbolic constructor specification): Non-empty `CompactedRep` constructed via
 `compactedRep_of_split`. -/
 theorem test_compactedRep_of_split_witness {r : ℕ} {U V w N n n_init base : ℕ}
     {θ : QuotHashSeed U N} {s_abs : Dictionary.State U} {x : RData r}

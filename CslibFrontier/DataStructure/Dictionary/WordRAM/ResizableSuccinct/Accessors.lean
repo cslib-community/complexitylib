@@ -116,7 +116,7 @@ private def minWidthProg : ℕ × ℕ → Memory.Prog ℕ
   · rw [ite_eq_left h, Nat.min_eq_left h.le]; rfl
   · rw [ite_eq_right h, Nat.min_eq_right (Nat.le_of_not_lt h)]; rfl
 
-@[simp] private theorem clientState_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
+private theorem clientState_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (minWidthProg p) = s := by
   rcases p with ⟨a, b⟩; dsimp only [minWidthProg]; split_ifs <;> rfl
 
@@ -159,7 +159,7 @@ private theorem two_pow_pred_add_sub_one {k₀ : ℕ} (hk : k₀ ≠ 0) :
   · subst hk; rfl
   · rw [ite_eq_right hk]; exact two_pow_pred_add_sub_one hk
 
-@[simp] private theorem clientState_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
+private theorem clientState_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (maskOfWidthProg k₀) = s := by
   dsimp only [maskOfWidthProg]; split_ifs <;> rfl
 
@@ -421,7 +421,7 @@ private def packedOffsetProg : (ℕ × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
     (Memory.spec 0).clientResult s (packedOffsetProg ((k, w), idx)) =
       (wordOffset k w idx, bitOffset k w idx) := by rfl
 
-@[simp] private theorem clientState_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
+private theorem clientState_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (packedOffsetProg d) = s := by
   rcases d with ⟨⟨k, wVal⟩, idx⟩; rfl
 
@@ -593,7 +593,7 @@ private def compQOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ 
       (wOffQ q_bits v_bits w d, bOffQ q_bits v_bits w d) := by
   simp [compQOffsetProg, wOffQ, bOffQ]
 
-@[simp] private theorem clientState_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+private theorem clientState_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (compQOffsetProg d) = s := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   unfold StateTransitionSpec.clientState
@@ -652,7 +652,7 @@ private def compVOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ 
       (wOffV q_bits v_bits w d, bOffV q_bits v_bits w d) := by
   simp [compVOffsetProg, wOffV, bOffV]
 
-@[simp] private theorem clientState_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+private theorem clientState_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (compVOffsetProg d) = s := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   unfold StateTransitionSpec.clientState

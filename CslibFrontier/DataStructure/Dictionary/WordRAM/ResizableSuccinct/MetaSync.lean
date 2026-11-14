@@ -332,42 +332,14 @@ private theorem lt_two_pow_globalPtrBits_of_lt_maxTail {N x : ℕ} (hx : x < max
   have hM : maxTailItems N ≤ N := maxTailItems_le_of_pos (by omega)
   exact lt_two_pow_globalPtrBits_of_le_n_max (by omega)
 
-private theorem winGrow_effect_core {metaBase itemBase U V w N m_items n_win c : ℕ}
+private theorem winUpdatePair_effect_core {metaBase itemBase U V w N m_items t c : ℕ}
     (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
-    (hn : n_win < maxTailItems N) (hc_lt : c < maxTailItems N) (s : Memory.State) :
-    let mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem n_win c
-    let mem₂ := writePacked (metaBase + offDenseToTail U w N) (globalPtrBits N) w mem₁ c n_win
-    compTDAt metaBase U w N mem₂ = Function.update (compTDAt metaBase U w N s.mem) n_win c ∧
+    (ht : t < maxTailItems N) (hc : c < maxTailItems N) (s : Memory.State) :
+    let mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem t c
+    let mem₂ := writePacked (metaBase + offDenseToTail U w N) (globalPtrBits N) w mem₁ c t
+    compTDAt metaBase U w N mem₂ = Function.update (compTDAt metaBase U w N s.mem) t c ∧
     compDTAt metaBase U w N mem₂ =
-      Function.update (compDTAt metaBase U w N s.mem) c n_win ∧
-    compLmAt metaBase U w N mem₂ = compLmAt metaBase U w N s.mem ∧
-    compGmAt metaBase U w N mem₂ = compGmAt metaBase U w N s.mem ∧
-    compQuotAt itemBase U V w N m_items mem₂ = compQuotAt itemBase U V w N m_items s.mem ∧
-    compValAt itemBase U V w N m_items mem₂ = compValAt itemBase U V w N m_items s.mem ∧
-    (∀ a, ¬(metaBase + offTailToDense U w N ≤ a ∧ a < metaBase + offCompItems U w N) →
-      mem₂ a = s.mem a) := by
-  intro mem₁ mem₂
-  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hc_lt
-  have hn_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hn
-  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
-    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hn hc_pow s.mem
-  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
-    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hc_lt hn_pow mem₁
-  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
-  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
-  exact ⟨htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c n_win) hdt1),
-    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
-    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
-
-private theorem winShrink_effect_core {metaBase itemBase U V w N m_items t_rem c_last : ℕ}
-    (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
-    (ht : t_rem < maxTailItems N) (hc : c_last < maxTailItems N) (s : Memory.State) :
-    let mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem t_rem c_last
-    let mem₂ := writePacked (metaBase + offDenseToTail U w N) (globalPtrBits N) w mem₁ c_last t_rem
-    compTDAt metaBase U w N mem₂ = Function.update (compTDAt metaBase U w N s.mem) t_rem c_last ∧
-    compDTAt metaBase U w N mem₂ = Function.update (compDTAt metaBase U w N s.mem) c_last t_rem ∧
+      Function.update (compDTAt metaBase U w N s.mem) c t ∧
     compLmAt metaBase U w N mem₂ = compLmAt metaBase U w N s.mem ∧
     compGmAt metaBase U w N mem₂ = compGmAt metaBase U w N s.mem ∧
     compQuotAt itemBase U V w N m_items mem₂ = compQuotAt itemBase U V w N m_items s.mem ∧
@@ -385,7 +357,7 @@ private theorem winShrink_effect_core {metaBase itemBase U V w N m_items t_rem c
       hw hitem hc ht_pow mem₁
   have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
   have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
-  exact ⟨htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c_last t_rem) hdt1),
+  exact ⟨htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c t) hdt1),
     hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
     fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
 
@@ -412,7 +384,8 @@ theorem winGrowRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_wi
   set c := (b_win + n_win) % maxTailItems N
   have hc_lt : c < maxTailItems N := Nat.mod_lt _ hM_pos
   have hs' := clientState_winGrowRightGenProg U V w N metaBase b_win n_win s
-  have hcore := winGrow_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+  have hcore := winUpdatePair_effect_core
+    (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
     hw hitem hn hc_lt s
   dsimp only [s']; rw [hs']; dsimp only [winGrowRight]
   exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
@@ -441,7 +414,8 @@ theorem winGrowLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_win
   set c := b_win % maxTailItems N
   have hc_lt : c < maxTailItems N := Nat.mod_lt _ hM_pos
   have hs' := clientState_winGrowLeftGenProg U V w N metaBase b_win n_win s
-  have hcore := winGrow_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+  have hcore := winUpdatePair_effect_core
+    (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
     hw hitem hn hc_lt s
   dsimp only [s']; rw [hs']; dsimp only [winGrowLeft]
   exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
@@ -475,7 +449,8 @@ theorem winShrinkRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_
   set c_last := compTDAt metaBase U w N s.mem n_win
   have hs' := clientState_winShrinkRightGenProg (U := U) (V := V) (w := w) (metaBase := metaBase)
     (s := s) hc_lt hn
-  have hcore := winShrink_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+  have hcore := winUpdatePair_effect_core
+    (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
     hw hitem hdt_lt htd_lt s
   dsimp only [s']; rw [hs']; dsimp only [winShrinkRight]
   exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
@@ -509,7 +484,8 @@ theorem winShrinkLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_w
   set c_last := compTDAt metaBase U w N s.mem n_win
   have hs' := clientState_winShrinkLeftGenProg (U := U) (V := V) (w := w) (metaBase := metaBase)
     (s := s) hc_lt hn
-  have hcore := winShrink_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+  have hcore := winUpdatePair_effect_core
+    (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
     hw hitem hdt_lt htd_lt s
   dsimp only [s']; rw [hs']; dsimp only [winShrinkLeft]
   exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,

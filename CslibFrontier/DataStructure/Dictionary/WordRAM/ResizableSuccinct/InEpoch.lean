@@ -26,15 +26,15 @@ It establishes:
    `11 = 5 + 6` bounds the quotient-bit slack (5 from Feistel quotient/val vs `optBits` and
    6 from `quotientBits U N ≤ quotientBits U n + 6` via `N ≤ 4 * n`), and `1344 = 16 * 84`
    bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
-   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening from 1355 to the tighter
-   T59 §5.3 window-shift constant ≤ 680 remains open in #3167).
+   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening, e.g. to ≤ 680, remains open in #3167).
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.
 
 Operational execution (`inEpochOpCode`, `PeakFrontierLe ≤ base + compactedEpochWords`, and $O(1)$
-expected amortized dynamic step bounds) is deferred to Milestone `M3b` (see GitHub issue comment
-https://github.com/cslib-community/cslib-frontier/issues/3167#issuecomment-6871600467 and `ROADMAP.md`).
+expected amortized dynamic step bounds) is deferred to Milestone `M3b` (see GitHub issue
+comment https://github.com/cslib-community/cslib-frontier/issues/3167#issuecomment-6871600467
+and `ROADMAP.md`).
 
 ## Main definitions
 
@@ -106,7 +106,7 @@ private theorem compactedEpochWords_pos_le_div_add {U V w N n : ℕ}
 whenever `EpochValid U n N` (`n = 0 ∧ N = 0` or `1 ≤ n ≤ N ≤ 4 * n ∧ N ≤ U`), the live compacted
 footprint `compactedEpochWords U V w N n` is at most `Dynamic.succinctWords 1355 441 U V w n`. -/
 theorem compactedEpochWords_le_succinctWords {U V w N n : ℕ}
-    (hw : 0 < w) (hU : U ≤ 2 ^ w) (hev : EpochValid U n N) :
+    (hw : 0 < w) (hU : Fits w U) (_hU_pos : 0 < U) (_hV_pos : 0 < V) (hev : EpochValid U n N) :
     compactedEpochWords U V w N n ≤ Dynamic.succinctWords 1355 441 U V w n := by
   rcases hev with ⟨rfl, rfl⟩ | ⟨_, hnN, hN4, hNU⟩
   · unfold compactedEpochWords rootHdrWords Dynamic.succinctWords
@@ -117,7 +117,7 @@ theorem compactedEpochWords_le_succinctWords {U V w N n : ℕ}
     · unfold rootHdrWords Dynamic.succinctWords
       exact (by decide : 8 ≤ 441).trans (Nat.le_add_left 441 _)
     · have hnU : n ≤ U := hnN.trans hNU
-      have hbase := compactedEpochWords_pos_le_div_add (V := V) (n := n) hw hNU hU
+      have hbase := compactedEpochWords_pos_le_div_add (V := V) (n := n) hw hNU hU.le
       have hq6 := quotientBits_le_add_six_of_le_four_mul U hnN hN4
       have hqv_opt := quotient_val_bits_le_optBits (U := U) (V := V) (n := n)
       have hll_n := Dynamic.one_le_logLogFactor n
@@ -186,12 +186,12 @@ multiplying `compactedEpochWords U V w N n` by `w` yields at most
 `Dynamic.optBits U V n + 1355 * n * Dynamic.logLogFactor n + 442 * w` bits across every valid
 epoch (`EpochValid U n N`). -/
 theorem w_mul_compactedEpochWords_le_bits {U V w N n : ℕ}
-    (hw : 0 < w) (hU : U ≤ 2 ^ w) (hev : EpochValid U n N) :
+    (hw : 0 < w) (hU : Fits w U) (hU_pos : 0 < U) (hV_pos : 0 < V) (hev : EpochValid U n N) :
     w * compactedEpochWords U V w N n ≤
       Dynamic.optBits U V n + 1355 * n * Dynamic.logLogFactor n + 442 * w := by
   calc w * compactedEpochWords U V w N n
       ≤ w * Dynamic.succinctWords 1355 441 U V w n :=
-        Nat.mul_le_mul_left w (compactedEpochWords_le_succinctWords hw hU hev)
+        Nat.mul_le_mul_left w (compactedEpochWords_le_succinctWords hw hU hU_pos hV_pos hev)
     _ ≤ Dynamic.optBits U V n + 1355 * n * Dynamic.logLogFactor n + (441 + 1) * w :=
         succinctWords_mul_w_le_bits 1355 441 U V w n
 
@@ -362,6 +362,9 @@ structure CompactedRep {r : ℕ} (U V w N n n_init base : ℕ)
   bounded : x.Bounded w
   frontier_eq : x.frontier = base + compactedEpochWords U V w N n
   root_hdr : RootHeaderValid U V w N n n_init base x.mem
+  fits_U : Fits w U
+  pos_U : 0 < U
+  pos_V : 0 < V
   card_eq : (Dictionary.dom s_abs).card = n
   vals_lt : Dictionary.ValuesBounded V s_abs
   epoch_inv : EpochValid U n N
@@ -374,7 +377,8 @@ theorem compactedRep_empty {r : ℕ} {U V w base : ℕ} {x : RData r}
     (hx : x.Bounded w) (hfr : x.frontier = base + 8)
     (hhdr : RootHeaderValid U V w 0 0 0 base x.mem) :
     CompactedRep U V w 0 0 0 base (Dictionary.empty U) x := by
-  refine ⟨hx, ?_, hhdr, ?_, ?_, Or.inl ⟨rfl, rfl⟩, fun hn0 => (Nat.not_lt_zero 0 hn0).elim⟩
+  refine ⟨hx, ?_, hhdr, hhdr.fits_U, hhdr.pos_U, hhdr.pos_V, ?_, ?_, Or.inl ⟨rfl, rfl⟩,
+    fun hn0 => (Nat.not_lt_zero 0 hn0).elim⟩
   · unfold compactedEpochWords rootHdrWords; rw [hfr]; simp
   · simp only [Dictionary.dom_empty, Finset.card_empty]
   · intro u v hsome; cases hsome
@@ -388,6 +392,7 @@ theorem compactedRep_of_split {r : ℕ} {U V w N n n_init base : ℕ} {θ : Quot
     (hsplit : CompactedSplitRep base (base + offCompItems U w N) U V w N n n_init θ s_abs
       ⟨x.mem, x.frontier⟩) :
     CompactedRep U V w N n n_init base s_abs x :=
-  ⟨hx, hfr, hsplit.root_hdr, hsplit.card_eq, hsplit.vals_lt, hepoch, fun _ => ⟨θ, hsplit⟩⟩
+  ⟨hx, hfr, hsplit.root_hdr, hsplit.root_hdr.fits_U, hsplit.root_hdr.pos_U, hsplit.root_hdr.pos_V,
+    hsplit.card_eq, hsplit.vals_lt, hepoch, fun _ => ⟨θ, hsplit⟩⟩
 
 end Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct

@@ -396,6 +396,9 @@ theorem compValAt_of_lt {itemBase U V w N n₁ n₂ d : ℕ} (mem : ℕ → ℕ)
 
 /-- Persistent 8-word root header invariant at `metaBase`. -/
 structure RootHeaderValid (U V w N n n_init metaBase : ℕ) (mem : ℕ → ℕ) : Prop where
+  fits_U : Fits w U
+  pos_U : 0 < U
+  pos_V : 0 < V
   hdr_U : mem metaBase = U - 1
   hdr_V : mem (metaBase + 1) = V - 1
   hdr_w : mem (metaBase + 2) = w

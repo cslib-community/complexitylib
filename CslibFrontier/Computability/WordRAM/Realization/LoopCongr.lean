@@ -23,6 +23,10 @@ programs: they need no fit, history or resource assumptions.
 * `iterate_congr`: equal bodies at fixed environments give equal iterations.
 * `iterationSafe_congr`: transport iteration domains between agreeing bodies and environments.
 * `iterationWork_congr`: transport local work between agreeing bodies and environments.
+* `validHistory_bind'`: factored valid-history rule across program binds under word-size
+  zero state transitions.
+* `iterate_spec`: bounded iteration invariant induction bounding safety, valid history,
+  memory cost, and frame preservation.
 
 The transport rules are original infrastructure over the existing memory-client loops.
 -/
