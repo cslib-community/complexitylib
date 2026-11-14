@@ -1063,7 +1063,8 @@ theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
       gmTailPtrIdx, gmTailPtrFlatIdx, gmRIdx] at hv1_at
     change (Memory.spec 0).clientState s
       (removeLastTailItemProg U V w n_max h_space (base, b)) = s₆
-    simp only [removeLastTailItemProg, removeLastTailItemGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+    simp only [removeLastTailItemProg, removeLastTailItemGenProg,
+      readGMGenProg_mk, writeGMGenProg_mk,
       readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
       p_tailCap_mk, p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_nMaxSubOne_mk]
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,

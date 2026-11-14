@@ -132,11 +132,11 @@ abbrev gmPushSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog
 
 theorem memoryCost_gmPushSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmPushSlabProg U V w n_max h_space d) s ≤ 38 := by
-  simp only [gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+  simp +instances only [gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
     p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
     memoryCost_readGMProg, memoryCost_writeGMProg]
-  split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
+  split_ifs <;> (try simp only [memoryCost_writeGMProg, memoryCost_pure]) <;> omega
 
 /-- Precondition for `gmPushSlabProg`. -/
 @[expose]
@@ -228,7 +228,7 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
   have hres_top : (Memory.spec 0).clientResult s
       (readGMProg U V w n_max h_space (base, 4 + 3 * b + 2)) = top_old :=
     clientResult_readGMProg s htop_idx_lt
-  simp only [s', gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+  simp +instances only [s', gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
     p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_q,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
@@ -613,10 +613,10 @@ abbrev gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × �
 theorem memoryCost_gmRelinkMovedSlabProg_le (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
     memoryCost (gmRelinkMovedSlabProg U V w n_max h_space d) s ≤ 14 := by
-  simp only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+  simp +instances only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
     p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_readGMProg]
-  split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
+  split_ifs <;> (try simp only [memoryCost_writeGMProg, memoryCost_pure]) <;> omega
 
 /-- Pure bounds invariant for `gmRelinkMovedSlabProg` and `gmLinkMovedNeighborsProg`. -/
 @[expose]
@@ -799,7 +799,7 @@ theorem memoryCost_gmLinkMovedNeighborsProg_le (U V w n_max h_space : ℕ) (d : 
     writeGMGenProg_mk, p_gmSlabMetaBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
     memoryCost_readGMProg, memoryCost_writeGMProg]
-  split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
+  split_ifs <;> (try simp only [memoryCost_writeGMProg, memoryCost_pure]) <;> omega
 
 theorem gmLinkMovedNeighborsProg_effect {U V w n_max h_space base p_del p_last : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
