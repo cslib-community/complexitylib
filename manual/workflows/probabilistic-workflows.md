@@ -765,7 +765,14 @@ which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives 
 time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
 `ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
 `hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the
-textbook `100 k n²` and `1000 n³`-step statements. The
+textbook `100 k n²` and `1000 n³`-step statements.
+[Expander/Visits.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Visits.lean)
+adds the law of large numbers for visit counts without aperiodicity. It is a graph module and needs
+no Markov-chain import. `eventually_visits_mem_Icc` bounds the fraction of label sequences whose
+`visits u v` fall outside `[(1 - ε) t / n, (1 + ε) t / n]`, and `visits_eq` unfolds `visits` to
+the number of times `1, …, t` at which `walkAt` is at `v`. Its reusable step is `exists_abs_sum_walk_pow_le`, uniform
+Cesàro convergence `∑_{j < N} Pʲ f = o(N)` for `f` of total `0` on a connected graph, which comes
+from Mathlib's mean ergodic theorem applied to `walkEuclidean`. The
 [checked clients](../../CslibFrontierTests/RegularRandomWalk.lean) restate them in source form and
 compute the return time `2` on a single edge; run
 `scripts/build.sh CslibFrontierTests.RegularRandomWalk`. If a proof needs `∑ y, P x y = 1`, use

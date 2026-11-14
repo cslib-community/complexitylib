@@ -9,6 +9,7 @@ import CslibFrontierResults.Registry
 import CslibFrontier.Foundations.Algebra.Group.HomomorphismTesting
 import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Probability.MarkovChain.RotationMap
+import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
@@ -5817,6 +5818,23 @@ register_result "regular-random-walk-hitting-times" where
     (d): with d <= n, E_{u,v} <= 100 k n^2 along a path of length k, and at most a tenth of the \
     label sequences of length 1000 n^3 avoid t. Part (b)(ii) (visit-count concentration) and \
     part (e) are not included."
+
+register_result "regular-random-walk-visit-concentration" where
+  title := "Visit counts of random walks on connected regular multigraphs concentrate around t/n"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 7, Exercise 9(b)(ii)",
+      locator := "2007-01-08 draft, printed p. 133; PDF p. 149" }
+  ]
+  theorems := [
+    Cslib.RotationMap.exists_visits_mem_Icc,
+    Cslib.RotationMap.eventually_visits_mem_Icc,
+    Cslib.RotationMap.exists_abs_sum_walk_pow_le
+  ]
+  scope := "Connected d-regular multigraphs presented by rotation maps; probability is the \
+    fraction of the d^t label sequences. For every u, v and eps > 0, for all large t, the \
+    number of visits to v at times 1..t lies in [(1-eps)t/n, (1+eps)t/n] with probability at \
+    least 1 - eps. No aperiodicity is assumed; no explicit rate in t is given."
 
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"

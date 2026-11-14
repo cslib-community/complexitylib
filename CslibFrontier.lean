@@ -5408,6 +5408,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.Tensor
 public import CslibFrontier.Foundations.Combinatorics.Expander.Tower
 public import CslibFrontier.Foundations.Combinatorics.Expander.TowerFamily
 public import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
+public import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 public import CslibFrontier.Foundations.Combinatorics.Expander.Walk
 public import CslibFrontier.Foundations.Combinatorics.Expander.Zigzag
 public import CslibFrontier.Foundations.Combinatorics.FiniteCover
