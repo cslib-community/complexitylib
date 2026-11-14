@@ -55,7 +55,8 @@ block, made of `r`, the message length, the block index and the block itself.
 * `BlockwiseMAC.fullEncoder`: the encoder of the construction; `noIdentifierEncoder`,
   `noLengthEncoder` and `noIndexEncoder` are insecure variants that each omit one field.
 * `BlockwiseMAC.IsPolyTimeEncoder`: polynomial-time predicate for block encoders.
-* `BlockwiseMACForger`: uniform word-oracle blockwise MAC forger (`WordOracleAdv Unit Tag`).
+* `BlockwiseMACForger`: uniform word-oracle blockwise MAC forger
+  (`WordOracleAdv Unit (List Bool × Tag)`).
 * `MACScheme.blockwiseSign`, `MACScheme.blockwiseVerify`: the variable-length scheme.
 * `MACScheme.blockwiseGame`: its fresh-message EUF-CMA experiment, and
   `MACScheme.blockwiseRepeatGame`: the event that two signing queries share an identifier.
@@ -511,11 +512,29 @@ attribute [local fun_prop] computableInPolyTime_lt_two_pow_comp
 
 /-- A block `Encoder` is polynomial-time when it is computable in polynomial time with unary
 widths/lengths/indices and bit-string identifier/block inputs. -/
-def IsPolyTimeEncoder (E : Encoder) : Prop :=
+@[expose] def IsPolyTimeEncoder (E : Encoder) : Prop :=
   ComputableInPolyTime
     (fun p : ℕ × ℕ × List Bool × ℕ × ℕ × List Bool =>
       E p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2)
     encEncoderInput encBits
+
+/-- Unfolded characterization of `IsPolyTimeEncoder`. -/
+theorem isPolyTimeEncoder_iff (E : Encoder) :
+    IsPolyTimeEncoder E ↔
+      ComputableInPolyTime
+        (fun p : ℕ × ℕ × List Bool × ℕ × ℕ × List Bool =>
+          E p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2)
+        encEncoderInput encBits :=
+  Iff.rfl
+
+/-- Construct `IsPolyTimeEncoder` from a `ComputableInPolyTime` certificate on `encEncoderInput`. -/
+theorem IsPolyTimeEncoder.of_computableInPolyTime {E : Encoder}
+    (hE : ComputableInPolyTime
+      (fun p : ℕ × ℕ × List Bool × ℕ × ℕ × List Bool =>
+        E p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2)
+      encEncoderInput encBits) :
+    IsPolyTimeEncoder E :=
+  hE
 
 /-- Composition rule for a polynomial-time block `Encoder`. -/
 theorem IsPolyTimeEncoder.comp {E : Encoder} (hE : IsPolyTimeEncoder E)
@@ -1004,9 +1023,11 @@ theorem blockwiseRepeatGame_le (A : BlockwiseMACAdversary) (n Q : ℕ)
   exact h
 
 /-- Concrete security of the blockwise construction against an adversary with at most `Q`
-signing queries: this is the concrete inequality behind [KatzLindell2020], Theorem 4.8. No query
-or time budget is stated yet for `blockwiseReduction`, so the asymptotic statement (a secure
-fixed-length scheme gives a secure variable-length scheme) does not follow from it yet. -/
+signing queries: this is the concrete inequality behind [KatzLindell2020], Theorem 4.8. Because
+`blockwiseReduction` forwards arbitrary fixed-length oracle replies without a length bound, the
+unbounded reduction itself has no uniform oracle-PPT certificate; see `blockwiseBoundedReduction`,
+`blockwiseGame_le_blockwiseBoundedReduction`, and `EUFCMA.blockwiseEUFCMA` for the truncated
+oracle-PPT reduction and the resulting uniform asymptotic security theorem. -/
 theorem blockwiseGame_le (A : BlockwiseMACAdversary) (n Q : ℕ)
     (hA : ProbOracleComp.IsQueryBounded (A n) Q) :
     ProbComp.eval (M.blockwiseGame fullEncoder A n) true ≤

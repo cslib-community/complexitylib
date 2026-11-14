@@ -7,6 +7,9 @@ Authors: Karn Seth
 module
 
 public import CslibFrontier.Crypto.Protocols.MAC.VariableLength
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
 # Tests for the blockwise variable-length MAC
@@ -131,5 +134,22 @@ example (M : MACScheme) :
   ⟨M.isOraclePPT_toForger_swapBlocksAdversary (by fun_prop),
     M.isOraclePPT_toForger_truncateAdversary (by fun_prop),
     M.isOraclePPT_toForger_mixBlocksAdversary (by fun_prop)⟩
+
+open Probability Turing.MultiTapeTM in
+/-- An ordinary `module` client can establish `IsPolyTimeEncoder` for a custom block encoder from
+a machine certificate and apply the generic blockwise efficiency rules. -/
+example (M : MACScheme) :
+    let zeroEncoder : Encoder := fun _ L _ _ _ _ => List.replicate L false
+    IsPolyTimeEncoder zeroEncoder ∧
+      IsPPTOn encSignInput encTag
+        (fun p : ℕ × List Bool × List Bool => M.blockwiseSign zeroEncoder p.1 p.2.1 p.2.2) ∧
+      ComputableInPolyTime
+        (fun p : ℕ × List Bool × List Bool × Tag =>
+          M.blockwiseVerify zeroEncoder p.1 p.2.1 p.2.2.1 p.2.2.2)
+        encVerifyInput encBool := by
+  intro zeroEncoder
+  have hE : IsPolyTimeEncoder zeroEncoder :=
+    IsPolyTimeEncoder.of_computableInPolyTime (by dsimp [zeroEncoder]; fun_prop)
+  exact ⟨hE, M.isPPTOn_blockwiseSign hE, M.computableInPolyTime_blockwiseVerify hE⟩
 
 end Cslib.Crypto.VariableLengthMACTests
