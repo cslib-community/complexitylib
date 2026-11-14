@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 
 import CslibFrontierTests.NativeBatchProgress
 import CslibFrontierTests.NativeBatchSingleton
+import CslibFrontierTests.NativeBatchProgram
 import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 import Mathlib.Tactic
 
@@ -25,20 +26,7 @@ open Cslib.Probability.NativeBatch
 open scoped ENNReal NNReal
 namespace CslibFrontierTests.NativeBatchSuccess
 open CslibFrontierTests.NativeBatchSingleton
-
-/-- Native code writes both request bits, issues the batch and writes a covering result. -/
-def machine : MultiTapePTM 0 Bool (Fin 4) Unit where
-  initial := 0
-  tr c _ _ _ _ := if c = 2 then .query () 3 else .step
-    { inputTape := 0, workTapes := Fin.elim0,
-      output := if c = 3 then some true else none,
-      state := if c = 3 then none else some (c + 1) }
-    (fun _ => if c = 3 then none else some (decide (c = 0))) (fun _ => 0)
-
-/-- Concrete native tapes, channel buffers and oracle memory for the instruction proof. -/
-def world (c : Option (Fin 4)) (word answer output : List Bool)
-    (memory : Memory Unit (ServerState 1 Unit)) : World 0 (Fin 4) Unit (ServerState 1 Unit) [] :=
-  ⟨⟨{ Cfg.init 0 [] with state := c, output := output }, fun _ => ⟨word, answer, 0⟩⟩, memory⟩
+open CslibFrontierTests.NativeBatchProgram (machine world)
 
 /-- Ordinary initial machine configuration and empty source memory. -/
 def start : World 0 (Fin 4) Unit (ServerState 1 Unit) [] :=
@@ -65,64 +53,13 @@ def firstTrace : Trace.State 1 0 Unit (Fin 4) [] :=
 def finalTrace : Trace.State 1 0 Unit (Fin 4) [] :=
   ⟨some (.ready done), [none, some receipt]⟩
 
-private theorem writes (c : Fin 4) (word : List Bool) (hc : c < 2) (bit : Bool) :
-    instruction machine (world (some c) word [] [] start.memory) bit = .local
-      (world (some (c + 1)) (word ++ [decide (c = 0)]) [] [] start.memory) := by
-  have h₂ : c ≠ 2 := by omega
-  have h₃ : c ≠ 3 := by omega
-  simp only [instruction, world, machine, h₂, h₃, ite_false,
-    MultiTapeMachine.Config.step, Action.apply, moveInputPos_zero,
-    Option.toList_none, List.append_nil, Option.toList_some, SignType.coe_zero, add_zero]
-  congr 4 <;> funext i <;> exact Fin.elim0 i
-
-private theorem seek_write (c : Fin 4) (word : List Bool) (hc : c < 2) :
-    seekSourceFrom limits sample machine
-        (some (.ready (world (some c) word [] [] start.memory))) =
-      seekSourceFrom limits sample machine (some (.ready
-        (world (some (c + 1)) (word ++ [decide (c = 0)]) [] [] start.memory))) := by
-  have hready : sourceSilent limits sample machine
-      (.ready (world (some c) word [] [] start.memory)) = PMF.pure (.pending (.local
-        (world (some (c + 1)) (word ++ [decide (c = 0)]) [] [] start.memory))) := by
-    simp only [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary,
-      NativeUnboundedExecution.halted, show
-        (world (some c) word [] [] start.memory).config.tapes.state = some c from rfl,
-      reduceCtorEq, ite_false,
-      phaseStep, Option.isNone_some, Bool.false_eq_true, prepare, PMF.map_comp, Function.comp_def]
-    simp only [writes c word hc]
-    exact PMF.map_const _ _
-  simp only [seekSourceFrom]
-  rw [StoppedProcess.terminal_step (sourceSilent limits sample machine)
-    (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _), hready,
-    PMF.pure_bind, StoppedProcess.terminal_step (sourceSilent limits sample machine)
-      (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _)]
-  simp [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary, phaseStep, dispatch]
-
 private theorem admit_first : admit limits start.memory.privateState (encodeBatch batch) =
     some batch := by
   simp [admit, decodeBatch_encode, start, ConcurrentBatch.initial, limits]
 
 private theorem seek_first : seekSourceFrom limits sample machine (some (.ready start)) =
     PMF.pure (some (.pending (.query queried () 3))) := by
-  change seekSourceFrom limits sample machine
-    (some (.ready (world (some 0) [] [] [] start.memory))) = _
-  rw [seek_write 0 [] (by decide)]
-  change seekSourceFrom limits sample machine
-    (some (.ready (world (some 1) [true] [] [] start.memory))) = _
-  rw [seek_write 1 [true] (by decide)]
-  change seekSourceFrom limits sample machine (some (.ready queried)) = _
-  have hi (bit : Bool) : instruction machine queried bit = .query queried () 3 := rfl
-  have hr : sourceSilent limits sample machine (.ready queried) =
-      PMF.pure (.pending (.query queried () 3)) := by
-    simp only [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary,
-      NativeUnboundedExecution.halted, show queried.config.tapes.state = some 2 from rfl,
-      reduceCtorEq, ite_false, phaseStep, Option.isNone_some, Bool.false_eq_true,
-      prepare, PMF.map_comp, Function.comp_def, hi]
-    exact PMF.map_const _ _
-  simp only [seekSourceFrom]
-  rw [StoppedProcess.terminal_step (sourceSilent limits sample machine)
-    (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _), hr, PMF.pure_bind]
-  apply StoppedProcess.terminal_halted
-  simpa [sourceBoundary, queried, world] using congrArg Option.isSome admit_first
+  exact NativeBatchProgram.seek_first sample start.memory admit_first
 
 private theorem dispatch_first : dispatch (environment limits sample) (.query queried () 3) =
     PMF.pure answered := by
@@ -136,28 +73,7 @@ private theorem dispatch_first : dispatch (environment limits sample) (.query qu
 
 private theorem seek_last : seekSourceFrom limits sample machine (some (.ready answered)) =
     PMF.pure (some (.ready done)) := by
-  have hi (bit : Bool) : instruction machine answered bit = .local done := by
-    simp only [instruction, answered, done, world, machine, Fin.isValue]
-    norm_num [MultiTapeMachine.Config.step, Action.apply, Cfg.init]
-    constructor <;> funext i <;> exact Fin.elim0 i
-  have hr : sourceSilent limits sample machine (.ready answered) =
-      PMF.pure (.pending (.local done)) := by
-    simp only [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary,
-      NativeUnboundedExecution.halted, show answered.config.tapes.state = some 3 from rfl,
-      reduceCtorEq, ite_false,
-      phaseStep, Option.isNone_some, Bool.false_eq_true, prepare, PMF.map_comp, Function.comp_def]
-    simp only [hi]
-    exact PMF.map_const _ _
-  simp only [seekSourceFrom]
-  rw [StoppedProcess.terminal_step (sourceSilent limits sample machine)
-    (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _), hr, PMF.pure_bind,
-    StoppedProcess.terminal_step (sourceSilent limits sample machine)
-      (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _)]
-  have hl : sourceSilent limits sample machine (.pending (.local done)) =
-      PMF.pure (.ready done) := by
-    simp [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary, phaseStep, dispatch]
-  rw [hl, PMF.pure_bind]
-  exact StoppedProcess.terminal_halted _ _ _ _ rfl
+  exact NativeBatchProgram.seek_output sample memory (replyOf receipt).word
 
 private theorem step_first : Trace.step limits sample machine (Trace.initial start) =
     PMF.pure firstTrace := by

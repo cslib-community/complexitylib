@@ -155,13 +155,9 @@ theorem law_hidden (turns : ℕ)
     (world : World k Control Unit (ServerState n Private) input) :
     (law limits sample machine turns world).map State.hidden =
       ObservedProcess.stateLaw (sourceStep limits sample machine) turns (some (.ready world)) := by
-  induction turns with
-  | zero => simp [law, ObservedProcess.stateLaw, initial]
-  | succ turns ih =>
-    simp only [law, ObservedProcess.stateLaw, PMF.map_bind]
-    simp only [step_hidden]
-    have he := congrArg (fun p => p.bind (sourceStep limits sample machine)) ih
-    simpa only [PMF.bind_map, Function.comp_def, law] using he
+  exact ObservedProcess.stateLaw_map (step limits sample machine)
+    (sourceStep limits sample machine) State.hidden (step_hidden limits sample machine)
+    turns (initial world)
 
 /-- Continuing the actual machine after any whole-policy trace prefix gives its
 original complete terminal law. No almost-sure termination or finite alphabet is assumed. -/
