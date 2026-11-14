@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
@@ -75,6 +76,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
@@ -5770,6 +5772,26 @@ register_result "bilinear-finite-field-fingerprint" where
     least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
     two. No runtime bound or general rank formula."
 
+register_result "random-walk-edge-hitting-time" where
+  title := "The random walk crosses an edge of a connected graph in expected time at most 2|E|"
+  topic := "randomized complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Exercise 6.19 (completing Proposition 6.13)",
+      locator := "February 2007 draft r3.pdf, PDF p. 56; printed p. 258" }
+  ]
+  theorems := [
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_of_adj,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_add_degree_le,
+    Cslib.Probability.MarkovChain.degree_mul_returnTime_randomWalk,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_dist_mul
+  ]
+  scope := "Finite simple graphs (Mathlib SimpleGraph) with the simple random walk as a \
+    MarkovChain; connectedness assumed. Expected hitting and return times are exact \
+    extended-real tail sums of the probabilities of avoiding the target, not finite-horizon \
+    approximations. Proves E_u[tau_v] + deg v <= 2|E| for every edge {u,v}, Kac's formula \
+    deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
+    bound and the log-space USTCON algorithm are not included."
+
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"
   topic := "pseudorandomness"
@@ -5786,6 +5808,23 @@ register_result "goldreich-expander-varying-density-hitting" where
     and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
+
+register_result "linear-space-ne-np" where
+  title := "Book: linear space is not NP"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 3, Exercise 2",
+      locator := "2007 public draft, printed p. 73 / PDF p. 89" },
+    { paper := Book1974, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ne_NP,
+    Cslib.Complexity.DSPACE_pow_ne_of_polyTimeReducible_mem
+  ]
+  scope := "DSPACE encBits (fun n => n) ≠ NP encBits on bit words. DSPACE counts visited work \
+    cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
+    cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
+    polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
 
 register_result "tally-np-exp-nexp" where
   title := "Easy tally NP collapses EXP and NEXP"
