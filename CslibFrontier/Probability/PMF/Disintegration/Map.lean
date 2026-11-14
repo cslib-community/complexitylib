@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PMF.Disintegration
+import CslibFrontier.Probability.PMF.Map
 
 /-!
 # Deterministic observations of discrete posteriors
@@ -21,6 +22,7 @@ is needed.
 ## Main results
 
 * `posterior_map`: deterministic pushforward commutes with conditioning.
+* `posterior_bind_pair`: conditioning the first component preserves its attached kernel.
 -/
 
 public section
@@ -44,5 +46,34 @@ theorem posterior_map (p : PMF S) (f : S → T) (observe : T → H) (h : H) :
       change h ∉ ((p.map f).map observe).support
       simpa only [PMF.map_comp] using hh
     simp only [posterior, dite_eq_right hp, dite_eq_right hq]
+
+/-- Conditioning a retained first component leaves its conditional second-component
+sampler unchanged, including at null observations of that first component. -/
+theorem posterior_bind_pair (p : PMF S) (kernel : S → PMF T) (observe : S → H) (h : H) :
+    posterior (p.bind fun s => (kernel s).map (s, ·)) (observe ∘ Prod.fst) h =
+      (posterior p observe h).bind fun s => (kernel s).map (s, ·) := by
+  classical
+  let joint := p.bind fun s => (kernel s).map (s, ·)
+  change posterior joint (observe ∘ Prod.fst) h = _
+  have hm : joint.map (observe ∘ Prod.fst) = p.map observe := by
+    rw [← PMF.map_comp]
+    dsimp only [joint]
+    rw [map_fst_bind_pair]
+  by_cases hh : h ∈ (p.map observe).support
+  · ext ⟨s, t⟩
+    apply (ENNReal.mul_right_inj hh ((p.map observe).apply_ne_top h)).mp
+    have hj := posterior_factor joint (observe ∘ Prod.fst) h (s, t)
+    rw [hm] at hj
+    have hp : joint (s, t) = p s * kernel s t := bind_map_prodMk_apply p kernel (s, t)
+    rw [hp] at hj
+    rw [bind_map_prodMk_apply, ← mul_assoc, posterior_factor]
+    by_cases hs : observe s = h <;> simpa [Function.comp_def, hs] using hj
+  · have hp : h ∉ (p.bind fun s => PMF.pure (observe s)).support := hh
+    have hq : h ∉ (joint.bind fun pair => PMF.pure ((observe ∘ Prod.fst) pair)).support := by
+      change h ∉ (joint.map (observe ∘ Prod.fst)).support
+      rw [hm]
+      exact hh
+    simp only [posterior, dite_eq_right hp, dite_eq_right hq]
+    rfl
 
 end Cslib.Probability.PMF
