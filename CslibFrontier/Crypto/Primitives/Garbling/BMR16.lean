@@ -71,7 +71,9 @@ bounds for garbling, evaluation, the simulator or the reduction.
 * `Cslib.Crypto.Garbling.BMR16.reduction_isLegal`: the reduction is a legal adversary.
 * `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame`: privacy, as an equality with the
   mixed-modulus CCR advantage of the reduction.
-* `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame_le`: privacy from `MixedModulusCCR`.
+* `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame_le_of_reduction_mem`: an algebraic
+  helper, not a security theorem: the bound `ε` of `MixedModulusCCR` transfers to privacy once the
+  caller shows that the reduction built from `D` lies in the assumption's adversary class.
 
 ## References
 
@@ -924,10 +926,14 @@ theorem reduction_isLegal [∀ i, NeZero (μ i)] (H : MixedModulusHash T μ ℓ)
 
 end Legality
 
-/-- **Simulation privacy of BMR16 from mixed-modulus CCR.** If `H` is mixed-modulus CCR with bound
-`ε` against a class of adversaries containing the reduction, every distinguisher has advantage at
-most `ε` between the real and the simulated view. -/
-theorem advantage_realGame_simGame_le [Fintype T] [DecidableEq T] (H : MixedModulusHash T μ ℓ)
+/-- Algebraic helper, not a security theorem. If `H` is mixed-modulus CCR with bound `ε` against a
+class `𝒟`, and the caller supplies `hD`, that the reduction built from this distinguisher `D` lies
+in `𝒟`, then `D` has advantage at most `ε` between the real and the simulated view. Legality of
+the reduction is proved (`reduction_isLegal`), but its membership in `𝒟` is a premise, and no cost
+bound for the reduction is proved. The concrete statement is the equality
+`advantage_realGame_simGame`. -/
+theorem advantage_realGame_simGame_le_of_reduction_mem [Fintype T] [DecidableEq T]
+    (H : MixedModulusHash T μ ℓ)
     (tw : ℕ → T) (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) (htw : Set.InjOn tw (Set.Iio C.size))
     {𝒟 : Set (CCRAdversary T μ ℓ)} {ε : NNReal} (hH : MixedModulusCCR H 𝒟 ε)

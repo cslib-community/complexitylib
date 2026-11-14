@@ -43,8 +43,12 @@ and `lt_floorLogStar_iff : k < floorLogStar n ↔ 1 < iterLog k n`).
   `floorLogStar n ≤ k ↔ iterLog k n ≤ 1`.
 * `Nat.floorLogStar_mono`, `Nat.floorLogStar_le_logStar`, `Nat.logStar_le_floorLogStar_add_one`:
   monotonicity and comparison within `1` of ceiling `Nat.logStar`.
-* `Nat.max_iterLog_two_max_four`, `Nat.iterLog_two_max_four_le_clog`,
-  `Nat.clog_clog_max_four_le_two_mul_iterLog`: positivity and ceiling comparison at `k = 2`.
+* `Nat.sub_le_iterLog_of_lt_floorLogStar`, `Nat.four_le_floorLogStar_two_pow`,
+  `Nat.six_mul_iterLog_two_two_pow_le`: remaining-step lower bound and dyadic threshold bounds for
+  `32 ≤ m`.
+* `Nat.max_iterLog_two_max_four`, `Nat.max_iterLog_two_eq`, `Nat.iterLog_two_max_four_le_clog`,
+  `Nat.clog_clog_max_four_le_two_mul_iterLog`: positivity, clamping identity, and ceiling
+  comparison at `k = 2`.
 -/
 
 public section
@@ -202,6 +206,38 @@ theorem one_le_iterLog_two_max_four (n : ℕ) : 1 ≤ iterLog 2 (max n 4) := by
 theorem max_iterLog_two_max_four (n : ℕ) :
     max (iterLog 2 (max n 4)) 1 = iterLog 2 (max n 4) :=
   _root_.max_eq_left (one_le_iterLog_two_max_four n)
+
+/-- Clamping `iterLog 2 n` below at `1` agrees everywhere with `iterLog 2 (max n 4)`. -/
+theorem max_iterLog_two_eq (n : ℕ) : max (iterLog 2 n) 1 = iterLog 2 (max n 4) := by
+  by_cases hn : n < 4
+  · match n, hn with | 0, _ => decide | 1, _ => decide | 2, _ => decide | 3, _ => decide
+  · have h := max_iterLog_two_max_four n
+    rw [_root_.max_eq_left (Nat.not_lt.mp hn)] at h ⊢
+    exact h
+
+/-- If `d < floorLogStar n` and `r ≤ d`, at least `d + 1 - r` remains in `iterLog (r + 1) n`. -/
+theorem sub_le_iterLog_of_lt_floorLogStar {n d r : ℕ} (hd : d < floorLogStar n)
+    (hr : r ≤ d) : d + 1 - r ≤ iterLog (r + 1) n := by
+  have h1 : 1 < iterLog ((d - r) + r) n := lt_floorLogStar_iff.mp (by omega)
+  rw [iterLog_add, ← not_le, iterLog_le_one_iff_lt_twoTower, not_lt, twoTower_succ] at h1
+  have : twoTower (d - r) ≤ iterLog (r + 1) n :=
+    (Nat.log_pow Nat.one_lt_two _).symm.trans_le (Nat.log_mono_right h1)
+  have := lt_twoTower (d - r)
+  omega
+
+/-- For `32 ≤ m`, `2 ^ m` requires at least `4` floor-logarithm steps to reach `≤ 1`. -/
+theorem four_le_floorLogStar_two_pow {m : ℕ} (hm : 32 ≤ m) : 4 ≤ floorLogStar (2 ^ m) :=
+  Nat.succ_le_of_lt (lt_floorLogStar_iff.mpr ((show 1 < iterLog 3 (2 ^ 32) by decide).trans_le
+    (iterLog_mono 3 (Nat.pow_le_pow_right (by omega) hm))))
+
+/-- For `32 ≤ m`, `6 * iterLog 2 (2 ^ m) ≤ m`. -/
+theorem six_mul_iterLog_two_two_pow_le {m : ℕ} (hm : 32 ≤ m) : 6 * iterLog 2 (2 ^ m) ≤ m := by
+  have h5 : 5 ≤ Nat.log 2 m := (show 5 = Nat.log 2 32 by decide) ▸ Nat.log_mono_right hm
+  have := Nat.mul_le_mul_right (2 ^ 5) (Nat.lt_two_pow_self (n := Nat.log 2 m - 5))
+  rw [← Nat.pow_add, Nat.sub_add_cancel h5] at this
+  have : 2 ^ Nat.log 2 m ≤ m := Nat.pow_log_le_self 2 (by omega)
+  rw [show iterLog 2 (2 ^ m) = Nat.log 2 m by simp [Nat.log_pow Nat.one_lt_two]]
+  omega
 
 /-- Floor-to-ceiling lower bound: `iterLog 2 (max n 4) ≤ ⌈log₂ ⌈log₂ (max n 4)⌉⌉`. -/
 theorem iterLog_two_max_four_le_clog (n : ℕ) :

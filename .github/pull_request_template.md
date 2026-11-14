@@ -15,7 +15,11 @@ For each headline (AGENTS.md#faithful-headlines), say whether it is the cited re
 (a conditional or restricted version) is named and documented as a step or helper, and neither
 the title nor the description presents it as the cited result; a "Limitations" list does not
 substitute for this.
-Name any stand-in this change supersedes and removes. -->
+Name any stand-in this change supersedes and removes.
+Computational security theorems follow AGENTS.md#security-theorems: they assume only named
+hardness assumptions, the adversary's class and properties of components the cited result takes as
+given, never anything about a reduction, simulator or extractor that the proof constructs, and
+each reduction has an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a circuit-size bound). -->
 
 Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its
 author) and the person whose agents did the work, as in AGENTS.md#file-rules. Delete if no file is

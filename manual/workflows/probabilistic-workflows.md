@@ -1948,10 +1948,12 @@ postprocessing on forwarded replies, and exhibit a failed real hop without KEM c
 
 For a concrete PKE that needs the generic explicit-coin interface but not an FO transform, import
 [`PKE/ExplicitCoin.lean`](../../CslibFrontier/Crypto/Protocols/PKE/ExplicitCoin.lean) directly.
-It owns `ExplicitCoinPKE`, `DeltaCorrect`, `GammaSpread`, and the deliberately fixed-message
-`indCpaGame`; the FO module publicly re-exports that API for existing transform clients.
+It owns `ExplicitCoinPKE`, `DeltaCorrect`, `GammaSpread`, two-stage IND-CPA `cpaAdvantage` (the
+shared `PKE.cpaExperiment` of `toPKE`), and the narrower fixed-message `indCpaGame`; the FO module
+publicly re-exports that API for existing transform clients. State new IND-CPA hypotheses with
+`cpaAdvantage`: a bound for every fixed message pair does not give two-stage security.
 
-When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `cpaAdvantage`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless two-stage IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.simFilterOwExperiment`, `Scheme.succProbability_simFilterOwExperiment_le`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` for adversaries with explicit coins (`RandomizedROAdversary`) from two-stage IND-CPA security of the one reduction `romCpaReduction A`, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
 
 ## Certify a list accumulator
 
@@ -2401,7 +2403,7 @@ and seed width zero, but does not yet supply adaptive-message cipher security.
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../CslibFrontier/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
 
-Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
+Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model. The final theorem keeps only the premises that [Security theorems and efficiency witnesses](../programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses) allows: named hardness assumptions, the adversary's class and properties of components that the cited result takes as given, never a bound on the reduction it builds.
 
 [complexitylib]: ../sources.md#complexitylib
 [holenstein09]: ../sources.md#holenstein09
@@ -2676,7 +2678,11 @@ Most theorems assume `|ρ| ≤ 1`, since `√(1 - ρ²)` is `0` in Lean outside 
   covariance `ρ` equals it by `eq_correlatedGaussian`.
 - For halfspaces through the origin with `a ≠ 0`, `gaussianNoiseStability_ite_pos_dotProduct hρ ha`
   (open, `0 < a ⬝ᵥ z`) and `gaussianNoiseStability_ite_nonneg_dotProduct hρ ha` (closed) both give
-  `1 - 2 / π * arccos ρ`.
+  `1 - 2 / π * arccos ρ`. For a halfspace `a ⬝ᵥ z ≤ b` with any offset `b`, see
+  [Evaluate the Gaussian quadrant probability](#evaluate-the-gaussian-quadrant-probability).
+- `correlatedGaussian_zero`, `correlatedGaussian_one` and `correlatedGaussian_neg_one` give the
+  pair at `ρ = 0, 1, -1`, and `correlatedGaussian_map_neg_snd ρ` says that negating `z'` turns a
+  `ρ`-correlated pair into a `-ρ`-correlated one.
 - For one coordinate, `gaussianNoiseStability_indicator_Iic_eval hρ i` gives
   `1 / 2 - arccos ρ / (2 * π)` for the indicator of `z i ≤ 0`. For any measurable function of a
   projection, `gaussianNoiseStability_comp_dotProduct` reduces stability to an integral against
@@ -3066,6 +3072,56 @@ Not formalized:
 The book derives Proposition 11.27 from the semigroup law; here it is read off the Hermite
 expansion of `U_ρ f`.
 
+## Evaluate the Gaussian quadrant probability
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.Quadrant`](../../CslibFrontier/Foundations/Probability/Gaussian/Quadrant.lean)
+and open the `ProbabilityTheory` namespace. Write `Φ` for `cdf (gaussianReal 0 1)`. Then
+`gaussianQuadrant ρ α β` is O'Donnell's `Λ_ρ(α, β)` (Definition 11.77): the probability under
+`correlatedGaussian ρ` that `Φ z ≤ α` and `Φ z' ≤ β`. It avoids `Φ⁻¹`, so it is defined for all
+real `α`, `β`, which act as if clamped to `[0, 1]`. Borell's `Λ_ρ(α)` is
+`gaussianQuadrant ρ α α`. `gaussianQuadrant_cdf_cdf ρ t t'` recovers the book's form
+`Λ_ρ(Φ t, Φ t') = P[z ≤ t, z' ≤ t']`. `gaussianQuadrant_eq_clamp_left` and `_right` replace an
+argument by its clamp `max (min α 1) 0`. The cdf facts it uses are in
+[`Probability/CDF.lean`](../../CslibFrontier/Foundations/Probability/CDF.lean) for any probability
+measure on `ℝ`. That file proves continuity without atoms, strict monotonicity when
+`volume ≪ ν`, and the probability integral transform `measureReal_setOf_cdf_le`
+(`P[F x ≤ α] = α` on `[0, 1]` for a continuous cdf `F`). The Gaussian cases, with
+`Φ (-x) = 1 - Φ x` and `Φ 0 = 1 / 2`, are in
+[`Gaussian/CDF.lean`](../../CslibFrontier/Foundations/Probability/Gaussian/CDF.lean).
+
+- Lipschitz bounds (Exercise 11.19 (e)). `abs_gaussianQuadrant_sub_le hρ α β α' β'` gives
+  `|Λ_ρ(α, β) - Λ_ρ(α', β')| ≤ |α - α'| + |β - β'|` for all real arguments. The one-argument
+  forms are `abs_gaussianQuadrant_sub_le_left` and `abs_gaussianQuadrant_sub_le_right`. The
+  corollary `lipschitzWith_gaussianQuadrant_diag hρ` is
+  `LipschitzWith 2 fun α => gaussianQuadrant ρ α α`.
+- Halfspaces (Exercise 11.19 (a)). For `a ≠ 0`,
+  `gaussianNoiseStability_indicator_setOf_dotProduct_le ρ ha b` writes the stability of the
+  `0`-`1` indicator of `{z | a ⬝ᵥ z ≤ b}` as `Λ_ρ` at its Gaussian volume. Given
+  `hα : (Measure.pi fun _ => gaussianReal 0 1).real {z | a ⬝ᵥ z ≤ b} = α`, the form
+  `gaussianNoiseStability_indicator_setOf_dotProduct_le_of_measureReal_eq ρ ha hα` concludes
+  `= gaussianQuadrant ρ α α`. `measureReal_pi_gaussianReal_setOf_dotProduct_le ha b` computes the
+  volume as `Φ (b / √(a ⬝ᵥ a))`.
+- Special values (Exercise 11.19 (b)), for `α, β ∈ [0, 1]`: `gaussianQuadrant_comm`,
+  `gaussianQuadrant_zero` (`αβ`), `gaussianQuadrant_one` (`min α β`),
+  `gaussianQuadrant_neg_one` (`max (α + β - 1) 0`), and `gaussianQuadrant_zero_left` and `_right`,
+  `gaussianQuadrant_one_left` and `_right`, and the bound `gaussianQuadrant_le_min`. The
+  reflections are `gaussianQuadrant_neg` (`α - Λ_ρ(α, 1 - β)`) and
+  `gaussianQuadrant_neg_eq_sub_one_sub_left` (`β - Λ_ρ(1 - α, β)`). Sheppard's value is
+  `gaussianQuadrant_half_half` (`1 / 2 - arccos ρ / (2 * π)`).
+- Comparison with independence (Exercise 11.19 (c)): `mul_le_gaussianQuadrant` for `ρ ∈ [0, 1]`
+  and `gaussianQuadrant_le_mul` for `ρ ∈ [-1, 0]`.
+
+The checked [`GaussianQuadrant.lean` clients](../../CslibFrontierTests/GaussianQuadrant.lean)
+evaluate `Λ_{1/2}(1 / 2) = 1 / 3`, the cases `ρ = 0, 1, -1`, both reflections and a clamped
+argument. They also apply the book's form, the comparison with independence, the Lipschitz
+bounds and the halfspace formula. Run `scripts/build.sh CslibFrontierTests.GaussianQuadrant`
+from the repository root to check them.
+
+The comparison in (c) is non-strict, and the derivative formula of Exercise 11.19 (d) is not
+proved. Borell's Isoperimetric Theorem, that halfspaces maximize `Stab_ρ` among sets of volume
+`α`, is not part of this module.
+
 ## Compare bits with Gaussians by the invariance principle
 
 Import
@@ -3352,6 +3408,17 @@ probabilities satisfy lower or upper bounds.
   [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
   metadata and fair success bits: actual histories have authenticated tags, while an impossible
   unauthenticated prefix has zero success probability and violates the older all-prefix premise.
+  For an upper envelope, use
+  [`StochasticDomination/SequentialUpper.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialUpper.lean):
+  `PMF.poissonBinomial_replicate_stochasticallyDominates_seqCount_of_support` bounds the count
+  by `poissonBinomial (List.replicate n p)` when each reached-prefix event probability is at
+  most `p`. `PMF.seqCount_toReal_Ici_le_of_support` exposes the binomial upper tail directly.
+  The same checked client complements its event: its probability is still one-half on actual
+  histories, but becomes one at the impossible prefix. The proof reuses the lower comparison
+  and [`PoissonBinomial/Reflection.lean`](../../CslibFrontier/Probability/PoissonBinomial/Reflection.lean),
+  which derives count reflection from `BitString.weight_not`; callers need no separate
+  comparison induction or assumptions on impossible histories. These are probability lemmas;
+  they do not by themselves instantiate a stochastic-oracle deadline lower bound.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and

@@ -186,7 +186,7 @@ theorem eval_replicate_extractLabels {Observation Label Seed Output : Type}
 
 /-- Extraction error for the supplied test is the only loss when converting its distinguishing
 advantage into a gap between original and comparison sample sequences. The hash seed is public. -/
-theorem extractLabels_sequence_gap {Observation Label Seed Output : Type}
+theorem extractLabels_sequence_gap_of_extraction_le {Observation Label Seed Output : Type}
     (original comparison : ProbComp (Observation × Label)) (count : ℕ)
     (seed : ProbComp Seed) (hash : Seed → List Label → Output)
     (test : List Observation × Seed × Output → ProbComp Bool)

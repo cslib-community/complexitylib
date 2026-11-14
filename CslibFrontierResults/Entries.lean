@@ -15,6 +15,7 @@ import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
+import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Tautology
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
@@ -5231,44 +5232,51 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
   title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"
   topic := "cryptography"
   sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
-      locator := "§3.1 and §3.2.2 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
+      locator := "§3.1, §3.2.2 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
+        2 November 2021)" }
   ]
   theorems := [
     Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le
   ]
-  scope := "Domain-separated FO-notbot = U-notbot ∘ T over an explicit-coin PKE: for uniform \
-    messages, a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most \
-    qG queries to G and qH queries to H (decapsulation queries unbounded), the ROM IND-CCA \
-    advantage is at most 2·Adv^{IND-CPA}(romCpaReduction) + (2qH + 2(qG + qH))/|M| + \
-    2(qG + qH + 1)δ + 2(qG + qH)2^{-γ} for some distinct fixed challenge messages. The proof \
-    composes the T and U-notbot hops directly instead of through OW-PCA; roIndCcaGame draws both \
-    real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
-    recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
-    accounting for the reduction; FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
+  scope := "Domain-separated FO-notbot = U-notbot ∘ T over one fixed explicit-coin PKE: for \
+    uniform messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit \
+    coins each of whose coin values makes at most qG queries to G and qH queries to H \
+    (decapsulation queries unbounded), the ROM IND-CCA advantage is at most \
+    2·Adv^{IND-CPA}(romCpaReduction A) + (2qH + 2(qG + qH))/|M| + 2(qG + qH + 1)δ + \
+    2(qG + qH)2^{-γ}, where IND-CPA is the two-stage game of HHK17 Def. 2.2 and \
+    romCpaReduction A is one two-stage adversary that draws its own challenge messages. Both \
+    advantages are two-world differences (twice HHK17's). The proof composes the T and U-notbot \
+    hops directly instead of through OW-PCA; roIndCcaGame draws both real (H) and ideal challenge \
+    keys from the arbitrary sampler S.sampleKey (uniform sampleKey recovers HHK17 §2.2 Def. 2.4 / \
+    Fig. 4). Concrete bound only: no security parameter and no running-time certificate for the \
+    reduction. FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
 
 register_result "fujisaki-okamoto-bot-ind-cca" where
   title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"
   topic := "cryptography"
   sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
-      locator := "§3.1 and §3.2.1 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.3",
+      locator := "§3.1, §3.2.1 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
+        2 November 2021)" }
   ]
   theorems := [
     Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaBotAdvantage_le
   ]
-  scope := "Explicit-rejection FO^⊥ = U^⊥ ∘ T over an explicit-coin PKE: for uniform messages, \
-    a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most qG queries \
-    to G, qH queries to H, and qD queries to decapsulation (ROFullQueryBounds A qG qH qD), the \
-    ROM IND-CCA advantage is at most 2·Adv^{IND-CPA}(romBotCpaReduction) + 2(qG + qH)/|M| + \
-    2(qG + qH + 1)δ + 2(qG + qH + qD)2^{-γ} for some distinct fixed challenge messages. \
-    Necessity of the qD·2^{-γ} ciphertext-validity spreadness term is proved in \
-    FujisakiOkamoto.SpreadNecessity (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
+  scope := "Explicit-rejection FO^⊥ = U^⊥ ∘ T over one fixed explicit-coin PKE: for uniform \
+    messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit coins each \
+    of whose coin values makes at most qG queries to G, qH queries to H, and qD queries to \
+    decapsulation (FullQueryBounds A qG qH qD), the ROM IND-CCA advantage is at most \
+    2·Adv^{IND-CPA}(romBotCpaReduction A) + 2(qG + qH)/|M| + 2(qG + qH + 1)δ + \
+    2(qG + qH + qD)2^{-γ}, against two-stage IND-CPA (HHK17 Def. 2.2) and one reduction that \
+    draws its own challenge messages. Concrete bound only: no security parameter and no \
+    running-time certificate for the reduction. Necessity of the qD·2^{-γ} ciphertext-validity \
+    spreadness term is proved in FujisakiOkamoto.SpreadNecessity \
+    (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
     Composes the T and U^⊥ hops directly instead of through standalone OW-PCVA; \
     roIndCcaBotGame and eagerIndCcaBotGame draw both real (H) replies and the independent ideal \
     challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
-    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4); information-\
-    theoretic games with no running-time accounting for the reduction."
+    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4)."
 
 register_result "cgks-pir-coalition-lower-bound" where
   title := "Chor–Goldreich–Kushilevitz–Sudan: coalition t-privacy and full-coalition \
@@ -5732,6 +5740,34 @@ register_result "three-sat-complement-ph-collapse" where
   scope := "Native polynomial-time many-one reduction with encCNF. ThreeSAT has clause width \
     at most three; its complement is inside all CNF Nat, including wider formulas. \
     The conclusion PH enc = NP enc holds for every explicit encoding enc."
+
+register_result "tautology-conp-complete" where
+  title := "TAUTOLOGY is coNP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Example 2.23",
+      locator := "2007 public draft, Section 2.6, printed p. 57 / PDF p. 73" }
+  ]
+  theorems := [Cslib.Complexity.TAUTOLOGY_coNPComplete]
+  scope := "Boolean formulas are the quantifier-free formulas of QBF Nat (variables, constants, \
+    negation, conjunction, disjunction) in the prefix token encoding encQBF; TAUTOLOGY is a \
+    total language on QBF Nat, so formulas with quantifiers are non-members. Membership in coNP \
+    uses a native polynomial-time verifier; hardness is under total native polynomial-time \
+    many-one reductions, through UNSAT by negation."
+
+register_result "np-eq-conp-iff-threesat-tautology" where
+  title := "NP = coNP iff 3SAT and TAUTOLOGY reduce to each other"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 7",
+      locator := "2007 public draft, printed p. 62 / PDF p. 78" }
+  ]
+  theorems := [Cslib.Complexity.NP_eq_coNP_iff_ThreeSAT_reducible_TAUTOLOGY]
+  scope := "NP = coNP is quantified over every explicit instance encoding. The reductions are \
+    native polynomial-time many-one reductions between ThreeSAT under encCNF (clause width at \
+    most three) and TAUTOLOGY under encQBF (quantifier-free QBF Nat). The proof instantiates \
+    NPComplete.NP_eq_coNP_iff_reducible, which holds for any NP-complete and coNP-complete \
+    pair."
 
 register_result "bounded-termination-exponential-completeness" where
   title := "Any-output bounded termination is in E but outside P and is EXP-complete"
