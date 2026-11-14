@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.PMF.Interaction.Process
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Disintegration.Map
 
 /-!
 # Actual private selection before a source response
@@ -30,6 +31,7 @@ product or representation identity is a premise.
 
 * `selectionLaw_factorization`: the actual selected law uses the fixed source history filter.
 * `selectionLaw_joint_factorization`: joint policy-view/source law from that same fixed filter.
+* `selectionLaw_posterior_joint`: coarse conditioning preserves each view's source filter.
 -/
 
 public section
@@ -92,5 +94,20 @@ theorem selectionLaw_joint_factorization
         (source.filter view.history).map (view, ·) := by
   simp only [selectionLaw_factorization, PMF.map_bind, PMF.map_comp, Function.comp_def,
     Selected.policyView, Function.const_def, PMF.map_const, PMF.bind_bind, PMF.pure_bind]
+
+/-- Conditioning on any observation of the selected policy view preserves the
+source filter attached to each complete view, including prior completion at null
+observations. The observation may inspect fresh selection coins but not source state. -/
+theorem selectionLaw_posterior_joint {O : Type*}
+    (policy : Policy A B C) (source : Source A B S) (n : ℕ)
+    (observe : Selected A B C Unit → O) (o : O) :
+    (PMF.posterior (selectionLaw policy source n) (observe ∘ Selected.policyView) o).map
+        (fun selected => (selected.policyView, selected.sourceState)) =
+      (PMF.posterior ((selectionLaw policy source n).map Selected.policyView) observe o).bind
+        fun view => (source.filter view.history).map (view, ·) := by
+  have h := PMF.posterior_map (selectionLaw policy source n)
+    (fun selected => (selected.policyView, selected.sourceState)) (observe ∘ Prod.fst) o
+  rw [selectionLaw_joint_factorization, PMF.posterior_bind_pair] at h
+  exact h
 
 end Cslib.Probability.InteractionProcess
