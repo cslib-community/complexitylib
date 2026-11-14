@@ -778,7 +778,9 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
       (by unfold gmTailPtrBase gmSlabDirBase at hptr_idx_lt; omega)
   have ht1_val_lt : gm 1 + 1 < 2 ^ globalPtrBits n_max :=
     lt_two_pow_globalPtrBits_of_le_n_max (by omega)
-  simp only [appendTailItemProg, appendTailItemGenProg]
+  simp only [appendTailItemProg, appendTailItemGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      p_tailCap_mk, p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_nMaxSubOne_mk]
   dsimp only at s' ⊢
   rw [StateTransitionSpec.clientResult_bind, clientState_readGMProg,
     clientResult_readGMProg s hr_idx_lt,
@@ -796,8 +798,9 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
         (writeGMProg U V w n_max h_space ((base, 4 + 3 * b + 1), gm (gmRIdx b) + 1)))
       (writeGMProg U V w n_max h_space ((base, 1), gm 1 + 1)) := by
     change (Memory.spec 0).clientState s (appendTailItemProg U V w n_max h_space (base, b)) = _
-    simp only [appendTailItemProg, appendTailItemGenProg]
-    dsimp only
+    simp only [appendTailItemProg, appendTailItemGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      p_tailCap_mk, p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_nMaxSubOne_mk]
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
       clientResult_readGMProg s hr_idx_lt,
       StateTransitionSpec.clientState_bind, clientState_readGMProg,
@@ -1061,8 +1064,9 @@ theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
     dsimp only [s₁, g_del, g_last, t_del, t_last, r_del, gm,
       gmTailPtrIdx, gmTailPtrFlatIdx, gmRIdx] at hv1_at
     change (Memory.spec 0).clientState s (removeLastTailItemProg U V w n_max h_space (base, b)) = s₆
-    simp only [removeLastTailItemProg, removeLastTailItemGenProg]
-    dsimp only
+    simp only [removeLastTailItemProg, removeLastTailItemGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      p_tailCap_mk, p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_nMaxSubOne_mk]
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
       clientResult_readGMProg s (by exact hr_idx_lt),
       StateTransitionSpec.clientState_bind, clientState_readGMProg,
