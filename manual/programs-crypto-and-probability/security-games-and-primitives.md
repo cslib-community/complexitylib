@@ -24,7 +24,6 @@ For a simulator that retries until an independent coin succeeds, import [Game/Re
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. cslib-frontier adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
 
-
 ### Security theorems and efficiency witnesses
 
 A security theorem says that every admitted adversary has negligible advantage, given a named hardness assumption. [AGENTS.md](../../AGENTS.md#security-theorems) fixes what such a theorem may assume: named assumptions about independently defined problems, that the adversary is in the admitted class, and properties of generic components the caller supplies. It may assume nothing about an object that the proof constructs.
