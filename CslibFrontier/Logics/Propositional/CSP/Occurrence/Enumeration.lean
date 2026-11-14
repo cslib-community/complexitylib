@@ -40,15 +40,20 @@ instance (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool) :
   inferInstanceAs (Decidable (∀ i : Fin F.length,
     sem F[i].rel (localTuple f i) = true))
 
+/-- The original raw records enumerate constraint positions followed by ordered scope
+positions. Duplicate rows and repeated names keep their separate indexed records. -/
+theorem occurrences_eq_flatMap_zipIdx (F : CSP Rel V) :
+    F.occurrences =
+      F.zipIdx.flatMap (fun ⟨⟨_, scope⟩, i⟩ =>
+        scope.zipIdx.map fun ⟨v, j⟩ => (i, j, v)) := by
+  simp only [CSP.occurrences, Cslib.Logic.PL.occurrences, varCNF,
+    List.zipIdx_map, List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
+    Prod.map, id_eq]
+
 /-- Typed and untyped enumeration retain exactly the same order and positions. -/
 theorem occurrences_eq_map_incidenceList (F : CSP Rel V) :
     F.occurrences = (incidenceList F).map Occurrence.record := by
-  have he : F.occurrences =
-      F.zipIdx.flatMap (fun c => c.1.scope.zipIdx.map fun v => (c.2, v.2, v.1)) := by
-    simp only [CSP.occurrences, Cslib.Logic.PL.occurrences, varCNF,
-      List.zipIdx_map, List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
-      Prod.map, id_eq]
-  rw [he]
+  rw [occurrences_eq_flatMap_zipIdx]
   unfold incidenceList
   conv_lhs => rw [← List.ofFn_getElem (xs := F.zipIdx)]
   simp only [List.length_zipIdx, List.getElem_zipIdx, Nat.zero_add]

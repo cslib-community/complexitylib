@@ -7,6 +7,7 @@ Authors: OpenAI
 -- upstream: candidate
 
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Construction
+import CslibFrontier.Computability.PolyTime.CSP.Gadget.ConstructionCompiler
 
 /-! Full original-language construction trees and their exact primitive bodies. The only
 language symbol is one-in-three: neither pins nor disequality are added symbols. -/
@@ -208,5 +209,52 @@ private def nullTree : Construction countArity countSem
 
 example : verify nullTree.gadget.body [] nullTree.orderedWitness.certificate = true :=
   nullTree.orderedWitness.accepted
+
+-- Apply the complete native wrapper to the same non-atom tree, including its pin and
+-- disequality enabling subtrees. No boundary words or target invariant is supplied.
+private def binarySourceSem (_ : Unit) : List Bool → Bool
+  | [a, b] => !a && b
+  | _ => false
+
+private theorem binarySourceRelation :
+    adjacent (twist (rotate relation) (Pi.single 2 true)) true ∩ project relation 1 =
+      booleanRelation (fun (_ : Unit) => 2) binarySourceSem () := by
+  ext a
+  unfold adjacent twist rotate project relation booleanRelation binarySourceSem
+  decide +revert
+
+private def sourceTrees (_ : Unit) : Construction arity sem
+    (booleanRelation (fun (_ : Unit) => 2) binarySourceSem ()) :=
+  binarySourceRelation ▸ binaryTree
+
+open Cslib.Complexity.CSP Cslib.Complexity.CSP.GadgetRotation
+
+private noncomputable def compiledBinary := compileConstructions sourceTrees
+
+example : verifyRotationCertificate
+    (compiledBinary ([⟨(), [2 ^ 250, 7]⟩], ⟨[0, 3, 2, 1]⟩)).1
+    (compiledBinary ([⟨(), [2 ^ 250, 7]⟩], ⟨[0, 3, 2, 1]⟩)).2 = true :=
+  (verifyRotationCertificate_compileConstructions_iff sourceTrees _).mpr (by decide +kernel)
+
+example : (compiledBinary ([⟨(), [2 ^ 250, 7]⟩], ⟨[0, 3, 2, 1]⟩)).1.Satisfiable sem := by
+  have h := (wellFormed_certifiedSatisfiable_compileConstructions_iff sourceTrees
+    ([⟨(), [2 ^ 250, 7]⟩], ⟨[0, 3, 2, 1]⟩)).mpr
+      ⟨by decide, by decide +kernel, ⟨fun v => decide (v = 7), by decide +kernel⟩⟩
+  exact h.2.2
+
+example : verifyRotationCertificate
+    (compiledBinary ([⟨(), [7, 7]⟩], ⟨[2, 3, 0, 1]⟩)).1
+    (compiledBinary ([⟨(), [7, 7]⟩], ⟨[2, 3, 0, 1]⟩)).2 = true :=
+  (verifyRotationCertificate_compileConstructions_iff sourceTrees _).mpr (by decide +kernel)
+
+example : ¬ (compiledBinary ([⟨(), [7, 7]⟩], ⟨[2, 3, 0, 1]⟩)).1.Satisfiable sem := by
+  intro hsat
+  have h := (wellFormed_certifiedSatisfiable_compileConstructions_iff sourceTrees
+    ([⟨(), [7, 7]⟩], ⟨[2, 3, 0, 1]⟩)).mp
+      ⟨wellFormed_compileConstructions sourceTrees _,
+        (verifyRotationCertificate_compileConstructions_iff sourceTrees _).mpr
+          (by decide +kernel), hsat⟩
+  obtain ⟨σ, hσ⟩ := h.2.2
+  cases hv : σ 7 <;> simp [CSP.eval, Constraint.eval, binarySourceSem, hv] at hσ
 
 end CslibFrontierTests.PlanarConstructionBoundary

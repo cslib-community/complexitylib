@@ -73,6 +73,7 @@ import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.SelfDual
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Construction
+import CslibFrontier.Computability.PolyTime.CSP.Gadget.ConstructionCompiler
 import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -2301,12 +2302,107 @@ Run `scripts/build.sh CslibFrontierTests.PlanarConstructionBoundary CslibFrontie
 These are static finite constructors. General projection/cyclic inverses use
 finite choice and are intentionally `noncomputable`. Fixing a language and
 its templates permits nonuniform certificate preprocessing; it does not prove
-the input-varying native compiler's target acceptance or framed time bound.
-Figure 1/NAND boundary tables are macro skeletons until original-language
-substitution is supplied. OneHot3/CROSS macro expansion, normalization caps
-and Figure-1 substitution, native target acceptance, geometric/
+a preprocessing bound in the size of varying trees or languages. The next
+section supplies full target acceptance and framed native time for fixed trees.
+Figure 1/NAND boundary tables remain macro skeletons until their expanded
+original-language ordered witnesses are proved. OneHot3/CROSS macro expansion, normalization caps
+and Figure-1 expanded ordered witnesses, geometric/
 source comparison, recognition and full #3091 remain open.
 
+
+# Certified Native Ordered-Gadget Substitution
+
+Import `...CSP.Planar.Substitution.Genus` for full acceptance of the exact
+replacement body and computed table. Actual checked gadget boundaries and
+source well-formedness/checker acceptance suffice. Neither alphabet need be
+finite, and no target genus or order provider is supplied:
+
+```lean
+section
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP
+open Cslib.Complexity.CSP.GadgetRotation Cslib.Complexity.CSP.OrderedBoundary
+
+example {Src Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}
+    {srcArity : Src → ℕ} {srcSem : Src → List Bool → Bool}
+    (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
+    (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ)
+    (hB : ∀ r, (gadgets r).numAux ≤ B) (F : CSP Src ℕ)
+    (hF : WellFormed srcArity F)
+    (c : Cslib.Complexity.Graph.RotationCertificate)
+    (hc : verifyRotationCertificate F c = true) :
+    verifyRotationCertificate
+      (replaceGadgets B (fun r => (gadgets r).template) F)
+      (replacementCertificate B (fun r => (gadgets r).template)
+        (fun r => freeBoundaryBlocks (gadgets r) (witnesses r))
+        (fun r => auxiliaryBoundaryBlocks (gadgets r) (witnesses r))
+        F c) = true :=
+  verifyRotationCertificate_replacementCertificate
+    gadgets witnesses B hB F hF c hc
+end
+```
+
+Import `...PolyTime.CSP.Gadget.ConstructionCompiler` for the total compiler.
+Each fixed source symbol has one actual tree. The wrapper interprets its
+original-language gadget, invokes `orderedWitness` and derives the auxiliary
+bound internally, including enabling pin and disequality subtrees.
+Only the source alphabet is finite; the target alphabet is arbitrary:
+
+```lean
+section
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP
+open Cslib.Complexity.CSP.GadgetRotation Turing.MultiTapeTM
+
+example {Src Rel : Type} [Finite Src] {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool}
+    {srcArity : Src → ℕ} {srcSem : Src → List Bool → Bool}
+    (trees : ∀ r, RelationMinor.Construction arity sem
+      (booleanRelation srcArity srcSem r))
+    (encSrc : Src ↪ List Bool) (encRel : Rel ↪ List Bool) :
+    ComputableInPolyTime (compileConstructions trees)
+      (encCSPRotationCertificate encSrc encNat)
+      (encCSPRotationCertificate encRel encNat) :=
+  computableInPolyTime_compileConstructions encSrc encRel trees
+
+example {Src Rel : Type} [Finite Src] {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool}
+    {srcArity : Src → ℕ} {srcSem : Src → List Bool → Bool}
+    (trees : ∀ r, RelationMinor.Construction arity sem
+      (booleanRelation srcArity srcSem r))
+    (p : CSP Src ℕ × Cslib.Complexity.Graph.RotationCertificate) :
+    (WellFormed arity (compileConstructions trees p).1 ∧
+      verifyRotationCertificate (compileConstructions trees p).1
+        (compileConstructions trees p).2 = true ∧
+      (compileConstructions trees p).1.Satisfiable sem) ↔
+      WellFormed srcArity p.1 ∧ verifyRotationCertificate p.1 p.2 = true ∧
+        p.1.Satisfiable srcSem :=
+  wellFormed_certifiedSatisfiable_compileConstructions_iff trees p
+end
+```
+
+The guard checks source arities and the full original source certificate.
+The accepted branch is the literal replacement body and computed table.
+The rejected branch is `([], ⟨[0]⟩)`, whose checker rejects even with an empty
+target alphabet. Target acceptance is exactly that guard on all raw inputs.
+
+`exists_framed_bound_compileConstructions` bounds the complete encoded
+output, including symbols, binary names, framing and successor entries.
+Trees and possibly noncomputable witness/boundary preprocessing are fixed
+nonuniform data. The native machine certificate concerns the varying input,
+with no preprocessing bound for varying trees/languages or Lean code-generation
+claim for the noncomputable wrapper. No embedding search is performed.
+
+`CslibFrontierTests/CSPGadgetGenus.lean` is a low-only ordinary import client.
+`CslibFrontierTests/CSPConstructionCompiler.lean` also checks Empty-to-Empty
+rejection and valid-empty acceptance. The original non-atom tree in
+`PlanarConstructionBoundary` applies the final wrapper, proving acceptance
+and SAT/UNSAT with repeated sparse names. Executed substitution tests include
+closed auxiliary/nullary components, unused ports, duplicate degree-six rows,
+literal output tables and sparse `2^250` names.
+Run `scripts/build.sh CslibFrontierTests.CSPGadgetGenus CslibFrontierTests.CSPConstructionCompiler CslibFrontierTests.CSPGadgetSubstitution --wfail --iofail`.
+
+Expanded original-language OneHot3/CROSS and normalization/Figure-1 witnesses,
+source-model comparison, bare recognition, Hanani–Tutte and full #3091 remain
+open. The finite PL equivalence is already proved.
 
 # Original-Language Ordered Disequality
 
@@ -2383,7 +2479,7 @@ and checks repeated scopes, nullary operations and false nullary constraints.
 The descent follows DK Lemma 3, printed pp. 437–438; actual-body ordered
 reconstruction is original. The existing static grammar has ordered witnesses;
 expanded-language macros,
-native target acceptance, geometry/source comparison, recognition and full
+geometry/source comparison, recognition and full
 #3091 remain open.
 
 # Finite Crossover Gadget Semantics
@@ -2412,8 +2508,9 @@ example : ∃ b, figureOneB.body.eval nearSem
 ```
 
 Both bodies retain the source diagram's numbered port order and use guarded
-scope widths. These results concern finite semantics; geometric realization,
-planar substitution, hardness and a new native runtime certificate remain open.
+scope widths. These results concern finite semantics; their expanded
+original-language ordered witnesses and planar hardness remain open. The
+general substitution compiler applies after those witnesses are proved.
 
 
 # Ordered Cyclic-Obstruction Normalization
@@ -2487,7 +2584,8 @@ original reconstructions of the proof omitted from Dvořák–Kupec Lemma 4, pri
 pp. 438–439. The constants descent follows Lemma 3, pp. 437–438.
 
 This proves finite primitive-positive semantics. Witness selection is fixed-language
-data, without a uniform preprocessing bound. Geometric realization, ordered planar
-substitution, native hardness transfer and the full dichotomy remain open. Complete
+data, without a uniform preprocessing bound. The final expanded triangle still
+needs an original-language ordered witness and planar hardness proof. The general
+compiler does not supply those witnesses; full #3091 remains open. Complete
 clients, including a one-symbol language without primitive pins or disequality,
 are in `CslibFrontierTests/PlanarConstructionGadget.lean`.

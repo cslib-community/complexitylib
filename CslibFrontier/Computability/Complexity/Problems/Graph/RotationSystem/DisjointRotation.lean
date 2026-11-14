@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.DisjointGraph
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Transport
 public import CslibFrontier.Foundations.GroupTheory.Perm.SelectedOrbitJoin
+import CslibFrontier.Foundations.GroupTheory.Perm.SumCycles
 
 /-!
 # Rotations and actual components of disjoint listed graphs
@@ -36,40 +37,24 @@ open Equiv RotationCertificate Perm.SelectedOrbits
     change (e.permCongr (Equiv.sumCongr r.rotate s.rotate)).SameCycle (e a) (e b) ↔ _
     rw [Perm.sameCycle_equiv_iff e (Equiv.sumCongr r.rotate s.rotate) _ (fun d => by
       simp only [Equiv.permCongr_apply, Equiv.symm_apply_apply])]
-    let eq := Perm.sumOrbitEquiv r.rotate s.rotate
-    have hq : Perm.SameCycle (Equiv.sumCongr r.rotate s.rotate) a b ↔
-        eq (Quotient.mk _ a) = eq (Quotient.mk _ b) :=
-      ⟨fun he => congrArg eq (Quotient.sound he), fun he => Quotient.exact (eq.injective he)⟩
-    rw [hq]
+    rw [Perm.sameCycle_sumCongr_iff]
     cases a with
     | inl a =>
       cases b with
       | inl b =>
-        change Sum.inl (Quotient.mk _ a : Quotient (Perm.SameCycle.setoid r.rotate)) =
-          Sum.inl (Quotient.mk _ b) ↔ _
-        rw [Sum.inl.injEq, Quotient.eq_iff_equiv]
         change r.rotate.SameCycle a b ↔ _
         rw [r.sameCycle_iff]
         simp only [e, vertex_disjointDartEquiv_inl]
         omega
       | inr b =>
-        change Sum.inl (Quotient.mk _ a : Quotient (Perm.SameCycle.setoid r.rotate)) =
-          Sum.inr (Quotient.mk _ b) ↔ _
-        simp only [e, vertex_disjointDartEquiv_inl, vertex_disjointDartEquiv_inr]
-        simp only [Sum.inl_ne_inr, false_iff]
+        simp only [e, vertex_disjointDartEquiv_inl, vertex_disjointDartEquiv_inr, false_iff]
         omega
     | inr a =>
       cases b with
       | inl b =>
-        change Sum.inr (Quotient.mk _ a : Quotient (Perm.SameCycle.setoid s.rotate)) =
-          Sum.inl (Quotient.mk _ b) ↔ _
-        simp only [e, vertex_disjointDartEquiv_inr, vertex_disjointDartEquiv_inl]
-        simp only [Sum.inr_ne_inl, false_iff]
+        simp only [e, vertex_disjointDartEquiv_inr, vertex_disjointDartEquiv_inl, false_iff]
         omega
       | inr b =>
-        change Sum.inr (Quotient.mk _ a : Quotient (Perm.SameCycle.setoid s.rotate)) =
-          Sum.inr (Quotient.mk _ b) ↔ _
-        rw [Sum.inr.injEq, Quotient.eq_iff_equiv]
         change s.rotate.SameCycle a b ↔ _
         rw [s.sameCycle_iff]
         simp only [e, vertex_disjointDartEquiv_inr]
