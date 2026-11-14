@@ -169,6 +169,14 @@ cover local registrations and both reducibility cases.
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
+For numbered framed lists, import `Complexity.PolyTime.List` and use the plain
+`ComputableInPolyTime.zipIdx` rule. It stores each index in `encUnary` and needs no inhabitant
+or decoder for the element type. The same module provides `listSetWithInput` for replacement at
+a computed unary index; an out-of-range index leaves the list unchanged. Both rules compose
+with plain certificates for the original input. The ordinary-import regression client
+[`ListZipIdx.lean`](../../CslibFrontierTests/ListZipIdx.lean) covers empty element types,
+computed lists, and in-range and out-of-range replacement.
+
 Import [`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Captured.lean) for shared-input plain composition rules (`CslibFrontier.Tactic.PolyTime` does not import it). It registers `fun_prop` rules for `_root_.cond`, `List.take` and `List.drop` (requiring `encUnary` count premises), `List.head?`, `List.headD`, `List.count` (returning its count in `encUnary`), and fixed-list `List.any` (`anyConst`, whose fixed list needs no index encoding). Rules whose result encoding hides an element encoding (`listHead?WithInput`, `listHeadDWithInput`, `countWithInput`) also carry `program_certificate hlist` so `polytime` infers the element encoding from the `encList E` list premise before checking element arguments or outer projections. Binary remainder `ComputableInPolyTime.binary_mod'` on `encNat` stays explicit alongside `binary_div'` so `HMod.hMod` automation on `encUnary` remains unambiguous; see the complete checked client [`PolyTimeCaptured.lean`](../../CslibFrontierTests/PolyTimeCaptured.lean).
 
 ## Rewrite option matches before resource automation
