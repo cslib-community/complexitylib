@@ -303,9 +303,9 @@ For a canonical public key, acceptance forces the commitment into the encoding r
 response and challenge words; no group-membership decoder is assumed. This rejects aliases such as
 `32` in place of residue `9` in the group modulo `23`, which the previous arithmetic comparison
 normalized. The encoded verification equation, honest completeness and native runtime certificates
-are preserved. Malformed public keys have no encoding-range guarantee. The typed-game transport of
-arbitrary hash words and the approximate key-generation law remain part of the full ROM bridge
-[#581](https://github.com/cslib-community/cslib-frontier/issues/581).
+are preserved. Malformed public keys have no encoding-range guarantee. The transport from the
+actual key and nonce samplers to the typed game is given by `StatisticalROM.lean`, described below;
+efficient forking remains [#2568](https://github.com/cslib-community/cslib-frontier/issues/2568).
 
 The existing `fiatShamir` and its finite security theorem accept an injective
 `hashPoint : (M × T) ↪ Query`. Signing and final verification query `hashPoint (m, t)`, while
@@ -335,11 +335,11 @@ extractor reuse the typed Schnorr laws, proving perfect HVZK, special soundness 
 challenges when `2 ^ m ≤ F.order d`, retaining all other hash words in the same cache. Its finite
 bound is `Qs*(Qs+Qro)/F.order d + (Qro+1)/2^m + sqrt((Qro+1)*ε')`, where `ε'` is the displayed
 forking reduction's discrete-log success. Key and signing scalars use ideal uniform laws. This
-completes the representation milestone [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696);
-native saved-forger composition, adaptive key-generation/signing `CloseTo` game hops and efficient
-forking remain open. No guarantee is asserted for malformed public keys, and no group decoder is
-assumed. Concrete scalar-alias extraction, rejected commitments, and distinct/repeated junk hash
-queries are checked in
+completes the representation milestone [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696).
+The transport from the actual samplers is described below; efficient forking remains open. No
+guarantee is asserted for malformed public keys, and no group decoder is assumed. Concrete
+scalar-alias extraction, rejected commitments, and distinct/repeated junk hash queries are checked
+in
 [`Crypto/SchnorrWordROM.lean`](../../CslibFrontierTests/Crypto/SchnorrWordROM.lean).
 
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
@@ -360,8 +360,9 @@ full-input replay and retains external state.
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
 also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
 full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
-hash payloads stay distinct. Applying that adapter to Schnorr's concrete query encoding, composing
-the signer/hash handlers, and certifying the complete forking reduction remain open. See the
+hash payloads stay distinct. `exists_closeTo_worldGame_schnorrEncodedROMScheme` (below) applies
+it to Schnorr's encoded scheme; certifying the forking reduction remains
+[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). See the
 checked algorithms and typed-ROM examples in
 [`CslibFrontierTests/Crypto/SchnorrSignature.lean`](../../CslibFrontierTests/Crypto/SchnorrSignature.lean).
 
@@ -381,7 +382,7 @@ and actual signing differs from the ideal word-ROM signer by at most `2⁻ⁿ` p
 comes from the proved `sampleExp` law using `n + binaryLength(q)` fair coins, without an assumed
 coupling. The separate actual key-generation law `closeTo_schnorrSigKeyGen` also costs at most
 `2⁻ⁿ`. The milestone [#2708](https://github.com/cslib-community/cslib-frontier/issues/2708) does not
-compose these errors across adaptive signing requests or certify the full forking reduction.
+compose these errors across adaptive signing requests; `StatisticalROM.lean`, described below, does.
 Checks in [`Crypto/SchnorrNativeROM.lean`](../../CslibFrontierTests/Crypto/SchnorrNativeROM.lean)
 cover bounded reply prefixes, aliases, malformed outer signatures, a cache hit retaining junk
 entries, and preservation of external state through private nonce sampling.
@@ -403,8 +404,24 @@ rejected: `[true,true]` decodes to the identity commitment and zero response and
 the identity public key in the checked order-11 example. The regressions in
 [`Crypto/SchnorrEncodedROM.lean`](../../CslibFrontierTests/Crypto/SchnorrEncodedROM.lean) also retain
 distinct junk-cache entries and distinguish fresh from signed final messages. This completes the
-representation milestone #2742; adaptive actual-sampling error composition, the key-generation
-transport and the native efficient forking reduction remain #581.
+representation milestone #2742.
+
+[`SchnorrSignature/StatisticalROM.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/StatisticalROM.lean)
+moves a forger from the actual key and nonce samplers to the ideal laws in the same game. For
+every raw secret-key word and starting cache and signing log,
+`closeTo_runWith_schnorrEncodedROMScheme` bounds the change in the joint output/cache/log law by
+`Qs / 2^n`: each signing call pays one nonce error, and hash calls pay nothing because their
+transitions are identical. `closeTo_eufCmaGame_schnorrEncodedROMScheme` adds the key-generation
+error and compares the actual game with the canonical ideal word game within `(Qs+1) / 2^n`.
+For a native oracle-PPT forger and a polynomial-time deterministic description function,
+`exists_closeTo_worldGame_schnorrEncodedROMScheme` takes the replay machine and the polynomial
+budget `savedCoinBudget` from the saved-coin adapter, so no query cap is assumed
+([#2764](https://github.com/cslib-community/cslib-frontier/issues/2764)). These are statistical
+hops only; the efficient forking reduction and the discrete-log theorem remain
+[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). The checks in
+[`Crypto/SchnorrStatisticalROM.lean`](../../CslibFrontierTests/Crypto/SchnorrStatisticalROM.lean)
+cover hash-only zero cost, an adaptive full-state bound `1/8` over a populated cache, the
+actual-game error `3/16`, and a native bounded-reply forger.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest

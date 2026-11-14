@@ -38,6 +38,7 @@ quantifies over the rows of a typing context and does not distinguish errors.
 
 * `Cslib.SQL.Expr.Equiv.unary`, `Cslib.SQL.Expr.Equiv.binary`, `Cslib.SQL.Expr.Equiv.inList`,
   `Cslib.SQL.Expr.Equiv.caseWhen`: congruence.
+* `Cslib.SQL.Expr.Equiv.binary_comm`: commutative operators commute on expressions.
 * `Cslib.SQL.Expr.Equiv.rename`, `Cslib.SQL.Expr.Equiv.subst`, `Cslib.SQL.Expr.Equiv.subst_right`:
   compatibility with renaming and substitution.
 * `Cslib.SQL.Expr.Equiv.evalTruth`: equivalent predicates select the same rows.
@@ -72,6 +73,8 @@ theorem trans {e₁ e₂ e₃ : Expr n} (h₁₂ : Equiv Γ e₁ e₂) (h₂₃ 
 theorem equivalence (Γ : Fin n → SqlType) : Equivalence (Equiv Γ) :=
   ⟨refl, symm, trans⟩
 
+instance : Trans (Equiv (n := n) Γ) (Equiv Γ) (Equiv Γ) := ⟨trans⟩
+
 /-- Expressions with the same evaluation on every conforming row are equivalent. -/
 theorem of_eval_eq {e₁ e₂ : Expr n} (h : ∀ r : Row n, r.Conforms Γ → e₁.eval r = e₂.eval r) :
     Equiv Γ e₁ e₂ :=
@@ -99,6 +102,16 @@ theorem inList {e e' : Expr n} (h : Equiv Γ e e') (vs : List Datum) :
     Equiv Γ (inList e vs) (inList e' vs) := by
   intro r hr
   simp only [eval_inList, Except.toOption_bind, h r hr]
+
+/-- A binary operator whose observations do not depend on the order of its operands is
+commutative on expressions. It applies to `AND` and `OR` (`evalBinOp_and_comm`, …), whose two
+sides may raise different first errors, so `Equiv.of_eval_eq` cannot prove them. -/
+theorem binary_comm {op : BinOp}
+    (hop : ∀ a b, (evalBinOp op a b).toOption = (evalBinOp op b a).toOption) (e₁ e₂ : Expr n) :
+    Equiv Γ (Expr.binary op e₁ e₂) (Expr.binary op e₂ e₁) := by
+  intro r _
+  simp only [eval_binary, Except.toOption_bind]
+  rcases e₁.eval r with _ | a <;> rcases e₂.eval r with _ | b <;> simp [hop]
 
 theorem caseWhen {c c' a a' b b' : Expr n} (hc : Equiv Γ c c') (ha : Equiv Γ a a')
     (hb : Equiv Γ b b') : Equiv Γ (caseWhen c a b) (caseWhen c' a' b') := by

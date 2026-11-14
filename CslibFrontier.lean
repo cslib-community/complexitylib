@@ -4632,6 +4632,7 @@ public import CslibFrontier.Crypto.Computational.SchnorrProtocol
 public import CslibFrontier.Crypto.Computational.SchnorrSignature
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.NativeROM
+public import CslibFrontier.Crypto.Computational.SchnorrSignature.StatisticalROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.WordROM
 public import CslibFrontier.Crypto.Computational.Signature
 public import CslibFrontier.Crypto.Computational.Signature.Bridge
@@ -5920,6 +5921,7 @@ public import CslibFrontier.Foundations.Data.Nat.Subexponential
 public import CslibFrontier.Foundations.Data.Nat.SummationByParts
 public import CslibFrontier.Foundations.Data.Nat.Totient
 public import CslibFrontier.Foundations.Data.Option
+public import CslibFrontier.Foundations.Data.Option.Rel
 public import CslibFrontier.Foundations.Data.Polynomial.BinaryDigits
 public import CslibFrontier.Foundations.Data.Polynomial.BivariateCoeffNorm1
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffList
@@ -6369,8 +6371,11 @@ public import CslibFrontier.Languages.Probabilistic.Vector
 public import CslibFrontier.Languages.SQL.Column
 public import CslibFrontier.Languages.SQL.Equiv
 public import CslibFrontier.Languages.SQL.Expr
+public import CslibFrontier.Languages.SQL.Query
+public import CslibFrontier.Languages.SQL.QueryEquiv
 public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
+public import CslibFrontier.Languages.SQL.Schema
 public import CslibFrontier.Languages.SQL.Truth
 public import CslibFrontier.Languages.SQL.Typing
 public import CslibFrontier.Languages.SQL.Value

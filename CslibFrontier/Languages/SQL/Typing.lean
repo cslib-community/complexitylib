@@ -29,7 +29,8 @@ expression use safety as their side condition. A divisor that is a column or a c
 is not safe even when it is never zero on the data: safety is a syntactic check.
 
 Typing and safety are preserved by renaming and by substitution of safe expressions of the right
-types (`Expr.typeOf_rename`, `Expr.typeOf_subst`, `Expr.IsSafe.rename`, `Expr.IsSafe.subst`).
+types (`Expr.typeOf_rename`, `Expr.typeOf_subst`, `Expr.IsSafe.rename`,
+`Expr.IsSafePredicate.rename`, `Expr.IsSafe.subst`).
 
 It adapts and redesigns the typing of `sql_equiv` (revision `38030a6b`) by Evelyn Mitchell, whose
 type checks came from the data at evaluation time; here typing is static, relative to a typing
@@ -113,7 +114,7 @@ theorem evalBinOp_ok_or_divisionByZero {op : BinOp} {τ₁ τ₂ τ : SqlType}
     case some.some =>
       rcases hz : op.eval x y with e | z
       · obtain ⟨rfl, hd, rfl⟩ := ArithOp.eval_eq_error hz
-        exact .inr ⟨by simp [evalBinOp, hx, hy, hz], hd, Datum.asInt_eq_ok_some.mp hy⟩
+        exact .inr ⟨by simp [evalBinOp, hx, hy, hz], hd, Datum.asInt_eq_ok_some_iff.mp hy⟩
       · exact .inl ⟨some (.int z), by simp [evalBinOp, hx, hy, hz], rfl⟩
     all_goals exact .inl ⟨none, by simp [evalBinOp, hx, hy, pure, Except.pure], trivial⟩
   | .cmp op, τ₁, τ₂, h =>
@@ -192,7 +193,7 @@ def IsSafePredicate (Γ : Fin n → SqlType) (e : Expr n) : Prop :=
 instance (Γ : Fin n → SqlType) (e : Expr n) : Decidable (e.IsSafePredicate Γ) :=
   inferInstanceAs (Decidable (e.typeOf Γ = some .bool ∧ e.divSafe))
 
-private theorem eval_ne_divisionByZero_of_isNonzeroIntLit {e : Expr n} (he : e.isNonzeroIntLit)
+private theorem eval_ne_ok_zero_of_isNonzeroIntLit {e : Expr n} (he : e.isNonzeroIntLit)
     (r : Row n) : e.eval r ≠ .ok (some (.int 0)) := by
   match e, he with
   | lit (.int z), he =>
@@ -225,7 +226,7 @@ theorem eval_ok_or_divisionByZero {Γ : Fin n → SqlType} {r : Row n} (hr : r.C
         · refine .inr ⟨by simp [eval_binary, ha, hb, hd], ?_⟩
           have hlit : e₂.isNonzeroIntLit = false := by
             by_contra hlit
-            exact eval_ne_divisionByZero_of_isNonzeroIntLit (Bool.eq_true_of_not_eq_false hlit) r hb
+            exact eval_ne_ok_zero_of_isNonzeroIntLit (Bool.eq_true_of_not_eq_false hlit) r hb
           simp [divSafe, hdiv, hlit]
       · exact .inr ⟨by simp [eval_binary, ha, hb], by simp [divSafe, hs]⟩
     · exact .inr ⟨by simp [eval_binary, ha], by simp [divSafe, hs]⟩
@@ -341,6 +342,10 @@ theorem divSafe_subst {σ : Fin n → Expr m} (hσ : ∀ i, (σ i).divSafe) {e :
 theorem IsSafe.rename {Γ : Fin m → SqlType} {e : Expr n} (ρ : Fin n → Fin m)
     (h : e.IsSafe (Γ ∘ ρ)) : (e.rename ρ).IsSafe Γ := by
   simpa [IsSafe, typeOf_rename] using h
+
+theorem IsSafePredicate.rename {Γ : Fin m → SqlType} {e : Expr n} (ρ : Fin n → Fin m)
+    (h : e.IsSafePredicate (Γ ∘ ρ)) : (e.rename ρ).IsSafePredicate Γ := by
+  simpa [IsSafePredicate, typeOf_rename] using h
 
 /-- Substituting safe expressions of the column types into a safe expression keeps it safe. -/
 theorem IsSafe.subst {σ : Fin n → Expr m} {Γ : Fin n → SqlType} {Δ : Fin m → SqlType}

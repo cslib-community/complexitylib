@@ -31,7 +31,7 @@ The helper creates the worktree under `.worktrees/` and prepares caches. It reso
 
 Package sources may be hard-linked by default, while mutable build outputs are copied independently. Do not edit shared package sources. Use `--copy-cslib` or `--copy-packages` when dependencies must change. `--source-only` avoids initial `.lake` seeding when existing pins or artifacts are unsuitable. The [cache/isolation guide](../../scripts/cache/README.md#automatic-restoration) explains these modes.
 
-Coordinate a thread budget on shared machines. `LEAN_NUM_THREADS=2 scripts/check.sh` is an example setting, not a hard process or memory limit. On a busy host, the kernel's file-handle table can be exhausted first, so also bound the number of concurrent Lean builds; see [Diagnose "Too many open files in system"](troubleshooting.md#diagnose-too-many-open-files-in-system). Stop only tasks you started, by recorded PID or task ID. Preserve completed artifacts when rescheduling. Ordinary worktrees share a Git object database; history-repair experiments require an independent repository.
+Coordinate a thread budget on shared machines. `LEAN_NUM_THREADS=2 scripts/check.sh` is an example setting, not a hard process or memory limit: during the cache-restore audit, `scripts/check.sh` launches up to 8 concurrent `lean` processes unless capped by `LEAN_NUM_THREADS` or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS`. On a busy host, the kernel's file-handle table can be exhausted first, so also bound the number of concurrent Lean builds; see [Diagnose "Too many open files in system"](troubleshooting.md#diagnose-too-many-open-files-in-system). Stop only tasks you started, by recorded PID or task ID. Preserve completed artifacts when rescheduling. Ordinary worktrees share a Git object database; history-repair experiments require an independent repository.
 
 Worktrees also share one stash stack, `refs/stash`, so `git stash pop` in your worktree can apply and drop an entry that another session pushed from its own. Do not push, pop, apply or drop stash entries in a shared checkout or its worktrees. To set work aside, stage it with `git add -A`, then either commit it on your own branch (`git reset --soft HEAD~` undoes the commit later) or save `git diff --cached --binary` to a file under your scratch directory, check that the file is non-empty, and clear the work with `git reset --hard`; `git apply --index` restores it. If a pop completed and applied another session's entry, its last line names the dropped commit. Put the entry back with `git stash store -m "$(git log -1 --format=%s <commit>)" <commit>`, restore the files it changed in your worktree, and tell the entry's owner. A pop that stops on a conflict keeps the entry on the stack; restore your files and leave the entry alone.
 
@@ -69,7 +69,7 @@ the change needs focused checks plus hosted full validation; do not automaticall
 local full check. Run full `scripts/check.sh` only when explicitly requested or hosted coverage
 is unavailable, and do not duplicate successful CI covering the final revision. The local
 [restored-source audit](troubleshooting.md#diagnose-warnings-that-only-ci-reports) recovers
-warning/info logs and streams its count, current source and elapsed time. It can repeat
+warning/info logs and streams its count, worker mode, current source and elapsed time. It can repeat
 elaboration on unchanged restored sources, so it belongs to validation rather than every edit.
 
 | Outcome | Evidence to retain |

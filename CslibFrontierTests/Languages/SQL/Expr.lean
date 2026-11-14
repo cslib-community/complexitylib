@@ -114,6 +114,21 @@ example (a b : Expr 3) :
   · rfl
   exact (evalBinOp_cmp_negate .lt x y).symm
 
+-- `a AND b` and `b AND a` may raise different first errors, but they are equivalent: equivalence
+-- observes only success and result. Equivalences chain by `calc`.
+example (a b c : Expr 3) :
+    Equiv Γ (binary .and (binary .and a b) c) (binary .and c (binary .and b a)) :=
+  have hand : ∀ x y, (evalBinOp .and x y).toOption = (evalBinOp .and y x).toOption :=
+    fun x y => by rw [evalBinOp_and_comm]
+  calc Equiv Γ (binary .and (binary .and a b) c) (binary .and (binary .and b a) c) :=
+        (Equiv.binary_comm hand a b).binary .and (Expr.Equiv.refl c)
+    Equiv Γ _ (binary .and c (binary .and b a)) := Equiv.binary_comm hand _ _
+
+-- A safe predicate on the left input of a join stays safe on the joined row.
+example : ((binary (.cmp .gt) (col 0) (int 0)).rename (Fin.castAdd 2)).IsSafePredicate
+    (Fin.append Γ ![.bool, .text]) :=
+  IsSafePredicate.rename _ (by decide)
+
 /-- `x IS NULL OR x IS NOT NULL` for the column `x = col 0`. -/
 abbrev nullOrNotNull : Expr 1 := binary .or (unary .isNull (col 0)) (unary .isNotNull (col 0))
 
