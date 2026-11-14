@@ -26,6 +26,14 @@ To encode a structure as the tuple of its fields, import `CslibFrontier.Computab
 
 Generated field and flattened-parent polynomial-time rules lift their degree certificate with `ComputableInDegree.computableInPolyTime`, then compose with the caller’s certificate. They share the degree proof rather than deriving the projection again in the polynomial-time calculus.
 
+For each field `f`, the command also generates `eS_f_length_le`, stating that the field's
+encoded word is no longer than the record word. Use this bound before combining arithmetic
+with `omega`, without unfolding the record's framed tuple. For dependent fields it bounds the
+encoded word supplied by the field's encoding function. Single-field records and flattened
+fields use the same rule names. The
+[structure encoding client](../../CslibFrontierTests/StructureEncoding.lean) exercises ordinary,
+single-field and dependent flattened records.
+
 The optional visibility prefix applies to the encoding, its tuple abbreviation and every constructor/field rule. `enc_structure` and `public enc_structure` generate public declarations, even outside a `public section`; use `private enc_structure` for an implementation record and keep its generated names inside the defining module. Public `fun_prop` rules are scoped to the namespace; private rules use `local fun_prop` in the defining scope and do not export. The [visibility fixture](../../CslibFrontierTests/StructureEncodingVisibility.lean) uses both forms on the existing parameterized table and on a private, explicitly parameterized record with a dependent field; the [importing client](../../CslibFrontierTests/StructureEncodingVisibilityClient.lean) rebuilds the public table through both explicit rules and `fun_prop`, and checks that private generated names are unavailable.
 
 For parameterized records, give explicit parameters before the colon and apply the record in the type: `enc_structure eS (Desc : Type) (encDesc : Desc ↪ List Bool) : S (Desc := Desc) where description : encDesc, payload : encBits`. Only explicit `(p : T)` binders are accepted there; implicit and instance parameters come from `variable`, as below. Every generated declaration takes the explicit parameters in the same order, including `eS_apply Desc encDesc` and `eS_payload_polyTime Desc encDesc`. Generated binders keep plain names, such as `a` in `eS_apply` and `x0`, `h0`, `γ` and `encIn` in the constructor rules, so that callers can pass them by name; a name that the command's own terms use is replaced by a fresh one. The parameterized `DescribedPair` examples in [StructureEncoding](../../CslibFrontierTests/StructureEncoding.lean) check the unchanged tuple bytes, construction and projection, workspace-budget preservation, and parameters named like generated binders. The [DH challenge encodings](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean) use a family parameter to choose the description encoding.

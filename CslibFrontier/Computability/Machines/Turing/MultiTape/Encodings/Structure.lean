@@ -24,6 +24,7 @@ tuple of its fields, with everything a certificate needs to work with it:
 * `eS_fields_deg`, the linear map from a structure to the tuple of its fields;
 * for each field `f`, the linear rules `eS_f_deg` and `eS_f_inO`, `eS_f_budget` retaining a
   caller's workspace budget, and `eS_f_polyTime` reading the field of a polynomial-time structure;
+* for each field `f`, `eS_f_length_le` bounds its encoded word by the record word length;
 * for each `flattened toParent : eParent` annotation, the same four rules for the parent projection;
 * the constructor rules `eS_mk_deg` on tuples, `eS_mk_inO` adding up the bounds of its arguments,
   `eS_mk_budget` constructing a record whose fields share a workspace budget, and `eS_mk_polyTime`.
@@ -482,6 +483,12 @@ private def checkFlattenedParents (env : Environment) (s : Name)
     let degBody ←
       liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
     declareProjectionRules f.getId fn compFn e degBody
+    -- Size bounds describe encoded words, independently of a realizing machine's constants.
+    let lengthRule := app name s!"_{f.getId}_length_le"
+    let applyName := app name "_apply"
+    elabCommand (← `($vis:visibility theorem $lengthRule:ident $params* ($a : $S) :
+      ($e ($fn $a)).length ≤ ($encRef $a).length := by
+        simp only [$applyName:ident, $fields:ident, length_encPair, encBits_apply] <;> omega))
   for parent in parents, parentEnc in parentEncs, checked in checkedParents do
     let (path, indices) := checked
     let parentProjs := pathProjs env s path

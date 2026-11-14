@@ -37,6 +37,13 @@ enc_structure ePoint : Point where x : encNat, y : encBits, z : (encList encUnar
 example (p : Point) : ePoint p = ePointFields (p.x, p.y, p.z) := ePoint_apply p
 example {p q : Point} (h : ePoint p = ePoint q) : p = q := ePoint.injective h
 
+-- Clients can bound selected fields without unfolding the record's tuple layout.
+example (p : Point) : (encNat p.x).length + (encList encUnary p.z).length ≤
+    2 * (ePoint p).length := by
+  have hx := ePoint_x_length_le p
+  have hz := ePoint_z_length_le p
+  omega
+
 /-! The field and constructor rules assemble programs over the structure. -/
 
 example : ComputableInDegree (fun p : Point => Point.mk p.x p.y p.z) ePoint ePoint 1 1 := by
@@ -128,6 +135,9 @@ structure Single where
 
 /-- Single-field records, encoded directly by their field encoding. -/
 enc_structure eSingle : Single where items : (encList encNat)
+
+example (s : Single) : (encList encNat s.items).length ≤ (eSingle s).length :=
+  eSingle_items_length_le s
 
 example : ComputableInPolyTime Single.items eSingle (encList encNat) := by
   fun_prop
@@ -329,6 +339,11 @@ example (F : Family) (x : ElementPair F) :
     eElementPair F x = encPair encUnary (encPair F.encDesc (encPair encBits encBits))
       (x.size, x.desc, F.encode x.desc x.elt, F.encode x.desc x.other) :=
   rfl
+
+-- Dependent values are charged by their encoded word, including through flattened parents.
+example (F : Family) (x : ElementPair F) :
+    (F.encode x.desc x.other).length ≤ (eElementPair F x).length := by
+  simpa only [encBits_apply] using eElementPair_other_length_le F x
 
 -- Swapping the two elements uses the dependent field rules and the dependent constructor rule.
 example (F : Family) :
