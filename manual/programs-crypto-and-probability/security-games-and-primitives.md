@@ -281,8 +281,10 @@ vector `t`, verifies `H(UseHint(h, A z - c t₁ 2ᵈ), M) = c`, and proves the s
 give the analogous finite-game key-only bound. This is not a chosen-message, strong-unforgeability,
 asymptotic-negligibility or concrete ML-DSA-44/65/87 security theorem. The latter endpoints still
 need the corrected transform losses, failure and query terms, exact assumption parameters, and
-resource translations including encoded program/circuit size, time, space, randomness, queries
-and size-dependent compiler/interpreter/controller overhead.
+resource translations under an explicit coding convention. Those translations charge the encoded
+description size of each `B(A)`, time, space, randomness and queries, plus its actual online
+wrapper, controller, advice, layout, copying and interpreter costs. Offline `A ↦ B(A)` compiler
+time is not attack time unless the produced reduction executes that compiler.
 
 The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
