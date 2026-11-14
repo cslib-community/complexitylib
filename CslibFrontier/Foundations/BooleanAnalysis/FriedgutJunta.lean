@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.BooleanAnalysis.FourierRestriction
 public import CslibFrontier.Foundations.BooleanAnalysis.KahnKalaiLinial
 public import Mathlib.Logic.Function.DependsOn
-import CslibFrontier.Foundations.BooleanAnalysis.FourierRestriction
 import CslibFrontier.Foundations.BooleanAnalysis.HammingFourier
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -42,8 +42,11 @@ the coordinates `i ∉ J`, bounds the others. Taking `A = 9 ^ (K / ε)` and
 
 ## Main results
 
-* `Cslib.BitString.exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq`: a Boolean
-  function is close to a `J`-junta when its Fourier weight is concentrated on the subsets of `J`.
+* `Cslib.BitString.exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq`,
+  `Cslib.BitString.exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne`,
+  `Cslib.BitString.exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne`: a Boolean
+  function is close to a `J`-junta when its Fourier weight is concentrated on the subsets of `J`, or
+  when resampling the coordinates outside `J` rarely changes its value.
 * `Cslib.BitString.sum_filter_not_subset_fourierCoeff_sq_le`: the Fourier weight outside the
   subsets of the set of influential coordinates.
 * `Cslib.BitString.exists_dependsOn_hammingDist_div_le_of_totalInfluence_le`,
@@ -52,6 +55,7 @@ the coordinates `i ∉ J`, bounds the others. Taking `A = 9 ^ (K / ε)` and
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [E. Friedgut, *Boolean functions with low average sensitivity depend on few
   coordinates*][Friedgut1998]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
@@ -106,6 +110,33 @@ theorem exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq (f : 
         (𝔼 x, (signVal (f x) - signVal (decide (h x < 0))) ^ 2) / 4 by rw [hd]; ring,
       expect_div]
     exact expect_le_expect fun x _ => sq_signVal_sub_signVal_decide_div_four_le _ _
+
+/-- **Small variation outside `J` gives a `J`-junta**: a Boolean function is at relative Hamming
+distance at most twice the probability that resampling the coordinates outside `J` changes its
+value from a Boolean function of the coordinates in `J`
+[O'Donnell, Proposition 3.31 and Exercise 3.28][ODonnell2014]
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
+theorem exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne (f : (ι → Bool) → Bool)
+    (J : Finset ι) :
+    ∃ g : (ι → Bool) → Bool, DependsOn g (J : Set ι) ∧
+      (hammingDist f g : ℝ) / 2 ^ Fintype.card ι ≤
+        2 * 𝔼 x, 𝔼 z, if f x = f (J.piecewise x z) then 0 else 1 := by
+  obtain ⟨g, hg, hfg⟩ := exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq f J
+  refine ⟨g, hg, hfg.trans_eq ?_⟩
+  rw [expect_expect_piecewise_ne]
+  ring
+
+/-- **Small variation on `I` gives a junta outside `I`**: a Boolean function is at relative Hamming
+distance at most twice the probability that resampling the coordinates in `I` changes its value
+from a Boolean function of the coordinates outside `I`
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
+theorem exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne
+    (f : (ι → Bool) → Bool) (I : Finset ι) :
+    ∃ g : (ι → Bool) → Bool, DependsOn g ((Iᶜ : Finset ι) : Set ι) ∧
+      (hammingDist f g : ℝ) / 2 ^ Fintype.card ι ≤
+        2 * 𝔼 x, 𝔼 z, if f x = f (I.piecewise z x) then 0 else 1 := by
+  simpa only [piecewise_compl] using
+    exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne f Iᶜ
 
 /-! ### The weight outside the influential coordinates -/
 
