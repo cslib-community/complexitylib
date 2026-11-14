@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.List.Append
 public import Mathlib.Computability.Primrec.List
+import Mathlib.Data.List.GetD
 
 /-!
 # Unary coding of natural numbers
@@ -26,6 +27,8 @@ such that concatenations of encoded words are uniquely decodable (`flatMap_unary
 * `List.flatMap_unaryCode_injective`: concatenated unary codes uniquely determine the sequence of
   numbers.
 * `List.primrec_unaryCode`: the unary encoding is primitive recursive.
+* `List.getD_replicate_true_append_false_of_le`, `List.getD_replicate_true_append_false_add`: the
+  bits of a unary block followed by `false`, and of what follows it.
 -/
 
 public section
@@ -55,5 +58,21 @@ theorem primrec_unaryCode : Primrec unaryCode := by
     Primrec.list_map Primrec.list_range (Primrec.const true).to₂
   refine (Primrec.list_append.comp this (Primrec.const [false])).of_eq fun n => ?_
   rw [unaryCode, List.map_const', List.length_range]
+
+/-- Within a unary block of `true` bits followed by `false`, the bits are set before the end of
+the block. -/
+theorem getD_replicate_true_append_false_of_le {m i : ℕ} (l : List Bool) (h : i ≤ m) :
+    (replicate m true ++ false :: l).getD i false = decide (i < m) := by
+  rcases Nat.lt_or_eq_of_le h with h | rfl
+  · rw [getD_append _ _ _ _ (by simpa using h)]
+    simp [h]
+  · rw [getD_append_right _ _ _ _ (by simp)]
+    simp
+
+/-- After a unary block of `m` `true` bits followed by `false`, the bits are those of the rest. -/
+theorem getD_replicate_true_append_false_add (m i : ℕ) (l : List Bool) :
+    (replicate m true ++ false :: l).getD (m + 1 + i) false = l.getD i false := by
+  rw [getD_append_right _ _ _ _ (by simp only [length_replicate]; omega)]
+  simp only [length_replicate, show m + 1 + i - m = i + 1 by omega, getD_cons_succ]
 
 end List

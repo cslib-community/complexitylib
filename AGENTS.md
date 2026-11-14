@@ -30,6 +30,16 @@ Small PRs usually need one or two paragraphs plus validation/review links and a 
 disclosure. State what changed, why, and important limitations. Keep evidence in one place;
 link to it instead of copying full reports, hashes or logs across threads.
 
+Write for a contributor who has not followed the task. Introduce the problem or mathematical
+setting, explain the central idea, and say what the change enables. Introduce specialized terms
+and notation before relying on them. For substantial developments, give a short roadmap
+explaining how the main steps connect and why consequential choices are needed. Use an example,
+equation, or before/after comparison when helpful. Scale the explanation to what the reader
+needs to understand, and put validation, manual impact and AI disclosure after it.
+
+For a substantial mathematical example, see the setting, statement and proof-strategy sections
+of [shmcg's lifting PR #4908](https://github.com/cslib-community/cslib-frontier/pull/4908).
+
 Comments should add a finding, answer, decision, blocker or useful handoff. Keep CI polling and
 internal agent discussion out of public threads. Reply directly to questions and fixes; a short
 "Fixed in <commit>" is enough when the change is clear. Be courteous, welcome disagreement, and
@@ -285,9 +295,11 @@ MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
-Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
-validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
-`scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
+Use MCP goal inspection, diagnostics and theorem search while iterating. When a build is needed,
+use `scripts/build.sh <affected modules and representative clients> --wfail --iofail`;
+reserve `scripts/check.sh --quick --no-full-fallback` for local validation checkpoints.
+`scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and `scripts/worktree.sh create`
+run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
 Use `scripts/worktree.sh` for isolated worktrees; follow its
@@ -321,9 +333,10 @@ output.
 The split overlaps work rather than removing it: it adds another checkout and runner plus the
 aggregator's scheduling time, and saves only source-check time that would otherwise extend the
 slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
-After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
-restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
-affected sources, including unchanged importing clients, built import aggregates and executable
+After the Lean gates, full mode also re-elaborates built root-package sources whose individual
+artifacts Lake restored without diagnostic logs. This recovers warnings and informational output;
+it is not part of an ordinary targeted build. Quick mode checks the affected sources, including
+unchanged importing clients, built import aggregates and executable
 helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
@@ -331,16 +344,18 @@ generated research data. They catch source/link drift and malformed visual marku
 replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
-repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
-need direct checks of the changed behavior. Required CI and merge-group checks still apply.
+repeat it locally merely to satisfy a second reporting requirement. Run local full validation
+(`scripts/check.sh`) only when explicitly requested or hosted coverage is unavailable; changes
+to validation machinery also need direct checks of the changed behavior. Required CI and
+merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
 any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
-For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
-transitive importing clients, then checks import aggregates. The comparison uses the merge base
+At local validation checkpoints, `scripts/check.sh --quick --no-full-fallback [--base REF]`
+builds changed Lean modules and their transitive importing clients, then checks import aggregates.
+The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene and the source-only changed-file lints
 (`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
@@ -348,14 +363,16 @@ when a library module changed, the encoding readability and projection chain rat
 only sources and take seconds. Run the same changed-file lints when building targets directly
 instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, aggregate edits other than the import
-lines `lake exe mk_all` adds for new modules, unsupported layouts and ambiguous change/import
+not full validation. Without `--no-full-fallback`, non-Lean changes, deletions/renames, aggregate
+edits other than the import lines `lake exe mk_all` adds for new modules, unsupported layouts and
+ambiguous change/import
 analysis fall back to the full check. The exceptions are the ratchet baselines
 `scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
-which no Lean gate reads: a change to one runs its ratchet instead. On a shared host, use
-`--quick --no-full-fallback`: it reports such a change and exits with status 3, so you can build
-the changed modules and clients directly and leave the full run to CI. Quick success alone does
-not satisfy the full validation requirement above; documentation-only checks need not invoke
+which no Lean gate reads: a change to one runs its ratchet instead. With `--no-full-fallback`,
+an unsupported change exits with status 3: run focused checks for the changed files and
+representative clients, and leave the full run to hosted CI. Do not respond to status 3 by
+starting a full local check unless the full-validation condition above applies. Quick success
+alone does not satisfy the full validation requirement above; documentation-only checks need not invoke
 quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
@@ -771,6 +788,43 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
+
+### Security theorems
+
+A security theorem may assume only (a) named hardness assumptions, that is, Prop-valued
+definitions documented as assumptions (`F.DDH setup`, `DecisionLWE …`, `OneWay f`,
+`QuadraticResiduosityHard setup`, or a named collision-resistance or circular-security assumption
+on a component the scheme uses), stated relative to the setup sampler or component they concern;
+(b) that the adversary is in the admitted class (`A.IsPPT`, `IsOraclePPT …`, or the model's
+circuit bound); and (c) properties of components that the cited result itself takes as given,
+supplied by the caller.
+
+It must not assume anything about an object that its proof derives from the adversary (a
+reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success, its
+membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+whose existence or efficiency is the content of the cited result, such as the knowledge extractor
+of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
+scheme's own algorithms behave like idealized ones (for example, that the key generator's output
+is indistinguishable from an ideal key law) unless the cited result names that as an assumption.
+And it may not stop at a bound for parameters that an `∃` chooses after the adversary
+(`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`); a uniform reduction chooses them itself.
+
+Write each reduction as an explicit program with an efficiency witness proved from the
+adversary's certificate: an `isPPT_…` or `isOraclePPT_…` lemma, or the model's efficiency
+certificate (for example a circuit-size bound). Prove the asymptotic theorem by applying the
+assumption to the reduction through that witness, as `DDH.elGamalINDCPA` does
+([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
+Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
+`Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s
+advantage, or `B_A ∈ 𝒟`, as a premise is an algebraic helper: its name (`…_of_reduction_le`) and
+docstring say so, and no headline or asymptotic theorem stops at it.
+
+Names and docstrings state the model (standard, random-oracle, ideal, query-bounded or
+information-theoretic), the notion (single- or multi-challenge, one-time or many-time,
+honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
+cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
+to an honestly named and documented helper, and updates its ROADMAP, manual and
+[results inventory](results/README.md) mentions (#5293).
 
 ## Design commitments (do not re-litigate casually)
 

@@ -37,6 +37,7 @@ Mathlib's measure-theoretic `ProbabilityTheory.Kernel.Invariant` and
 
 * `Cslib.Probability.MarkovChain.pow_add_apply`: Chapman–Kolmogorov.
 * `Cslib.Probability.MarkovChain.IsStationary.pow`: a stationary law is stationary for `P ^ t`.
+* `Cslib.Probability.MarkovChain.IsStationary.mul`: a stationary law is stationary for `P₁ * P₂`.
 * `Cslib.Probability.MarkovChain.IsReversible.isStationary`: detailed balance implies
   stationarity.
 
@@ -122,6 +123,12 @@ theorem IsStationary.bind_pow {P : MarkovChain S} {π : PMF S} (h : P.IsStationa
 theorem IsStationary.pow {P : MarkovChain S} {π : PMF S} (h : P.IsStationary π) (t : ℕ) :
     (P ^ t).IsStationary π :=
   h.bind_pow t
+
+/-- Stationarity is preserved under chain composition (`P₁ * P₂`). -/
+theorem IsStationary.mul {P₁ P₂ : MarkovChain S} {π : PMF S} (h₁ : P₁.IsStationary π)
+    (h₂ : P₂.IsStationary π) : (P₁ * P₂).IsStationary π := by
+  change π.bind (fun x => (P₁ x).bind P₂) = π
+  rw [← PMF.bind_bind, h₁, h₂]
 
 /-- **Detailed balance implies stationarity** ([LevinPeres2017], Proposition 1.20). -/
 theorem IsReversible.isStationary {P : MarkovChain S} {π : PMF S} (h : P.IsReversible π) :

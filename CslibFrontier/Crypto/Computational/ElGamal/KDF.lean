@@ -191,8 +191,8 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
     (seedLen : ℕ → F.Desc → ℕ) (distinguisher : F.withSeed.DDHDistinguisher) (n : ℕ) :
     F.ddhRealGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhRealGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [pmf_norm, ddhRealGame, eval_ddhRealExperiment, seededDDHDistinguisher, seededSetup,
-    withSeed, Cslib.BitString.eval_sampleList]
+  simp only [pmf_norm, ddhRealGame, Game.withSetup, eval_ddhRealExperiment,
+    seededDDHDistinguisher, seededSetup, withSeed, Cslib.BitString.eval_sampleList]
   pmf_swap
 
 /-- In `ddhRandomGame`, `seededDDHDistinguisher` simulates `F.withSeed.ddhRandomGame` under
@@ -201,8 +201,8 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
     (seedLen : ℕ → F.Desc → ℕ) (distinguisher : F.withSeed.DDHDistinguisher) (n : ℕ) :
     F.ddhRandomGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhRandomGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [pmf_norm, ddhRandomGame, eval_ddhRandomExperiment, seededDDHDistinguisher,
-    seededSetup, withSeed, Cslib.BitString.eval_sampleList]
+  simp only [pmf_norm, ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment,
+    seededDDHDistinguisher, seededSetup, withSeed, Cslib.BitString.eval_sampleList]
   pmf_swap
 
 /-- `seededDDHDistinguisher` is uniform strict PPT whenever `seedLen` is polynomial-time computable

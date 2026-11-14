@@ -34,8 +34,11 @@ measurable. This holds when every `h ∈ H` is measurable and equality on `β` i
 - `measure_pi_forall_apply_eq_eq_pow`: a hypothesis survives `m` i.i.d. examples with probability
   `(1 - error D h) ^ m`; `measure_pi_forall_apply_eq_eq_pow_card` indexes the examples by any
   finite type.
+- `measure_pi_exists_consistent_lt_error_le_card_mul_pow`: the union bound `|H| (1 - ε) ^ m` on
+  some `h ∈ H` with error above `ε` agreeing with every example, for any distribution.
 - `IsConsistent.measure_pi_lt_error_le_card_mul_pow`: the union bound `|H| (1 - ε) ^ m` for a
   consistent learner of a finite class.
+- `natCast_mul_one_sub_ofReal_pow_le`: `n (1 - ε) ^ m ≤ δ` once `log n + log (1 / δ) ≤ ε m`.
 - `IsConsistent.measure_pi_lt_error_le_of_log_card_add_log_inv_le`: the Occam sample-size form.
 - `isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le`: finite classes are
   `(ε, δ)`-PAC learnable from `m` examples whenever `log |H| + log (1 / δ) ≤ ε m`.
@@ -77,25 +80,23 @@ theorem measure_pi_forall_apply_eq_eq_pow (D : Measure (α × β)) [IsProbabilit
       (1 - error D h) ^ m := by
   rw [measure_pi_forall_apply_eq_eq_pow_card D hh, Fintype.card_fin]
 
-/-- **Union bound for consistent learners of a finite class.** If `D` is realizable by the finite
-class `H` and `A` is consistent with `H`, then the probability over `m` i.i.d. examples that the
-output of `A` has true error greater than `ε` is at most `|H| (1 - ε) ^ m`. -/
-theorem IsConsistent.measure_pi_lt_error_le_card_mul_pow {H : Finset (α → β)}
-    (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) {m : ℕ} {A : Learner α β m}
-    (hA : IsConsistent A (H : Set (α → β))) {D : Measure (α × β)} [IsProbabilityMeasure D]
-    (hD : IsRealizableBy D (H : Set (α → β))) (ε : ℝ≥0∞) :
-    Measure.pi (fun _ : Fin m => D) {S | ε < error D (A S)} ≤ H.card * (1 - ε) ^ m := by
+/-- **Union bound over a finite class.** For any distribution `D`, the probability over `m` i.i.d.
+examples that some `h ∈ H` with true error greater than `ε` agrees with all of them is at most
+`|H| (1 - ε) ^ m`. No learner and no realizability are involved. -/
+theorem measure_pi_exists_consistent_lt_error_le_card_mul_pow {H : Finset (α → β)}
+    (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) (D : Measure (α × β))
+    [IsProbabilityMeasure D] {m : ℕ} (ε : ℝ≥0∞) :
+    Measure.pi (fun _ : Fin m => D)
+        {S : LabeledSample α β m | ∃ h ∈ H, ε < error D h ∧ ∀ i, h (S i).1 = (S i).2} ≤
+      H.card * (1 - ε) ^ m := by
   classical
   set μ := Measure.pi (fun _ : Fin m => D)
   set Bad := H.filter fun h => ε < error D h
-  have hsub : {S | ε < error D (A S)} ≤ᵐ[μ]
-      (⋃ h ∈ Bad, {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2} : Set _) := by
-    filter_upwards [hA.ae_mem_versionSpace hD] with S hS hlt
-    obtain ⟨hAH, hAS⟩ := hS
-    exact mem_iUnion₂.2 ⟨A S, Finset.mem_filter.2 ⟨Finset.mem_coe.1 hAH, hlt⟩, hAS⟩
-  calc μ {S | ε < error D (A S)}
-      ≤ μ (⋃ h ∈ Bad, {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2}) :=
-        measure_mono_ae hsub
+  have hsub : {S : LabeledSample α β m | ∃ h ∈ H, ε < error D h ∧ ∀ i, h (S i).1 = (S i).2} ⊆
+      ⋃ h ∈ Bad, {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2} := fun S ⟨h, hH, hε, hS⟩ =>
+    mem_iUnion₂.2 ⟨h, Finset.mem_filter.2 ⟨hH, hε⟩, hS⟩
+  calc μ {S | ∃ h ∈ H, ε < error D h ∧ ∀ i, h (S i).1 = (S i).2}
+      ≤ μ (⋃ h ∈ Bad, {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2}) := measure_mono hsub
     _ ≤ ∑ h ∈ Bad, μ {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2} :=
         measure_biUnion_finset_le _ _
     _ ≤ ∑ _h ∈ Bad, (1 - ε) ^ m := by
@@ -107,6 +108,22 @@ theorem IsConsistent.measure_pi_lt_error_le_card_mul_pow {H : Finset (α → β)
         rw [Finset.sum_const, nsmul_eq_mul]
         gcongr
         exact Finset.filter_subset _ _
+
+/-- **Union bound for consistent learners of a finite class.** If `D` is realizable by the finite
+class `H` and `A` is consistent with `H`, then the probability over `m` i.i.d. examples that the
+output of `A` has true error greater than `ε` is at most `|H| (1 - ε) ^ m`. -/
+theorem IsConsistent.measure_pi_lt_error_le_card_mul_pow {H : Finset (α → β)}
+    (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) {m : ℕ} {A : Learner α β m}
+    (hA : IsConsistent A (H : Set (α → β))) {D : Measure (α × β)} [IsProbabilityMeasure D]
+    (hD : IsRealizableBy D (H : Set (α → β))) (ε : ℝ≥0∞) :
+    Measure.pi (fun _ : Fin m => D) {S | ε < error D (A S)} ≤ H.card * (1 - ε) ^ m := by
+  have hsub : {S | ε < error D (A S)} ≤ᵐ[Measure.pi (fun _ : Fin m => D)]
+      {S : LabeledSample α β m | ∃ h ∈ H, ε < error D h ∧ ∀ i, h (S i).1 = (S i).2} := by
+    filter_upwards [hA.ae_mem_versionSpace hD] with S hS hlt
+    obtain ⟨hAH, hAS⟩ := hS
+    exact ⟨A S, Finset.mem_coe.1 hAH, hlt, hAS⟩
+  exact (measure_mono_ae hsub).trans
+    (measure_pi_exists_consistent_lt_error_le_card_mul_pow hH D ε)
 
 /-- `n exp (-(ε m)) ≤ δ` once `log n + log (1 / δ) ≤ ε m`. -/
 private theorem natCast_mul_exp_neg_le {n m : ℕ} {ε δ : ℝ} (hδ : 0 < δ)
@@ -132,6 +149,18 @@ private theorem one_sub_ofReal_pow_le (ε : ℝ) (hε : 0 ≤ ε) (m : ℕ) :
         congr 2
         ring
 
+/-- **The Occam sample size.** `n (1 - ε) ^ m ≤ δ` once `log n + log (1 / δ) ≤ ε m`. -/
+theorem natCast_mul_one_sub_ofReal_pow_le {n m : ℕ} {ε δ : ℝ} (hε : 0 ≤ ε) (hδ : 0 < δ)
+    (hm : Real.log n + Real.log δ⁻¹ ≤ ε * m) :
+    (n : ℝ≥0∞) * (1 - ENNReal.ofReal ε) ^ m ≤ ENNReal.ofReal δ :=
+  calc (n : ℝ≥0∞) * (1 - ENNReal.ofReal ε) ^ m
+      ≤ ENNReal.ofReal n * ENNReal.ofReal (Real.exp (-(ε * m))) := by
+        rw [ENNReal.ofReal_natCast]
+        gcongr
+        exact one_sub_ofReal_pow_le ε hε m
+    _ = ENNReal.ofReal (n * Real.exp (-(ε * m))) := (ENNReal.ofReal_mul (Nat.cast_nonneg _)).symm
+    _ ≤ ENNReal.ofReal δ := ENNReal.ofReal_le_ofReal (natCast_mul_exp_neg_le hδ hm)
+
 /-- **Occam bound for finite classes** [ShalevShwartzBenDavid2014, Corollary 2.3]. If `D` is
 realizable by the finite class `H`, `A` is consistent with `H`, and
 `log |H| + log (1 / δ) ≤ ε m`, then the output of `A` on `m` i.i.d. examples has true error
@@ -142,16 +171,9 @@ theorem IsConsistent.measure_pi_lt_error_le_of_log_card_add_log_inv_le {H : Fins
     (hD : IsRealizableBy D (H : Set (α → β))) {ε δ : ℝ} (hε : 0 ≤ ε) (hδ : 0 < δ)
     (hm : Real.log H.card + Real.log δ⁻¹ ≤ ε * m) :
     Measure.pi (fun _ : Fin m => D) {S | ENNReal.ofReal ε < error D (A S)} ≤
-      ENNReal.ofReal δ := by
-  refine (hA.measure_pi_lt_error_le_card_mul_pow hH hD _).trans ?_
-  calc (H.card : ℝ≥0∞) * (1 - ENNReal.ofReal ε) ^ m
-      ≤ ENNReal.ofReal H.card * ENNReal.ofReal (Real.exp (-(ε * m))) := by
-        rw [ENNReal.ofReal_natCast]
-        gcongr
-        exact one_sub_ofReal_pow_le ε hε m
-    _ = ENNReal.ofReal (H.card * Real.exp (-(ε * m))) :=
-        (ENNReal.ofReal_mul (Nat.cast_nonneg _)).symm
-    _ ≤ ENNReal.ofReal δ := ENNReal.ofReal_le_ofReal (natCast_mul_exp_neg_le hδ hm)
+      ENNReal.ofReal δ :=
+  (hA.measure_pi_lt_error_le_card_mul_pow hH hD _).trans
+    (natCast_mul_one_sub_ofReal_pow_le hε hδ hm)
 
 /-- **Finite classes are PAC learnable in the realizable setting**
 [ShalevShwartzBenDavid2014, Corollary 2.3]: a finite class `H` is `(ε, δ)`-PAC learnable

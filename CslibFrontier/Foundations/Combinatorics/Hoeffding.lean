@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Complex.Trigonometric
 public import Mathlib.Data.Fintype.Pi
-import CslibFrontier.Probability.BoundedDifferences
+public import CslibFrontier.Probability.BoundedDifferences
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.BigOperators.Ring.Finset
 
@@ -35,6 +35,8 @@ strings of `exp (s ∑ i, a i (x i - 1 / 2))` factors over the coordinates, and 
 ## Main results
 
 * `Cslib.BitString.sum_exp_mul_sum_mul_sub_half`: the weighted exponential moment.
+* `Cslib.BitString.card_filter_expect_add_le_le`: McDiarmid's inequality for functions of random bit
+  strings with bounded differences, in counting form.
 * `Cslib.BitString.card_filter_le_sum_mul_sub_half_le`: the weighted one-sided tail bound.
 * `Cslib.BitString.card_filter_le_abs_sum_mul_sub_half_le`: Hoeffding's inequality for weighted
   bit sums.
@@ -57,6 +59,7 @@ public section
 namespace Cslib.BitString
 
 open Finset Real
+open scoped BigOperators
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
@@ -88,6 +91,27 @@ private theorem card_filter_eq_two_pow_mul_toOuterMeasure (P : (ι → Bool) →
   push_cast
   field_simp
   rfl
+
+/-- **McDiarmid's inequality for random bit strings**, in counting form: if `f` has bounded
+differences `c`, at most an `exp (-2 t² / ∑ i, c i ^ 2)` fraction of the bit strings `x` have
+`f x ≥ 𝔼 y, f y + t`. This is `HasBoundedDifferences.pi_ge_mean_add` for independent uniform
+bits. -/
+theorem card_filter_expect_add_le_le {f : (ι → Bool) → ℝ} {c : ι → ℝ}
+    (hf : Probability.HasBoundedDifferences (α := fun _ : ι => Bool) f c) {t : ℝ} (ht : 0 ≤ t) :
+    (#{x : ι → Bool | (𝔼 y, f y) + t ≤ f x} : ℝ) ≤
+      2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, c i ^ 2)) := by
+  have h := hf.pi_ge_mean_add (fun _ => Probability.PMF.uniformOfFintype Bool) ht
+  have hmean : ∑ y : ι → Bool,
+      ((Probability.PMF.pi fun _ : ι => Probability.PMF.uniformOfFintype Bool) y).toReal * f y =
+        𝔼 y, f y := by
+    rw [Probability.PMF.pi_uniformOfFintype, Fintype.expect_eq_sum_div_card, sum_div]
+    refine sum_congr rfl fun y _ => ?_
+    rw [Probability.PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast]
+    ring
+  rw [hmean] at h
+  simp only [neg_mul, neg_div] at h
+  rw [card_filter_eq_two_pow_mul_toOuterMeasure]
+  exact mul_le_mul_of_nonneg_left h (by positivity)
 
 /-- The centred weighted bit sum has bounded differences `|a i|`. -/
 private theorem hasBoundedDifferences_sum_mul_sub_half (a : ι → ℝ) :

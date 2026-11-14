@@ -36,6 +36,17 @@ Bare `lake` does not run this helper. A recent stamp records an attempted restor
 proof that every artifact was found. MCP is an optional editor-assistance interface. Its commands do not invoke the bootstrap;
 run the helper before using MCP in a cold checkout.
 
+For ordinary edits, use editor/MCP diagnostics or build the affected modules and a representative
+client with `scripts/build.sh <targets> --wfail --iofail`. At a local checkpoint, use
+`scripts/check.sh --quick --no-full-fallback`. If it exits with status 3, quick mode cannot plan
+the change; run focused checks for the changed files and let hosted CI supply full validation.
+This avoids an automatic full local check. The default `scripts/check.sh` still runs the full
+suite: use it only when explicitly requested or hosted coverage is unavailable. Successful CI
+covering the final revision supplies full validation without repeating it locally.
+
+The check helpers also [recover diagnostics lost by local artifact reuse](troubleshooting.md#diagnose-warnings-that-only-ci-reports).
+That audit may re-elaborate restored sources; it is not part of an ordinary targeted build.
+
 ## Read the directory names correctly
 
 The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.

@@ -16,6 +16,7 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Power
+import CslibFrontier.Foundations.Probability.TwoStage
 import CslibFrontier.Probability.KWiseIndependent.Concentration
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -107,8 +108,10 @@ In [LiLiangYuZhou2024] (`arXiv:2310.20536v1`):
 * `Cslib.DataStructure.Dictionary.FeistelPerm.feistelHead`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPair`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.recoverLeft`,
-  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPairEquiv`: one-round Feistel head projection,
-  involution, left-coordinate recovery, and `Equiv.Perm` on `Fin (2 ^ s) × α`.
+  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPairEquiv`,
+  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelRightEquiv`: one-round Feistel head projection,
+  involution, left-coordinate recovery, and left/right `Equiv.Perm`s on `Fin (2 ^ s) × α` and
+  `α × Fin (2 ^ s)`.
 * `Cslib.DataStructure.Dictionary.FeistelPerm.mixedDomainEquiv`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.feistelMixedEquiv`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.bitDomainEquiv`,
@@ -268,6 +271,28 @@ theorem feistelPairEquiv_apply {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) (
 theorem feistelPairEquiv_symm {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) :
     (feistelPairEquiv f).symm = feistelPairEquiv f :=
   rfl
+
+/-- Right-updating one-round Feistel permutation `(x_L, x_R) ↦ (x_L, x_R ^^^ f x_L)` on
+`α × Fin (2 ^ s)`. -/
+@[expose]
+def feistelRightEquiv {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    Equiv.Perm (α × Fin (2 ^ s)) :=
+  (Equiv.prodComm (Fin (2 ^ s)) α).permCongr (feistelPairEquiv f)
+
+@[simp]
+theorem feistelRightEquiv_apply {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s))
+    (p : α × Fin (2 ^ s)) : feistelRightEquiv f p = (p.1, p.2 ^^^ f p.1) :=
+  rfl
+
+theorem feistelRightEquiv_involutive {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    Function.Involutive (feistelRightEquiv f) :=
+  fun p => by ext <;> simp [feistelRightEquiv_apply]
+
+@[simp]
+theorem feistelRightEquiv_symm {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    (feistelRightEquiv f).symm = feistelRightEquiv f :=
+  Equiv.ext fun p =>
+    (feistelRightEquiv f).symm_apply_eq.mpr (feistelRightEquiv_involutive f p).symm
 
 /-- Characterization of `feistelHead f x = b` via left-coordinate recovery `x.1 = b ^^^ f x.2`. -/
 theorem feistelHead_eq_iff {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s))
@@ -626,25 +651,6 @@ theorem childRouterBitPerm_symm {s L : ℕ} (hsL : s ≤ L) (c q b : ℕ)
     (childRouterBitPerm hsL c q b θ).symm = childRouterBitPerm hsL c q b θ := by
   exact feistelBitEquiv_symm hsL (childRouterRound c q b s (2 ^ (L - s)) θ)
 
-private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
-    [Fintype β] (G : Finset α) (P : α → β → Prop)
-    [∀ a, DecidablePred (P a)] [DecidablePred (fun p : α × β => P p.1 p.2)]
-    {δ : ℝ} (hδ0 : 0 ≤ δ) (hgood : ∀ a ∈ G, (dens {y : β | P a y} : ℝ) ≤ δ) :
-    (dens {p : α × β | P p.1 p.2} : ℝ) ≤ (dens {a : α | a ∉ G} : ℝ) + δ := by
-  rw [← Fintype.expect_boole (fun p : α × β => P p.1 p.2),
-    Fintype.expect_prod_type (fun p : α × β => if P p.1 p.2 then (1 : ℝ) else 0)]
-  refine (expect_le_expect (g := fun a => (if a ∉ G then (1 : ℝ) else 0) + δ)
-    fun a _ => ?_).trans_eq ?_
-  · refine (expect_congr rfl fun y _ => (by congr : _ = if P a y then (1 : ℝ) else 0)).trans_le ?_
-    rw [Fintype.expect_boole]
-    by_cases ha : a ∈ G
-    · simp only [ha, not_true_eq_false, ↓reduceIte, zero_add]
-      exact hgood a ha
-    · simp only [ha, not_false_eq_true, ↓reduceIte]
-      have h1 : (dens {y : β | P a y} : ℝ) ≤ 1 := by exact_mod_cast dens_le_one
-      linarith
-  · rw [expect_add_distrib, Fintype.expect_boole, Fintype.expect_const]
-
 /-- **Unconditional Double-Tabulation Feistel concentration (`Corollary B.5(c)` parametric form)**:
 bounds the seed density on `ChildRouterSeed c q b s` where any child bucket deviates from
 `#S / 2 ^ s` by at least `a` by `δ_dt + 2 ^ (s + 1) * (3 * m * (#S / 2 ^ s) / a ^ 2) ^ m`. -/
@@ -662,13 +668,6 @@ theorem dens_childRouter_exists_bucketLoad_sub_ge_le {c q b s T m : ℕ}
   classical
   let G : Finset (DoubleTabTopSeed c (2 * q * c) b) :=
     univ.filter fun T₁ => IsKUnique (2 * m) (simpleTabTuple T₁)
-  have hprod := dens_prod_le_of_good G
-    (fun T₁ T₂ => ∃ bucket : Fin (2 ^ s),
-      a ≤ |(bucketLoad (doubleTabHash c (2 * q * c) b T s T₁ T₂) S bucket : ℝ) -
-        (#S : ℝ) / (2 ^ s : ℝ)|)
-    (by positivity)
-    (fun T₁ hT₁ => dens_exists_bucketLoad_sub_ge_le hm
-      (isKWiseIndependentHash_doubleTabHash_of_isKUnique hT (mem_filter.mp hT₁).2) S hmμ ha)
   have hdt : (dens {T₁ : DoubleTabTopSeed c (2 * q * c) b | T₁ ∉ G} : ℝ) ≤
       2 * (doubleTabCodeBound c (2 * q * c) q (2 * m) : ℝ) ^ 2 /
         (2 ^ (2 * (q - 1) * b) : ℝ) := by
@@ -691,14 +690,25 @@ theorem dens_childRouter_exists_bucketLoad_sub_ge_le {c q b s T m : ℕ}
           Fintype.card (DoubleTabTopSeed c (2 * q * c) b) := by
       exact_mod_cast hcard
     linarith
-  calc _ ≤ (dens {p : ChildRouterSeed c q b s | ∃ bucket : Fin (2 ^ s),
-          a ≤ |(bucketLoad (doubleTabHash c (2 * q * c) b T s p.1 p.2) S bucket : ℝ) -
-            (#S : ℝ) / (2 ^ s : ℝ)|} : ℝ) := by
+  calc (dens {θ : ChildRouterSeed c q b s | ∃ bucket : Fin (2 ^ s),
+        a ≤ |(bucketLoad (childRouterRound c q b s T θ) S bucket : ℝ) -
+          (#S : ℝ) / (2 ^ s : ℝ)|} : ℝ) ≤
+      (dens {p : ChildRouterSeed c q b s | ∃ bucket : Fin (2 ^ s),
+        a ≤ |(bucketLoad (doubleTabHash c (2 * q * c) b T s p.1 p.2) S bucket : ℝ) -
+          (#S : ℝ) / (2 ^ s : ℝ)|} : ℝ) := by
         exact_mod_cast dens_le_dens fun θ hθ => by
           simp only [mem_filter, mem_univ, true_and] at hθ ⊢
           exact hθ
-    _ ≤ _ := hprod
-    _ ≤ _ := add_le_add hdt le_rfl
+    _ ≤ 2 * (doubleTabCodeBound c (2 * q * c) q (2 * m) : ℝ) ^ 2 /
+        (2 ^ (2 * (q - 1) * b) : ℝ) +
+      (2 ^ (s + 1) : ℝ) * (3 * (m : ℝ) * ((#S : ℝ) / (2 ^ s : ℝ)) / a ^ 2) ^ m :=
+        Cslib.Probability.dens_prod_le_add_of_good (· ∈ G)
+          (fun p => ∃ bucket : Fin (2 ^ s),
+            a ≤ |(bucketLoad (doubleTabHash c (2 * q * c) b T s p.1 p.2) S bucket : ℝ) -
+              (#S : ℝ) / (2 ^ s : ℝ)|)
+          hdt (by positivity)
+          (fun T₁ hT₁ => dens_exists_bucketLoad_sub_ge_le hm
+            (isKWiseIndependentHash_doubleTabHash_of_isKUnique hT (mem_filter.mp hT₁).2) S hmμ ha)
 
 /-- Half-independence exponent `m = 3 * ⌈log₂ max(n, 2)⌉ + 4` (`k = 2 * m`), chosen so that
 `2 ^ (s + 1) * (1 / 2) ^ m ≤ 1 / (8 * n ^ 2)` whenever `2 ^ s ≤ n`. -/

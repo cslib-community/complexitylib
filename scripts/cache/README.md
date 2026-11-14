@@ -7,11 +7,20 @@ everything it needs.
 module built in one checkout (a worktree, an agent sandbox, a second clone) is reused by every
 other checkout on the same machine with the same inputs. Outputs are hard-linked back into
 `.lake/build`. `lake cache clean` empties it; it lives in the Lean toolchain's directory under
-`~/.elan` unless `LAKE_CACHE_DIR` says otherwise. A restored module's warnings are not replayed,
-so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
+`~/.elan` unless `LAKE_CACHE_DIR` says otherwise. Individual-artifact restores can lose diagnostic
+logs, so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
 root-package sources restored this way; quick mode checks affected sources, including unchanged
 clients, built import aggregates and executable helpers
 ([troubleshooting](../../manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
+
+This audit recovers warning/info diagnostics; it is not an ordinary build or a proof-trust check.
+Both check modes show its source count, current file and elapsed time while retaining failure
+logs. A clean audit does not currently update the restored traces, so repeating it can repeat
+the work. During ordinary edits, use MCP diagnostics or
+`scripts/build.sh <affected modules and representative clients> --wfail --iofail`. At a local
+checkpoint, use `scripts/check.sh --quick --no-full-fallback`; status 3 calls for focused checks
+and hosted full validation. Run a full local check only when explicitly requested or hosted
+coverage is unavailable, and do not repeat successful CI covering the final revision.
 
 **Remote cache.** CI uploads the build outputs of every commit on `main`; `scripts/cache/get.sh`
 downloads them for the nearest cached ancestor of your `HEAD`:
@@ -73,7 +82,7 @@ timeouts remain optional. The helpers never remove Git locks; forced termination
 leave one behind.
 
 Lean CI and API docs call this helper with `--lean-action`, preserving the Mathlib URL
-handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
+handling that lean-action had: unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
@@ -82,20 +91,46 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI
-and the guide no longer run `leanprover/lean-action`: with every feature off it only
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
+the guide and API docs no longer run `leanprover/lean-action`: with every feature off it only
 reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
 miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
+## Guide dependency cache
+
+Hosted Guide jobs separately restore the build directories of Verso, SubVerso, MD4Lean and
+Illuminate. They initialize the locked package checkouts before restoring those directories.
+The entry contains neither Guide chapter/generator outputs nor root/shared-library outputs or
+Lake's global artifact store, so the normal example, build and render commands still run.
+
+Only successful API documentation runs on `main` save this entry, after the Guide and generated
+links have passed, and only when the exact entry was absent. PRs and other branches only read.
+The key includes the OS, architecture and exact runner-image version, Lean toolchain, root and
+Guide lockfiles/configuration, and the cache action/helper itself. It has no commit or run ID
+and no less-specific fallback: a new compatible configuration gets one immutable entry, rather
+than a new copy for every PR. `CACHE_RECOVERY_GENERATION` invalidates these entries too, and
+`DISABLE_CACHE_RESTORE=true` or `1` disables both their restore and save. An unavailable cache
+leaves the normal build to compile dependencies; a failed restore discards its partial dependency
+outputs. Cache helpers and writes are optional, while Guide validation remains strict.
+
+The [controlled eight-core profile](https://github.com/cslib-community/cslib-frontier/actions/runs/43532737369)
+measured 2m35s to check examples with cold dependencies and 20s with them retained. Their build
+directories compressed to 98 MiB. This identifies the reusable work; the one-machine comparison
+did not include a cross-job cache transfer. Shared/root native object compilation is separate
+and is not included in this cache.
+
 ## Hosted-runner disk space
 
-Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
-Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
-runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
-Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
-if it fails.
+Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to report available disk
+space. On GitHub-hosted Linux runners it removes the unused Android and .NET SDKs only when less
+than 100 GiB is available, or the free-space measurement is unavailable. This conservative
+headroom policy retains cleanup on constrained runners while avoiding several minutes of SDK
+deletion on larger runners that already have ample space; it is not an exact build-size estimate.
+Local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python, Node
+actions, repository and caches are retained. Cleanup is optional; all validation still runs if
+it fails.
 
 ## Merge-queue handoff
 
@@ -283,9 +318,14 @@ separate decision; the real MIT cold restore and recovery exercise remain tracke
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
 The MIT job verifies this run's artifact ID and producer revision before obtaining its upload
-password for the final step. It packs the inventory and files into an uncompressed USTAR package
-and sends `PUT /publish/<commit>` over HTTPS. curl retries transient failures; credentials travel
-through its stdin configuration rather than URLs or command-line arguments.
+password for the final step. It sends the complete SHA-256 inventory and mapping in a small
+USTAR probe to `PUT /publish/<commit>` over HTTPS, then uploads only missing archive payloads
+alongside that same complete metadata. The server rechecks every omitted retained object under
+its publication/GC lock before making the mapping visible. An old server's 415 triggers a full
+upload; a GC race's 412 triggers one full retry. See the
+[protocol and compatibility contract](../../tools/cache-origin/README.md#publication-contract).
+curl retries transient failures; credentials travel through its stdin configuration rather
+than URLs or command-line arguments.
 
 The handler validates the whole package before publishing anything, installs artifacts before
 the mapping and rejects conflicting existing keys even when the client omits conditional headers.
@@ -343,6 +383,13 @@ open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
 
+The HTTP publisher reports `CACHE_HTTP_PUBLICATION`: `mode` is `incremental`, `legacy-full`
+(old server), or `race-full` (GC removed an omitted object). `archives_sent` counts payloads in
+the final package; `request_body_bytes` lists every protocol package, including the probe and
+any full fallback. It excludes curl's automatic retransmissions and HTTP/TLS overhead. This
+measures transfer reduction, not archive preparation: the complete local staging directory
+and its digest verification are still required. A 409 remains a hard conflict, not a cache miss.
+
 ## Profile cache publication
 
 Publication reports separate wall times for the mapping/archive build, archive staging and
@@ -375,34 +422,26 @@ a long mapping build to recompilation. The real-Lake publication test checks mis
 retained archives with fixed tiny sources and verifies that OLean hashes and mtimes stay unchanged.
 It establishes that mechanism, not a speedup estimate for a full CI build.
 
-By default, CI saves its Actions `.lake` snapshot before publication staging, so newly packed
-archives can be absent from that snapshot. The repository variable
-`RETAIN_PUBLICATION_ARCHIVES=true` enables a reversible experiment: the ordinary save is skipped
-and the same `.lake` path and key are saved after staging and the publisher handoff. Actions string
-comparisons are case-insensitive, so any capitalization of `true` enables the experiment; an absent
-variable or every other value disables it. Retention is best-effort because the pinned cache-save
-action reports ordinary save failures as warnings.
+CI saves its Actions `.lake` snapshot after publication staging and before uploading the staged
+package. This keeps newly packed archives for later builds. Ordinary merge-group builds and
+handoffs preserve archives that Lake has not invalidated; no additional archive-preparation step
+runs on the merge queue, and no old archive is attached to a new output by filename.
 
-Use adjacent, representative `main` pushes with the same toolchain, thread settings, recovery
-generation and comparable source changes:
+The save remains best-effort: it runs for a successful library build even when later checks or
+staging fail, but neither a saved cache nor a failed stage authorizes publication. Cancellation
+before the late save forfeits that run's snapshot. Cache-recovery controls still disable saving,
+an exact existing cache key is not overwritten, and ordinary save failures are warnings. Retained
+archives increase snapshot size and can evict older entries. The retired
+`RETAIN_PUBLICATION_ARCHIVES` variable no longer changes the ordering.
 
-1. With the variable absent or unequal to `true` under the case-insensitive comparison, record the
-   source SHA, Actions restore/save duration and bytes, and `CACHE_STAGING_METRICS` archive counts
-   and mapping-build time.
-2. Set the variable to `true` in any capitalization for one `main` push. Record its late save
-   duration and bytes as well as the staging metrics; this run creates the snapshot that can retain
-   new archives.
-3. Keep it at `true` for the next representative `main` push. Compare restore duration and bytes,
-   `archives_before`, and mapping-build wall time with the baseline. Actions cache keys include the
-   commit SHA, so rerunning the first activated SHA cannot replace its already-created key.
-4. Roll back by deleting the variable or setting it to a value other than `true`, ignoring case.
-   The ordinary pre-publication save resumes immediately. A retained snapshot may still be restored
-   until a newer matching snapshot displaces or evicts it; rollback does not delete Actions cache
-   entries.
-
-This protocol tests the ordering change; it does not establish a speedup. Both remote publishers
-consume the same staged files, so the mapping/archive phase still delays fresh outputs on both
-origins.
+Compare representative runs with the same toolchain, thread settings, recovery generation and
+comparable source changes. Record source SHA, restored cache key, archive counts, and Actions
+restore/save time and bytes. Include the merge group's build and handoff pack/upload and `main`'s
+handoff download/unpack and publication staging. Confirm `Build handoff restored` rather than a
+platform/configuration miss. A shorter `main` stage alone does not establish a faster complete
+cycle; unchanged archives, source invalidations and a cold cache can have very different costs.
+Both remote publishers still consume the same staged files, so their upload improvements do not
+remove archive preparation cost.
 
 ## Maintainer runbook
 

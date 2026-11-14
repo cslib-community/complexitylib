@@ -9,9 +9,9 @@ module
 
 public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
+public import CslibFrontier.MachineLearning.PACLearning.DoubleSample
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import CslibFrontier.Foundations.Combinatorics.Hoeffding
-import CslibFrontier.MachineLearning.PACLearning.DoubleSample
 import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 
 /-! # Uniform convergence from the growth function on countable domains
@@ -47,6 +47,10 @@ The proof is the double-sample symmetrization argument, with the measure-theoret
   number of swaps that make it at least `m ε / 2` by `2 · 2^m exp (-m ε² / 8)`. The weights depend
   only on the labeling of the `2m` sample points by `g`, and at most `Π_G(2m)` labelings occur.
 
+The ghost-sample step is stated separately, for any bound on the fraction of bad swaps
+(`measure_pi_exists_le_abs_card_filter_div_sub_measure_le_of_card_filter_swapSamples_le`);
+`AgnosticVCSharp.lean` bounds that fraction by chaining instead of the union over labelings.
+
 The theorem is stated with `≤ |…|` (a deviation of at least `ε`), which is slightly stronger than
 the strict form `> ε` in the sources, and for all `ε ≥ 0` and `m`; when `4 Π_G(2m) exp (-m ε² / 8)`
 is at least `1` it is trivial. The domain is assumed countable with measurable singletons, so that
@@ -60,6 +64,8 @@ hypothesis on the class, which is not formalized here.
 
 ## Main results
 
+- `measure_pi_exists_le_abs_card_filter_div_sub_measure_le_of_card_filter_swapSamples_le`: the
+  ghost-sample step, from any bound on the fraction of bad swaps of each double sample.
 - `measure_pi_exists_le_abs_card_filter_div_sub_measure_le`: **uniform convergence of relative
   frequencies** for a Boolean class, with the bound `4 Π_G(2m) exp (-m ε² / 8)`.
 - `measure_pi_exists_le_abs_empiricalMiscount_div_sub_error_le`: the same bound for the empirical
@@ -206,48 +212,37 @@ section Countable
 
 variable {Z : Type*} [MeasurableSpace Z] [MeasurableSingletonClass Z] [Countable Z]
 
-/-- **Uniform convergence of relative frequencies** on a countable domain [VapnikChervonenkis1971;
-AnthonyBartlett1999, Theorem 4.3]: under `m` i.i.d. samples from `μ`, the probability that the
-relative frequency of `{g = true}` deviates from `μ {g = true}` by at least `ε` for some `g ∈ G`
-is at most `4 Π_G(2m) exp (-m ε² / 8)`. -/
-theorem measure_pi_exists_le_abs_card_filter_div_sub_measure_le (μ : Measure Z)
-    [IsProbabilityMeasure μ] (G : ConceptClass Z Bool) (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+open Classical in
+/-- **The ghost-sample step** of double-sample symmetrization on a countable domain: suppose that
+for every double sample `z`, at most a `β` fraction of the `2 ^ m` swaps `σ` give some `g ∈ G`
+counts on the two swapped samples that differ by at least `m ε / 2`, and that
+`4 exp (-m ε² / 2) ≤ 1`. Then the probability that the relative frequency of some `{g = true}`,
+`g ∈ G`, in `m` i.i.d. samples deviates from `μ {g = true}` by at least `ε` is at most `2 β`.
+Hoeffding's inequality puts the count of a fixed `g` on an independent ghost sample within
+`m ε / 2` of `m μ {g = true}` with probability at least `1 / 2`, and swapping coordinates preserves
+the law of the double sample. -/
+theorem measure_pi_exists_le_abs_card_filter_div_sub_measure_le_of_card_filter_swapSamples_le
+    (μ : Measure Z) [IsProbabilityMeasure μ] (G : ConceptClass Z Bool) (m : ℕ) {ε : ℝ}
+    (hε : 0 ≤ ε) (hexp : 4 * Real.exp (-(m * ε ^ 2 / 2)) ≤ 1) {β : ℝ}
+    (hβ : ∀ z : (Fin m → Z) × (Fin m → Z),
+      (#{σ : Fin m → Bool | ∃ g ∈ G, m * ε / 2 ≤
+        |((Finset.univ.filter fun i => g ((swapSamples σ z).1 i) = true).card : ℝ) -
+          (Finset.univ.filter fun i => g ((swapSamples σ z).2 i) = true).card|} : ℝ) ≤ 2 ^ m * β) :
     Measure.pi (fun _ : Fin m => μ)
         {S | ∃ g ∈ G, ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) / m -
           (μ {z | g z = true}).toReal|} ≤
-      ENNReal.ofReal (4 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) := by
-  classical
+      ENNReal.ofReal (2 * β) := by
   set ν := Measure.pi (fun _ : Fin m => μ) with hν
   set B := {S : Fin m → Z | ∃ g ∈ G, ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) /
     m - (μ {z | g z = true}).toReal|}
   set J := gapEvent G m ε
-  -- The bound is trivial when it is at least one.
-  by_cases hbig : 1 ≤ 4 * (growthFunction G (m + m) : ℝ) * Real.exp (-(m * ε ^ 2 / 8))
-  · exact prob_le_one.trans (by rw [← ENNReal.ofReal_one]; exact ENNReal.ofReal_le_ofReal hbig)
-  push Not at hbig
-  rcases B.eq_empty_or_nonempty with hB | ⟨S₀, g₀, hg₀, -⟩
-  · rw [hB, measure_empty]
-    exact bot_le
-  -- Otherwise `G` is nonempty, so `Π_G(2m) ≥ 1`, which forces `exp (-m ε² / 8) < 1 / 4`.
-  have hN : (1 : ℝ) ≤ growthFunction G (m + m) := by
-    have : 0 < growthFunction G (m + m) :=
-      ((Set.ncard_pos (Set.toFinite _)).2 ⟨fun i => g₀ (Fin.append S₀ S₀ i),
-        mem_restriction.2 ⟨g₀, hg₀, fun _ => rfl⟩⟩).trans_le
-        (ncard_restriction_le_growthFunction G (Fin.append S₀ S₀))
-    exact_mod_cast this
-  have hexp4 : Real.exp (-(m * ε ^ 2 / 8)) < 1 / 4 := by
-    have := le_mul_of_one_le_left (Real.exp_pos (-(m * ε ^ 2 / 8))).le hN
-    linarith
   have hm : 0 < m := by
     rcases Nat.eq_zero_or_pos m with rfl | hm
-    · norm_num at hexp4
+    · norm_num at hexp
     · exact hm
   have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
   have hexp2 : 2 * Real.exp (-2 * m * (ε / 2) ^ 2) ≤ 1 / 2 := by
-    have : Real.exp (-2 * m * (ε / 2) ^ 2) ≤ Real.exp (-(m * ε ^ 2 / 8)) := by
-      refine Real.exp_le_exp.2 ?_
-      have := mul_nonneg hmR.le (sq_nonneg ε)
-      nlinarith
+    rw [show -2 * (m : ℝ) * (ε / 2) ^ 2 = -(m * ε ^ 2 / 2) by ring]
     linarith
   have hJ : MeasurableSet J := .of_discrete
   -- Ghost sample: a deviation on `S` extends to the double-sample event with probability `≥ 1 / 2`.
@@ -280,27 +275,61 @@ theorem measure_pi_exists_le_abs_card_filter_div_sub_measure_le (μ : Measure Z)
       _ = ν Aᶜ := (prob_compl_eq_one_sub .of_discrete).symm
       _ ≤ ν (Prod.mk S ⁻¹' J) := measure_mono hsub
   have hJB : ν B ≤ 2 * ν.prod ν J := measure_le_two_mul_measure_prod ν ν B hJ hfib
-  -- Swaps: the double-sample event has probability at most `2 Π_G(2m) exp (-m ε² / 8)`.
+  -- Swaps: the double-sample event has probability at most `β`.
   have hK : ∀ z, ((Finset.univ.filter fun σ : Fin m → Bool => swapSamples σ z ∈ J).card :
-      ℝ≥0∞) ≤ 2 ^ m *
-        ENNReal.ofReal (2 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) := by
+      ℝ≥0∞) ≤ 2 ^ m * ENNReal.ofReal β := by
     intro z
-    have h := card_filter_swapSamples_mem_gapEvent_le G hε z
     rw [← ENNReal.ofReal_natCast, show (2 : ℝ≥0∞) ^ m = ENNReal.ofReal (2 ^ m) by
       rw [ENNReal.ofReal_pow (by norm_num), ENNReal.ofReal_ofNat],
       ← ENNReal.ofReal_mul (by positivity)]
-    refine ENNReal.ofReal_le_ofReal (h.trans (le_of_eq ?_))
-    ring
-  have hρ : ν.prod ν J ≤
-      ENNReal.ofReal (2 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) :=
-    measure_prod_le_of_card_filter_swapSamples_mem_le μ hJ _ hK
+    exact ENNReal.ofReal_le_ofReal (hβ z)
   calc ν B ≤ 2 * ν.prod ν J := hJB
-    _ ≤ 2 * ENNReal.ofReal (2 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) := by
+    _ ≤ 2 * ENNReal.ofReal β := by
         gcongr
-    _ = ENNReal.ofReal (4 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) := by
-        rw [← ENNReal.ofReal_ofNat 2, ← ENNReal.ofReal_mul (by norm_num)]
-        congr 1
-        ring
+        exact measure_prod_le_of_card_filter_swapSamples_mem_le μ hJ _ hK
+    _ = ENNReal.ofReal (2 * β) := by
+        rw [ENNReal.ofReal_mul (by norm_num), ENNReal.ofReal_ofNat]
+
+/-- **Uniform convergence of relative frequencies** on a countable domain [VapnikChervonenkis1971;
+AnthonyBartlett1999, Theorem 4.3]: under `m` i.i.d. samples from `μ`, the probability that the
+relative frequency of `{g = true}` deviates from `μ {g = true}` by at least `ε` for some `g ∈ G`
+is at most `4 Π_G(2m) exp (-m ε² / 8)`. -/
+theorem measure_pi_exists_le_abs_card_filter_div_sub_measure_le (μ : Measure Z)
+    [IsProbabilityMeasure μ] (G : ConceptClass Z Bool) (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    Measure.pi (fun _ : Fin m => μ)
+        {S | ∃ g ∈ G, ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) / m -
+          (μ {z | g z = true}).toReal|} ≤
+      ENNReal.ofReal (4 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) := by
+  classical
+  -- The bound is trivial when it is at least one.
+  by_cases hbig : 1 ≤ 4 * (growthFunction G (m + m) : ℝ) * Real.exp (-(m * ε ^ 2 / 8))
+  · exact prob_le_one.trans (by rw [← ENNReal.ofReal_one]; exact ENNReal.ofReal_le_ofReal hbig)
+  push Not at hbig
+  set B := {S : Fin m → Z | ∃ g ∈ G, ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) /
+    m - (μ {z | g z = true}).toReal|} with hBdef
+  rcases B.eq_empty_or_nonempty with hB | ⟨S₀, g₀, hg₀, -⟩
+  · rw [hB, measure_empty]
+    exact bot_le
+  -- Otherwise `G` is nonempty, so `Π_G(2m) ≥ 1`, which forces `exp (-m ε² / 8) < 1 / 4`.
+  have hN : (1 : ℝ) ≤ growthFunction G (m + m) := by
+    have : 0 < growthFunction G (m + m) :=
+      ((Set.ncard_pos (Set.toFinite _)).2 ⟨fun i => g₀ (Fin.append S₀ S₀ i),
+        mem_restriction.2 ⟨g₀, hg₀, fun _ => rfl⟩⟩).trans_le
+        (ncard_restriction_le_growthFunction G (Fin.append S₀ S₀))
+    exact_mod_cast this
+  have hexp4 : Real.exp (-(m * ε ^ 2 / 8)) < 1 / 4 := by
+    have := le_mul_of_one_le_left (Real.exp_pos (-(m * ε ^ 2 / 8))).le hN
+    linarith
+  have hexp : 4 * Real.exp (-(m * ε ^ 2 / 2)) ≤ 1 := by
+    have : Real.exp (-(m * ε ^ 2 / 2)) ≤ Real.exp (-(m * ε ^ 2 / 8)) :=
+      Real.exp_le_exp.2 <| by
+        have := mul_nonneg (Nat.cast_nonneg m : (0 : ℝ) ≤ m) (sq_nonneg ε)
+        linarith
+    linarith
+  refine (measure_pi_exists_le_abs_card_filter_div_sub_measure_le_of_card_filter_swapSamples_le μ G
+    m hε hexp (β := 2 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) fun z =>
+      (card_filter_swapSamples_mem_gapEvent_le G hε z).trans_eq (by ring)).trans_eq
+    (by congr 1; ring)
 
 end Countable
 

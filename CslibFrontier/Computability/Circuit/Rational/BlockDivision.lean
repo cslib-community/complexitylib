@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Rational.QuantumMatrices
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BlockEmbedding
 
 /-!
 # Block division and rank specialization
@@ -24,9 +25,8 @@ representation `D →+* Matrix κ κ E`, is either invertible or loses at least 
 
 * `Rational.PolynomialHahn.exponent`, `Rational.PolynomialHahn.variableSeries`,
   `Rational.PolynomialHahn.embed`: bivariate polynomials as Hahn series over `ℤ ×ₗ ℤ`.
-* `Rational.BlockDivision.blockEmbedding`, `Rational.BlockDivision.kernelRows`: the entrywise
-  extension of a matrix representation of `D` to square block matrices over `D` and the
-  induced kernel-row map.
+* `Matrix.blockEmbedding`, `Rational.BlockDivision.kernelRows`: the entrywise extension of a
+  matrix representation of `D` to square block matrices over `D` and the induced kernel-row map.
 
 ## Main results
 
@@ -124,26 +124,6 @@ open scoped BigOperators
 noncomputable section
 variable {D E : Type*} [DivisionRing D] [Field E]
 variable {m κ : Type*} [Fintype m] [DecidableEq m] [Fintype κ] [DecidableEq κ]
-
-/-- Extend a matrix representation entrywise to block matrices. -/
-def blockEmbedding (φ : D →+* Matrix κ κ E) :
-    Matrix m m D →+* Matrix (m × κ) (m × κ) E where
-  toFun A i j := φ (A i.1 j.1) i.2 j.2
-  map_zero' := by ext i j; simp
-  map_one' := by
-    ext ⟨i, α⟩ ⟨j, β⟩
-    simp only [Matrix.one_apply, Prod.mk.injEq]
-    by_cases hij : i = j <;> by_cases hab : α = β <;> simp [hij, hab]
-  map_add' A B := by
-    ext i j
-    change φ (A i.1 j.1 + B i.1 j.1) i.2 j.2 = _ + _
-    simp
-  map_mul' A B := by
-    ext ⟨i, α⟩ ⟨j, β⟩
-    change φ (∑ k, A i k * B k j) α β =
-      ∑ k : m × κ, φ (A i k.1) α k.2 * φ (B k.1 j) k.2 β
-    simp only [map_sum, map_mul, Matrix.sum_apply, Matrix.mul_apply,
-      Fintype.sum_prod_type]
 
 /-- A square matrix over a division ring whose row-multiplication map is injective is a unit. -/
 lemma unit_of_vecMul_injective (A : Matrix m m D)
