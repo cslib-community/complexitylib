@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Languages.SQL.QueryLaws
+public import Mathlib.Data.Fin.Tuple.Reflection
 
 /-!
 # A proof-producing SQL simplifier
@@ -44,15 +45,22 @@ input from `Query.typeOf`), and when the check fails the node is left as it is.
 * `CASE WHEN c THEN a ELSE b END` with a literal condition becomes `a` for `TRUE` and `b` for
   `FALSE` and `NULL`.
 
-A `NULL` produced by folding gets the type of the node it replaces.
+A `NULL` produced by folding gets the type of the node it replaces, or `BOOLEAN` when that node is
+ill-typed. Folding and `CASE` elimination can therefore turn an ill-typed expression into a
+well-typed one: `NULL::text + 0` becomes a boolean `NULL`, and
+`CASE WHEN TRUE THEN 1 ELSE 'a' END` becomes `1`. The certificate covers such inputs too, since it
+compares evaluations on conforming rows, but typing does not transfer back from the result: check
+`Expr.typeOf`, `Query.typeOf` or `Query.IsSafe` on the input when its typing matters. (A result
+that passes `Query.IsSafe` still shows, through the certificate, that the input succeeds on every
+conforming instance.)
 
 ## Queries
 
 `Query.simplify` also works bottom up, in one pass. At each node it simplifies the expressions of
 the node in the typing context of the node's input, when that input is well-typed, and then:
 
-* `WHERE p` over another `WHERE c` merges into `WHERE c AND p` when `p` is safe
-  (`Query.select_select`); over a projection it moves below it with the projection substituted
+* `WHERE p` over another `WHERE c` merges into `WHERE c AND p` when `p`, after simplification, is
+  safe (`Query.select_select`); over a projection it moves below it with the projection substituted
   when the projection is safe (`Query.select_project`); over a join it moves into the left or
   right input when, after simplification, it mentions only that input's columns and both it and
   the join predicate are safe (`Query.select_join_left`, `Query.select_join_right`, with the
@@ -64,7 +72,9 @@ the node in the typing context of the node's input, when that input is well-type
   This is `Query.pushSelect`.
 * A projection over a projection fuses by substitution when the inner one is safe
   (`Query.project_project`), and a projection that becomes `SELECT *` is dropped
-  (`Query.project_col`). This is `Query.fuseProject`.
+  (`Query.project_col`). This is `Query.fuseProject`. The simplified `SELECT` list is built by
+  `FinVec.map`, so the simplification of a literal `![…]` list is again a literal list, which
+  callers can compare by `rfl`.
 * A join predicate is simplified in the context of the joined rows (`Query.simpJoin`).
 
 Each of these recursions follows the structure of the query, so the simplifier terminates by
@@ -313,14 +323,15 @@ open Expr (col lit binary)
   | none => select p q
 
 /-- `SELECT es FROM q`, simplified in place: the expressions are simplified in the typing context
-of `q` when `q` is well-typed, and the projection is dropped when it becomes `SELECT *`. -/
+of `q` when `q` is well-typed, and the projection is dropped when it becomes `SELECT *`. The
+simplified list is built by `FinVec.map`, so that of a literal `![…]` list is a literal list. -/
 @[expose] def simpProject (es : Fin k → Expr n) (q : Query S n) : Query S k :=
   match q.typeOf with
   | some Γ =>
+    let es' := FinVec.map (Expr.simplify Γ) es
     if h : k = n then
-      if ∀ i, (es i).simplify Γ = col (Fin.cast h i) then h ▸ q
-      else project (fun i => (es i).simplify Γ) q
-    else project (fun i => (es i).simplify Γ) q
+      if ∀ i, es' i = col (Fin.cast h i) then h ▸ q else project es' q
+    else project es' q
   | none => project es q
 
 /-- `q₁ JOIN q₂ ON θ` with `θ` simplified in the typing context of the joined rows, when both
@@ -330,17 +341,18 @@ inputs are well-typed. -/
   | some Γ, some Δ => join (θ.simplify (Fin.append Γ Δ)) q₁ q₂
   | _, _ => join θ q₁ q₂
 
-/-- `WHERE p` over `q`, moved as far down as the guarded laws allow: merged into a `WHERE` below
-it when `p` is safe, moved below a safe projection with the projection substituted, into the
-input of a join that it reads when it and the join predicate are safe, into both inputs of a
-`UNION ALL`, or below a `DISTINCT`, and made the predicate of a cross join that it cannot enter.
-Where it stops, it is simplified in place (`Query.simpSelect`). -/
+/-- `WHERE p` over `q`, moved as far down as the guarded laws allow: simplified and merged into a
+`WHERE` below it when it simplifies to a safe predicate, moved below a safe projection with the
+projection substituted, into the input of a join that it reads when it and the join predicate are
+safe, into both inputs of a `UNION ALL`, or below a `DISTINCT`, and made the predicate of a cross
+join that it cannot enter. Where it stops, it is simplified in place (`Query.simpSelect`). -/
 @[expose] def pushSelect : {n : ℕ} → Expr n → Query S n → Query S n
   | _, p, q@(table _) => simpSelect p q
   | _, p, select c q =>
     match q.typeOf with
     | some Γ =>
-      if p.IsSafePredicate Γ then pushSelect (binary .and c p) q else simpSelect p (select c q)
+      let p' := p.simplify Γ
+      if p'.IsSafePredicate Γ then pushSelect (binary .and c p') q else simpSelect p (select c q)
     | none => simpSelect p (select c q)
   | _, p, project es q =>
     match q.typeOf with
@@ -408,10 +420,13 @@ theorem equiv_simpProject (es : Fin k → Expr n) (q : Query S n) :
   unfold simpProject
   split
   next Γ hq =>
-    have h := Equiv.project_expr (ℓ := .ordered) hq fun i => Expr.equiv_simplify Γ (es i)
+    have h : Equiv .ordered (project es q) (project (FinVec.map (Expr.simplify Γ) es) q) :=
+      Equiv.project_expr hq fun i =>
+        FinVec.map_eq (Expr.simplify Γ) es ▸ Expr.equiv_simplify Γ (es i)
+    dsimp only
     split_ifs with hk hcol
     · subst hk
-      have hcol' : (fun i => (es i).simplify Γ) = Expr.col :=
+      have hcol' : FinVec.map (Expr.simplify Γ) es = Expr.col :=
         funext fun i => by simpa using hcol i
       rw [hcol'] at h
       exact h.trans (project_col q)
@@ -426,6 +441,20 @@ theorem equiv_simpJoin (θ : Expr (n + m)) (q₁ : Query S n) (q₂ : Query S m)
   next Γ Δ h₁ h₂ => exact Equiv.join_expr h₁ h₂ (Expr.equiv_simplify _ θ)
   next => rfl
 
+/-- Over `WHERE c` on a query of type `Γ`, the outer predicate can be replaced by one equivalent to
+it in `Γ`, whatever the type of `c`, since the rows that `c` keeps conform to `Γ`. -/
+private theorem select_select_expr {q : Query S n} {Γ : Fin n → SqlType} (hq : q.typeOf = some Γ)
+    {p p' : Expr n} (hp : p.Equiv Γ p') (c : Expr n) :
+    Equiv .ordered (select p (select c q)) (select p' (select c q)) := fun D hD => by
+  simp only [eval_select]
+  rcases h : q.eval D with e | rs
+  · exact .none
+  rw [Except.ok_bind]
+  rcases hc : c.filterRows rs with e | rs'
+  · exact .none
+  exact (EquivLevel.Rel.refl _ rs').filterRows fun r hr =>
+    hp.evalTruth (conforms_of_eval_eq_ok hD hq h r (Expr.mem_of_filterRows_eq_ok hc hr))
+
 theorem equiv_pushSelect (p : Expr n) (q : Query S n) :
     Equiv .ordered (select p q) (pushSelect p q) := by
   induction q with
@@ -434,8 +463,10 @@ theorem equiv_pushSelect (p : Expr n) (q : Query S n) :
     rw [pushSelect]
     split
     next Γ hq =>
+      dsimp only
       split_ifs with hp
-      · exact (select_select hq hp c).trans (ih _)
+      · exact (select_select_expr hq (Expr.equiv_simplify Γ p) c).trans
+          ((select_select hq hp c).trans (ih _))
       · exact equiv_simpSelect p _
     next => exact equiv_simpSelect p _
   | project es q ih =>

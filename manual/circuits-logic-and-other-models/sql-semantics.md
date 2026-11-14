@@ -316,7 +316,7 @@ condition passes; otherwise the node is left as it is:
 | `x + 0`, `0 + x`, `x - 0`, `x * 1`, `1 * x` become `x` | `x` integer |
 | `e IN ()` becomes `FALSE`; `e IN (v)` becomes `e = v` | `e` safe; none |
 | `CASE` with a `TRUE`, `FALSE` or `NULL` literal condition becomes its branch | none |
-| `WHERE p` over `WHERE c` becomes `WHERE c AND p` | `p` safe |
+| `WHERE p` over `WHERE c` becomes `WHERE c AND p`, with `p` simplified | `p` safe after simplification |
 | `WHERE p` over a projection moves below it, substituted | the projection safe |
 | `WHERE p` over a join moves into the input whose columns it reads | `p` and the join predicate safe |
 | `WHERE p` over a cross join that it cannot enter becomes the join predicate | none |
@@ -333,6 +333,13 @@ operand because of strict errors: `(dept / 0 = 1) AND FALSE` fails on every row 
 recognized as reading one input by `Expr.lowerLeft` and `Expr.lowerRight`, which return it as an
 expression over that input when it mentions only that input's columns.
 
+Folding and `CASE` elimination can turn an ill-typed expression into a well-typed one. A `NULL`
+produced by folding takes the type of the node it replaces, or `BOOLEAN` when that node is
+ill-typed, so `NULL::text + 0` becomes a boolean `NULL`; and `CASE WHEN TRUE THEN 1 ELSE 'a' END`
+becomes `1`. The certificate still holds, since it compares evaluations on conforming
+rows, but typing does not transfer back from the result: check `Expr.typeOf`, `Query.typeOf` or
+`Query.IsSafe` on the input when its typing matters.
+
 The strategy is one bottom-up pass by structural recursion. Each node's inputs are simplified
 first; a `WHERE` then keeps moving down as far as the guards allow (`Query.pushSelect`) and is
 simplified in the context where it stops, and projections fuse as far down as they can
@@ -346,9 +353,8 @@ the same result, and an expression certificate feeds `Expr.Equiv.evalTruth` or
 conforming instance even when the query itself does not pass it, as with a division in a `CASE`
 branch that a constant condition rules out. The
 [simplifier tests](../../CslibFrontierTests/Languages/SQL/Simplify.lean) check simplified
-expressions by `rfl`, queries without projections by `rfl`, and queries with projections through
-a small structural summary decided by `decide`, since a computed `SELECT` list is a function that
-`rfl` cannot compare with a literal one.
+expressions and queries by `rfl`. A simplified `SELECT` list is built by `FinVec.map`, so the
+simplification of a literal `![…]` list is again a literal list and compares with one by `rfl`.
 
 ## Working with the API
 

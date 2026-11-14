@@ -10,11 +10,11 @@ public import CslibFrontier.Languages.SQL.Simplify
 public import CslibFrontierTests.Languages.SQL.QueryLaws
 
 /-! Checked runs of the SQL simplifier on the schema and instance of `CslibFrontierTests.SQL.Query`,
-through ordinary imports: what it rewrites, what it refuses to rewrite when a guard fails, and the
-certificate carrying a fact from a simplified expression or query back to the original. Simplified
-expressions are compared by `rfl`, and so are queries without projections; a query with a
-projection is compared through `shape`, since a computed `SELECT` list is a function that `rfl`
-cannot compare with a literal one. -/
+through ordinary imports: what it rewrites, what it refuses to rewrite when a guard fails (with a
+checked counterexample showing that the guard is needed), and the certificate carrying a fact from
+a simplified expression or query back to the original. Simplified expressions and queries are
+compared by `rfl`: the simplifier builds a simplified `SELECT` list with `FinVec.map`, so that of a
+literal `![…]` list is again a literal list. -/
 
 public section
 
@@ -66,6 +66,16 @@ example : (binary (.arith .add) (null .int) (int 1) : Expr 2).simplify Γemp = n
 example : (binary (.arith .div) (int 1) (int 0) : Expr 2).simplify Γemp =
     binary (.arith .div) (int 1) (int 0) := rfl
 
+-- Folding and `CASE` elimination can make an ill-typed expression well-typed: `NULL::text + 0`
+-- folds to a boolean `NULL`, and a `CASE` whose branches have different types becomes the branch
+-- it takes. The certificate holds all the same, but typing must be checked on the input.
+example : (binary (.arith .add) (null .text) (int 0) : Expr 2).typeOf Γemp = none := rfl
+example : (binary (.arith .add) (null .text) (int 0) : Expr 2).simplify Γemp = null .bool := rfl
+example : (caseWhen (lit (.bool true)) (int 1) (lit (.text "a")) : Expr 2).typeOf Γemp = none :=
+  rfl
+example : (caseWhen (lit (.bool true)) (int 1) (lit (.text "a")) : Expr 2).simplify Γemp =
+    int 1 := rfl
+
 /-! ### Guards that fail -/
 
 /-- `dept * 0`. -/
@@ -83,32 +93,22 @@ example : ¬mulZero.Equiv Γemp (int 0) := fun h =>
 example : (binary .and isOne (lit (.bool false))).simplify Γemp = lit (.bool false) := rfl
 example : (binary .and divZeroEq (lit (.bool false))).simplify Γemp =
     binary .and divZeroEq (lit (.bool false)) := rfl
+example : ¬(binary .and divZeroEq (lit (.bool false))).Equiv Γemp (lit (.bool false)) := fun h =>
+  absurd (h ![some (.text "ann"), some (.int 1)] (by decide)) (by decide)
 
 -- `p AND TRUE` is not `p` when `p` is not boolean: `dept AND TRUE` is a type error, `dept` is not.
 example : (binary .and (col 1) (lit (.bool true)) : Expr 2).simplify Γemp =
     binary .and (col 1) (lit (.bool true)) := rfl
+example : ¬(binary .and (col 1) (lit (.bool true)) : Expr 2).Equiv Γemp (col 1) := fun h =>
+  absurd (h ![some (.text "ann"), some (.int 1)] (by decide)) (by decide)
+
+-- Nor is `NOT (NOT p)`: `NOT (NOT dept)` is a type error, `dept` is not.
+example : (unary .not (unary .not (col 1)) : Expr 2).simplify Γemp =
+    unary .not (unary .not (col 1)) := rfl
+example : ¬(unary .not (unary .not (col 1)) : Expr 2).Equiv Γemp (col 1) := fun h =>
+  absurd (h ![some (.text "ann"), some (.int 1)] (by decide)) (by decide)
 
 /-! ### Queries -/
-
-/-- A summary of a query that the kernel compares by `decide`: its constructors, tables and
-expressions, with each `SELECT` list as a list. -/
-inductive Shape where
-  | table (t : T)
-  | select (p : Σ n, Expr n) (q : Shape)
-  | project (es : List (Σ n, Expr n)) (q : Shape)
-  | join (θ : Σ n, Expr n) (q₁ q₂ : Shape)
-  | unionAll (q₁ q₂ : Shape)
-  | distinct (q : Shape)
-  deriving DecidableEq
-
-/-- The shape of a query. -/
-def shape : {n : ℕ} → Query S n → Shape
-  | _, .table t => .table t
-  | _, .select p q => .select ⟨_, p⟩ (shape q)
-  | _, .project es q => .project (List.ofFn fun i => ⟨_, es i⟩) (shape q)
-  | _, .join θ q₁ q₂ => .join ⟨_, θ⟩ (shape q₁) (shape q₂)
-  | _, .unionAll q₁ q₂ => .unionAll (shape q₁) (shape q₂)
-  | _, .distinct q => .distinct (shape q)
 
 /-- `SELECT * FROM (SELECT dept, name FROM emp) AS e JOIN dept ON e.dept = dept.id
 WHERE e.name = 'ann' AND 1 < 2`. -/
@@ -119,9 +119,9 @@ abbrev pushQ : Query S 4 :=
 
 -- `1 < 2` folds and the conjunction becomes `e.name = 'ann'`, which reads only the left input: it
 -- moves into it, then through the derived table, where it becomes `name = 'ann'` on `emp`.
-example : shape pushQ.simplify = .join ⟨4, binary (.cmp .eq) (col 0) (col 2)⟩
-    (.project [⟨2, col 1⟩, ⟨2, col 0⟩] (.select ⟨2, isAnn⟩ (.table .emp))) (.table .dept) := by
-  decide
+example : pushQ.simplify =
+    join (binary (.cmp .eq) (col 0) (col 2)) (project ![col 1, col 0] (select isAnn emp)) dept :=
+  rfl
 
 -- The certificate transports results: on the test instance, as on every conforming one, the
 -- original query returns what the simplified one does.
@@ -146,16 +146,20 @@ example : (select isAnn (select divZeroEq emp)).simplify =
 example : (select isOne (unionAll emp noDept)).simplify =
     unionAll (select isOne emp) (select (binary .and (unary .isNull (col 1)) isOne) emp) := rfl
 
+-- The outer predicate's safety is checked after simplification: this `CASE` hides `dept / 0`
+-- behind a constant condition and simplifies to the safe `dept = 1`, so it merges.
+example : (select (caseWhen (binary (.cmp .gt) (int 1) (int 2)) divZeroEq isOne)
+      (select isAnn emp)).simplify = select (binary .and isAnn isOne) emp := rfl
+
 -- `WHERE` moves below `DISTINCT` and keeps moving, here into the left input of the join.
 example : (select (isAnn.rename (Fin.castAdd 2)) (distinct empDept)).simplify =
     distinct (join (binary (.cmp .eq) (col 1) (col 2)) (select isAnn emp) dept) := rfl
 
 -- Projections fuse, and a projection that becomes `SELECT *` disappears.
 example : (project ![col 1, col 0] (project ![col 1, col 0] emp)).simplify = emp := rfl
-example : shape
+example :
     (project ![binary (.arith .mul) (col 0) (int 2)] (project ![col 1, col 0] emp)).simplify =
-      .project [⟨2, binary (.arith .mul) (col 1) (int 2)⟩] (.table .emp) := by
-  decide
+      project ![binary (.arith .mul) (col 1) (int 2)] emp := rfl
 
 /-! ### Refusals at the query level -/
 
@@ -173,9 +177,8 @@ example : (select divZeroEq (select isAnn emp)).simplify = select divZeroEq (sel
 
 -- An unsafe inner projection does not fuse: the outer one ignores it, so fusion would drop the
 -- division.
-example : shape (project ![int 1] (project ![divZeroEq] emp)).simplify =
-    .project [⟨1, int 1⟩] (.project [⟨2, divZeroEq⟩] (.table .emp)) := by
-  decide
+example : (project ![int 1] (project ![divZeroEq] emp)).simplify =
+    project ![int 1] (project ![divZeroEq] emp) := rfl
 
 /-! ### Transporting a fact across the certificate -/
 
