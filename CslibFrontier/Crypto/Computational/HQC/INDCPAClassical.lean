@@ -28,17 +28,28 @@ The security parameter is encoded in unary and paired with the transparent DQCSD
 The fixed `PKEParams` value is static program data. It must be charged in the specialized program
 description together with the wrapper/controller, copies, marshalling and interpreter overhead.
 This layer retains actual finite PTM terms and their native clocks, workspace and fixed coin tapes;
-encoded description size and compiler/interpreter costs remain open until #5287/#5409. These are
+encoded description size and compiler/interpreter costs remain open until #5287/#5413. These are
 rigorous direct-machine resources, not byte or CPU estimates. Here “native” means direct execution
 of a classical finite-control table, not the native quantum/QPPT realization in #5281. This module
 does not claim a final IND-CPA endpoint or a post-quantum reduction.
+
+The composition maps below are construction-derived: they charge buffered intermediate-word
+copying, retained work tapes and both handoff tapes. The leaf tables and their time/workspace maps
+are selected data, however; this file does not yet construct them from encoded adversary,
+sampler, wrapper and controller descriptions. Consequently it neither proves that the leaf clocks
+contain each marshalling/dispatch cost nor proves that their static descriptions contain the
+adversary. Those obligations require the named specialization/compiler/interpreter witnesses from
+#5287/#5413. Offline compilation must remain separate from online execution, while the emitted
+specialized-description length must still be charged. In the interpreted endpoint, the direct
+compiled clock below is the simulated-controller clock supplied to the universal time formula; it
+must not also be added as a second online execution cost.
 
 ## Main definitions
 
 * `Cslib.Crypto.HQC.twoDQCSDProgram`: executable classical `B1` with an explicit coin sampler.
 * `Cslib.Crypto.HQC.threeDQCSDProgram`: executable classical `B2`.
 * `Cslib.Crypto.HQC.encTwoDQCSDInput`, `encThreeDQCSDInput`: their complete runtime inputs.
-* `Cslib.Crypto.HQC.ClassicalWrapperPPT`: machine certificates for the actual HQC challenge
+* `Cslib.Crypto.HQC.ClassicalWrapperPPT`: qualitative certificates for the actual HQC challenge
   marshalling performed between the adversary stages.
 * `Cslib.Crypto.HQC.TwoDQCSDNativeStages`, `ThreeDQCSDNativeStages`: explicit finite PTM stages
   and construction-selected nested `MultiTapePTM.comp` machines.
@@ -50,8 +61,8 @@ does not claim a final IND-CPA endpoint or a post-quantum reduction.
 * `Cslib.Crypto.HQC.eval_twoDQCSDProgram_eq_distinguisher`: `B1` matches the reviewed finite game
   when its explicit sampler has the ideal encryption-coin law.
 * `Cslib.Crypto.HQC.eval_threeDQCSDProgram`: `B2` matches the reviewed finite game exactly.
-* `Cslib.Crypto.HQC.isPPTOn_twoDQCSDProgram`, `isPPTOn_threeDQCSDProgram`: strict machine
-  witnesses assembled from the adversary, sampler and wrapper certificates.
+* `Cslib.Crypto.HQC.isPPTOn_twoDQCSDProgram`, `isPPTOn_threeDQCSDProgram`: qualitative strict-PPT
+  corollaries; these existential propositions do not select or size the final reduction tables.
 * `Cslib.Crypto.HQC.TwoDQCSDNativeStages.realizes`, `ThreeDQCSDNativeStages.realizes`: exact
   canonical-word semantics of the construction-selected machines.
 * `Cslib.Crypto.HQC.TwoDQCSDNativeStages.eval_eq_distinguisher`,
@@ -214,8 +225,8 @@ def threeDQCSDGuessInput {State : Type} (encode : PKEMessage P → Codeword P) :
 
 /-- The deterministic HQC wrapper computations needed by the two reductions are plain
 polynomial time on their complete encodings. These fields certify the actual functions above;
-they are not replacement callbacks. Exact time/space bounds and specialized program-description
-size are recorded by the quantitative resource layer. -/
+they are not replacement callbacks. They do not expose the realizing tables or exact resources;
+the final reduction must instead obtain those from the construction-retaining quantitative layer. -/
 structure ClassicalWrapperPPT {State : Type} (encode : PKEMessage P → Codeword P)
     (encState : State ↪ List Bool) : Prop where
   /-- Deterministic encryption and marshalling used by `B1`. -/
@@ -229,7 +240,9 @@ structure ClassicalWrapperPPT {State : Type} (encode : PKEMessage P → Codeword
 
 /-- One construction-selected closed fair-coin stage. Both typed inputs and outputs retain a
 common base input, so later stages have one fixed clock rather than an output-dependent callback.
-This is HQC reduction construction data, not a second general probabilistic computability API. -/
+The machine term is explicit, but the record does not yet carry its state encoding or description
+bits. This is HQC reduction construction data, not a second general probabilistic computability
+API. -/
 structure ClassicalStageMachine {Base Input Output : Type}
     (baseInput : Input → Base) (baseOutput : Output → Base)
     (encInput : Input ↪ List Bool) (encOutput : Output ↪ List Bool)
@@ -821,8 +834,10 @@ compiler. -/
     (stages : ThreeDQCSDNativeStages P encode encState adversary) :=
   stages.guessVerdict.comp (stages.hiddenBit.comp stages.choose)
 
-/-- Every native `B1` stage contribution together with the composed resource map. Description
-bits and compiler/interpreter costs are intentionally absent until #5287/#5409. -/
+/-- Every selected native `B1` stage contribution together with the construction-derived
+composition map. Leaf clocks/workspaces remain supplied stage data. Description bits, their
+generated-output size and compiler/interpreter/controller costs are intentionally absent until
+#5287/#5413. -/
 structure TwoDQCSDNativeResources (Input : Type) where
   choose : ClassicalStageResources Input
   hiddenBit : ClassicalStageResources Input
@@ -830,7 +845,8 @@ structure TwoDQCSDNativeResources (Input : Type) where
   guessVerdict : ClassicalStageResources Input
   total : ClassicalStageResources Input
 
-/-- Every native `B2` stage contribution together with the composed resource map. -/
+/-- Every selected native `B2` stage contribution together with the construction-derived
+composition map, subject to the same leaf/static-resource boundary as `TwoDQCSDNativeResources`. -/
 structure ThreeDQCSDNativeResources (Input : Type) where
   choose : ClassicalStageResources Input
   hiddenBit : ClassicalStageResources Input
@@ -1126,9 +1142,9 @@ theorem ThreeDQCSDNativeStages.isPPTOn {State : Type}
 /-! ### Strict machine witnesses -/
 
 omit [NeZero P.n] in
-/-- The actual classical `B2` program is strict PPT when both adversary stages are strict PPT and
-the concrete HQC masking/marshalling wrapper has its machine certificate. The construction uses
-closed private randomness only, so its external query count and request length are both zero. -/
+/-- Qualitatively, the actual classical `B2` program is strict PPT when both adversary stages and
+the concrete HQC masking/marshalling wrapper are strict PPT. This proposition does not retain their
+realizing tables or discharge the quantitative resource translation. -/
 theorem isPPTOn_threeDQCSDProgram {State : Type}
     (encode : PKEMessage P → Codeword P) (encState : State ↪ List Bool)
     (adversary : ℕ → TwoStage (PKEPublicKey P) (MessagePair (PKEMessage P))
@@ -1196,10 +1212,11 @@ theorem isPPTOn_threeDQCSDProgram {State : Type}
   rfl
 
 omit [NeZero P.n] in
-/-- The actual classical `B1` program is strict PPT when both adversary stages, the explicit
-encryption-coin sampler and the deterministic encryption/marshalling wrapper have strict machine
-certificates. The sampler remains a named input so a finite `SampleSupport2` implementation cannot
-be silently identified with the ideal fixed-weight law. -/
+/-- Qualitatively, the actual classical `B1` program is strict PPT when both adversary stages, the
+explicit encryption-coin sampler and deterministic encryption/marshalling wrapper are strict PPT.
+This proposition does not retain their realizing tables or exact resources. The sampler remains a
+named input so a finite `SampleSupport2` implementation cannot be silently identified with the
+ideal fixed-weight law. -/
 theorem isPPTOn_twoDQCSDProgram {State : Type}
     (encode : PKEMessage P → Codeword P) (encState : State ↪ List Bool)
     (adversary : ℕ → TwoStage (PKEPublicKey P) (MessagePair (PKEMessage P))

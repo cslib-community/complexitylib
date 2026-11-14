@@ -114,6 +114,10 @@ example (left right : TruncatedSyndromeSample toyParams.n toyParams.codeLen)
 noncomputable def idealCoinSampler (_ : ℕ) : ProbComp (PKECoins toyParams) :=
   pkeSampleCoins toyParams
 
+/-! The following exercise the resource API given explicit native-stage bundles. They are not a
+concrete bundle construction: that nonvacuity client remains blocked on the named
+controller/specialization/interpreter witnesses recorded in #5290. -/
+
 variable
   (twoStages : TwoDQCSDNativeStages toyParams encode encBool keyDependentAdversary
     idealCoinSampler)
