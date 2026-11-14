@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
+module
+
 import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
 import CslibFrontier.Crypto.Computational.LWE.Regev.Security
+import CslibFrontier.Tactic.PPT
+import Mathlib.Tactic.NormNum
 
 /-!
 Regression clients for Regev and dual-Regev encryption: concrete encryptions and decryptions with
@@ -14,6 +18,9 @@ nonzero errors, a gadget preimage sampler satisfying the trapdoor interface, and
 GSW parameter family, which satisfies every correctness and security premise apart from its
 decision-LWE assumption.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Regev
 
@@ -120,6 +127,22 @@ example : ComputableInPolyTime
     (encPair encUnary (encPair encBits encBits)) encBool :=
   computableInPolyTime_decryptSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
 
+-- Both bits round-trip on raw serialized keys and noisy ciphertexts via `decryptSerialized`.
+example :
+    decryptSerialized 1 4 (LWE.serializeSecret toySecret)
+      (encryptWithCoinsSerialized 1 2 4
+        (LWE.serializePublicMatrix (LWE.publicMatrixInt toyB toySecret toyError))
+        false [true, false]) = false ∧
+    decryptSerialized 1 4 (LWE.serializeSecret toySecret)
+      (encryptWithCoinsSerialized 1 2 4
+        (LWE.serializePublicMatrix (LWE.publicMatrixInt toyB toySecret toyError))
+        true [true, true]) = true ∧
+    decodeCiphertext 1 4
+      (serializeCiphertext
+        (encryptWithCoins (LWE.publicMatrixInt toyB toySecret toyError) true ![true, true])) =
+      encryptWithCoins (LWE.publicMatrixInt toyB toySecret toyError) true ![true, true] := by
+  decide +kernel
+
 example (security : ℕ) (μ : Bool) {keys : List Bool × List Bool}
     (hkeys : keys ∈ (ProbComp.eval (LWE.keyGenSerialized
       (Homomorphic.GSW.Parameters.dimension security) (Homomorphic.GSW.Parameters.samples security)
@@ -155,17 +178,31 @@ example (hLWE : DecisionLWE Homomorphic.GSW.Parameters.dimension
     (Filter.Eventually.of_forall Homomorphic.GSW.Parameters.entropy_margin) hLWE
     keyAdversary keyAdversary_isPPT
 
--- A word-level adaptive multi-challenge adversary whose queries depend on the public key and the
--- latest ciphertext word in the reverse transcript.
-private def wordAdaptiveAdversary : WordLoRAdversary where
+-- A stateful word-level adaptive multi-challenge adversary whose queries depend on the saved
+-- state and latest ciphertext word in the reverse transcript, updating the saved state at every
+-- query step.
+private def wordAdaptiveAdversary : Encryption.LoRAdversary where
   start _ pk := pure pk
-  query _ st₀ transcript :=
-    pure (st₀.headD false, (transcript.headD []).headD false)
-  guess _ st₀ transcript :=
-    pure (st₀.headD false ^^ (transcript.headD []).headD false)
+  query _ st transcript :=
+    let b := (transcript.headD []).headD false
+    pure ((st.headD false, b), b :: st)
+  guess _ st transcript :=
+    pure (st.headD false ^^ (transcript.headD []).headD false)
 
 private theorem wordAdaptiveAdversary_isPPT : wordAdaptiveAdversary.IsPPT := by
-  constructor <;> simp only [wordAdaptiveAdversary] <;> ppt
+  have htr : ComputableInPolyTime
+      (fun x : ℕ × List Bool × List (List Bool) => x.2.2.headD [])
+      Encryption.encLoRStageInput encBits :=
+    (ComputableInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp
+      (by fun_prop)
+  refine ⟨?_, ?_, ?_, ⟨fun _ => 1, by fun_prop, ?_⟩⟩
+  · simp only [wordAdaptiveAdversary]; ppt
+  · simp only [wordAdaptiveAdversary]; ppt
+  · simp only [wordAdaptiveAdversary]; ppt
+  · intro _ st tr choice hchoice
+    simp only [wordAdaptiveAdversary, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hchoice
+    subst hchoice
+    simp
 
 -- Both the per-bit and hidden-bit multi-challenge Decision-LWE distinguishers are uniform strict
 -- PPT for any polynomial-time query schedule, and yield asymptotic Q-query security.
@@ -241,8 +278,9 @@ private def dualToyCT : DualRegev.Ciphertext 2 4 :=
   (![2, 9], 11)
 
 open Cslib.Crypto.DualRegev in
--- Canonical serialization and zero-padded decoding roundtrip for public keys and ciphertexts,
--- including empty inputs and excess trailing padding.
+-- Canonical serialization and zero-padded decoding roundtrip for public keys, secrets, and
+-- ciphertexts, including empty inputs, excess trailing padding, and concrete `decryptSerialized`
+-- round-trips on `false` and `true` with nonzero errors.
 example :
     DualRegev.decodePublicKey 1 2 4 (DualRegev.serializePublicKey dualToyPK) = dualToyPK ∧
       (DualRegev.serializePublicKey dualToyPK).length = 12 ∧
@@ -250,7 +288,17 @@ example :
       DualRegev.decodePublicKey 1 2 4
         (DualRegev.serializePublicKey dualToyPK ++ [true, true]) = dualToyPK ∧
       DualRegev.decodeCiphertext 2 4 (DualRegev.serializeCiphertext dualToyCT) = dualToyCT ∧
-      (DualRegev.serializeCiphertext dualToyCT).length = 12 := by
+      (DualRegev.serializeCiphertext dualToyCT).length = 12 ∧
+      DualRegev.decodeSecret 2 (DualRegev.serializeSecret ![1, 0]) = ![1, 0] ∧
+      (DualRegev.serializeSecret ![1, 0]).length = 2 ∧
+      DualRegev.decryptSerialized 2 4 (DualRegev.serializeSecret ![1, 0])
+        (DualRegev.encryptWithCoinsSerialized 1 2 4
+          (DualRegev.serializePublicKey (DualRegev.publicKeyOf dualA ![1, 0]))
+          false ⟨[5], [1, -1], 1⟩) = false ∧
+      DualRegev.decryptSerialized 2 4 (DualRegev.serializeSecret ![1, 0])
+        (DualRegev.encryptWithCoinsSerialized 1 2 4
+          (DualRegev.serializePublicKey (DualRegev.publicKeyOf dualA ![1, 0]))
+          true ⟨[5], [1, 0], -1⟩) = true := by
   decide +kernel
 
 -- Distributional bridges connect the serialized algorithms to the typed key and encryption laws.

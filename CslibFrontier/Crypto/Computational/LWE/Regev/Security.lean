@@ -7,6 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.Encryption.LoRCPA
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
 public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Regev
@@ -35,11 +36,12 @@ All honest programs are strict PPT / polynomial-time. For single-challenge IND-C
 to decision LWE is one uniform strict PPT distinguisher with loss two, and the remaining
 statistical term is the leftover-hash bound `sqrt(2 ^ ((n + 1) * w) / 2 ^ m)` of
 `Regev.challengeGame_uniform_advantage_le` ([Regev2009, Section 5]; [Peikert2016, Section 5.2.1]).
-For adaptive `Q`-query left-or-right security (`WordLoRAdversary`, `lorGameSerialized`), both the
-per-bit reductions `lorDistinguisherSerialized` (matching `Regev.lorDistinguisher`) and the single
-hidden-bit reduction `lorLweDistinguisher` are uniform strict PPT whenever `Q` is polynomial-time
-computable (`isPPT_lorDistinguisherSerialized`, `isPPT_lorLweDistinguisher`), yielding asymptotic
-`Q`-query left-or-right security under `DecisionLWE` (`lorIndCPA_of_decisionLWE`).
+For adaptive `Q`-query left-or-right security (`Encryption.LoRAdversary`, `lorGameSerialized`),
+both the per-bit reductions `lorDistinguisherSerialized` (matching `Regev.lorDistinguisher`) and
+the single hidden-bit reduction `lorLweDistinguisher` (`Encryption.lorKeyDistinguisher`) are
+uniform strict PPT whenever `Q` is polynomial-time computable (`isPPT_lorDistinguisherSerialized`,
+`isPPT_lorLweDistinguisher`), yielding asymptotic `Q`-query left-or-right security under
+`DecisionLWE` (`lorIndCPA_of_decisionLWE`).
 
 ## Main definitions
 
@@ -51,10 +53,10 @@ computable (`isPPT_lorDistinguisherSerialized`, `isPPT_lorLweDistinguisher`), yi
 * `Regev.typedAdversary`: a word-level adversary at one parameter, as a typed two-stage adversary
   on public matrices and ciphertexts through their canonical encodings.
 * `Regev.hidingError`: the explicit statistical term.
-* `Regev.WordLoRAdversary`, `Regev.WordLoRAdversary.IsPPT`, `Regev.typedLoRAdversary`,
-  `Regev.lorStepSerialized`, `Regev.lorRunSerialized`, `Regev.lorDistinguisherSerialized`,
-  `Regev.lorLweDistinguisher`, `Regev.lorGameSerialized`: word-level adaptive `Q`-query
-  left-or-right adversaries, experiments, and `DecisionLWE` reductions.
+* `Regev.typedLoRAdversary`, `Regev.lorStepSerialized`, `Regev.lorRunSerialized`,
+  `Regev.lorDistinguisherSerialized`, `Regev.lorLweDistinguisher`, `Regev.lorGameSerialized`,
+  `Regev.LoRINDCPA`: word-level adaptive `Q`-query left-or-right experiments, `DecisionLWE`
+  reductions, and asymptotic security notion over `Encryption.LoRAdversary`.
 
 ## Main results
 
@@ -190,41 +192,20 @@ theorem length_of_mem_support_encryptSerialized {n m w : ℕ} {publicWord : List
 /-- Compute the canonical residue of `c ⬝ᵥ (1, -t)` modulo `2 ^ w` from raw secret and ciphertext
 words using signed binary subtraction. -/
 def decryptResidue (n w : ℕ) (secretWord ciphertextWord : List Bool) : ℕ :=
-  (((Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord 0 0 : ℤ) -
-    (((List.range n).map fun j =>
-      Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord 0 (j + 1) *
-        Cslib.Matrix.binaryEntry n w secretWord 0 j).sum : ℕ)) % (2 ^ w : ℤ)).toNat
+  LWE.secretProductResidue n w 0 secretWord ciphertextWord
 
 /-- Decrypt a serialized Regev ciphertext word under a serialized secret word by rounding
-`decryptResidue` via the half-open middle-half test. -/
+`decryptResidue` via `LWE.decodeResidue`. -/
 def decryptSerialized (n w : ℕ) (secretWord ciphertextWord : List Bool) : Bool :=
-  let value := decryptResidue n w secretWord ciphertextWord
-  decide (2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w)
+  LWE.decodeResidue w (decryptResidue n w secretWord ciphertextWord)
 
 /-- Signed word arithmetic computes the canonical residue of `c ⬝ᵥ (1, -t)` on the decoded secret
 and ciphertext. -/
 theorem decryptResidue_eq (n w : ℕ) (secretWord ciphertextWord : List Bool) :
     decryptResidue n w secretWord ciphertextWord =
       (decodeCiphertext n w ciphertextWord ⬝ᵥ
-        LWE.secretVector (LWE.decodeSecret n w secretWord)).val := by
-  let value : ℤ := (Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord 0 0 : ℤ) -
-    ((∑ j : Fin n,
-      Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord 0 (j.val + 1) *
-        Cslib.Matrix.binaryEntry n w secretWord 0 j.val : ℕ) : ℤ)
-  have hcast : (value : ZMod (2 ^ w)) =
-      decodeCiphertext n w ciphertextWord ⬝ᵥ
-        LWE.secretVector (LWE.decodeSecret n w secretWord) := by
-    simp only [value, Int.cast_sub, Int.cast_sum, Int.cast_mul, Int.cast_natCast, Nat.cast_sum,
-      Nat.cast_mul, decodeCiphertext, LWE.decodeSecret, LWE.secretVector, dotProduct,
-      Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ, Pi.neg_apply, mul_one, mul_neg,
-      Finset.sum_neg_distrib, Cslib.Matrix.ofBinary_apply, Fin.val_zero, Fin.val_succ]
-    rw [sub_eq_add_neg]
-  unfold decryptResidue
-  rw [List.map_range_eq_ofFn, List.sum_ofFn]
-  change (value % (2 ^ w : ℤ)).toNat = _
-  rw [← hcast]
-  have hv := congrArg Int.toNat (ZMod.val_intCast (n := 2 ^ w) value)
-  simpa only [Int.toNat_natCast, Nat.cast_pow, Nat.cast_ofNat] using hv.symm
+        LWE.secretVector (LWE.decodeSecret n w secretWord)).val :=
+  LWE.secretProductResidue_eq_dotProduct n w (0 : Fin 1) secretWord ciphertextWord
 
 /-- Serialized Regev decryption agrees with typed `Regev.decrypt` on the decoded secret and
 ciphertext for all dimensions and widths. -/
@@ -339,29 +320,8 @@ theorem computableInPolyTime_decryptResidue
     ComputableInPolyTime
       (fun a => decryptResidue (n a) (w a) (secretWord a) (ciphertextWord a))
       input encNat := by
-  have hterm : ComputableInPolyTime
-      (fun p : α × ℕ =>
-        Cslib.Matrix.binaryEntry (n p.1 + 1) (w p.1) (ciphertextWord p.1) 0 (p.2 + 1) *
-          Cslib.Matrix.binaryEntry (n p.1) (w p.1) (secretWord p.1) 0 p.2)
-      (encPair input encUnary) encNat := by
-    apply binary_mul'
-    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
-        (const 0) (by fun_prop)
-    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
-        (const 0) (snd input encUnary)
-  have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
-    (mapWithInput
-      (f := fun a j =>
-        Cslib.Matrix.binaryEntry (n a + 1) (w a) (ciphertextWord a) 0 (j + 1) *
-          Cslib.Matrix.binaryEntry (n a) (w a) (secretWord a) 0 j)
-      (range.comp hn) hterm)
-  have hfirst := matrixBinaryEntry (by fun_prop) hw hciphertextWord
-    (const 0) (const 0) (cols := fun a => n a + 1)
   unfold decryptResidue
-  simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat] using
-    intBin_emodNat'
-      (intBin_sub.comp ((intBin_natCast.comp hfirst).prod (intBin_natCast.comp hsum)))
-      (binary_pow' (const 2) hw)
+  fun_prop
 
 /-- Serialized Regev decryption is computable in polynomial time on arbitrary secret and
 ciphertext words. -/
@@ -375,10 +335,8 @@ theorem computableInPolyTime_decryptSerialized
     ComputableInPolyTime
       (fun a => decryptSerialized (n a) (w a) (secretWord a) (ciphertextWord a))
       input encBool := by
-  have hvalue := computableInPolyTime_decryptResidue hn hw hsecretWord hciphertextWord
-  have hq := binary_pow' (const 2) hw
-  have hfour := binary_mul' (const 4) hvalue
-  exact decide_and (binary_le' hq hfour) (binary_lt' hfour (binary_mul' (const 3) hq))
+  unfold decryptSerialized
+  fun_prop
 
 /-- The single-challenge leftover-hash term `sqrt(2 ^ ((n + 1) * w) / 2 ^ m)`. -/
 noncomputable def hidingError (n m w : ℕ) : ℝ≥0 :=
@@ -481,134 +439,104 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
 
 /-! ### Adaptive multi-challenge left-or-right security -/
 
-/-- A word-level adaptive left-or-right adversary. First `start` receives the security parameter
-and serialized public matrix word and returns an initial state word `st₀`. Then each `query`
-receives the security parameter, `st₀`, and the reverse transcript of challenge ciphertext words
-seen so far, and outputs the next challenge bit pair `(msg₀, msg₁)`. Finally `guess` receives the
-security parameter, `st₀`, and the complete reverse transcript of challenge ciphertext words, and
-outputs a Boolean guess. -/
-structure WordLoRAdversary where
-  /-- Initialize the adversary state from the serialized public matrix word. -/
-  start : ℕ → List Bool → ProbComp (List Bool)
-  /-- Choose the next challenge bit pair `(msg₀, msg₁)` from the initial state and reverse
-  ciphertext transcript. -/
-  query : ℕ → List Bool → List (List Bool) → ProbComp (Bool × Bool)
-  /-- Output the final guess from the initial state and reverse ciphertext transcript. -/
-  guess : ℕ → List Bool → List (List Bool) → ProbComp Bool
-
-/-- Uniform strict PPT certificate for a `WordLoRAdversary`: all three stages (`start`, `query`,
-`guess`) are strict PPT on their framed word inputs. -/
-structure WordLoRAdversary.IsPPT (adversary : WordLoRAdversary) : Prop where
-  /-- The initialization stage is strict PPT. -/
-  start : Probability.IsPPT encBits adversary.start
-  /-- The adaptive query stage is strict PPT. -/
-  query : IsPPTOn (encPair encUnary (encPair encBits (encList encBits)))
-    (encPair encBool encBool) (fun p => adversary.query p.1 p.2.1 p.2.2)
-  /-- The final guessing stage is strict PPT. -/
-  guess : IsPPTOn (encPair encUnary (encPair encBits (encList encBits))) encBool
-    (fun p => adversary.guess p.1 p.2.1 p.2.2)
-
-/-- View a word-level adaptive left-or-right adversary at security parameter `security` as a typed
-`Regev.LoRAdversary` whose state `(st₀, transcript)` pairs the initial state word with the reverse
-list of serialized challenge ciphertexts. -/
-noncomputable def typedLoRAdversary {n m w : ℕ} (adversary : WordLoRAdversary) (security : ℕ) :
-    LoRAdversary n m w (List Bool × List (List Bool)) where
+/-- View a stateful `Encryption.LoRAdversary` at security parameter `security` as a typed
+`Regev.LoRAdversary` whose state `(state, transcript)` pairs the adversary's saved state word with
+the reverse list of serialized challenge ciphertexts. -/
+noncomputable def typedLoRAdversary {n m w : ℕ} (adversary : Encryption.LoRAdversary)
+    (security : ℕ) : LoRAdversary n m w (List Bool × List (List Bool)) where
   start A := (ProbComp.eval (adversary.start security (Cslib.Matrix.toBinary A))).map
     fun st₀ => (st₀, [])
   query st := (ProbComp.eval (adversary.query security st.1 st.2)).map
-    fun pair => (⟨pair.1, pair.2⟩, st)
+    fun choice => (⟨Encryption.ChoiceOut.msg₀ choice, Encryption.ChoiceOut.msg₁ choice⟩,
+      (Encryption.ChoiceOut.state choice, st.2))
   receive st c := (st.1, serializeCiphertext c :: st.2)
   guess st := ProbComp.eval (adversary.guess security st.1 st.2)
 
-/-- One adaptive query step: ask `adversary.query` on the initial state `st₀` and current reverse
-transcript `transcript`, encrypt the selected bit under `publicWord`, and prepend the resulting
-ciphertext word to `transcript`. -/
-noncomputable def lorStepSerialized (n m w : ℕ) (adversary : WordLoRAdversary)
-    (security : ℕ) (publicWord : List Bool) (bit : Bool) (st₀ : List Bool)
-    (transcript : List (List Bool)) : ProbComp (List (List Bool)) := do
-  let pair ← adversary.query security st₀ transcript
-  let c ← encryptSerialized n m w publicWord (if bit then pair.2 else pair.1)
-  return c :: transcript
+/-- One adaptive query step: ask `adversary.query` on the current state word and reverse
+ciphertext transcript, encrypt the selected bit under `publicWord`, and return the updated state
+word paired with the extended ciphertext transcript. -/
+noncomputable abbrev lorStepSerialized (n m w : ℕ → ℕ) (adversary : Encryption.LoRAdversary)
+    (security : ℕ) (publicWord : List Bool) (bit : Bool)
+    (loopState : List Bool × List (List Bool)) : ProbComp (List Bool × List (List Bool)) :=
+  Encryption.lorStep (fun k => encryptSerialized (n k) (m k) (w k)) adversary
+    security publicWord bit loopState
 
-/-- Answer `q` adaptive queries starting from initial state `st₀` and reverse ciphertext transcript
-`transcript`. -/
-noncomputable def lorRunSerialized (n m w : ℕ) (adversary : WordLoRAdversary)
-    (security : ℕ) (publicWord : List Bool) (bit : Bool) (st₀ : List Bool) (q : ℕ)
-    (transcript : List (List Bool)) : ProbComp (List (List Bool)) :=
-  OracleComp.iterate q (lorStepSerialized n m w adversary security publicWord bit st₀) transcript
+/-- Answer `q` adaptive queries starting from `loopState = (state, transcript)`. -/
+noncomputable abbrev lorRunSerialized (n m w : ℕ → ℕ) (adversary : Encryption.LoRAdversary)
+    (security : ℕ) (publicWord : List Bool) (bit : Bool) (q : ℕ)
+    (loopState : List Bool × List (List Bool)) : ProbComp (List Bool × List (List Bool)) :=
+  Encryption.lorRun (fun k => encryptSerialized (n k) (m k) (w k)) adversary
+    security publicWord bit q loopState
 
 /-- The serialized `Q`-query decision-LWE distinguisher for challenge bit `bit`, directly realizing
 `Regev.lorDistinguisher`. -/
-noncomputable def lorDistinguisherSerialized (n m w Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (bit : Bool) : Distinguisher := fun security publicWord => do
-  let st₀ ← adversary.start security publicWord
-  let transcript ← lorRunSerialized (n security) (m security) (w security) adversary
-    security publicWord bit st₀ (Q security) []
-  adversary.guess security st₀ transcript
+noncomputable abbrev lorDistinguisherSerialized (n m w Q : ℕ → ℕ)
+    (adversary : Encryption.LoRAdversary) (bit : Bool) : Distinguisher :=
+  Encryption.lorDistinguisher (fun k => encryptSerialized (n k) (m k) (w k)) Q adversary bit
 
 /-- The single uniform hidden-bit `DecisionLWE` distinguisher for `Q`-query left-or-right security:
 sample a random challenge bit `bit`, run `lorDistinguisherSerialized` with `bit`, and output
 `guess ^^ bit`. -/
-noncomputable def lorLweDistinguisher (n m w Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) : Distinguisher := fun security publicWord => do
-  let bit ← ProbComp.uniform Bool
-  let guess ← lorDistinguisherSerialized n m w Q adversary bit security publicWord
-  return guess ^^ bit
+noncomputable abbrev lorLweDistinguisher (n m w Q : ℕ → ℕ)
+    (adversary : Encryption.LoRAdversary) : Distinguisher :=
+  Encryption.lorKeyDistinguisher (fun k => encryptSerialized (n k) (m k) (w k)) Q adversary
 
 /-- The executable adaptive `Q`-query left-or-right experiment with generated LWE keys. -/
-noncomputable def lorGameSerialized (n m w η Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (bit : Bool) (security : ℕ) : ProbComp Bool := do
-  let keys ← LWE.keyGenSerialized (n security) (m security) (w security) (η security)
-  lorDistinguisherSerialized n m w Q adversary bit security keys.1
+noncomputable abbrev lorGameSerialized (n m w η Q : ℕ → ℕ)
+    (adversary : Encryption.LoRAdversary) (bit : Bool) (security : ℕ) : ProbComp Bool :=
+  Encryption.lorGame (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
+    (fun k => encryptSerialized (n k) (m k) (w k)) Q adversary bit security
 
 /-- On canonical public-matrix words, `lorRunSerialized` has the exact distribution of typed
 `Regev.lorRun` on `typedLoRAdversary`. -/
-theorem eval_lorRunSerialized_toBinary {n m w : ℕ} (adversary : WordLoRAdversary)
-    (security : ℕ) (A : PublicKey n m w) (bit : Bool) (st₀ : List Bool) (q : ℕ)
-    (transcript : List (List Bool)) :
-    (ProbComp.eval (lorRunSerialized n m w adversary security (Cslib.Matrix.toBinary A)
-        bit st₀ q transcript)).map (fun tr => (st₀, tr)) =
-      lorRun (m := m) (fun μ => ProbComp.eval (encrypt A μ))
-        (typedLoRAdversary adversary security) bit q (st₀, transcript) := by
-  induction q generalizing transcript with
+theorem eval_lorRunSerialized_toBinary (n m w : ℕ → ℕ) (adversary : Encryption.LoRAdversary)
+    (security : ℕ) (A : PublicKey (n security) (m security) (w security)) (bit : Bool) (q : ℕ)
+    (loopState : List Bool × List (List Bool)) :
+    ProbComp.eval (lorRunSerialized n m w adversary security (Cslib.Matrix.toBinary A)
+        bit q loopState) =
+      lorRun (m := m security) (fun μ => ProbComp.eval (encrypt A μ))
+        (typedLoRAdversary adversary security) bit q loopState := by
+  induction q generalizing loopState with
   | zero =>
-    simp [lorRunSerialized, lorRun]
+    simp [lorRunSerialized, Encryption.lorRun, lorRun]
   | succ q ih =>
-    unfold lorRunSerialized
+    unfold lorRunSerialized Encryption.lorRun
     rw [OracleComp.iterate_succ_bind]
-    simp only [lorStepSerialized, lorRun, typedLoRAdversary, bind_assoc, ProbComp.eval_bind,
-      ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.bind_map, PMF.pure_bind,
+    simp only [Encryption.lorStep, lorRun, typedLoRAdversary, bind_assoc, ProbComp.eval_bind,
+      ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.pure_bind,
       Function.comp_def, eval_encryptSerialized_toBinary]
-    congr 1 with pair : 1
-    have hsel : (⟨pair.1, pair.2⟩ : MessagePair Bool).select bit =
-        (if bit then pair.2 else pair.1) := by
+    congr 1 with choice : 1
+    have hsel :
+        (⟨Encryption.ChoiceOut.msg₀ choice, Encryption.ChoiceOut.msg₁ choice⟩ :
+          MessagePair Bool).select bit =
+        (if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice) := by
       cases bit <;> rfl
     rw [hsel]
     congr 1 with c : 1
-    exact ih (serializeCiphertext c :: transcript)
+    exact ih (Encryption.ChoiceOut.state choice, serializeCiphertext c :: loopState.2)
 
 /-- On canonical public-matrix words, `lorDistinguisherSerialized` has the exact distribution of
 typed `Regev.lorDistinguisher`. -/
 theorem eval_lorDistinguisherSerialized_toBinary (n m w Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (bit : Bool) (security : ℕ)
+    (adversary : Encryption.LoRAdversary) (bit : Bool) (security : ℕ)
     (A : PublicKey (n security) (m security) (w security)) :
     ProbComp.eval (lorDistinguisherSerialized n m w Q adversary bit security
         (Cslib.Matrix.toBinary A)) =
       lorDistinguisher (Q security) (typedLoRAdversary adversary security) bit A := by
-  unfold lorDistinguisherSerialized lorDistinguisher lorGame
+  unfold lorDistinguisherSerialized Encryption.lorDistinguisher lorDistinguisher lorGame
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.pure_bind]
   rw [show (typedLoRAdversary adversary security).start A =
     (ProbComp.eval (adversary.start security (Cslib.Matrix.toBinary A))).map (fun st₀ => (st₀, []))
     from rfl, PMF.bind_map]
   congr 1 with st₀ : 1
   dsimp only [Function.comp_def]
-  rw [← eval_lorRunSerialized_toBinary adversary security A bit st₀ (Q security) [], PMF.bind_map]
+  rw [eval_lorRunSerialized_toBinary n m w adversary security A bit (Q security) (st₀, [])]
   rfl
 
 /-- Under the real `DecisionLWE` ensemble, `lorDistinguisherSerialized` realizes the real side of
 `Regev.lorGame_advantage_le`. -/
 theorem distinguishingGame_realEnsemble_lorDistinguisherSerialized (n m w η Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (bit : Bool) (security : ℕ) :
+    (adversary : Encryption.LoRAdversary) (bit : Bool) (security : ℕ) :
     distinguishingGame (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
         (lorDistinguisherSerialized n m w Q adversary bit security) =
       (LWE.publicMatrixLaw (n security) (m security) (w security)
@@ -620,7 +548,7 @@ theorem distinguishingGame_realEnsemble_lorDistinguisherSerialized (n m w η Q :
 /-- Under the uniform `DecisionLWE` ensemble, `lorDistinguisherSerialized` realizes the ideal
 uniform side of `Regev.lorGame_advantage_le`. -/
 theorem distinguishingGame_uniformEnsemble_lorDistinguisherSerialized (n m w Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (bit : Bool) (security : ℕ) :
+    (adversary : Encryption.LoRAdversary) (bit : Bool) (security : ℕ) :
     distinguishingGame (LWE.uniformEnsemble n m w security)
         (lorDistinguisherSerialized n m w Q adversary bit security) =
       (PMF.uniformOfFintype (PublicKey (n security) (m security) (w security))).bind
@@ -629,22 +557,39 @@ theorem distinguishingGame_uniformEnsemble_lorDistinguisherSerialized (n m w Q :
     eval_lorDistinguisherSerialized_toBinary]
 
 /-- Evaluating `lorGameSerialized` matches the typed `Regev.lorGame` on `typedLoRAdversary`. -/
-theorem eval_lorGameSerialized (n m w η Q : ℕ → ℕ) (adversary : WordLoRAdversary)
+theorem eval_lorGameSerialized (n m w η Q : ℕ → ℕ) (adversary : Encryption.LoRAdversary)
     (bit : Bool) (security : ℕ) :
     ProbComp.eval (lorGameSerialized n m w η Q adversary bit security) =
       lorGame (LWE.publicMatrixLaw (n security) (m security) (w security)
           (LWE.noiseLaw (w security) (η security)))
         (Q security) (typedLoRAdversary adversary security) bit := by
-  rw [lorGame_eq_bind_lorDistinguisher,
-    ← distinguishingGame_realEnsemble_lorDistinguisherSerialized]
-  have hkey := LWE.eval_keyGenSerialized_publicWord n m w η security
-  unfold lorGameSerialized distinguishingGame Game.withSetup
-  rw [ProbComp.eval_bind, ← hkey, PMF.bind_map]
-  rfl
+  rw [lorGameSerialized, Encryption.eval_lorGame_eq_distinguishingGame,
+    LWE.eval_keyGenSerialized_publicWord,
+    distinguishingGame_realEnsemble_lorDistinguisherSerialized,
+    ← lorGame_eq_bind_lorDistinguisher]
+
+private theorem polynomiallyBounded_ciphertextLength {n w : ℕ → ℕ}
+    (hn : ComputableInPolyTime n encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary) :
+    Cslib.PolynomiallyBounded (fun k => (n k + 1) * w k) := by
+  have h : ComputableInPolyTime (fun k => (n k + 1) * w k) encUnary encUnary := by fun_prop
+  have hp : PolyBounded (fun x => x) (fun k => (n k + 1) * w k) := by
+    simpa only [encUnary_apply, List.length_replicate] using h.tidy.polyBounded
+  exact PolyBounded.polynomiallyBounded hp
+
+private theorem isPPTOn_encryptSerialized_keyed {n m w : ℕ → ℕ}
+    (hn : ComputableInPolyTime n encUnary encUnary)
+    (hm : ComputableInPolyTime m encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary) :
+    IsPPTOn (encKeyedInput encBool) encBits
+      (fun ⟨security, pk, msg⟩ =>
+        encryptSerialized (n security) (m security) (w security) pk msg) :=
+  isPPTOn_encryptSerialized (hn.comp (by fun_prop)) (hm.comp (by fun_prop))
+    (hw.comp (by fun_prop)) (by fun_prop) (by fun_prop)
 
 /-- Parameterized strict PPT certificate for `lorDistinguisherSerialized` with a computed challenge
 bit. -/
-theorem isPPTOn_lorDistinguisherSerialized {n m w Q : ℕ → ℕ} {adversary : WordLoRAdversary}
+theorem isPPTOn_lorDistinguisherSerialized {n m w Q : ℕ → ℕ} {adversary : Encryption.LoRAdversary}
     {security : α → ℕ} {publicWord : α → List Bool} {bit : α → Bool}
     (hn : ComputableInPolyTime n encUnary encUnary)
     (hm : ComputableInPolyTime m encUnary encUnary)
@@ -656,106 +601,47 @@ theorem isPPTOn_lorDistinguisherSerialized {n m w Q : ℕ → ℕ} {adversary : 
     (hbit : ComputableInPolyTime bit input encBool) :
     IsPPTOn input encBool
       (fun a => lorDistinguisherSerialized n m w Q adversary (bit a)
-        (security a) (publicWord a)) := by
-  let captEnc := encPair input encBits
-  let trEnc := encList encBits
-  have hstart : IsPPTOn input encBits (fun a => adversary.start (security a) (publicWord a)) :=
-    hadversary.start.on.preprocess (hsecurity.prod hpublicWord)
-  have hqArg : ComputableInPolyTime
-      (fun p : (α × List Bool) × List (List Bool) => (security p.1.1, p.1.2, p.2))
-      (encPair captEnc trEnc) (encPair encUnary (encPair encBits (encList encBits))) := by
-    dsimp only [captEnc, trEnc]; fun_prop
-  have hstep : IsPPTOn (encPair captEnc trEnc) trEnc
-      (fun p => lorStepSerialized (n (security p.1.1)) (m (security p.1.1)) (w (security p.1.1))
-        adversary (security p.1.1) (publicWord p.1.1) (bit p.1.1) p.1.2 p.2) := by
-    have hquery : IsPPTOn (encPair captEnc trEnc) (encPair encBool encBool)
-        (fun p => adversary.query (security p.1.1) p.1.2 p.2) :=
-      hadversary.query.preprocess hqArg
-    have henc : IsPPTOn (encPair (encPair captEnc trEnc) (encPair encBool encBool)) encBits
-        (fun q => encryptSerialized (n (security q.1.1.1)) (m (security q.1.1.1))
-          (w (security q.1.1.1)) (publicWord q.1.1.1)
-          (if bit q.1.1.1 then q.2.2 else q.2.1)) :=
-      isPPTOn_encryptSerialized (by dsimp only [captEnc, trEnc]; fun_prop)
-        (by dsimp only [captEnc, trEnc]; fun_prop)
-        (by dsimp only [captEnc, trEnc]; fun_prop)
-        (by dsimp only [captEnc, trEnc]; fun_prop)
-        (by dsimp only [captEnc, trEnc]; fun_prop)
-    have hcons := henc.map_with (f := fun q c => c :: q.1.2)
-      (by dsimp only [captEnc, trEnc]; fun_prop)
-    simpa only [lorStepSerialized, bind_pure_comp] using hquery.bind_with hcons
-  have hcount : ComputableInPolyTime (fun p : α × List Bool => Q (security p.1))
-      captEnc encUnary := by
-    dsimp only [captEnc]; fun_prop
-  have hinitial : ComputableInPolyTime (fun _ : α × List Bool => ([] : List (List Bool)))
-      captEnc trEnc :=
-    const []
-  have hgrowthFn : ComputableInPolyTime
-      (fun p : α × List Bool => 2 * ((n (security p.1) + 1) * w (security p.1)) + 1)
-      captEnc encUnary := by
-    dsimp only [captEnc]; fun_prop
-  have hrun : IsPPTOn captEnc trEnc
-      (fun p => lorRunSerialized (n (security p.1)) (m (security p.1)) (w (security p.1))
-        adversary (security p.1) (publicWord p.1) (bit p.1) p.2 (Q (security p.1)) []) := by
-    refine IsPPTOn.iterateWith_of_bounded_growth hcount.tidy hinitial.tidy hstep
-      hgrowthFn.tidy.polyBounded ?_
-    intro p transcript next hnext
-    simp only [lorStepSerialized, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hnext
-    obtain ⟨pair, -, c, hc, rfl⟩ := hnext
-    have hlen := length_of_mem_support_encryptSerialized hc
-    simp [trEnc, hlen, Nat.add_comm]
-  have hguess : IsPPTOn (encPair captEnc trEnc) encBool
-      (fun p => adversary.guess (security p.1.1) p.1.2 p.2) :=
-    hadversary.guess.preprocess hqArg
-  simpa only [lorDistinguisherSerialized] using hstart.bind_with (hrun.bind_with hguess)
+        (security a) (publicWord a)) :=
+  Encryption.isPPTOn_lorDistinguisher
+    (isPPTOn_encryptSerialized_keyed hn hm hw)
+    (polynomiallyBounded_ciphertextLength hn hw)
+    (fun _ _ _ _ hc => le_of_eq (length_of_mem_support_encryptSerialized hc))
+    hQ hadversary hsecurity hpublicWord hbit
 
 /-- Efficient dimension and query-count schedules make `lorDistinguisherSerialized` one uniform
 strict PPT distinguisher. -/
-theorem isPPT_lorDistinguisherSerialized {n m w Q : ℕ → ℕ} {adversary : WordLoRAdversary}
+theorem isPPT_lorDistinguisherSerialized {n m w Q : ℕ → ℕ} {adversary : Encryption.LoRAdversary}
     (hn : ComputableInPolyTime n encUnary encUnary)
     (hm : ComputableInPolyTime m encUnary encUnary)
     (hw : ComputableInPolyTime w encUnary encUnary)
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hadversary : adversary.IsPPT) (bit : Bool) :
     IsPPT encBool (lorDistinguisherSerialized n m w Q adversary bit) :=
-  isPPTOn_lorDistinguisherSerialized hn hm hw hQ hadversary
-    (fst encUnary encBits) (snd encUnary encBits) (const bit)
+  Encryption.isPPT_lorDistinguisher
+    (isPPTOn_encryptSerialized_keyed hn hm hw)
+    (polynomiallyBounded_ciphertextLength hn hw)
+    (fun _ _ _ _ hc => le_of_eq (length_of_mem_support_encryptSerialized hc))
+    hQ hadversary bit
 
 /-- Efficient dimension and query-count schedules make `lorLweDistinguisher` one uniform strict PPT
 distinguisher. -/
-theorem isPPT_lorLweDistinguisher {n m w Q : ℕ → ℕ} {adversary : WordLoRAdversary}
+theorem isPPT_lorLweDistinguisher {n m w Q : ℕ → ℕ} {adversary : Encryption.LoRAdversary}
     (hn : ComputableInPolyTime n encUnary encUnary)
     (hm : ComputableInPolyTime m encUnary encUnary)
     (hw : ComputableInPolyTime w encUnary encUnary)
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hadversary : adversary.IsPPT) :
-    IsPPT encBool (lorLweDistinguisher n m w Q adversary) := by
-  let baseEnc := encPair encUnary encBits
-  let coinEnc := encPair baseEnc encBool
-  have hcoin := isPPTOn_uniform_bool baseEnc
-  have hdist : IsPPTOn coinEnc encBool
-      (fun p => lorDistinguisherSerialized n m w Q adversary p.2 p.1.1 p.1.2) :=
-    isPPTOn_lorDistinguisherSerialized hn hm hw hQ hadversary
-      (by dsimp only [coinEnc, baseEnc]; fun_prop)
-      (by dsimp only [coinEnc, baseEnc]; fun_prop)
-      (snd baseEnc encBool)
-  have hxor : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × Bool) × Bool => p.2 ^^ p.1.2)
-      (encPair coinEnc encBool) encBool := by
-    have hx := of_finite (encIn := encPair encBool encBool) (encOut := encBool)
-      fun p : Bool × Bool => p.1 ^^ p.2
-    have harg : ComputableInPolyTime
-        (fun p : ((ℕ × List Bool) × Bool) × Bool => (p.2, p.1.2))
-        (encPair coinEnc encBool) (encPair encBool encBool) := by
-      dsimp only [coinEnc, baseEnc]; fun_prop
-    simpa only [Function.comp_def] using hx.comp harg
-  simpa only [IsPPT, lorLweDistinguisher, bind_pure_comp] using
-    hcoin.bind_with (hdist.map_with (f := fun p guess => guess ^^ p.2) hxor)
+    IsPPT encBool (lorLweDistinguisher n m w Q adversary) :=
+  Encryption.isPPT_lorKeyDistinguisher
+    (isPPTOn_encryptSerialized_keyed hn hm hw)
+    (polynomiallyBounded_ciphertextLength hn hw)
+    (fun _ _ _ _ hc => le_of_eq (length_of_mem_support_encryptSerialized hc))
+    hQ hadversary
 
 /-- Concrete adaptive `Q`-query left-or-right security for `lorGameSerialized`: the advantage is at
 most the sum of the `DecisionLWE` advantages of `lorDistinguisherSerialized` at `false` and `true`
 plus `Q * hidingError`. -/
-theorem lorGameSerialized_advantage_le (n m w η Q : ℕ → ℕ) (adversary : WordLoRAdversary)
+theorem lorGameSerialized_advantage_le (n m w η Q : ℕ → ℕ) (adversary : Encryption.LoRAdversary)
     (security : ℕ) :
     Game.advantage (ProbComp.eval (lorGameSerialized n m w η Q adversary false security))
         (ProbComp.eval (lorGameSerialized n m w η Q adversary true security)) ≤
@@ -787,7 +673,7 @@ theorem lorGameSerialized_advantage_le (n m w η Q : ℕ → ℕ) (adversary : W
 hidden-bit reduction `lorLweDistinguisher`: the advantage is at most twice its `DecisionLWE`
 advantage plus `Q * hidingError`. -/
 theorem lorGameSerialized_advantage_le_two_mul (n m w η Q : ℕ → ℕ)
-    (adversary : WordLoRAdversary) (security : ℕ) :
+    (adversary : Encryption.LoRAdversary) (security : ℕ) :
     Game.advantage (ProbComp.eval (lorGameSerialized n m w η Q adversary false security))
         (ProbComp.eval (lorGameSerialized n m w η Q adversary true security)) ≤
       2 * Game.advantage
@@ -810,40 +696,16 @@ theorem lorGameSerialized_advantage_le_two_mul (n m w η Q : ℕ → ℕ)
     simpa only [hidingError, NNReal.coe_mul, NNReal.coe_natCast, Real.coe_sqrt,
       NNReal.coe_div, NNReal.coe_pow, NNReal.coe_ofNat] using
       lorGame_uniform_advantage_le (Q security) (typedLoRAdversary adversary security)
-  have hreal : ∀ bit, ProbComp.eval (lorGameSerialized n m w η Q adversary bit security) =
-      distinguishingGame (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
-        (lorDistinguisherSerialized n m w Q adversary bit security) := by
-    intro bit
-    rw [eval_lorGameSerialized, lorGame_eq_bind_lorDistinguisher,
-      distinguishingGame_realEnsemble_lorDistinguisherSerialized]
-  rw [hreal false, hreal true]
-  have hxor : ∀ ensemble,
-      distinguishingGame ensemble (lorLweDistinguisher n m w Q adversary security) =
-        (PMF.uniformOfFintype Bool).bind fun bit =>
-          (distinguishingGame ensemble
-            (lorDistinguisherSerialized n m w Q adversary bit security)).map
-            (fun guess => guess ^^ bit) := by
-    intro ensemble
-    unfold distinguishingGame Game.withSetup lorLweDistinguisher
-    simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.map_bind]
-    rw [PMF.bind_comm]
-    rfl
-  have htwo := Game.advantage_le_two_mul_uniform_bool_xor
-    (fun bit => distinguishingGame
-      (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
-      (lorDistinguisherSerialized n m w Q adversary bit security))
-    (fun bit => distinguishingGame (LWE.uniformEnsemble n m w security)
-      (lorDistinguisherSerialized n m w Q adversary bit security))
-  rw [← hxor, ← hxor] at htwo
-  exact htwo.trans (add_le_add le_rfl huniform)
+  rw [lorGameSerialized, Encryption.eval_lorGame_eq_distinguishingGame,
+    Encryption.eval_lorGame_eq_distinguishingGame, LWE.eval_keyGenSerialized_publicWord]
+  exact (Encryption.advantage_lorDistinguisher_le _ (LWE.uniformEnsemble n m w security)
+    _ Q adversary security).trans (add_le_add le_rfl huniform)
 
 /-- Adaptive `Q`-query left-or-right IND-CPA security for serialized Regev encryption against all
-uniform strict PPT `WordLoRAdversary` adversaries. -/
-def LoRINDCPA (n m w η Q : ℕ → ℕ) : Prop :=
-  Game.Indistinguishable
-    (fun adversary k => ProbComp.eval (lorGameSerialized n m w η Q adversary false k))
-    (fun adversary k => ProbComp.eval (lorGameSerialized n m w η Q adversary true k))
-    WordLoRAdversary.IsPPT
+uniform strict PPT `Encryption.LoRAdversary` adversaries. -/
+abbrev LoRINDCPA (n m w η Q : ℕ → ℕ) : Prop :=
+  Encryption.LoRINDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
+    (fun k => encryptSerialized (n k) (m k) (w k)) Q
 
 open Filter in
 /-- Adaptive `Q`-query left-or-right security of serialized Regev encryption under `DecisionLWE`

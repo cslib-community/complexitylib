@@ -50,6 +50,7 @@ distributional bridges to `DecisionLWE`, and uniform strict polynomial-time cert
   decoders.
 * `Cslib.Crypto.LWE.serializePublicMatrix`, `Cslib.Crypto.LWE.serializeSecret`,
   `Cslib.Crypto.LWE.decodeSecret`: bit-word encodings for LWE matrices and secrets.
+* `Cslib.Crypto.LWE.secretProductResidue`: signed binary row inner product with `(1, -secret)`.
 * `Cslib.Crypto.LWE.publicRowHead`, `Cslib.Crypto.LWE.publicMatrixSerialized`,
   `Cslib.Crypto.LWE.secretSerialized`, `Cslib.Crypto.LWE.keyGenSerialized`: executable bit-word
   key generation.
@@ -58,6 +59,9 @@ distributional bridges to `DecisionLWE`, and uniform strict polynomial-time cert
 
 * `Cslib.Crypto.LWE.publicMatrix_mulVec_secretVector`,
   `Cslib.Crypto.LWE.publicMatrixInt_mulVec_secretVector`: exact inner-product error identity.
+* `Cslib.Crypto.LWE.secretProductResidue_eq`,
+  `Cslib.Crypto.LWE.secretProductResidue_eq_dotProduct`: exact `ZMod.val` characterization of
+  `secretProductResidue`.
 * `Cslib.Crypto.LWE.mem_support_sampleKeyInputs_iff`: exact coordinatewise error bound on
   supported key inputs.
 * `Cslib.Crypto.LWE.exists_uniform_seed_sampleKeyInputs`: flat uniform bit-tape realization.
@@ -67,6 +71,7 @@ distributional bridges to `DecisionLWE`, and uniform strict polynomial-time cert
 * `Cslib.Crypto.LWE.isPPTOn_sampleKeyInputsSerialized`,
   `Cslib.Crypto.LWE.computableInPolyTime_publicMatrixSerialized`,
   `Cslib.Crypto.LWE.computableInPolyTime_secretSerialized`,
+  `Cslib.Crypto.LWE.computableInPolyTime_secretProductResidue`,
   `Cslib.Crypto.LWE.isPPTOn_keyGenSerialized`: uniform strict polynomial-time certificates.
 
 ## References
@@ -325,6 +330,57 @@ def decodeSecret (n w : ℕ) (word : List Bool) : Fin n → ZMod (2 ^ w) :=
     decodeSecret n w (serializeSecret secret) = secret := by
   exact congrArg (fun A => A 0) (Cslib.Matrix.ofBinary_toBinary (fun _ : Fin 1 => secret))
 
+/-- Compute the canonical residue modulo `2 ^ w` of row `row` of an `(n + 1)`-column binary matrix
+`ciphertextWord` multiplied by `secretVector (decodeSecret n w secretWord)` using signed binary
+subtraction. -/
+def secretProductResidue (n w row : ℕ) (secretWord ciphertextWord : List Bool) : ℕ :=
+  (((Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row 0 : ℤ) -
+    (((List.range n).map fun j =>
+      Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row (j + 1) *
+        Cslib.Matrix.binaryEntry n w secretWord 0 j).sum : ℕ)) % (2 ^ w : ℤ)).toNat
+
+/-- At width zero, `secretProductResidue` reduces modulo `1` and returns `0`. -/
+@[simp] theorem secretProductResidue_zero (n row : ℕ) (secretWord ciphertextWord : List Bool) :
+    secretProductResidue n 0 row secretWord ciphertextWord = 0 := by
+  simp [secretProductResidue]
+
+/-- Signed word arithmetic computes the canonical residue of row `row` paired with
+`(1, -secret)`. -/
+theorem secretProductResidue_eq (n w row : ℕ) (secretWord ciphertextWord : List Bool) :
+    secretProductResidue n w row secretWord ciphertextWord =
+      ((Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row 0 : ZMod (2 ^ w)) -
+        ∑ j : Fin n,
+          (Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row (j.val + 1) : ZMod (2 ^ w)) *
+            decodeSecret n w secretWord j).val := by
+  let value : ℤ := (Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row 0 : ℤ) -
+    ((∑ j : Fin n,
+      Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row (j.val + 1) *
+        Cslib.Matrix.binaryEntry n w secretWord 0 j.val : ℕ) : ℤ)
+  have hcast : (value : ZMod (2 ^ w)) =
+      (Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row 0 : ZMod (2 ^ w)) -
+        ∑ j : Fin n,
+          (Cslib.Matrix.binaryEntry (n + 1) w ciphertextWord row (j.val + 1) : ZMod (2 ^ w)) *
+            decodeSecret n w secretWord j := by
+    simp [value, decodeSecret, Cslib.Matrix.ofBinary_apply]
+  unfold secretProductResidue
+  rw [List.map_range_eq_ofFn, List.sum_ofFn]
+  change (value % (2 ^ w : ℤ)).toNat = _
+  rw [← hcast]
+  have hv := congrArg Int.toNat (ZMod.val_intCast (n := 2 ^ w) value)
+  simpa only [Int.toNat_natCast, Nat.cast_pow, Nat.cast_ofNat] using hv.symm
+
+/-- For `row : Fin r`, `secretProductResidue` computes the canonical residue of row `row` of
+`Matrix.ofBinary r (n + 1) w ciphertextWord` dotted with
+`secretVector (decodeSecret n w secretWord)`. -/
+theorem secretProductResidue_eq_dotProduct {r : ℕ} (n w : ℕ) (row : Fin r)
+    (secretWord ciphertextWord : List Bool) :
+    secretProductResidue n w row.val secretWord ciphertextWord =
+      (Cslib.Matrix.ofBinary r (n + 1) w ciphertextWord row ⬝ᵥ
+        secretVector (decodeSecret n w secretWord)).val := by
+  rw [secretProductResidue_eq]
+  congr 1
+  simp [secretVector, dotProduct, Fin.sum_univ_succ, Cslib.Matrix.ofBinary_apply, sub_eq_add_neg]
+
 /-- A serialized public matrix has exact bit length `m * (n + 1) * w`. -/
 @[simp] theorem length_serializePublicMatrix {n m w : ℕ}
     (A : _root_.Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w))) :
@@ -572,6 +628,39 @@ theorem computableInPolyTime_secretSerialized {secret : α → List ℕ}
   have hentry := (listGetD (encA := encNat) 0).comp
     ((hsecret.comp (fst input encUnary)).prod (snd input encUnary))
   exact binary_mod.comp (hentry.prod (binary_pow' (const 2) (hw.comp (fst input encUnary))))
+
+/-- Compute the modular row inner product `secretProductResidue` in polynomial time. -/
+@[fun_prop]
+theorem computableInPolyTime_secretProductResidue {secretWord ciphertextWord : α → List Bool}
+    (hn : ComputableInPolyTime n input encUnary)
+    (hw : ComputableInPolyTime w input encUnary)
+    (hi : ComputableInPolyTime i input encUnary)
+    (hsecret : ComputableInPolyTime secretWord input encBits)
+    (hciphertext : ComputableInPolyTime ciphertextWord input encBits) :
+    ComputableInPolyTime
+      (fun a => secretProductResidue (n a) (w a) (i a) (secretWord a) (ciphertextWord a))
+      input encNat := by
+  have hterm : ComputableInPolyTime
+      (fun p : α × ℕ => Cslib.Matrix.binaryEntry (n p.1 + 1) (w p.1) (ciphertextWord p.1)
+        (i p.1) (p.2 + 1) * Cslib.Matrix.binaryEntry (n p.1) (w p.1) (secretWord p.1) 0 p.2)
+      (encPair input encUnary) encNat := by
+    apply binary_mul'
+    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
+        (by fun_prop) (by fun_prop)
+    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
+        (const 0) (snd input encUnary)
+  have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
+    (mapWithInput
+      (f := fun a j => Cslib.Matrix.binaryEntry (n a + 1) (w a) (ciphertextWord a) (i a) (j + 1) *
+        Cslib.Matrix.binaryEntry (n a) (w a) (secretWord a) 0 j)
+      (range.comp hn) hterm)
+  have hfirst := matrixBinaryEntry (by fun_prop) hw hciphertext hi (const 0)
+    (cols := fun a => n a + 1) (row := i)
+  unfold secretProductResidue
+  simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat] using
+    intBin_emodNat'
+      (intBin_sub.comp ((intBin_natCast.comp hfirst).prod (intBin_natCast.comp hsum)))
+      (binary_pow' (const 2) hw)
 
 /-- The complete key generator is strict PPT for arbitrary efficient runtime dimensions. -/
 @[fun_prop]

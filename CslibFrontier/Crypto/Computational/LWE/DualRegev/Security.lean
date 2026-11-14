@@ -405,10 +405,9 @@ def decryptResidue (m w : ℕ) (secretWord ciphertextWord : List Bool) : ℕ :=
       else 0).sum : ℕ)) % (2 ^ w : ℤ)).toNat
 
 /-- Decrypt a serialized dual-Regev ciphertext word under a binary secret word by rounding
-`decryptResidue` via the half-open middle-half test. -/
+`decryptResidue` via `LWE.decodeResidue`. -/
 def decryptSerialized (m w : ℕ) (secretWord ciphertextWord : List Bool) : Bool :=
-  let value := decryptResidue m w secretWord ciphertextWord
-  decide (2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w)
+  LWE.decodeResidue w (decryptResidue m w secretWord ciphertextWord)
 
 /-- Signed word arithmetic computes the canonical residue of `c₀ - ⟨e, b⟩` on the decoded binary
 secret and ciphertext. -/
@@ -734,10 +733,8 @@ theorem computableInPolyTime_decryptSerialized
     ComputableInPolyTime
       (fun a => decryptSerialized (m a) (w a) (secretWord a) (ciphertextWord a))
       input encBool := by
-  have hvalue := computableInPolyTime_decryptResidue hm hw hsecretWord hciphertextWord
-  have hq := binary_pow' (const 2) hw
-  have hfour := binary_mul' (const 4) hvalue
-  exact decide_and (binary_le' hq hfour) (binary_lt' hfour (binary_mul' (const 3) hq))
+  unfold decryptSerialized
+  fun_prop
 
 end PolyTime
 

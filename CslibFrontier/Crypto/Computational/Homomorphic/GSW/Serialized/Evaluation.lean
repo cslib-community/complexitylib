@@ -47,17 +47,12 @@ open scoped BigOperators _root_.Matrix
 
 /-- The selected row multiplied by `(1,-secret)`, reduced only after signed subtraction. -/
 def decryptResidue (n w : ℕ) (secret ciphertext : List Bool) : ℕ :=
-  (((Cslib.Matrix.binaryEntry (n + 1) w ciphertext (w - 1) 0 : ℤ) -
-    (((List.range n).map fun j =>
-      Cslib.Matrix.binaryEntry (n + 1) w ciphertext (w - 1) (j + 1) *
-        Cslib.Matrix.binaryEntry n w secret 0 j).sum : ℕ)) % (2 ^ w : ℤ)).toNat
+  LWE.secretProductResidue n w (w - 1) secret ciphertext
 
 /-- Decode the selected residue. Width zero returns `false`; every positive width uses the
 same half-open middle-half test as the typed decoder, including width one. -/
 def decryptSerialized (n w : ℕ) (secret ciphertext : List Bool) : Bool :=
-  if w = 0 then false else
-    let value := decryptResidue n w secret ciphertext
-    decide (2 ^ w ≤ 4 * value ∧ 4 * value < 3 * 2 ^ w)
+  LWE.decodeResidue w (decryptResidue n w secret ciphertext)
 
 /-- One recomposed NAND entry: its gadget value minus the exact selected row product. -/
 def nandEntry (n w : ℕ) (left right : List Bool) (i k j : ℕ) : ℕ :=
@@ -105,22 +100,10 @@ theorem decryptResidue_eq {n w : ℕ} (hw : 0 < w) (secret ciphertext : List Boo
     decryptResidue n w secret ciphertext =
       (decryptionPhase (LWE.decodeSecret n w secret) (decodeCiphertext n w ciphertext)
         (0, ⟨w - 1, by omega⟩)).val := by
-  let value : ℤ := (Cslib.Matrix.binaryEntry (n + 1) w ciphertext (w - 1) 0 : ℤ) -
-    ((∑ j : Fin n, Cslib.Matrix.binaryEntry (n + 1) w ciphertext (w - 1) (j.val + 1) *
-      Cslib.Matrix.binaryEntry n w secret 0 j.val : ℕ) : ℤ)
-  have hcast : (value : ZMod (2 ^ w)) =
-      decryptionPhase (LWE.decodeSecret n w secret) (decodeCiphertext n w ciphertext)
-        (0, ⟨w - 1, by omega⟩) := by
-    simp only [value, Int.cast_sub, Int.cast_sum, Int.cast_mul, Int.cast_natCast,
-      Nat.cast_sum, Nat.cast_mul,
-      decryptionPhase, ← binaryEntry_eq_recompose_decodeCiphertext,
-      LWE.decodeSecret, Cslib.Matrix.ofBinary_apply, Fin.val_zero, Fin.val_succ,
-      Nat.zero_mul, Nat.zero_add]
-  unfold decryptResidue
-  rw [List.map_range_eq_ofFn, List.sum_ofFn]
-  change (value % (2 ^ w : ℤ)).toNat = _
-  rw [← hcast]
-  exact (congrArg Int.toNat (ZMod.val_intCast (n := 2 ^ w) value)).symm
+  rw [decryptResidue, LWE.secretProductResidue_eq]
+  congr 1
+  simp only [decryptionPhase, ← binaryEntry_eq_recompose_decodeCiphertext, Fin.val_zero,
+    Fin.val_succ, Nat.zero_mul, Nat.zero_add]
 
 /-- The total word algorithm is the original decryption of the total decoded inputs. -/
 theorem decryptSerialized_eq (n w : ℕ) (secret ciphertext : List Bool) :
@@ -128,10 +111,10 @@ theorem decryptSerialized_eq (n w : ℕ) (secret ciphertext : List Bool) :
       decrypt (LWE.decodeSecret n w secret) (decodeCiphertext n w ciphertext) := by
   by_cases hw : w = 0
   · subst w
-    simp [decryptSerialized]
+    simp [decryptSerialized, decryptResidue]
   · have hpos : 0 < w := by omega
     rw [decrypt_eq_decode_decryptionPhase hpos]
-    simp only [decryptSerialized, hw, ↓reduceIte, LWE.decode, decryptResidue_eq hpos]
+    simp only [decryptSerialized, LWE.decode, decryptResidue_eq hpos]
 
 /-- Canonical words decrypt exactly as their typed secret and ciphertext. -/
 @[simp] theorem decryptSerialized_serialize {n w : ℕ} (secret : Fin n → ZMod (2 ^ w))
