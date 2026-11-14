@@ -38,6 +38,7 @@ policies could forge snapshots and are not certified native competitors.
 
 ## Main results
 
+* `response_trace`, `response_record`: actual dispatch and its complete new-receipt law.
 * `step_trace`, `execution_trace`: exact original native accepted-trace laws.
 * `execution_terminal`: original unbounded terminal law at the source budget horizon.
 * `execution_ledger_bound`: actual turn, deadline and nonreuse feasibility.
@@ -114,7 +115,11 @@ through the external analytical history, without recovering an infinite raw log.
   InteractionProcess.law (policy limits machine config)
     (StochasticOracle.ConcurrentBatch.Interaction.source limits sample initial) epochs
 
-private theorem response_trace (limits : Limits n) (sample : Sampler n Private)
+/-- Sampling the fixed enriched source and advancing the saved native checkpoint
+recovers the complete actual conditional dispatch law at a source boundary. The
+receipt and latent successor come from the same draw; halt and divergence remain
+explicit no-call branches. -/
+theorem response_trace (limits : Limits n) (sample : Sampler n Private)
     (initial : PMF Private) (machine : MultiTapePTM k Bool Control Unit)
     (state : State n k Private Control input)
     (hit : Option (Phase k Control Unit (ServerState n Unit) input))
@@ -171,6 +176,31 @@ private theorem response_trace (limits : Limits n) (sample : Sampler n Private)
           rw [← hword, ← hs]
           simp only [PMF.map_comp, Function.comp_def]
           rfl
+
+/-- The newest actual dispatch receipt has precisely the fixed source's response
+marginal, including the no-call receipt for halted or divergent checkpoints. -/
+theorem response_record (limits : Limits n) (sample : Sampler n Private)
+    (initial : PMF Private) (machine : MultiTapePTM k Bool Control Unit)
+    (state : State n k Private Control input)
+    (hit : Option (Phase k Control Unit (ServerState n Unit) input))
+    (hb : ∀ phase, hit = some phase → sourceBoundary limits phase) :
+    (Trace.respond limits sample machine (trace state)
+      (hit.map (Phase.mapMemory (Memory.mapPrivate
+        (ServerState.mapPrivate fun _ => state.sourceState))))).map
+        (fun next => next.records.headD none) =
+      ((StochasticOracle.ConcurrentBatch.Interaction.source limits sample initial).step
+        state.history state.sourceState (request limits hit)).map Prod.fst := by
+  have he := congrArg (PMF.map (fun next : Trace.State n k Private Control input =>
+    next.records.headD none)) (response_trace limits sample initial machine state hit hb)
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, List.headD_cons] at he
+  rw [← he]
+  let law := (StochasticOracle.ConcurrentBatch.Interaction.source limits sample initial).step
+    state.history state.sourceState (request limits hit)
+  change law.bind (fun response => (advance limits machine hit response.1).map
+    (fun _ => response.1)) = law.bind (fun response => PMF.pure response.1)
+  apply congrArg law.bind
+  funext response
+  exact PMF.map_const _ _
 
 /-- One separated interaction is exactly one original accepted native trace step,
 including rejected raw requests, analytical receipts and silent divergence. -/
