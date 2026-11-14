@@ -18,6 +18,9 @@ import CslibFrontierTests.Crypto.MLKEMFixture
 4. The ML-KEM wrapper on the toy instance: honest decapsulation returns the encapsulated key, a
    tampered ciphertext is implicitly rejected, and the hypotheses of
    `kemDecaps_encrypt_of_noise_le` are satisfiable.
+5. The two-stage IND-CPA bound `cpaAdvantage_le` for an adversary whose challenge messages depend
+   on the public key, and the ciphertext-hop reduction running that adversary's first stage on
+   the key it reads from its sample.
 -/
 
 namespace CslibFrontierTests.Crypto.MLKEM
@@ -96,5 +99,44 @@ example : kemDecaps toy toyG toyJ toyDK toyTampered = toyJ (toyDK.seed, toyTampe
   refine MLKEMTransform.decapsWith_of_reencrypt_ne _ _ _ _ _ ?_
   intro m' _
   exact toy_encrypt_ne_tampered m'
+
+/-! ### 5. The two-stage IND-CPA bound -/
+
+/-- The parity bits of the first polynomial of `b` in a toy public key `(A, b)`. -/
+def keyParity (pk : PublicKey toy) : Fin toy.n → Bool :=
+  fun i => decide ((pk.2 ⟨0, by decide⟩ i).val % 2 = 1)
+
+/-- A two-stage adversary whose challenge messages depend on the public key: it asks for the
+parity bits of `b`'s first polynomial against their complement, and guesses from the first
+coefficient of the compressed `v`. -/
+def keyDependentAdversary : CpaAdversary toy Unit where
+  choose pk := pure (⟨keyParity pk, fun i => !keyParity pk i⟩, ())
+  guess _ ct := pure (decide (ct.2 ⟨0, by decide⟩ = 0))
+
+/-- `cpaAdvantage_le` applies to it: four Module-LWE terms, two for each challenge bit. -/
+example : (toExplicitCoinPKE toy).cpaAdvantage keyDependentAdversary ≤
+    (ModuleLWE.advantage (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (mlweKeyReduction toy keyDependentAdversary false) +
+      ModuleLWE.advantage (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (ProbComp.eval (sampleVecCBD (toy.k + 1) toy.n toy.q toy.η₂))
+        (mlweReduction toy keyDependentAdversary false)) +
+    (ModuleLWE.advantage (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (mlweKeyReduction toy keyDependentAdversary true) +
+      ModuleLWE.advantage (ProbComp.eval (sampleVecCBD toy.k toy.n toy.q toy.η₁))
+        (ProbComp.eval (sampleVecCBD (toy.k + 1) toy.n toy.q toy.η₂))
+        (mlweReduction toy keyDependentAdversary true)) :=
+  cpaAdvantage_le toy keyDependentAdversary
+
+/-- The ciphertext hop reads the public key from rows of its sample and encrypts the message the
+adversary chose for that key, here the complement of the key's parity bits for `b = true`. -/
+example (M : Matrix (Fin (toy.k + 1)) (Fin toy.k) (Fin toy.n → ZMod toy.q))
+    (w : Fin (toy.k + 1) → Fin toy.n → ZMod toy.q) :
+    mlweReduction toy keyDependentAdversary true M w =
+      pure (decide ((compressCiphertext toy (unextendCiphertext w +
+        (0, messagePoly toy fun i => !keyParity (unextendPublicKeyMatrix M) i))).2 ⟨0, by decide⟩ =
+          0)) :=
+  rfl
 
 end CslibFrontierTests.Crypto.MLKEM

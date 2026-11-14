@@ -40,8 +40,9 @@ advantage `|Pr[b' = b] - 1/2|`. The Fujisaki--Okamoto theorems are stated agains
 `indCpaGame` and `indCpaAdvantage` are a narrower, fixed-message experiment: the messages
 `m₀, m₁` are given before key generation and the adversary is single-stage. Security for every
 fixed pair does not give two-stage security, since a two-stage adversary may choose its messages
-after seeing the public key. The fixed-message experiment is kept for its existing clients, such as
-the K-PKE bound of `Cslib.Crypto.MLKEM.indCpaAdvantage_le`.
+after seeing the public key. The fixed-message experiment is kept for the spread-necessity example
+`Cslib.Crypto.Protocols.FujisakiOkamoto.unspreadPointPKE_indCpaAdvantage`, a scheme that is secure
+for every fixed pair of messages away from one point but not two-stage secure.
 
 Unlike the standard-model bit-string KEM interfaces in `Cslib.Crypto.Encryption.KEMINDCPA` and
 `Cslib.Crypto.Encryption.encryptKeyEncaps`, this interface retains encryption coins and
