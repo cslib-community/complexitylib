@@ -12,6 +12,8 @@ For native uniform quantum oracle-circuit families, [Game/Quantum.lean](../../Cs
 
 To quantify native quantum tests directly over word ensembles, import [Computational/Quantum.lean](../../CslibFrontier/Crypto/Computational/Quantum.lean). `NativeQuantum.test family n x` supplies `(1ⁿ, x)` as the classical input, starts every quantum-input qubit at zero, runs against the all-zero XOR oracle, and uses the first terminally measured output bit as the decision; an empty output rejects. `NativeQuantum.distinguishingGame X family n` first draws `x ← X n`, and `NativeQuantum.ComputationallyIndistinguishable X Y` requires negligible advantage for every native `UniformOracleCircuitFamily`. `SupportsLength` and `IndistinguishableWithin` expose the common challenge-length and separate qubit, gate and query bounds needed by `ComputationallyIndistinguishable.of_within`. The [checked ensemble client](../../CslibFrontierTests/Crypto/NativeQuantumIndistinguishability.lean) builds one growing family that reads the first challenge bit, proves an exact advantage of one on two point ensembles, and exercises the concrete bridge. This is a zero-advice, no-useful-oracle submodel: it does not supply QROM sampling, quantum advice, gate approximation or an equivalence with every QPPT convention.
 
+For a challenge that first draws a fair bit and then samples the corresponding word ensemble, import [Computational/Quantum/Mixture.lean](../../CslibFrontier/Crypto/Computational/Quantum/Mixture.lean). Write the mixture with the existing `(PMF.uniformOfFintype Bool).bind`; `SupportsLength.bind` propagates a common length cap. `IndistinguishableWithin.bind_uniformBool` averages the two branch bounds as `(ε false n budget + ε true n budget) / 2`, with the same native circuit and the same qubit, gate and query budget. `ComputationallyIndistinguishable.bind_uniformBool` gives the asymptotic closure. The [ordinary client](../../CslibFrontierTests/Crypto/NativeQuantumMixture.lean) checks an attained half-advantage, cancellation, zero/one-bit length caps and both fixed-parity HQC assumption interfaces. The mixture is part of challenge sampling; these results do not compile an HQC reduction, charge sampling as a circuit operation, or prove IND-CPA security. Native reduction generators, their static and generated description sizes, resource schedules and any sampling error remain the obligations of [#5281](https://github.com/cslib-community/cslib-frontier/issues/5281).
+
 For finite-source statistical bounds, import [StatisticalDistance/TotalVariation.lean](../../CslibFrontier/Probability/StatisticalDistance/TotalVariation.lean). `Cslib.Probability.closeTo_of_dist_le` turns a bound on the finite-PMF metric (half the L1 distance) into the existing all-event `CloseTo` relation with the same error. The bound is exact on finite types: `closeTo_coe_iff_dist_le` states `CloseTo μ ν ε ↔ dist μ ν ≤ ε` for an error `ε : ℝ≥0`, and `closeTo_iff_ofReal_dist_le` states `CloseTo μ ν ε ↔ ENNReal.ofReal (dist μ ν) ≤ ε` for `ε : ℝ≥0∞`; and `closeTo_iff_etvDist_le` relates `CloseTo` to Mathlib's total variation of `μ.toMeasure` and `ν.toMeasure` on any type with measurable singletons. Its `CloseTo.bind_left` law then handles arbitrary randomized continuations, including infinite output types. The import is pure probability and brings in no games, lattice protocols or native sampler certificates.
 
 For adaptive stateful replacement, import [Security/Oracle.lean](../../CslibFrontier/Computability/Interactive/Security/Oracle.lean). `OracleComp.IsCostBounded.closeTo_runWith` turns a program's existing cost bound `K` and per-call `CloseTo` bounds `cost q * ε` into a bound `K * ε` on the joint result and final state. The premise compares both handlers at every identical query and starting state, including unreachable states; no coupling or finite state space is assumed. Calls of cost zero can still update a shared cache, but their joint reply/state laws must agree statistically at error zero. Charging only signing calls therefore avoids paying for unchanged hash calls or private sampling. The checked adaptive client in [OracleStatistical.lean](../../CslibFrontierTests/OracleStatistical.lean) uses two repeated signing requests, answer-dependent repeated cache reads, and a concrete nonzero error bound while preserving the cache and signing log. This shared lemma does not itself complete the native Schnorr signing-game or key-generation transport in #581. When the two handlers keep different states, related by a probabilistic map (for example a cache and its completed table), use `OracleComp.closeTo_run_interpret_simulation` in [Simulation/CloseTo.lean](../../CslibFrontier/Languages/Probabilistic/Simulation/CloseTo.lean), of which `closeTo_runWith` is the identity case.
@@ -287,7 +289,20 @@ not injective, and the checked client exhibits the discarded high tree word. Thi
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
 nor does it prove classical or quantum security.
 
-Falcon's current checked layer is deliberately narrower than a security theorem. Import
+FIPS 202 SHAKE256 ([fips202][fips202]) is implemented in
+[`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) on top of the existing
+generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x` order, applies the
+standard's θ/ρ/π/χ/ι maps and 24 rounds, and exposes byte-aligned `Keccak.shake256` with the
+1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The byte and state views are proved
+inverse, and `take_shake256` proves prefix consistency for every pair of requested lengths. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/Keccak.lean) checks the official NIST
+0-bit and 1600-bit-message examples, absorption and squeezing across the 136-byte rate boundary,
+the inverse and prefix APIs, and the first Falcon-512 KAT's `salt || message` prefix. This is an
+executable specification, not a collision/preimage result, constant-time implementation or FIPS
+validation.
+
+Falcon's current checked layer ([falcon2020][falcon2020]) is deliberately narrower than a security
+theorem. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
 the NIST-selected Falcon Round 3 submission version 1.2's algebra after hashing and signature
 decoding: `Falcon.reconstructFirst` computes the centered representative of `c - s₂h`,
@@ -302,13 +317,15 @@ finite XOF output prefix; and `Falcon.verifyNistWithXof` injects exactly `salt +
 caller-supplied prefix function before invoking the algebraic verifier. The
 [ordinary-import client](../../CslibFrontierTests/Crypto/Falcon.lean) covers canonical and
 malformed encodings, salt/message layout, rejection sampling, boundary acceptance, and compact
-decoder/hash fixtures derived from the first official Falcon-512 NIST KAT.
+decoder/hash fixtures derived from the first official Falcon-512 NIST KAT. The SHAKE client above
+now checks the concrete 20-byte prefix used by that fixture.
 
-The dependency graph does not yet provide SHAKE-256/Keccak, so the supplied-prefix boundary is not
-a hash implementation and the full KAT is not verified end to end. Public-key decoding, NTRU key
-generation, FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law,
-average-case NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the
-still-developing FIPS 206 remain separate obligations.
+The Falcon frontend deliberately retains a finite XOF-prefix boundary: the concrete SHAKE function
+can supply any requested finite prefix, but the frontend does not choose a universally sufficient
+length for rejection sampling. Full KAT verification, public-key decoding, NTRU key generation,
+FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
+NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the still-developing
+FIPS 206 remain separate obligations.
 
 The source-faithful SLH-DSA WOTS+ digit preprocessing from FIPS 205 is in
 [`SLHDSA/WOTS/Digits.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/WOTS/Digits.lean), with
@@ -1455,6 +1472,8 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+[falcon2020]: ../sources.md#falcon2020
+[fips202]: ../sources.md#fips202
 [fips203]: ../sources.md#fips203
 [fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
