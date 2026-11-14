@@ -490,7 +490,7 @@ private def checkFlattenedParents (env : Environment) (s : Name)
     let applyName := app name "_apply"
     elabCommand (← `($vis:visibility theorem $lengthRule:ident $params* ($a : $S) :
       ($e ($fn $a)).length ≤ ($encRef $a).length := by
-        simp only [$applyName:ident, length_encPair, encBits_apply] <;> omega))
+        simp only [$applyName:ident, $fieldsTerm, length_encPair, encBits_apply] <;> omega))
   for parent in parents, parentEnc in parentEncs, checked in checkedParents do
     let (path, indices) := checked
     let parentProjs := pathProjs env s path
