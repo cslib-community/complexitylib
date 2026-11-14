@@ -555,6 +555,38 @@ theorem sentCount_rawOverwrite
   exact hgen (P.depth - 1) 1 (by have := P.two_le_depth; omega) le_rfl
     (Nat.one_le_of_lt P.two_le_depth) _
 
+theorem seeds_rawOverwrite
+    (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
+    (st : P.TreeState) (x : Fin P.paddedUniv) (v_new : Fin P.valBound) :
+    (st.rawOverwrite scheme x v_new).seeds = st.seeds := by
+  have hgen : ∀ (k m : ℕ), m + k = P.depth → (h1 : 1 ≤ m) → (hml : m ≤ P.depth) →
+      ∀ c : P.LevelCoord m,
+        (st.rawOverwriteLoop scheme v_new m h1 hml c).seeds = st.seeds := by
+    intro k
+    induction k with
+    | zero =>
+      intro m hsum h1 hml c
+      obtain rfl : m = P.depth := by omega
+      unfold rawOverwriteLoop
+      split
+      · split_ifs
+        · exact st.seeds_overwriteAtNode scheme h1 hml _ _ _
+        · omega
+        · rfl
+      · rw [dite_eq_right (lt_irrefl _)]
+    | succ k ih =>
+      intro m hsum h1 hml c
+      have hlt : m < P.depth := by omega
+      unfold rawOverwriteLoop
+      split
+      · split_ifs
+        · exact st.seeds_overwriteAtNode scheme h1 hml _ _ _
+        · exact ih (m + 1) (by omega) (by omega) hlt _
+      · rw [dite_eq_left hlt]
+        exact ih (m + 1) (by omega) (by omega) hlt _
+  exact hgen (P.depth - 1) 1 (by have := P.two_le_depth; omega) le_rfl
+    (Nat.one_le_of_lt P.two_le_depth) _
+
 theorem wellFormedPadded_rawOverwrite
     {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
     {st : P.TreeState} {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}

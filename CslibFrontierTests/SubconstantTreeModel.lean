@@ -8,14 +8,12 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeModel
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeExec
 public meta import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.StorageNode
-public meta import CslibFrontier.DataStructure.Dictionary.Minimap
 import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
 
 /-!
-# Multi-Level Subconstant-Redundancy Dictionary Tree Tests (`Params`, `StorageNode`, `TreeModel`)
+# Multi-Level Subconstant-Redundancy Dictionary Tree Tests
 
 Exercises:
 1. `SubconstantRedundancy.Params` (`Schedule`, `Canonical`, `BitBudget`):
@@ -29,23 +27,26 @@ Exercises:
      compatibility (`routerRound_trinomial_eq_padded`) for static-degree polynomial evaluation;
 3. `SubconstantRedundancy.StorageNode`:
    - executable `#eval` traces of `WaitingList`, `StorageTable` (`Section 5.6` metadata separation
-     `locateSlot`), and `RootValPool`;
+     `locateSlot`), and `rootValPoolCap` conservation (`rootKeyCount_le_rootValPoolCap`);
 4. `SubconstantRedundancy.TreeModel`:
    - `SeedAssignment` routing bijections and Section 5.6 `dfsSubtreeMeta` on depth `3`;
    - end-to-end dictionary trace (`initTree`, `insert`, overwrite, `query`, `delete`, absent
      `delete`) preserving `WellFormed`;
    - `Algorithm 3` (`deleteAndGetQuotient_spec`) and `Algorithm 4` (`rehashSubtree` strict
      locality and `wellFormedPadded_rehashSubtree`);
-5. `SubconstantRedundancy.RehashBounds`:
+5. `SubconstantRedundancy.RehashBounds` & `SubconstantRedundancy.TreeExec`:
    - `Claim 5.4` (`prob_survives_window_of_ancestorFree`,
-     `condProb_goodNodeSeed_survives_window_ge_half`) and `Lemma 5.3`
-     (`canonicalSchedule_rehashWork_le_mul_logStar`).
+     `condProb_goodNodeSeed_survives_window_ge_half`), conditional recurrence telescoping
+     (`canonicalSchedule_rehashWork_le_mul_logStar`), and the unconditional `OracleComp`
+     execution correctness (`mem_support_execHistory`) and `Lemma 5.3` expected rehashing work bound
+     (`canonicalSchedule_expectedCost_execHistory_le`) over external `Dynamic.Op` histories.
 -/
 
 public section
 
 namespace CslibFrontierTests.SubconstantTreeModel
 
+open Cslib
 open Cslib.DataStructure
 open Cslib.DataStructure.Dictionary
 open Cslib.DataStructure.Dictionary.SubconstantRedundancy
@@ -368,7 +369,7 @@ theorem small_router_zero_pad_compat {ℓ : ℕ}
   let qRem := (t4.query ⟨2, by decide⟩).map fun p => (p.1.val, p.2.val)
   (slotBefore, qBefore, slotAfter, qAfter, qDel, qRem)
 
--- Concrete `RootValPool` capacity conservation check on `smallDepth3Sched`:
+-- Concrete `rootValPoolCap` conservation check on `smallDepth3Sched`:
 -- `8` leaves (`1` key each) + `4` inner nodes (`1` key each) = `12` non-root keys, leaving
 -- `rootValPoolCap = 16 - 4 * 3 = 4` root value slots for up to `16` active keys.
 example : smallDepth3Sched.rootValPoolCap = 4 := by decide
@@ -380,6 +381,15 @@ example {rootKeys totalActive : ℕ}
     (hcap : totalActive ≤ 16) :
     rootKeys ≤ smallDepth3Sched.rootValPoolCap :=
   smallDepth3Sched.rootKeys_le_rootValPoolCap hpart hcap
+
+example {scheme : DynamicMatching.Scheme
+      (2 ^ smallDepth3Sched.idBits smallDepth3Sched.depth)
+      (smallDepth3Sched.nLow smallDepth3Sched.depth)}
+    {st : smallDepth3Sched.TreeState}
+    {d : smallDepth3Sched.PaddedDict} {storeLvl : Fin smallDepth3Sched.paddedUniv → ℕ}
+    (hwf : st.WellFormedPadded scheme d storeLvl) :
+    st.rootKeyCount ≤ smallDepth3Sched.rootValPoolCap :=
+  st.rootKeyCount_le_rootValPoolCap hwf
 
 /-! ## 4. Multi-Level Tree Operations, `Algorithm 3`, `Algorithm 4` & DFS Metadata -/
 
@@ -551,5 +561,43 @@ theorem expected_rehashWork_on_sublinearRegime (M : ℕ) {succRehashes : ℕ →
         2 * succRehashes ℓ * ((canonicalSchedule sublinearRegime).nFloor ℓ : ℝ) ≤
       42 * ((testN + M : ℕ) : ℝ) * (Nat.logStar testN : ℝ) :=
   canonicalSchedule_rehashWork_le_mul_logStar sublinearRegime hnonneg hbase hstep
+
+/-- Concrete non-vacuous external `Dynamic.Op` history on `sublinearRegime` (`insert`, `query`,
+`insert` overwrite, `delete`, `query`) verifying `.support` correctness (`mem_support_execHistory`)
+and the unconditional `Lemma 5.3` `OracleComp.expectedCost` bound
+(`canonicalSchedule_expectedCost_execHistory_le`). -/
+theorem unconditional_execHistory_on_sublinearRegime
+    (scheme : DynamicMatching.Scheme
+      (2 ^ (canonicalSchedule sublinearRegime).idBits (canonicalSchedule sublinearRegime).depth)
+      ((canonicalSchedule sublinearRegime).nLow (canonicalSchedule sublinearRegime).depth)) :
+    let P := canonicalSchedule sublinearRegime
+    let hcr := canonicalSchedule_concentrationReady sublinearRegime
+    let hU : 2 ≤ testU := by
+      have h2n : 2 * testN ≤ testU := sublinearRegime.two_mul_n_le_univ
+      have hn2 : 2 ≤ testN := sublinearRegime.two_le_n
+      omega
+    let k₀ : Fin testU := ⟨0, by omega⟩
+    let ops : List (Dynamic.Op testU) :=
+      [.insert k₀ 7, .query k₀, .insert k₀ 9, .delete k₀, .query k₀]
+    (∀ out ∈ (P.execHistory hcr scheme ops).support,
+      out.1.WellFormed scheme
+          ((Dynamic.spec testU testV testN).run (Dictionary.empty testU) ops).1 ∧
+        out.2 = ((Dynamic.spec testU testV testN).run (Dictionary.empty testU) ops).2) ∧
+    OracleComp.expectedCost (P.goodSeedLaw hcr) P.rehashWorkCost
+        (P.execHistory hcr scheme ops) ≤
+      ENNReal.ofReal (84 * ((testN + 5 : ℕ) : ℝ) * (Nat.logStar testN : ℝ)) := by
+  intro P hcr hU k₀ ops
+  have hcap : 0 < testN := by have := sublinearRegime.two_le_n; omega
+  have hv7 : 7 < testV := by change 7 < 2 ^ 64; decide
+  have hv9 : 9 < testV := by change 9 < 2 ^ 64; decide
+  have hempty_card : (Dictionary.dom (Dictionary.empty testU)).card < testN := by
+    have hempty : Dictionary.dom (Dictionary.empty testU) = ∅ := by
+      ext u; simp [Dictionary.dom, Dictionary.empty]
+    rw [hempty]; exact hcap
+  have hvh : (Dynamic.spec testU testV testN).ValidHistory (Dictionary.empty testU) ops := by
+    refine ⟨⟨Or.inl hempty_card, hv7⟩, trivial, ⟨Or.inr ?_, hv9⟩, trivial, trivial, trivial⟩
+    simp
+  refine ⟨fun out hout => P.mem_support_execHistory hcr scheme hvh hout, ?_⟩
+  exact canonicalSchedule_expectedCost_execHistory_le sublinearRegime scheme hvh
 
 end CslibFrontierTests.SubconstantTreeModel
