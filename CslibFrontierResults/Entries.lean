@@ -5547,7 +5547,9 @@ register_result "mldsa-key-only-forgery" where
     probability is at most the advantage of forgeryDistinguisher between honest and uniform \
     keys plus the success probability of selfTargetReduction against a uniform [A | t]. \
     Hardness of self-target MSIS is the assumption, not reduced to Module-SIS; the honest-key \
-    term is not routed through the uniform-secret DecisionModuleLWE. Chosen-message security \
+    term is the Module-LWE advantage for the short laws, the quantity of the short-secret \
+    assumption DecisionModuleLWEWith rather than the uniform-secret DecisionModuleLWE. \
+    Chosen-message security \
     (signing-oracle simulation in the random-oracle model) and asymptotic packaging are not \
     formalized; no running time is charged."
 

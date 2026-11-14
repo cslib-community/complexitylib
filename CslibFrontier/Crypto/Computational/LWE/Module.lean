@@ -25,20 +25,26 @@ the distance between them. These are the games of the ML-KEM and ML-DSA reductio
 are short rather than uniform. Module-LWE is LWE over the ring `Negacyclic (ZMod q) n`
 (`ModuleLWE.advantage_eq_lweAdvantage`).
 
-`DecisionModuleLWE m d n q noise` is the asymptotic assumption with an `m κ × d κ` module matrix
-over `ℤ_{q κ}[X] / (X^{n κ} + 1)`: every distinguisher that is uniform strict PPT on encodings
-(`ModuleLWE.Distinguisher.IsPPT`) has negligible advantage between the real game with a uniform
-secret and independent polynomial errors from `noise κ` and the random game. A distinguisher
-machine reads the unary security parameter and the encoded sample (`ModuleLWE.encInput_apply`).
+`DecisionModuleLWEWith m d n q secret error` is the asymptotic assumption with an `m κ × d κ`
+module matrix over `ℤ_{q κ}[X] / (X^{n κ} + 1)`, a secret law `secret κ` and an error law
+`error κ`: every distinguisher that is uniform strict PPT on encodings
+(`ModuleLWE.Distinguisher.IsPPT`) has negligible advantage between the real game for these laws and
+the random game. A distinguisher machine reads the unary security parameter and the encoded sample
+(`ModuleLWE.encInput_apply`). With short secret and error laws, this is the assumption of the
+CRYSTALS-Kyber and CRYSTALS-Dilithium submissions ([AvanziEtAl2021], §4.3; [BaiEtAl2021], §6.1).
+`DecisionModuleLWE m d n q noise` is the case of a uniform secret and independent polynomial errors
+from `noise κ` (`decisionModuleLWE_iff_decisionModuleLWEWith`).
 
-A distinguisher outputs a bit, so `DecisionModuleLWE` is the same assumption as the
+A distinguisher outputs a bit, so `DecisionModuleLWEWith` is the same assumption as the
 indistinguishability of the encoded samples `ModuleLWE.realEnsemble` and
-`ModuleLWE.uniformEnsemble` against word-level distinguishers (`decisionModuleLWE_iff_encoded`).
-Clients that reduce on encoded words use `DecisionModuleLWE.encoded`.
+`ModuleLWE.uniformEnsemble` against word-level distinguishers (`decisionModuleLWEWith_iff_encoded`).
+Clients that reduce on encoded words use `DecisionModuleLWEWith.encoded`.
 
-`DecisionModuleLWE` is a hypothesis against uniform classical strict polynomial-time programs. It
-makes no assertion of hardness for any particular parameter or error family, and no relation to
-`DecisionLWE` at modulus `2 ^ w` is proved.
+`DecisionModuleLWEWith` is a hypothesis against uniform classical strict polynomial-time programs.
+It makes no assertion of hardness for any particular parameter family or laws, and no relation to
+`DecisionLWE` at modulus `2 ^ w` is proved. It is meaningful only for a family whose parameters grow
+with the security parameter; at one fixed parameter set it fails unless the real sample is exactly
+uniform (see `DecisionModuleLWEWith`).
 
 ## Main definitions
 
@@ -52,7 +58,10 @@ makes no assertion of hardness for any particular parameter or error family, and
   and its encoding.
 * `Cslib.Crypto.ModuleLWE.Distinguisher`, `Cslib.Crypto.ModuleLWE.Distinguisher.IsPPT`: typed
   distinguishers and their efficiency.
-* `Cslib.Crypto.DecisionModuleLWE`: the decision Module-LWE assumption.
+* `Cslib.Crypto.DecisionModuleLWEWith`: the decision Module-LWE assumption for a secret law and
+  an error law.
+* `Cslib.Crypto.DecisionModuleLWE`: its case with a uniform secret and independent polynomial
+  errors.
 * `Cslib.Crypto.ModuleLWE.sampleLaw`, `Cslib.Crypto.ModuleLWE.realEnsemble`,
   `Cslib.Crypto.ModuleLWE.uniformEnsemble`: the sample law and the encoded samples.
 
@@ -64,7 +73,10 @@ makes no assertion of hardness for any particular parameter or error family, and
   `Negacyclic (ZMod q) n`.
 * `Cslib.Crypto.ModuleLWE.realGame_eq_uniform_bind`, `Cslib.Crypto.ModuleLWE.randomGame_eq`: the
   games with the matrix drawn first and with one uniform pair, as key generation draws them.
-* `Cslib.Crypto.decisionModuleLWE_iff_encoded`: `DecisionModuleLWE` is the word-level assumption.
+* `Cslib.Crypto.decisionModuleLWEWith_iff_encoded`: `DecisionModuleLWEWith` is the word-level
+  assumption.
+* `Cslib.Crypto.decisionModuleLWE_iff_decisionModuleLWEWith`: `DecisionModuleLWE` is the case of a
+  uniform secret.
 
 ## References
 
@@ -72,6 +84,10 @@ makes no assertion of hardness for any particular parameter or error family, and
   Rings*][LyubashevskyPeikertRegev2010]
 * [L. Ducas et al., *CRYSTALS-Dilithium: A Lattice-Based Digital Signature
   Scheme*][DucasEtAl2018]
+* [R. Avanzi et al., *CRYSTALS-Kyber: Algorithm Specifications and Supporting Documentation
+  (version 3.02)*][AvanziEtAl2021], 4 August 2021, §4.3 (p. 19) and §4.4 (pp. 21–22)
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting Documentation
+  (Version 3.1)*][BaiEtAl2021], 8 February 2021, §6.1 (p. 23) and §6.2 (p. 24)
 -/
 
 @[expose] public section
@@ -302,22 +318,22 @@ end Experiment
 
 /-! ### Encoded samples -/
 
-/-- Draw a Module-LWE sample `(A, A · s + e)` with uniform `A`, uniform secret `s`, and
-independent polynomial errors drawn from `noise`. -/
-noncomputable def sampleLaw (m d n q : ℕ) [NeZero q] (noise : PMF (Fin n → ZMod q)) :
+/-- Draw a Module-LWE sample `(A, A · s + e)` with secret `s ← secretLaw`, uniform `A` and error
+vector `e ← errorLaw`. -/
+noncomputable def sampleLaw {m d n q : ℕ} [NeZero q] (secretLaw : PMF (Fin d → Fin n → ZMod q))
+    (errorLaw : PMF (Fin m → Fin n → ZMod q)) :
     PMF (Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q)) := do
-  let secret ← PMF.uniformOfFintype (Fin d → Fin n → ZMod q)
+  let secret ← secretLaw
   let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (Fin n → ZMod q))
-  let error ← PMF.pi (fun _ : Fin m => noise)
+  let error ← errorLaw
   return (A, sample A secret error)
 
-/-- Encoded real Module-LWE ensemble at each security parameter. -/
-noncomputable def realEnsemble (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)]
-    (noise : (security : ℕ) → PMF (Fin (n security) → ZMod (q security)))
-    (security : ℕ) : PMF (List Bool) :=
-  (sampleLaw (m security) (d security) (n security) (q security) (noise security)).map
-    encodeSample
+/-- Encoded real Module-LWE ensemble at each security parameter, for the secret law `secret κ` and
+the error law `error κ`. -/
+noncomputable def realEnsemble (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
+    (secret : (κ : ℕ) → PMF (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+    (error : (κ : ℕ) → PMF (Fin (m κ) → Fin (n κ) → ZMod (q κ))) (κ : ℕ) : PMF (List Bool) :=
+  (sampleLaw (secret κ) (error κ)).map encodeSample
 
 /-- Encoded uniform comparison ensemble `(A, u)` with independent uniform `A` and `u`. -/
 noncomputable def uniformEnsemble (m d n q : ℕ → ℕ)
@@ -393,13 +409,13 @@ variable {m d n q}
 def Distinguisher.ofWords (W : Crypto.Distinguisher) : Distinguisher m d n q :=
   fun κ A b => W κ (encodeSample (A, b))
 
-/-- A word-level distinguisher on the encoded real sample runs the real game with a uniform secret
-and independent polynomial errors from `noise κ`. -/
+/-- A word-level distinguisher on the encoded real sample runs the real game for the same laws. -/
 theorem distinguishingGame_realEnsemble
-    (noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))) (W : Crypto.Distinguisher) (κ : ℕ) :
-    distinguishingGame (realEnsemble m d n q noise κ) (W κ) =
-      realGame (PMF.uniformOfFintype (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
-        (PMF.pi fun _ : Fin (m κ) => noise κ) (Distinguisher.ofWords W κ) := by
+    (secret : (κ : ℕ) → PMF (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+    (error : (κ : ℕ) → PMF (Fin (m κ) → Fin (n κ) → ZMod (q κ))) (W : Crypto.Distinguisher)
+    (κ : ℕ) :
+    distinguishingGame (realEnsemble m d n q secret error κ) (W κ) =
+      realGame (secret κ) (error κ) (Distinguisher.ofWords W κ) := by
   simp only [distinguishingGame_eq_bind, realEnsemble, sampleLaw, realGame, eval_realExperiment,
     Distinguisher.ofWords, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
     PMF.pure_bind, PMF.bind_bind, Function.comp_def]
@@ -416,27 +432,64 @@ theorem distinguishingGame_uniformEnsemble (W : Crypto.Distinguisher) (κ : ℕ)
 end ModuleLWE
 
 /-- The decision Module-LWE assumption with an `m κ × d κ` module matrix over
-`ℤ_{q κ}[X] / (X^{n κ} + 1)` and error law `noise κ` for each polynomial: every PPT distinguisher
-has negligible advantage between `ModuleLWE.realGame`, with a uniform secret and independent
-errors, and `ModuleLWE.randomGame`. This is a hypothesis against uniform classical strict PPT
-distinguishers, not a theorem of hardness or a claim about quantum adversaries. -/
-def DecisionModuleLWE (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
-    (noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))) : Prop :=
+`ℤ_{q κ}[X] / (X^{n κ} + 1)`, secret law `secret κ` and error law `error κ`: every PPT
+distinguisher has negligible advantage between `ModuleLWE.realGame (secret κ) (error κ)` and
+`ModuleLWE.randomGame`.
+
+With short laws this is the assumption of the CRYSTALS submissions, in asymptotic form. Kyber v3.02
+([AvanziEtAl2021], §4.3, p. 19) defines `Adv^mlwe_{m,k,η}` with `(s, e) ← β_η^k × β_η^m` for the
+centered binomial law `β_η`, and its Module-LWER problem without compression (§4.4 and footnote 3,
+pp. 21–22) draws `s ← β_{η₁}^k` and `e ← β_{η₂}^m`. Dilithium v3.1 ([BaiEtAl2021], §6.1, p. 23)
+defines `MLWE_{m,k,D}` with `s₁ ← D^k` and `s₂ ← D^m`, and §6.2, eq. (6), p. 24 takes `D` uniform
+on `S_η`. The sources define concrete advantages and take them to be small at their parameter
+sets; here every uniform classical strict PPT distinguisher has negligible advantage over the
+family. This is a hypothesis, not a theorem of hardness for any laws, and makes no claim about
+quantum adversaries; with uniform errors it holds trivially.
+
+The assumption is meaningful only for a family whose parameters grow with `κ`. When `m`, `d`, `n`,
+`q` and the laws do not depend on `κ`, as at any FIPS 203 or FIPS 204 parameter set, the real and
+random games are two fixed distributions. Unless the real sample is exactly uniform, a
+polynomial-time distinguisher that looks the sample up in a fixed finite table has constant
+advantage, so the assumption fails. -/
+def DecisionModuleLWEWith (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
+    (secret : (κ : ℕ) → PMF (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+    (error : (κ : ℕ) → PMF (Fin (m κ) → Fin (n κ) → ZMod (q κ))) : Prop :=
   Game.Indistinguishable
     (fun (D : ModuleLWE.Distinguisher m d n q) κ =>
-      ModuleLWE.realGame (PMF.uniformOfFintype (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
-        (PMF.pi fun _ : Fin (m κ) => noise κ) (D κ))
+      ModuleLWE.realGame (secret κ) (error κ) (D κ))
     (fun D κ => ModuleLWE.randomGame (D κ)) ModuleLWE.Distinguisher.IsPPT
 
-/-- **`DecisionModuleLWE` is the word-level decision Module-LWE assumption.** Quantifying over
+/-- The decision Module-LWE assumption with an `m κ × d κ` module matrix over
+`ℤ_{q κ}[X] / (X^{n κ} + 1)` and error law `noise κ` for each polynomial: every PPT distinguisher
+has negligible advantage between `ModuleLWE.realGame`, with a uniform secret and independent
+errors, and `ModuleLWE.randomGame`. It is `DecisionModuleLWEWith` for these laws
+(`decisionModuleLWE_iff_decisionModuleLWEWith`). This is a hypothesis against uniform classical
+strict PPT distinguishers, not a theorem of hardness or a claim about quantum adversaries. -/
+def DecisionModuleLWE (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
+    (noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))) : Prop :=
+  DecisionModuleLWEWith m d n q (fun κ => PMF.uniformOfFintype (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+    fun κ => PMF.pi fun _ : Fin (m κ) => noise κ
+
+/-- `DecisionModuleLWE` is `DecisionModuleLWEWith` for a uniform secret and independent polynomial
+errors drawn from `noise κ`. -/
+theorem decisionModuleLWE_iff_decisionModuleLWEWith (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
+    (noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))) :
+    DecisionModuleLWE m d n q noise ↔
+      DecisionModuleLWEWith m d n q
+        (fun κ => PMF.uniformOfFintype (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+        fun κ => PMF.pi fun _ : Fin (m κ) => noise κ :=
+  Iff.rfl
+
+/-- **`DecisionModuleLWEWith` is the word-level decision Module-LWE assumption.** Quantifying over
 distinguishers that read the encoded sample as a word gives the same assumption as quantifying
 over typed distinguishers. A typed distinguisher's machine reads exactly that word; conversely, a
 word distinguisher is typed by encoding its input, and a typed one extends to all words by
 rerunning its machine (`IsPPTOn.exists_bool_extension`), since its output is a single bit. -/
-theorem decisionModuleLWE_iff_encoded (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
-    (noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))) :
-    DecisionModuleLWE m d n q noise ↔
-      ComputationallyIndistinguishable (ModuleLWE.realEnsemble m d n q noise)
+theorem decisionModuleLWEWith_iff_encoded (m d n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
+    (secret : (κ : ℕ) → PMF (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
+    (error : (κ : ℕ) → PMF (Fin (m κ) → Fin (n κ) → ZMod (q κ))) :
+    DecisionModuleLWEWith m d n q secret error ↔
+      ComputationallyIndistinguishable (ModuleLWE.realEnsemble m d n q secret error)
         (ModuleLWE.uniformEnsemble m d n q) := by
   constructor
   · intro h W hW
@@ -453,16 +506,18 @@ theorem decisionModuleLWE_iff_encoded (m d n q : ℕ → ℕ) [∀ κ, NeZero (q
         ProbComp.eval (ModuleLWE.Distinguisher.ofWords W' κ A b) = ProbComp.eval (D κ A b) :=
       hW ⟨κ, A, b⟩
     have hneg := h W' hW'
-    simpa only [ModuleLWE.distinguishingGame_realEnsemble noise W',
+    simpa only [ModuleLWE.distinguishingGame_realEnsemble secret error W',
       ModuleLWE.distinguishingGame_uniformEnsemble W', ModuleLWE.realGame_congr (hgame _),
       ModuleLWE.randomGame_congr (hgame _)] using hneg
 
-/-- Under `DecisionModuleLWE`, the encoded real and uniform samples are computationally
+/-- Under `DecisionModuleLWEWith`, the encoded real and uniform samples are computationally
 indistinguishable to word-level distinguishers. -/
-theorem DecisionModuleLWE.encoded {m d n q : ℕ → ℕ} [∀ κ, NeZero (q κ)]
-    {noise : (κ : ℕ) → PMF (Fin (n κ) → ZMod (q κ))} (h : DecisionModuleLWE m d n q noise) :
-    ComputationallyIndistinguishable (ModuleLWE.realEnsemble m d n q noise)
+theorem DecisionModuleLWEWith.encoded {m d n q : ℕ → ℕ} [∀ κ, NeZero (q κ)]
+    {secret : (κ : ℕ) → PMF (Fin (d κ) → Fin (n κ) → ZMod (q κ))}
+    {error : (κ : ℕ) → PMF (Fin (m κ) → Fin (n κ) → ZMod (q κ))}
+    (h : DecisionModuleLWEWith m d n q secret error) :
+    ComputationallyIndistinguishable (ModuleLWE.realEnsemble m d n q secret error)
       (ModuleLWE.uniformEnsemble m d n q) :=
-  (decisionModuleLWE_iff_encoded m d n q noise).mp h
+  (decisionModuleLWEWith_iff_encoded m d n q secret error).mp h
 
 end Cslib.Crypto

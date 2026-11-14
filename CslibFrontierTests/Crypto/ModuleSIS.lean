@@ -140,6 +140,12 @@ noncomputable def moduleZeroNoise :
     (security : ℕ) → PMF (Fin ((fun _ : ℕ => 1) security) → ZMod ((fun _ : ℕ => 2) security)) :=
   fun _ => PMF.pure 0
 
+/-- The encoded real Module-LWE samples of `DecisionModuleLWE` with `m = 1, d = 0, n = 1, q = 2`
+and zero noise: a uniform secret and the zero error vector. -/
+noncomputable abbrev moduleZeroNoiseReal : ℕ → PMF (List Bool) :=
+  ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
+    (fun _ => PMF.uniformOfFintype _) fun security => PMF.pi fun _ => moduleZeroNoise security
+
 /-- Test whether the fourth bit of the encoded Module-LWE sample is `false`. -/
 def fourthBitFalse : Distinguisher :=
   fun _ word => pure (!(word.tail.tail.tail.headD true))
@@ -151,8 +157,7 @@ theorem fourthBitFalse_ppt : IsPPT encBool fourthBitFalse := by
 /-- With `d = 0` and zero noise, every real Module-LWE sample encodes `(0, 0)` as
 `[true, false, false, false]`. -/
 theorem eq_of_mem_support_moduleLWEReal {security : ℕ} {word : List Bool}
-    (h : word ∈ (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
-      moduleZeroNoise security).support) :
+    (h : word ∈ (moduleZeroNoiseReal security).support) :
     word = [true, false, false, false] := by
   obtain ⟨pair, hpair, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp h
   simp only [ModuleLWE.sampleLaw, moduleZeroNoise, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
@@ -172,13 +177,10 @@ theorem eq_of_mem_support_moduleLWEReal {security : ℕ} {word : List Bool}
 /-- The real `DecisionModuleLWE` experiment with `d = 0` and zero noise accepts with probability
 `1`. -/
 theorem distinguishingGame_moduleLWEReal (security : ℕ) :
-    distinguishingGame
-      (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
-        moduleZeroNoise security)
-      (fourthBitFalse security) = PMF.pure true := by
+    distinguishingGame (moduleZeroNoiseReal security) (fourthBitFalse security) =
+      PMF.pure true := by
   rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
-  trans (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
-    moduleZeroNoise security).bind fun _ => PMF.pure true
+  trans (moduleZeroNoiseReal security).bind fun _ => PMF.pure true
   · refine PMF.bind_congr_on_support _ _ _ fun word hword => ?_
     rw [eq_of_mem_support_moduleLWEReal hword]
     simp [fourthBitFalse]
@@ -215,10 +217,7 @@ theorem not_decisionModuleLWE_zeroNoise :
   intro h
   have hneg := h.encoded fourthBitFalse fourthBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
-      (distinguishingGame
-        (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
-          moduleZeroNoise security)
-        (fourthBitFalse security))
+      (distinguishingGame (moduleZeroNoiseReal security) (fourthBitFalse security))
       (distinguishingGame
         (ModuleLWE.uniformEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2) security)
         (fourthBitFalse security)) = 2⁻¹ := by

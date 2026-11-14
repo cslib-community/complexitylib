@@ -154,7 +154,8 @@ example (k n q : ℕ → ℕ) [∀ κ, NeZero (q κ)]
 
 example {k n q : ℕ} [NeZero q] (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool) :
     uniformKeyEncryptionLaw k n q noise m =
-      (ModuleLWE.sampleLaw (k + 1) k n q noise).map (maskExtendedSampleEquiv m) :=
+      (ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+        (PMF.pi fun _ : Fin (k + 1) => noise)).map (maskExtendedSampleEquiv m) :=
   uniformKeyEncryptionLaw_eq_sampleLaw_map k n q noise m
 
 example {k n q : ℕ} [NeZero q] (noise : PMF (Fin n → ZMod q))
