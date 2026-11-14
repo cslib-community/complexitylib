@@ -176,12 +176,6 @@ def Kind.arith : Kind → ArithQBF.Kind
   | .ex => .ex
   | .all => .all
 
-/-- Whether a kind of nodes is a quantifier. -/
-def Kind.isQuantifier : Kind → Bool
-  | .ex => true
-  | .all => true
-  | _ => false
-
 /-- The tokens of the arithmetization for a token of a formula: a quantifier is preceded by the
 linearizations of the variables of `xs`. -/
 def expandToken (xs : List ℕ) (t : Kind × ℕ) : List (ArithQBF.Kind × ℕ) :=

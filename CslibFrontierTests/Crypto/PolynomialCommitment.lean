@@ -143,7 +143,7 @@ example :
   simpa [ZMod.card] using h
 
 /-- For any Ligero matrix instance over `ZMod 7`, the public-coin column reduction is perfectly
-complete and `1 / 7`-sound. -/
+complete and `1 / 7`-sound for the honest claim `L.relOut`. -/
 example (L : LigeroMatrixIOP (ZMod 7) 2 2 4) :
     L.columnReduction.Complete World.plain L.relIn L.relOut 0 ∧
       L.columnReduction.verifier.Sound (oP := OracleSpec.empty) World.plain

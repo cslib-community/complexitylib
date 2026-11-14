@@ -19,8 +19,8 @@ cyclic group `ZMod 5` of order `5` with generator `1 : ZMod 5`:
   equal `otOutputs x`.
 * `idealJoint_ddhOT_sender` and `semiHonestAdvantage_ddhOT_sender`: unconditional perfect privacy
   (zero distinguishing advantage) against a corrupted sender.
-* `semiHonestAdvantage_ddhOT_receiver_eq`: computational privacy against a corrupted receiver
-  reduced tightly to the fixed-group DDH advantage `Cslib.Crypto.ddhAdvantage`.
+* `semiHonestAdvantage_ddhOT_receiver_eq`: privacy against a corrupted receiver, as a per-instance
+  equality with the fixed-group DDH advantage `Cslib.Crypto.ddhAdvantage`.
 * `ddhOTUnchecked_malicious_receiver_advantage`: against `ddhOTUncheckedProtocol`, any simulator
   that picks one query bit `τ` and receives only `m_τ` falls short of the malicious receiver's
   simultaneous-recovery success probability on `ZMod 5` by at least `1 - 5⁻¹`. -/

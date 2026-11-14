@@ -26,6 +26,43 @@ For a simulator that retries until an independent coin succeeds, import [Game/Re
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. cslib-frontier adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
 
+### Security theorems and efficiency witnesses
+
+A security theorem says that every admitted adversary has negligible advantage, given a named hardness assumption. [AGENTS.md](../../AGENTS.md#security-theorems) fixes what such a theorem may assume: named hardness assumptions, stated relative to the setup sampler or component they concern; that the adversary is in the admitted class; and properties of components that the cited result itself takes as given. It may assume nothing about an object that its proof derives from the adversary (a reduction, distinguisher, simulator, extractor or hybrid), and it may not take from the caller an object whose existence or efficiency is what it should prove.
+
+A named assumption may concern the scheme's own components when the cited source assumes it. GSW's one-key circular security `Encryption.CircularSecure E.keyGen E.encrypt`, collision resistance of the Cramer–Shoup hash family `cramerShoupHashMod H`, and quadratic residuosity relative to the scheme's modulus sampler (`QuadraticResiduosityHard fun n => ProbComp.eval (gen n)`) are all allowed. What is ruled out is a premise that the scheme's algorithms behave like idealized ones, such as keys indistinguishable from an ideal key law, unless the cited source names that as an assumption.
+
+ElGamal bit encryption under DDH in [ElGamal.lean](../../CslibFrontier/Crypto/Computational/ElGamal.lean) is the reference pattern. It has four parts:
+
+1. **The reduction is a program.** [elGamalMsgToDDHDistinguisher](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L380) turns an IND-CPA adversary into a DDH distinguisher, and `elGamalToDDHDistinguisher` specializes it to bit messages.
+2. **A concrete bound.** [advantage_elGamalCPAGame_le](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L663) bounds the IND-CPA advantage of `adversary` by the DDH advantages of `elGamalToDDHDistinguisher adversary false` and `… true`. It holds for every adversary, efficient or not.
+3. **An efficiency witness.** [isPPT_elGamalToDDHDistinguisher](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L679) proves that the distinguisher is uniform strict PPT whenever the adversary is.
+4. **The asymptotic theorem.** [DDH.elGamalINDCPA](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L686) assumes only `hDDH : F.DDH setup`. For a PPT adversary it applies `hDDH` to both distinguishers through the witness of step 3, and concludes with the bound of step 2.
+
+In the non-uniform circuit model the efficiency witness is a circuit-size bound instead. `secure_truthTableGenerator_booleanFamily` in [GGM/Circuit.lean](../../CslibFrontier/Crypto/Computational/GGM/Circuit.lean) assumes that the generator is secure against tests with `t + 2 ^ n (n C + 1)` gates, a size that the file proves for its reduction.
+
+The statement `F.DDH setup → F.elGamalINDCPA setup` mentions no reduction, so a reader checks it by reading the two definitions `DDH` and `elGamalINDCPA`. A concrete bound such as step 2 is a lemma; on its own it is not a security theorem.
+
+The audit in [#5293](https://github.com/cslib-community/cslib-frontier/issues/5293) (November 2026) found headline theorems on `main` with the premises in the left column. The right column says what the replacement must assume instead.
+
+| Premise found | Why it is ruled out | The replacement assumes |
+|---|---|---|
+| Schnorr signatures in the random-oracle model: `hDL : Negligible (… oneWayGame … (schnorrFamilyROMSchemeReduction …))` | It is the DL success of the proof's own forking reduction, the hard part of the proof | `F.DiscreteLog setup` and an oracle-PPT forger; the forking reduction gets an `isOraclePPT_…` lemma |
+| Goldwasser–Micali: `hkeys`, the public keys of the scheme's own `keyGen gen` are indistinguishable from the ideal key law | It assumes that the scheme's own key generator behaves like an idealized one, which the cited source does not assume | Quadratic residuosity relative to the scheme's modulus sampler, with conditions on that sampler's support; the law of the scheme's keys is proved, not assumed |
+| LWE fuzzy extractor: `hlwe`, a bound on the LWE advantage of `hardcoreKeyReduction D` and `hardcoreUniformReduction D` | It bounds constructed reductions instead of assuming LWE | The asymptotic LWE assumption, with certified reductions |
+| Fujisaki–Okamoto: `∃ m₀ m₁, m₀ ≠ m₁ ∧ Adv(A) ≤ 2 Adv(romCpaReduction A m₀ m₁) + …` | The messages are chosen after the adversary, so there is no single reduction to certify | A reduction that samples its own messages, against two-stage IND-CPA |
+| Σ-protocol knowledge soundness (`SpecialSoundness.efficientKnowledgeSound`): a caller-supplied extractor with its correctness `hE` and its polynomial-time realization `hpoly` as hypotheses | The extractor's existence and efficiency are what a proof of knowledge proves, so supplying it with assumed properties assumes the result | A rewinding extractor built from special soundness, with a PPT certificate |
+
+A lemma may still take a bound on a constructed reduction as a premise when that is the point. [negligible_prediction_of_negligible_inversion](../../CslibFrontier/Crypto/Computational/GoldreichLevin/Parameters.lean#L175) assumes that the inverters built from a predictor have negligible success. Such a lemma is an algebraic helper: its name and docstring say that it is conditional (for example `…_of_reduction_le`), and a theorem that discharges the premise with the reduction's efficiency witness and the named assumption provides the security claim. Here [negligible_parityPrediction](../../CslibFrontier/Crypto/Computational/GoldreichLevin/WordReduction.lean#L195) does so from `OneWay f` through `isPPT_wordInverter`.
+
+Before review, check a new security theorem against this list:
+
+- every premise is a named hardness assumption stated relative to the sampler or component it concerns, the adversary's class membership, or a property of a component that the cited result takes as given;
+- no premise concerns a reduction, distinguisher, simulator, extractor or hybrid derived from the adversary, and the caller does not supply an object whose existence or efficiency is what the theorem proves;
+- each reduction is a definition with an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a circuit-size bound) that the asymptotic theorem uses;
+- the name and docstring state the model (standard, random-oracle, ideal, query-bounded or information-theoretic), the notion (single- or multi-challenge, one-time or many-time, honest-verifier or malicious zero knowledge, semi-honest, static) and any deviation from the cited source;
+- a theorem it replaces is deleted or demoted to an honestly named helper in the same change.
+
 ## Hardness and pseudorandomness
 
 | Schema | Principal source | Formal parameters and main use |
@@ -38,7 +75,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Inaccessible entropy and shrinking collision grids | [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [CslibFrontier/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [CslibFrontier/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
 | Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean), [CslibFrontier/Crypto/Computational/Paillier/Finite.lean](../../CslibFrontier/Crypto/Computational/Paillier/Finite.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis; at a fixed modulus, typed Paillier with exactly uniform randomness, full Definition 15.14 and an exact CPA-to-DCR bound |
-| Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
+| Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `blumKeyGen`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, Blum-modulus `INDCPA` from `QuadraticResiduosityHard` and explicit prime growth, ideal-key-law bit and bounded-word bounds, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/LWE/Decoding.lean](../../CslibFrontier/Crypto/Computational/LWE/Decoding.lean), [CslibFrontier/Crypto/Computational/LWE/KeyGen.lean](../../CslibFrontier/Crypto/Computational/LWE/KeyGen.lean), [CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean), [CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Ajtai.lean](../../CslibFrontier/Crypto/Computational/SIS/Ajtai.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/LWE/Module.lean](../../CslibFrontier/Crypto/Computational/LWE/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean), [CslibFrontier/Crypto/Computational/LWE/Regev.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev.lean), [CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean) | Explicit dimensions, modulus and noise/norm parameters (typed decision-LWE experiments over a finite commutative ring and `2^w` binary matrix words in `LWE/Basic.lean`, shared LWE decoding/key-generation helpers in `LWE/Decoding.lean` and `LWE/KeyGen.lean`, Micciancio–Peikert power-of-two gadget matrices, short kernel matrices (kernel membership, `det S_w = 2^w`, and column norm bounds, without the lattice-basis generation proof), tagged `GenTrap` trapdoors, and deterministic trapdoor LWE inversion in `LWE/Trapdoor/*`, the typed fixed-instance experiment `sisExperiment` over arbitrary nonzero moduli and the family hypothesis `SIS` in `SIS/Basic.lean`, the Ajtai collision-to-SIS bound `ajtaiAdvantage_le_sisAdvantage` in `SIS/Ajtai.lean`, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `moduleSISExperiment`, `ModuleSIS` and `RingSIS` in `SIS/Module.lean`, typed decision Module-LWE games for any secret and error laws and `DecisionModuleLWE` in `LWE/Module.lean`, Module-LWE public-key encryption in `SIS/ModuleEncryption.lean`, and plain-LWE Regev and GPV dual-Regev bit encryption and IND-CPA security at modulus `2^w` in `LWE/Regev*` and `LWE/DualRegev*`); classical uniform-PPT hardness hypotheses |
 | Computational fuzzy extractors | [CslibFrontier/Crypto/Computational/FuzzyExtractor/Basic.lean](../../CslibFrontier/Crypto/Computational/FuzzyExtractor/Basic.lean), [CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract.lean](../../CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract.lean), [CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract/Security.lean](../../CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract/Security.lean) | Fuller, Meng and Reyzin's definitions [fmr20][fmr20] (Definitions 2.1-2.4 of the full version): `FuzzyExtractor` with `Correct`, `CorrectWithError` and `ComputationallySecureFor` over an explicit source family and distinguisher predicate, and the sketch-and-extract construction of Lemma 2.5. Distinguishers are `Experiment` programs `Key → Helper → Experiment`, and `FuzzyExtractor.realGame` and `FuzzyExtractor.idealGame` average the fixed-reading experiments over the source with `Game.withSetup`. Construction 4.1 is `FuzzyExtractor.lweFuzzyExtractor` (key = first `k` coordinates of the secret, no seed); `FuzzyExtractor.securityAdvantage_lweFuzzyExtractor_le` bounds its advantage by two `LWE.advantage` terms (uniform secret in dimension `l`, error law `W`) of the explicit `Experiment` reductions `FuzzyExtractor.hardcoreKeyReduction` and `FuzzyExtractor.hardcoreUniformReduction` (Lemma 4.7 and the security part of Theorem 4.11), and `FuzzyExtractor.DecoderCorrectWithError.correctHammingWithError_decodeThenExtract` transfers average-case decoder correctness. `FuzzyExtractor.ComputationallySecure` is the asymptotic form of `ComputationallySecureFor` for a family indexed by the security parameter. `FuzzyExtractor.computationallySecure_lweFuzzyExtractor` proves the family `κ ↦ lweFuzzyExtractor (m κ) (k κ) (l κ) (2 ^ w κ)` secure against uniform strict PPT distinguishers on every source ensemble for which `DecisionLWEWithErrors l m w source` holds (decision LWE with the source as the joint error law), given polynomial-time unary parameter schedules; `LWEFamily.isPPT_keyReduction` and `LWEFamily.isPPT_uniformReduction` certify the reductions. The modulus is `2 ^ w κ`, the modulus of the typed decision LWE. Not established: hardness of LWE with error `W` (Theorems 4.6 and 4.8), efficiency of the honest `Gen`/`Rep`, the Construction 4.9 decoder (Lemma 4.10), and Section 5; the generic `FuzzyExtractor.decodeThenExtract` carries no security claim. Build with `lake build CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security` |
 
@@ -720,14 +757,25 @@ nonresidue sampling are not constructed) emitting `pk = encPair encNat encNat (N
 (Definition 15.14, Exercise 15.11) hold on the ideal unit-sampling law `idealEncrypt`
 (`idealEncrypt_mulCiphertexts_eq`, `rerandomize_idealEncrypt_eq`), whereas the dyadic `sampleModNat`
 with `unitOrOne` approximates uniform `(ZMod N)ˣ` within `5 / 2 ^ n` under `hsize : n ≤ d.p.size ∧
-n ≤ d.q.size` (`advantage_encrypt_idealEncrypt_le`). Under `QuadraticResiduosityHard setup`,
-`hsize`, and public-key indistinguishability from `publicKeyLaw setup`, `indcpa_goldwasserMicali`
-proves single-bit `Encryption.INDCPA` (`advantage_publicKeyGame_le_qr`, factor-`2` QR loss plus
-`10 / 2 ^ n` via `qrDistinguisher`) and `indcpaOn_goldwasserMicali_bits` proves bounded-word
-`Encryption.INDCPAOn (validBoundedWords maxLen) encBits` for `encryptWord` under any unary
-polynomial-time `maxLen` (`advantage_publicKeyWordGame_le_qr`, factor-`2` QR loss independent of
-`maxLen n` plus `(10 * maxLen n) / 2 ^ n` via lossy quadratic-residue public keys and
-`qrWordDistinguisher`). Conversely, `jacobiAttackAdversary` (`jacobiAttackAdversary_isPPT`) achieves
+n ≤ d.q.size` (`advantage_encrypt_idealEncrypt_le`). The security headline is the Blum-modulus
+variant: `blumKeyGen gen` draws only a modulus `d ← gen n : ProbComp ModulusDesc` and publishes
+`blumPublicKey N = ⟨N, N - 1⟩` (`isPPTOn_blumKeyGen`, `decrypt_encrypt_blumKeyGen`), and
+`indcpa_blumGoldwasserMicali` proves single-bit `Encryption.INDCPA (blumKeyGen gen) encrypt` from
+`QuadraticResiduosityHard` relative to `gen`, Blum moduli and `n`-bit primes on `gen`'s support,
+with no premise about the key generator. Its reduction `blumQRDistinguisher` encrypts `m₀` and
+multiplies the ciphertext by the challenge `y` when `m₀ ≠ m₁`: a residue leaves an encryption of
+`m₀`, and an element of `QNR_N^{+1}`, which is `-1` times a square
+(`isSquare_mul_of_mem_positiveNonresidues`), turns it into an encryption of `m₁`. The reduction is
+certified strict PPT (`isPPTOn_blumQRDistinguisher`) and the loss is only a `20 / 2 ^ n` sampling
+tail (`advantage_blumGame_le_qr`). For the ideal key law `publicKeyLaw setup` (uniform
+`z ∈ QNR_N^{+1}`), `advantage_publicKeyGame_le_qr` bounds single-bit advantage by factor-`2` QR
+loss plus `10 / 2 ^ n` via `qrDistinguisher`, and `advantage_publicKeyWordGame_le_qr` bounds
+bounded-word `encryptWord` advantage with factor-`2` QR loss independent of `maxLen n` plus
+`(10 * maxLen n) / 2 ^ n` via lossy quadratic-residue public keys and `qrWordDistinguisher`; the
+asymptotic forms are `indistinguishable_publicKeyGame` and `indistinguishable_publicKeyWordGame`.
+`publicKeyLaw` is a distribution, not a key generator: no `gen` whose `keyGen gen` matches it is
+constructed, so these do not yet give security of `keyGen gen`. Modulus samplers are arbitrary laws
+throughout. Conversely, `jacobiAttackAdversary` (`jacobiAttackAdversary_isPPT`) achieves
 exact chosen-message advantage `1` whenever `z ∈ jacobiNegSet p q`
 (`advantage_jacobiAttackAdversary_eq_one`), witnessing the necessity of `J_N(z) = +1`.
 
@@ -889,6 +937,36 @@ uses `circulant_mulVec_comm` and `circulant_mulVec_assoc` to cancel the two publ
 [checked client](../../CslibFrontierTests/Crypto/HQCPKE.lean) uses positive weights and proper
 one-bit truncation, proves a length-three repetition decoder corrects one error, refutes the same
 contract for a constant decoder, checks key/coin support and runs the packaged PKE.
+
+Import [`Computational/HQC/INDCPA.lean`](../../CslibFrontier/Crypto/Computational/HQC/INDCPA.lean)
+for the exact finite game argument in HQC v5.1, Theorem 6.3 and Equation (10), printed pp. 61–64.
+`indCpaGame` uses the shared `TwoStage` interface: after seeing the expanded public key, the first
+stage chooses both messages and a saved state, so the challenge messages may depend on that key.
+This is strictly more faithful to the source game than the fixed-message
+`ExplicitCoinPKE.indCpaAdvantage` experiment. `eval_indCpaGame_eq_twoRealGame` identifies Game1
+with the real 2-DQCSD-P reduction game; `twoUniformGame_eq_threeRealGame` identifies Game2 with
+the real 3-DQCSD-PT reduction game; and `threeUniformGame_eq_uniform` proves that the comparison
+game is a fair hidden-bit game because its uniform retained component masks the selected encoded
+message. The resulting `indCpaAdvantage_le` bound is
+`AdvIND-CPA ≤ Adv2-DQCSD-P + Adv3-DQCSD-PT`.
+
+The public parity `b₁` is sampled from the public word, so both reduction laws explicitly mix
+the two fixed-parity branches. The second identity also requires `omegaE = omegaR`; all published
+v5.1 parameter sets have that equality, while `PKEParams` deliberately permits other finite
+instances. The source's Definition 2.4.1 (printed p. 13) and the Lean definition both use the
+absolute bias `|Pr[win] - 1/2|`. There is also a source inconsistency: the displayed Game3
+body on printed p. 63 repeats Game2's fixed-weight sampling, whereas the adjacent transition text,
+the 3-DQCSD-PT definition and the proof paragraph use the uniform comparison law and conclude that
+the challenge bit is hidden. The formal game follows that stated comparison-law transition.
+
+This is not yet an asymptotic native-quantum PKE security endpoint. The specification supplies no
+gate, query or runtime loss for the two reductions, so connecting these finite advantages to the
+canonical `NativeQuantumTwoDQCSDP` and `NativeQuantumThreeDQCSDPT` assumptions still needs
+encoded-circuit/resource certificates and an explicit fair-mixture handoff. The [checked ordinary
+client](../../CslibFrontierTests/Crypto/HQCINDCPA.lean) uses positive weights, proper truncation and
+key-dependent challenge messages, then applies all three identities and the final bound.
+Production seed/XOF expansion, the biased sampler, Theorem 6.4's salted Fujisaki–Okamoto/QROM
+argument, IND-CCA2 and complete HQC-KEM security remain out of scope.
 
 Import [`HQC/Correctness.lean`](../../CslibFrontier/Crypto/Primitives/HQC/Correctness.lean) for
 the decryption-failure bridge from Definition 6.2.1 and Equations (11), (13) and (14), §6.2.2,
@@ -1104,11 +1182,13 @@ paper uses uniform draws and permits key-dependent `R`), and deterministic encry
 `encDet : PK → M → R → CT` alongside `keyGen` and `dec`, together with expected
 worst-case-message `δ`-correctness `ExplicitCoinPKE.DeltaCorrect` (defined via `ProbComp.expect`
 and `PMF.toOuterMeasure`, with `deltaCorrect_zero_of_perfect` and `DeltaCorrect.mono`),
-`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and the single-stage fixed-message distinguishing
-experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, which takes
-caller-supplied messages `(m₀, m₁)` and probability-difference `Game.advantage` rather than
-§2.1 Def. 2.2 / Fig. 4's two-stage key-dependent-message guessing experiment and `|Pr[b' = b] - 1/2|`
-normalization). On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
+`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and two-stage IND-CPA (§2.1 Def. 2.2 / Fig. 4):
+`ExplicitCoinPKE.toPKE` is the randomized scheme as a `PKE`, and `ExplicitCoinPKE.cpaAdvantage` is
+its advantage in the shared experiment `PKE.cpaExperiment` with every message pair admissible. The
+advantage is the two-world difference, twice HHK17's `|Pr[b' = b] - 1/2|`. The narrower
+fixed-message experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, messages
+`(m₀, m₁)` fixed before key generation, single-stage adversary) remains for the K-PKE bound; the FO
+theorems do not use it. On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
 define the derandomization transform `T[PKE, G]` (§3.1, Fig. 5) with mandatory re-encryption check
 `encT P G pk m' = c` (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `dec_of_decT_eq_some`,
 `decT_eq_none_of_reencrypt_ne`), while `FujisakiOkamoto.Scheme` (with arbitrary samplers
@@ -1135,8 +1215,11 @@ simulated FO handler is built from its own `G`, `H` and decapsulation implementa
 hybrid handlers the same way), deterministic oracle adversaries `ROAdversary` on the challenge
 record `KEM.Challenge PK CT K` (fields `pk`, `ct`, `key`; defined in
 [`Encryption/KEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEM.lean)), pathwise
-`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, and the lazy-cached executable game `Scheme.roIndCcaGame`
-(`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
+`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, adversaries with explicit
+coins `RandomizedROAdversary` (a coin draw `coins`, then the deterministic adversary `run ω`;
+`ofDeterministic` for a single coin value; budgets `QueryBounds` and `FullQueryBounds` for every
+coin value), and the lazy-cached executable game `Scheme.roIndCcaGame` (played by a randomized
+adversary through `RandomizedROAdversary.play` in `Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
 eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
 `Scheme.indCcaRomAdvantage_eq_eager`). Both games are instances of one ROM IND-CCA experiment
 `Scheme.romIndCcaExperiment`, which takes the key generator and the decapsulation oracle as a
@@ -1150,30 +1233,48 @@ with its decapsulation program and prove such bridges rather than writing new ha
 eager/lazy proof. Eager games draw their random oracles from the named tables `Scheme.coinTable`
 (for `G`) and `Scheme.keyTable X` (a key-valued table on `X`, such as `H` on `Bool × M × CT` or a
 ciphertext table on `CT`); new eager hybrids should use them rather than spelling out `PMF.pi`.
-The module also supplies the keyless simulator `Scheme.simHandler` and IND-CPA
-reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
-the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). The IND-CCA theorem itself is
+The module also supplies the keyless simulator `Scheme.simHandler`, its run on a challenge
+`Scheme.simFilterHit`, and the IND-CPA reduction `Scheme.romCpaReduction A`, one `TwoStage`
+adversary whose first stage draws both challenge messages with `S.sampleMsg` (as `D₁` of HHK17
+Fig. 8 does) and whose second stage runs `A` against the simulator and reports whether `m₁` was
+queried to `G`. The one-wayness experiment of the challenge hop is `Scheme.simFilterOwExperiment`;
+`Scheme.succProbability_simFilterOwExperiment_le` bounds it by the reduction's `cpaAdvantage` plus
+`(qG + qH) / |M|`, and `RandomizedROAdversary.advantage_play_le` averages per-coin bounds over the
+adversary's coins. The IND-CCA theorem itself is
 [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean):
 `Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
-and `γ`-spread PKE and `(qG, qH)` random-oracle queries (decapsulation queries unbounded) by
-`2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M| +
-2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
+and `γ`-spread PKE and `(qG, qH)` random-oracle queries for every coin value (decapsulation
+queries unbounded) by `2 · cpaAdvantage (romCpaReduction A) + (2 qH + 2 (qG + qH)) / |M| +
+2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}`. This is a concrete bound for one fixed scheme: there is
+no security parameter and no running-time certificate for the reduction yet (#5293) (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
 `NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`,
 `Scheme.simGame`), one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing
 the oracles so that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy
 realization (`NotBot/Lazy.lean`), the `δ`-correctness bad event (`NotBot/Correctness.lean`), and the
-challenge hop with the `γ` collision term (`NotBot/Challenge.lean`). To see why the re-encryption check of `T` cannot be omitted in `FO-notbot`, import [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean): for any explicit-coin PKE `P` over `Fin n → Bool`, `leakyPKE P` appends an `Option (Fin n)` tag to ciphertexts while preserving `indCpaAdvantage` (`leakyPKE_indCpaAdvantage`), `DeltaCorrect` (`leakyPKE_deltaCorrect`), and `GammaSpread` (`leakyPKE_gammaSpread`) and making `Scheme.decapsNotBot` reject tagged ciphertexts `(c, some i)` via the re-encryption check (`decapsNotBot_leakyPKE_some`), whereas dropping the re-encryption check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`) lets the bit-recovery adversary `leakAdv` (`roQueryBounds_leakAdv`, `0` `G`-queries and `n + 1` `H`-queries) achieve advantage at least `1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys (`advantage_eagerNoCheckGame_leakAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean)). For explicit-rejection `FO^⊥ = U^⊥ ∘ T` (§3.2.1, Fig. 9), import [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`ROFullQueryBounds`, `Scheme.roIndCcaBotGame`, `Scheme.eagerIndCcaBotGame`, `Scheme.eval_roIndCcaBotGame_eq_eagerIndCcaBotGame`, `Scheme.simBotGame`, `Scheme.romBotCpaReduction`, `Scheme.indCcaBotAdvantage_le`, which removes the `2 qH / |M|` fallback seed-guessing term and adds the `2 qD 2^{-γ}` ciphertext-validity spreadness term over `qD` decapsulation queries, with `roIndCcaBotGame` and `eagerIndCcaBotGame` likewise drawing both real `H` replies and the independent ideal challenge key from `S.sampleKey` so uniform `S.sampleKey` recovers the standard uniform-ideal-key experiment) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `unspreadScheme`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`, showing that a single decapsulation query `qD = 1` with `qG = qH = 0` achieves distinguishing advantage `1 - 1 / |M|` against `simBotGame` when `γ`-spreadness fails at one message); standalone OW-PCA / OW-PCVA security definitions for `T` are not formalized separately. Checked clients in
+challenge hop with the `γ` collision term (`NotBot/Challenge.lean`). To see why the re-encryption check of `T` cannot be omitted in `FO-notbot`, import [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean): for any explicit-coin PKE `P` over `Fin n → Bool`, `leakyPKE P` appends an `Option (Fin n)` tag to ciphertexts while preserving two-stage `cpaAdvantage` (`leakyPKE_cpaAdvantage`), `DeltaCorrect` (`leakyPKE_deltaCorrect`), and `GammaSpread` (`leakyPKE_gammaSpread`) and making `Scheme.decapsNotBot` reject tagged ciphertexts `(c, some i)` via the re-encryption check (`decapsNotBot_leakyPKE_some`), whereas dropping the re-encryption check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`) lets the bit-recovery adversary `leakAdv` (`roQueryBounds_leakAdv`, `0` `G`-queries and `n + 1` `H`-queries) achieve advantage at least `1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys (`advantage_eagerNoCheckGame_leakAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean)). For explicit-rejection `FO^⊥ = U^⊥ ∘ T` (§3.2.1, Fig. 9), import [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`ROFullQueryBounds`, `Scheme.roIndCcaBotGame`, `Scheme.eagerIndCcaBotGame`, `Scheme.eval_roIndCcaBotGame_eq_eagerIndCcaBotGame`, `Scheme.simBotGame`, `Scheme.romBotCpaReduction`, `Scheme.indCcaBotAdvantage_le`, which removes the `2 qH / |M|` fallback seed-guessing term and adds the `2 qD 2^{-γ}` ciphertext-validity spreadness term over `qD` decapsulation queries, with `roIndCcaBotGame` and `eagerIndCcaBotGame` likewise drawing both real `H` replies and the independent ideal challenge key from `S.sampleKey` so uniform `S.sampleKey` recovers the standard uniform-ideal-key experiment) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `unspreadScheme`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`, showing that a single decapsulation query `qD = 1` with `qG = qH = 0` achieves distinguishing advantage `1 - 1 / |M|` against `simBotGame` when `γ`-spreadness fails at one message); standalone OW-PCA / OW-PCVA security definitions for `T` are not formalized separately. Checked clients in
 [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
-with failure probability `1 / 2`), positive and negative `GammaSpread` and `indCpaAdvantage`
-witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, positive
-`indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
-`identityUnifKeyScheme`, and `maskedShiftScheme`;
+with failure probability `1 / 2`), positive and negative `GammaSpread` witnesses and fixed-message and two-stage IND-CPA
+witnesses on `identityPKE`, and `ROQueryBounds`, `simFilterHit`, the exact two-stage advantage
+`3 / 4` of `romCpaReduction`, positive `indCcaRomAdvantage`, and eager/lazy and one-wayness
+witnesses on `identityScheme`, `identityUnifKeyScheme`, and `maskedShiftScheme`;
 [`CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean)
 and [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)
 instantiate `Scheme.indCcaRomAdvantage_le` (`≤ 3 / 8`) and `Scheme.indCcaBotAdvantage_le` (`≤ 1 / 4`, plus the `15 / 16` `probeDecapsAdv` separation on `unspreadPointPKE pairCoinPKE 0`) on `pairCoinScheme`.
+
+For a security-parameter family over words, import
+[`FujisakiOkamoto/Word.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Word.lean).
+`WordPKE` fixes at each parameter `n` the message length, the coin length and a bound on ciphertext
+lengths, and `WordPKE.IsEfficient` asks for strict PPT key generation and polynomial-time
+encryption and decryption. `WordPKE.scheme P keyLen n` is the `Scheme` bundle at `n`, and the
+native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
+`WordPKE.encaps`, and `WordPKE.decapsNotBot` and `WordPKE.decapsBot`, which reject words longer
+than the ciphertext bound and otherwise run `Scheme.decapsNotBotM` and `Scheme.decapsBotM`. Their
+native certificates (`WordPKE.IsEfficient.isPPTOn_keyGenNotBot`,
+`WordPKE.IsEfficient.isOraclePPTOn_encaps`, `WordPKE.IsEfficient.isOraclePPTOn_decapsNotBot`,
+`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`. The certified reduction
+and the asymptotic theorem are #5293's next steps.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
@@ -1466,7 +1567,8 @@ since it sees the `(2 n + r)`-bit message only through its `n`-bit digest, the l
 probability at most `(1 / 2) ^ n`. Composed with `OneWay.exists_eufCMA` and
 `OneWay.exists_wordEUFCMA`, this gives `HashFamily.exists_eufCMA` and `HashFamily.exists_wordEUFCMA`
 (Katz–Lindell, Theorem 14.16), so the one-way function assumed by
-`OneWay.exists_eufCMA_of_hashFamily` follows from its hash family. Through Merkle–Damgård,
+`OneWay.exists_eufCMA_of_hashFamily` follows from its hash family. Through Merkle–Damgård (the
+one-bit-per-block instance `merkleDamgard`, not the length-strengthened one),
 `CompressionFamily.exists_oneWay` and `CompressionFamily.exists_wordEUFCMA` give the same
 conclusions for `2 n → n` compression families. No converse is claimed.
 
