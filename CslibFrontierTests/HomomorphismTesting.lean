@@ -14,24 +14,29 @@ import Mathlib.Data.ZMod.Basic
 
 open Cslib.HomomorphismTesting
 open scoped BigOperators
-open Classical
+set_option linter.privateModule false
 
+open Classical in
 /-- The non-Boolean group `ZMod 3` passes the test under its identity homomorphism. -/
 example : rejection (fun x : ZMod 3 => x) = 0 :=
   rejection_hom (AddMonoidHom.id (ZMod 3))
 
+open Classical in
 /-- Both groups may be trivial. -/
 example : rejection (fun _ : ZMod 1 => (0 : ZMod 1)) = 0 :=
   rejection_hom (0 : ZMod 1 →+ ZMod 1)
 
+open Classical in
 /-- A trivial codomain allows every domain point. -/
 example : rejection (fun _ : ZMod 3 => (0 : ZMod 1)) = 0 :=
   rejection_hom (0 : ZMod 3 →+ ZMod 1)
 
+open Classical in
 /-- Constant zero works with a trivial domain and an arbitrary finite codomain. -/
 example : rejection (fun _ : ZMod 1 => (0 : ZMod 3)) = 0 :=
   rejection_hom (0 : ZMod 1 →+ ZMod 3)
 
+open Classical in
 /-- The correction reads `f (x + y)` and `f y`; every plurality satisfies its mass guarantee. -/
 example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G]
     (f : G → H) : ∃ φ : G → H, ∀ x,
@@ -39,6 +44,7 @@ example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G]
   obtain ⟨φ, hφ⟩ := exists_plurality f
   exact ⟨φ, concentration f hφ⟩
 
+open Classical in
 /-- Below the threshold the same correction is a homomorphism with the promised distance. -/
 example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G]
     (f : G → H) (hε : rejection f < 1 / 6) : ∃ h : G →+ H,
@@ -46,12 +52,14 @@ example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G]
   obtain ⟨φ, hφ⟩ := exists_plurality f
   exact ⟨correction f hφ hε, closeness f hφ hε⟩
 
-/-- The endpoint at exactly `1/6` belongs to the unconditional branch. -/
-example (f : ZMod 3 → ZMod 3) (hε : rejection f = 1 / 6) :
-    min (1 / 6) (distance f / 2) ≤ rejection f := by
-  rw [hε]
-  exact min_le_left _ _
+open Classical in
+/-- Conditional threshold coverage uses the public unconditional theorem for general groups. -/
+example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G] [Fintype H]
+    (f : G → H) (hε : rejection f = 1 / 6) :
+    min (1 / 6) (distance f / 2) ≤ (1 / 6 : ℝ) := by
+  simpa only [hε] using min_le_rejection f
 
+open Classical in
 /-- A function far from every homomorphism has the corresponding rejection guarantee. -/
 example {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G] [Fintype H]
     (f : G → H) (d : ℝ)
