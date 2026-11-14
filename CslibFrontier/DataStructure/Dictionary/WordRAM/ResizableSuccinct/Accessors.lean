@@ -66,7 +66,7 @@ open Cslib.DataStructure.HashFamily.WordRAM
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (p >>= k))) =
       (Memory.spec 0).clientState ((Memory.spec 0).clientState s p)
         (k ((Memory.spec 0).clientResult s p)) := (Memory.spec 0).fst_snd_runClient_bind p k s
-@[simp] theorem prog_memoryCost_bind {α β : Type} (p : Memory.Prog α)
+@[simp, nolint simpNF] theorem prog_memoryCost_bind {α β : Type} (p : Memory.Prog α)
     (k : α → Memory.Prog β) (s : Memory.State) :
     memoryCost (p >>= k) s = memoryCost p s +
       memoryCost (k ((Memory.spec 0).clientResult s p)) ((Memory.spec 0).clientState s p) :=
@@ -127,7 +127,8 @@ theorem clientState_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
     memoryCost (minWidthProg p) s = 0 := by
   rcases p with ⟨a, b⟩; dsimp only [minWidthProg]; split_ifs <;> rfl
 
-@[expose] def MinWidthPre (_w : ℕ) (_p : ℕ × ℕ) (_s : Memory.State) : Prop := True
+/-- Precondition for `minWidthProg`. -/
+def MinWidthPre (_w : ℕ) (_p : ℕ × ℕ) (_s : Memory.State) : Prop := True
 
 theorem realizesBounded_minWidth :
     RealizesBounded .exact minWidthProg
@@ -169,7 +170,8 @@ theorem clientState_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     memoryCost (maskOfWidthProg k₀) s = 0 := by
   dsimp only [maskOfWidthProg]; split_ifs <;> rfl
 
-@[expose] def MaskOfWidthPre (w k₀ : ℕ) (_s : Memory.State) : Prop :=
+/-- Precondition for `maskOfWidthProg`. -/
+def MaskOfWidthPre (w k₀ : ℕ) (_s : Memory.State) : Prop :=
   0 < w ∧ k₀ ≤ w
 
 theorem realizesBounded_maskOfWidth :
@@ -221,6 +223,7 @@ theorem clientState_readBitSliceGenProg (d : (ℕ × (ℕ × ℕ)) × (ℕ × �
   rcases d with ⟨⟨base, ⟨wOff, bOff⟩⟩, ⟨k, wVal⟩⟩
   simp [readBitSliceGenProg]
 
+/-- Precondition for `readBitSliceGenProg`. -/
 @[expose] def ReadBitSlicePre (w : ℕ) : (ℕ × (ℕ × ℕ)) × (ℕ × ℕ) → Memory.State → Prop
   | ((base, (wOff, bOff)), (k, wVal)), s =>
     0 < w ∧ w = wVal ∧ k ≤ w ∧ bOff < w ∧ base + wOff + 1 < s.frontier
@@ -369,6 +372,7 @@ theorem clientState_writeBitSliceGenProg
     memoryCost (writeBitSliceGenProg d) s = 4 := by
   rcases d with ⟨⟨⟨base, ⟨wOff, bOff⟩⟩, ⟨k, wVal⟩⟩, val⟩
   simp [writeBitSliceGenProg, writeBitSliceLowProg, writeBitSliceHighProg]
+/-- Precondition for `writeBitSliceGenProg`. -/
 @[expose] def WriteBitSlicePre (w : ℕ) : ((ℕ × (ℕ × ℕ)) × (ℕ × ℕ)) × ℕ → Memory.State → Prop
   | (((base, (wOff, bOff)), (k, wVal)), _val), s =>
     0 < w ∧ w = wVal ∧ k ≤ w ∧ bOff < w ∧ base + wOff + 1 < s.frontier
@@ -428,7 +432,8 @@ theorem clientState_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State
     memoryCost (packedOffsetProg d) s = 0 := by
   rcases d with ⟨⟨k, wVal⟩, idx⟩; rfl
 
-@[expose] def PackedOffsetPre (w : ℕ) : (ℕ × ℕ) × ℕ → Memory.State → Prop
+/-- Precondition for `packedOffsetProg`. -/
+def PackedOffsetPre (w : ℕ) : (ℕ × ℕ) × ℕ → Memory.State → Prop
   | ((k, wVal), idx), s =>
     0 < w ∧ w = wVal ∧ k ≤ w ∧ wordOffset k w idx < s.frontier
 
@@ -477,6 +482,7 @@ theorem clientState_readPackedCompGenProg
   rcases d with ⟨⟨⟨base, offset⟩, ⟨k, wVal⟩⟩, idx⟩
   simp [readPackedCompGenProg]
 
+/-- Precondition for `readPackedCompGenProg`. -/
 @[expose] def ReadPackedCompPre (w : ℕ) : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ → Memory.State → Prop
   | (((base, offset), (k, wVal)), idx), s =>
     ∃ len, 0 < w ∧ w = wVal ∧ k ≤ w ∧ idx < len ∧
@@ -535,6 +541,7 @@ theorem clientState_writePackedCompGenProg
   rcases d with ⟨⟨⟨⟨base, offset⟩, ⟨k, wVal⟩⟩, idx⟩, val⟩
   simp [writePackedCompGenProg]
 
+/-- Precondition for `writePackedCompGenProg`. -/
 @[expose] def WritePackedCompPre (w : ℕ) : (((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ → Memory.State → Prop
   | ((((base, offset), (k, wVal)), idx), _val), s =>
     ∃ len, 0 < w ∧ w = wVal ∧ k ≤ w ∧ idx < len ∧
@@ -601,7 +608,8 @@ theorem clientState_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memo
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   simp [compQOffsetProg]
 
-@[expose] def CompQOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
+/-- Precondition for `compQOffsetProg`. -/
+def CompQOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((q_bits, v_bits), wVal), d), s =>
     0 < w ∧ w = wVal ∧ q_bits ≤ w ∧ v_bits ≤ w ∧ wOffQ q_bits v_bits w d < s.frontier
 
@@ -659,7 +667,8 @@ theorem clientState_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memo
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   simp [compVOffsetProg]
 
-@[expose] def CompVOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
+/-- Precondition for `compVOffsetProg`. -/
+def CompVOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((q_bits, v_bits), wVal), d), s =>
     0 < w ∧ w = wVal ∧ q_bits ≤ w ∧ v_bits ≤ w ∧ wOffV q_bits v_bits w d < s.frontier
 
@@ -710,7 +719,7 @@ def readCompQuotGenProg : (CompParams × ℕ) × ℕ → Memory.Prog ℕ
     let wb ← compQOffsetProg (((q_bits, v_bits), wVal), d)
     readBitSliceGenProg ((itemBase, wb), (q_bits, wVal))
 
-@[simp] theorem clientResult_readCompQuotGenProg {U V w N m_items itemBase d : ℕ}
+@[simp, nolint simpNF] theorem clientResult_readCompQuotGenProg {U V w N m_items itemBase d : ℕ}
     (hd : d < m_items) (s : Memory.State) :
     (Memory.spec 0).clientResult s
         (readCompQuotGenProg ((mkCompParams U V w N, itemBase), d)) =
@@ -726,6 +735,7 @@ theorem clientState_readCompQuotGenProg (d : (CompParams × ℕ) × ℕ) (s : Me
 @[simp] theorem memoryCost_readCompQuotGenProg (d : (CompParams × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (readCompQuotGenProg d) s = 2 := by
   rcases d with ⟨⟨cp, itemBase⟩, idx⟩; simp [readCompQuotGenProg]
+/-- Precondition for `readCompQuotGenProg`. -/
 @[expose] def ReadCompQuotPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, itemBase), d), s => ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ d < m_items
 
@@ -776,6 +786,7 @@ theorem clientState_writeCompQuotGenProg (U V w N itemBase d q : ℕ) (s : Memor
     memoryCost (writeCompQuotGenProg d) s = 4 := by
   rcases d with ⟨⟨⟨cp, itemBase⟩, idx⟩, q⟩; simp [writeCompQuotGenProg]
 
+/-- Precondition for `writeCompQuotGenProg`. -/
 @[expose] def WriteCompQuotPre (w : ℕ) : ((CompParams × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((cp, itemBase), d), _q), s => ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ d < m_items
 
@@ -806,7 +817,7 @@ def readCompValGenProg : (CompParams × ℕ) × ℕ → Memory.Prog ℕ
     let wb ← compVOffsetProg (((q_bits, v_bits), wVal), d)
     readBitSliceGenProg ((itemBase, wb), (v_bits, wVal))
 
-@[simp] theorem clientResult_readCompValGenProg {U V w N m_items itemBase d : ℕ}
+@[simp, nolint simpNF] theorem clientResult_readCompValGenProg {U V w N m_items itemBase d : ℕ}
     (hd : d < m_items) (s : Memory.State) :
     (Memory.spec 0).clientResult s
         (readCompValGenProg ((mkCompParams U V w N, itemBase), d)) =
@@ -824,6 +835,7 @@ theorem clientState_readCompValGenProg (d : (CompParams × ℕ) × ℕ) (s : Mem
     memoryCost (readCompValGenProg d) s = 2 := by
   rcases d with ⟨⟨cp, itemBase⟩, idx⟩; simp [readCompValGenProg]
 
+/-- Precondition for `readCompValGenProg`. -/
 @[expose] def ReadCompValPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, itemBase), d), s => ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ d < m_items
 
@@ -874,6 +886,7 @@ theorem clientState_writeCompValGenProg (U V w N itemBase d v : ℕ) (s : Memory
     memoryCost (writeCompValGenProg d) s = 4 := by
   rcases d with ⟨⟨⟨cp, itemBase⟩, idx⟩, v⟩; simp [writeCompValGenProg]
 
+/-- Precondition for `writeCompValGenProg`. -/
 @[expose] def WriteCompValPre (w : ℕ) : ((CompParams × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((cp, itemBase), d), _v), s => ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ d < m_items
 

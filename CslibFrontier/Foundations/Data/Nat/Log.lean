@@ -120,4 +120,9 @@ theorem clog_two_add_two_le_three_mul_log_two {n : ℕ} (hn : 2 ≤ n) :
   calc n + 2 ≤ 2 ^ (log 2 n + 2) := by rw [Nat.pow_succ]; omega
     _ ≤ 2 ^ (3 * log 2 n) := Nat.pow_le_pow_right Nat.two_pos (by omega)
 
+/-- `⌈log₂ (2 * x)⌉ ≤ ⌈log₂ x⌉ + 1`. -/
+theorem clog_two_mul_le (x : ℕ) : clog 2 (2 * x) ≤ clog 2 x + 1 := by
+  rw [clog_le_iff_le_pow Nat.one_lt_two, pow_succ']
+  exact Nat.mul_le_mul_left 2 (le_pow_clog Nat.one_lt_two x)
+
 end Nat

@@ -81,7 +81,8 @@ theorem clientState_copyCompItemGenProg {U V w N m_items itemBase src dst : ℕ}
     (d : (CompParams × ℕ) × (ℕ × ℕ)) (s : Memory.State) :
     memoryCost (copyCompItemGenProg d) s = 12 := by
   rcases d with ⟨⟨cp, itemBase⟩, ⟨src, dst⟩⟩; simp [copyCompItemGenProg]
-@[expose] def CopyCompItemPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for copying an item between two compacted item slots. -/
+def CopyCompItemPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, itemBase), (src, dst)), s =>
     ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ src < m_items ∧ dst < m_items
 theorem realizesBounded_copyCompItemGen :
@@ -166,6 +167,7 @@ theorem clientState_readCompLMGenProg (c : Fin 9) (d : (CompParams × ℕ) × �
     memoryCost (readCompLMGenProg c d) s = 2 := by
   rcases d with ⟨⟨cp, metaBase⟩, idx⟩; simp [readCompLMGenProg]
 
+/-- Precondition for reading from local metadata array `LM`. -/
 @[expose] def CompLMPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), idx), s => CompMetaEnv w cp metaBase s ∧ idx < totalMicroBuckets (cpN cp)
 
@@ -217,6 +219,7 @@ theorem clientState_writeCompLMGenProg
     memoryCost (writeCompLMGenProg c d) s = 4 := by
   rcases d with ⟨⟨⟨cp, metaBase⟩, idx⟩, val⟩; simp [writeCompLMGenProg]
 
+/-- Precondition for writing to local metadata array `LM`. -/
 @[expose] def WriteCompLMPre (w : ℕ) : ((CompParams × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((cp, metaBase), idx), _val), s =>
     CompMetaEnv w cp metaBase s ∧ idx < totalMicroBuckets (cpN cp)
@@ -262,6 +265,7 @@ theorem clientState_readCompGMGenProg (d : (CompParams × ℕ) × ℕ) (s : Memo
     memoryCost (readCompGMGenProg d) s = 2 := by
   rcases d with ⟨⟨cp, metaBase⟩, idx⟩; simp [readCompGMGenProg]
 
+/-- Precondition for reading from global metadata array `GM`. -/
 @[expose] def CompGMPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), idx), s => CompMetaEnv w cp metaBase s ∧ idx < globalMetaLen (cpN cp)
 
@@ -308,6 +312,7 @@ theorem clientState_writeCompGMGenProg (U V w N metaBase idx val : ℕ) (s : Mem
     memoryCost (writeCompGMGenProg d) s = 4 := by
   rcases d with ⟨⟨⟨cp, metaBase⟩, idx⟩, val⟩; simp [writeCompGMGenProg]
 
+/-- Precondition for writing to global metadata array `GM`. -/
 @[expose] def WriteCompGMPre (w : ℕ) : ((CompParams × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((cp, metaBase), idx), _val), s =>
     CompMetaEnv w cp metaBase s ∧ idx < globalMetaLen (cpN cp)
@@ -351,6 +356,7 @@ theorem clientState_readCompTDGenProg (d : (CompParams × ℕ) × ℕ) (s : Memo
     memoryCost (readCompTDGenProg d) s = 2 := by
   rcases d with ⟨⟨cp, metaBase⟩, t⟩; simp [readCompTDGenProg]
 
+/-- Precondition for reading from tail map `TailToDense`. -/
 @[expose] def CompTailMapPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), idx), s => CompMetaEnv w cp metaBase s ∧ idx < cpMaxTail cp
 
@@ -397,6 +403,7 @@ theorem clientState_writeCompTDGenProg (U V w N metaBase t val : ℕ) (s : Memor
     memoryCost (writeCompTDGenProg d) s = 4 := by
   rcases d with ⟨⟨⟨cp, metaBase⟩, t⟩, val⟩; simp [writeCompTDGenProg]
 
+/-- Precondition for writing to tail map `TailToDense`. -/
 @[expose] def WriteCompTailMapPre (w : ℕ) : ((CompParams × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((cp, metaBase), idx), _val), s => CompMetaEnv w cp metaBase s ∧ idx < cpMaxTail cp
 
@@ -560,7 +567,8 @@ theorem clientState_denseOfCircGenProg (d : CompParams × (ℕ × ℕ)) (s : Mem
   rcases d with ⟨cp, ⟨b_win, c⟩⟩
   dsimp only [denseOfCircGenProg]; simp only [pure_bind]; split_ifs <;> rfl
 
-@[expose] def DenseOfCircPre (w : ℕ) : CompParams × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for circular tail offset mapping `denseOfCirc`. -/
+def DenseOfCircPre (w : ℕ) : CompParams × (ℕ × ℕ) → Memory.State → Prop
   | (cp, (b_win, c)), _s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -648,7 +656,8 @@ theorem clientState_denseOfPhysGenProg (d : (CompParams × ℕ) × ℕ) (s : Mem
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (denseOfPhysGenProg d))) = s :=
   clientState_denseOfPhysGenProg d s
 
-@[expose] def DenseOfPhysPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
+/-- Precondition for mapping physical slot index to dense index `denseOfPhys`. -/
+def DenseOfPhysPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), g), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -701,7 +710,8 @@ def winGrowRightGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog Un
     memoryCost (winGrowRightGenProg d) s = 8 := by
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winGrowRightGenProg]
 
-@[expose] def WinGrowRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for growing the circular window on the right. -/
+def WinGrowRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     CompMetaEnv w cp metaBase s ∧ n_win < cpMaxTail cp ∧ b_win + n_win ≤ cpN cp
 
@@ -745,7 +755,8 @@ def winGrowLeftGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog Uni
     memoryCost (winGrowLeftGenProg d) s = 8 := by
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winGrowLeftGenProg]
 
-@[expose] def WinGrowLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for growing the circular window on the left. -/
+def WinGrowLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     CompMetaEnv w cp metaBase s ∧ n_win < cpMaxTail cp ∧ b_win ≤ cpN cp
 
@@ -790,7 +801,8 @@ def winShrinkRightGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog 
     memoryCost (winShrinkRightGenProg d) s = 12 := by
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winShrinkRightGenProg]
 
-@[expose] def WinShrinkRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for shrinking the circular window on the right. -/
+def WinShrinkRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -836,7 +848,8 @@ def winShrinkLeftGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog U
     memoryCost (winShrinkLeftGenProg d) s = 12 := by
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winShrinkLeftGenProg]
 
-@[expose] def WinShrinkLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+/-- Precondition for shrinking the circular window on the left. -/
+def WinShrinkLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧

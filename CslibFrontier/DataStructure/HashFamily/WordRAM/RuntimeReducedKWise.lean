@@ -241,7 +241,7 @@ def evalHashGenProg : HashParams × ℕ × ℕ × ℕ → Memory.Prog ℕ
 @[expose] def evalMemBound (k : ℕ) : ℕ := 15014 * k + 109
 
 /-- Entry precondition for `evalHashGenProg`. -/
-@[expose] def EvalHashGenPre (w : ℕ) : HashParams × ℕ × ℕ × ℕ → Memory.State → Prop
+def EvalHashGenPre (w : ℕ) : HashParams × ℕ × ℕ × ℕ → Memory.State → Prop
   | (hp, hashBase, scratchBase, uVal), s =>
     ∃ U w₀ b b' k, ∃ θ : ReducedPolySeed w₀ b b' k, ∃ u : Fin U,
       0 < w₀ ∧ w₀ ≤ w ∧ U ≤ 2 ^ w₀ ∧ b' ≤ w ∧ 0 < k ∧

@@ -91,24 +91,43 @@ instance : WordEncoding HashParams := ⟨19, Function.Embedding.refl (Fin 19 →
     w₀ - min w₀ (3 * b), c, 2 ^ c - 1, 2 * c, 2 ^ (2 * c),
     2 ^ (2 * c) - 1, p, 2 ^ p - 1, L₀, k, b']
 
+/-- Total word space allocated for hash parameters and polynomial state. -/
 abbrev hpSpace (hp : HashParams) : ℕ := hp 0
+/-- Number of seed words for the hash family. -/
 abbrev hpSeedWords (hp : HashParams) : ℕ := hp 1
+/-- Number of bottom-limb words. -/
 abbrev hpBotWords (hp : HashParams) : ℕ := hp 2
+/-- Bitmask for limb size $m$. -/
 abbrev hpMaskM (hp : HashParams) : ℕ := hp 3
+/-- Half-limb width $h$. -/
 abbrev hpHalfM (hp : HashParams) : ℕ := hp 4
+/-- Bitmask for half-limb width $h$. -/
 abbrev hpMaskH (hp : HashParams) : ℕ := hp 5
+/-- Bitmask for $m - h$ bits. -/
 abbrev hpMaskMH (hp : HashParams) : ℕ := hp 6
+/-- Bitmask for $m - 2h$ bits. -/
 abbrev hpMaskM2H (hp : HashParams) : ℕ := hp 7
+/-- Shift amount for remainder reduction. -/
 abbrev hpRemShift (hp : HashParams) : ℕ := hp 8
+/-- Chunk width $c$. -/
 abbrev hpC (hp : HashParams) : ℕ := hp 9
+/-- Bitmask for chunk width $c$. -/
 abbrev hpMaskC (hp : HashParams) : ℕ := hp 10
+/-- Twice the chunk width, $2c$. -/
 abbrev hpTwoC (hp : HashParams) : ℕ := hp 11
+/-- Power of two $2^{2c}$. -/
 abbrev hpPow2C (hp : HashParams) : ℕ := hp 12
+/-- Bitmask for $2c$ bits. -/
 abbrev hpMask2C (hp : HashParams) : ℕ := hp 13
+/-- Packing shift parameter $p$. -/
 abbrev hpP (hp : HashParams) : ℕ := hp 14
+/-- Bitmask for $p$ bits. -/
 abbrev hpMaskP (hp : HashParams) : ℕ := hp 15
+/-- Number of initial limb words $L_0$. -/
 abbrev hpL0 (hp : HashParams) : ℕ := hp 16
+/-- Polynomial degree parameter $k$. -/
 abbrev hpK (hp : HashParams) : ℕ := hp 17
+/-- Target hash output bit-length $b'$. -/
 abbrev hpB' (hp : HashParams) : ℕ := hp 18
 
 @[simp] theorem hpSpace_mk (w w₀ b b' k : ℕ) :
@@ -362,7 +381,7 @@ private def InitTableStepGenPre (w : ℕ) : (HashParams × ℕ) × ℕ → Memor
       clmul (i >>> rChunk w₀ b b') (i &&& (2 ^ rChunk w₀ b b' - 1)))
 
 /-- Precondition for `initTableGenProg`. -/
-@[expose] def InitTableGenPre (w : ℕ) : HashParams × ℕ → Memory.State → Prop
+def InitTableGenPre (w : ℕ) : HashParams × ℕ → Memory.State → Prop
   | (hp, hashBase), s => ∃ w₀ b b' k,
     2 * rChunk w₀ b b' < w ∧ hp = mkHashParams w w₀ b b' k ∧
     hashBase + ReducedKWise.space w w₀ b b' k ≤ s.frontier ∧
@@ -731,6 +750,7 @@ theorem realizesBounded_initTableGen :
 
 /-! ## Section 3: Key reduction and word-zeroing helpers -/
 
+/-- Karatsuba half-limb multiplication subroutine. -/
 @[expose] def karatsubaHalfProg : HashParams × ℕ × ℕ → Memory.Prog ℕ
   | (hp, α, x') => do
     let maskM := hpMaskM hp; let h := hpHalfM hp; let maskH := hpMaskH hp
@@ -832,6 +852,7 @@ private theorem realizesBounded_karatsubaHalf :
   all_goals try exact hfit_2m.of_le (le_of_lt hp3)
   all_goals exact lt_of_lt_of_le (by omega) hpow2m
 
+/-- Universe-reduction key evaluator subroutine. -/
 @[expose] def reduceKeyGenProg : HashParams × ℕ × ℕ → Memory.Prog ℕ
   | (hp, hashBase, uVal) => do
     let α ← Memory.read hashBase
@@ -840,6 +861,7 @@ private theorem realizesBounded_karatsubaHalf :
     let odd ← pure ((uVal &&& 1) + ((((uVal >>> 1) + half) &&& hpMaskM hp) <<< 1))
     pure (odd >>> hpRemShift hp)
 
+/-- Precondition for `reduceKeyGenProg`. -/
 @[expose] def ReduceKeyGenPre (w : ℕ) : HashParams × ℕ × ℕ → Memory.State → Prop
   | (hp, hashBase, uVal), s => ∃ w₀ b b' k,
     0 < w₀ ∧ w₀ ≤ w ∧ 2 * rChunk w₀ b b' < w ∧ hp = mkHashParams w w₀ b b' k ∧
@@ -885,10 +907,12 @@ theorem realizesBounded_reduceKeyGen :
     rw [Nat.shiftLeft_eq, pow_one]
     exact lt_of_lt_of_le (by omega) hpow2m)
 
+/-- Single word zeroing step subroutine. -/
 @[expose] def zeroWordsStepProg : ℕ × ℕ → Memory.Prog ℕ
   | (baseAddr, i) => do Memory.write (baseAddr + i) 0; pure (i + 1)
 
-@[expose] def ZeroWordsStepPre (_w : ℕ) : ℕ × ℕ → Memory.State → Prop
+/-- Precondition for `zeroWordsStepProg`. -/
+def ZeroWordsStepPre (_w : ℕ) : ℕ × ℕ → Memory.State → Prop
   | (baseAddr, i), s => baseAddr + i < s.frontier
 
 theorem realizesBounded_zeroWordsStep :

@@ -644,7 +644,7 @@ theorem clientResult_readCompBucketCountGenProg {U V w N metaBase b : ℕ} {s : 
   simp only [pure_bind]
   by_cases hb0 : bucketBits N = 0
   · have h0_lt : 0 < globalMetaLen N := by unfold globalMetaLen; omega
-    have hb_eq : b = 0 := by simp [numBuckets, hb0] at hb; omega
+    have hb_eq : b = 0 := by simp only [numBuckets, hb0, pow_zero] at hb; omega
     subst hb_eq; simp [hb0, h0_lt]
   · have hb_pos : 0 < bucketBits N := Nat.pos_of_ne_zero hb0
     have hq_lt : gmQIdx b < globalMetaLen N := gmQIdx_lt hb_pos hb
@@ -673,6 +673,7 @@ theorem memoryCost_readCompBucketCountGenProg_le (d : (CompParams × ℕ) × ℕ
   dsimp only [readCompBucketCountGenProg]; simp only [pure_bind]
   split_ifs <;> simp
 
+/-- Precondition for reading the count of items in bucket `b` from compacted metadata. -/
 @[expose] def ReadCompBucketCountPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), b), s =>
     ∃ U V N,
@@ -823,6 +824,7 @@ theorem clientResult_recoverOwnerBucketGenProg {U V w N metaBase d : ℕ} {s : M
         clientResult_readCompGMGenProg hidx_lt, clientState_readCompGMGenProg,
         prog_clientResult_pure]
 
+/-- Precondition for recovering the owner bucket of dense item `d`. -/
 @[expose] def RecoverOwnerBucketPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), d), s =>
     ∃ U V N,

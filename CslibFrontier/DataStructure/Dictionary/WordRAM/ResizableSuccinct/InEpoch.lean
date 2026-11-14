@@ -8,28 +8,33 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.MetaSync
-public import CslibFrontier.Computability.WordRAM.Resizable.Randomized
+public import CslibFrontier.Computability.WordRAM.Resizable.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
-# In-Epoch Resizable Succinct Dynamic Dictionary Operations
+# In-Epoch Resizable Succinct Compacted Representation and In-Epoch Primitives (Milestone M3a)
 
-This module completes Milestone `M3` (`P5-M3` on `#3167`) of the resizable succinct dynamic
+This module formalizes Milestone `M3a` (part of `#3167`) of the resizable succinct dynamic
 dictionary on the word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`).
 
 It establishes:
 1. **Stepwise `1 · OPT` space bounds** (`compactedEpochWords_le_succinctWords`,
    `w_mul_compactedEpochWords_le_bits`): under `EpochValid U n N`, live compacted epoch footprint
    is at most `Dynamic.succinctWords 1355 441 U V w n` words (`1 · OPT`, never `2 · OPT`).
+   The constant `1355` (vs theoretical `≤ 680` in asymptotic analyses) is an explicit upper bound
+   accounting for conservative bit-level bucket alignment and the worst-case epoch expansion
+   ratio $N / n \le 4$.
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.
-3. **Parameter-free intra-epoch operations** (`inEpochQueryCode`, `inEpochInsertCode`,
-   `inEpochDeleteCode`, `inEpochOpCode`): compiled `RCode .exact rInEpoch` terms completely
-   independent of $(U, V, w, N, \mathrm{base})$ with `¬ReadsWidth`.
-4. **Distributional operational execution** (`ExecRCodeDist`, `PeakFrontierLe`, `CompactedRep`
-   preservation, and $O(1)$ amortized expected step bounds).
+3. **Universal in-epoch register allocation** (`rInEpoch`, `inEpochBaseReg`, `inEpochTagReg`,
+   `inEpochKeyReg`, `inEpochValReg`, `inEpochOutReg`, `inEpochResTagReg`, `inEpochResValReg`,
+   `inEpochParamReg`, `inEpochTmpAddrReg`, etc.): static register assignments independent of all
+   parameters $(U, V, w, N, \mathrm{base})$.
+
+Operational execution (`inEpochOpCode`, `PeakFrontierLe ≤ base + compactedEpochWords`, and $O(1)$
+expected amortized dynamic step bounds) is deferred to Milestone `M3b` (`Row T91b` on `#3167`).
 
 ## Main definitions
 
@@ -39,9 +44,10 @@ It establishes:
   live resting invariant on `RData rInEpoch` at `frontier = base + compactedEpochWords`.
 * `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.rInEpoch`:
   universal register count (`420`) independent of all parameters.
-* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.inEpochQueryCode`,
-  `inEpochInsertCode`, `inEpochDeleteCode`, `inEpochOpCode`:
-  100% parameter-free `RCode .exact rInEpoch` intra-epoch operations.
+* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.inEpochBaseReg`,
+  `inEpochTagReg`, `inEpochKeyReg`, `inEpochValReg`, `inEpochOutReg`,
+  `inEpochResTagReg`, `inEpochResValReg`, `inEpochParamReg`:
+  universal register allocations for in-epoch operations.
 
 ## Main results
 
@@ -49,11 +55,6 @@ It establishes:
 * `w_mul_compactedEpochWords_le_bits`: word-multiplied `1 · OPT` bit-space bound.
 * `reconstructKeyAt_spec`: exact bijective key/value reconstruction on live dense slots.
 * `compactedRep_empty`: initial empty dictionary representation certificate.
-* `inEpochQueryCode_readsWidth_false`, `inEpochInsertCode_readsWidth_false`,
-  `inEpochDeleteCode_readsWidth_false`, `inEpochOpCode_readsWidth_false`:
-  formal verification of `¬ReadsWidth`.
-* `inEpochQueryCode_exec`, `inEpochInsertCode_exec`, `inEpochDeleteCode_exec`,
-  `inEpochOpCode_exec`: operational `ExecRCodeDist` and `CompactedRep` preservation.
 
 ## References
 
@@ -390,12 +391,19 @@ theorem compactedRep_empty {r : ℕ} {U V w base : ℕ} {x : RData r}
 and scratch registers. -/
 def rInEpoch : ℕ := 420
 
+/-- Register holding the base address of the compacted dictionary segment. -/
 def inEpochBaseReg : Fin rInEpoch := ⟨0, by decide⟩
+/-- Register holding the operation tag (`query`, `insert`, or `delete`). -/
 def inEpochTagReg : Fin rInEpoch := ⟨244, by decide⟩
+/-- Register holding the input key. -/
 def inEpochKeyReg : Fin rInEpoch := ⟨245, by decide⟩
+/-- Register holding the input value. -/
 def inEpochValReg : Fin rInEpoch := ⟨246, by decide⟩
+/-- Register holding the output pointer or status. -/
 def inEpochOutReg : Fin rInEpoch := ⟨247, by decide⟩
+/-- Register holding the result response tag (`found`, `not_found`, etc.). -/
 def inEpochResTagReg : Fin rInEpoch := ⟨252, by decide⟩
+/-- Register holding the result value. -/
 def inEpochResValReg : Fin rInEpoch := ⟨253, by decide⟩
 
 /-- Scratch register `i < 36` for `CompParams`. -/
@@ -404,124 +412,13 @@ def inEpochParamReg (i : Fin 36) : Fin rInEpoch :=
 
 /-- Temporary register for address calculation. -/
 def inEpochTmpAddrReg : Fin rInEpoch := ⟨293, by decide⟩
+/-- Temporary register for constant holding. -/
 def inEpochTmpConstReg : Fin rInEpoch := ⟨294, by decide⟩
+/-- Register holding the constant `0`. -/
 def inEpochZeroReg : Fin rInEpoch := ⟨295, by decide⟩
+/-- Register holding the constant `1`. -/
 def inEpochOneReg : Fin rInEpoch := ⟨296, by decide⟩
+/-- Register holding the constant `2`. -/
 def inEpochTwoReg : Fin rInEpoch := ⟨297, by decide⟩
-
-/-- Parameter-free code loading 36 words of `CompParams` from `[base + 27, base + 63)` into
-`inEpochParamReg`. -/
-def loadCompParamsCodeUpTo : (k : ℕ) → k ≤ 36 → RCode .exact rInEpoch
-  | 0, _ => .op (.copy inEpochZeroReg inEpochZeroReg)
-  | k + 1, hk =>
-    let i : Fin 36 := ⟨k, by omega⟩
-    .seq (loadCompParamsCodeUpTo k (by omega))
-      (.seq (.op (.const inEpochTmpConstReg (offCompParams + k)))
-      (.seq (.op (.exactBin .add inEpochTmpAddrReg inEpochBaseReg inEpochTmpConstReg))
-            (.op (.load (inEpochParamReg i) inEpochTmpAddrReg))))
-
-/-- Parameter-free code loading all 36 words of `CompParams`. -/
-def loadCompParamsCode : RCode .exact rInEpoch :=
-  loadCompParamsCodeUpTo 36 (by decide)
-
-/-- Parameter-free in-epoch query program on `rInEpoch` registers. -/
-def inEpochQueryCode : RCode .exact rInEpoch :=
-  .seq (.op (.const inEpochZeroReg 0))
-    (.op (.copy inEpochResTagReg inEpochZeroReg))
-
-/-- Parameter-free in-epoch insert program on `rInEpoch` registers. -/
-def inEpochInsertCode : RCode .exact rInEpoch :=
-  .seq (.op (.const inEpochZeroReg 0))
-    (.op (.copy inEpochOutReg inEpochZeroReg))
-
-/-- Parameter-free in-epoch delete program on `rInEpoch` registers. -/
-def inEpochDeleteCode : RCode .exact rInEpoch :=
-  .seq (.op (.const inEpochZeroReg 0))
-    (.op (.copy inEpochOutReg inEpochZeroReg))
-
-/-- Parameter-free in-epoch operation dispatcher on `rInEpoch` registers. -/
-def inEpochOpCode : RCode .exact rInEpoch :=
-  .seq (.op (.const inEpochZeroReg 0))
-  (.branch (.eq inEpochTagReg inEpochZeroReg)
-    inEpochQueryCode
-    (.seq (.op (.const inEpochOneReg 1))
-    (.branch (.eq inEpochTagReg inEpochOneReg)
-      inEpochInsertCode
-      inEpochDeleteCode)))
-
-/-! ## Section 4: 100% Parameter-Free and `¬ReadsWidth` Verification -/
-
-theorem inEpochQueryCode_readsWidth_false :
-    ¬inEpochQueryCode.ReadsWidth := by
-  simp [inEpochQueryCode, RCode.ReadsWidth, Op.ReadsWidth]
-
-theorem inEpochInsertCode_readsWidth_false :
-    ¬inEpochInsertCode.ReadsWidth := by
-  simp [inEpochInsertCode, RCode.ReadsWidth, Op.ReadsWidth]
-
-theorem inEpochDeleteCode_readsWidth_false :
-    ¬inEpochDeleteCode.ReadsWidth := by
-  simp [inEpochDeleteCode, RCode.ReadsWidth, Op.ReadsWidth]
-
-theorem inEpochOpCode_readsWidth_false :
-    ¬inEpochOpCode.ReadsWidth := by
-  simp [inEpochOpCode, inEpochQueryCode, inEpochInsertCode, inEpochDeleteCode,
-    RCode.ReadsWidth, Op.ReadsWidth]
-
-/-! ## Section 5: Execution Theorems and Distributional Bounds -/
-
-/-- Distributional execution certificate for `inEpochQueryCode`: executes without faulting,
-preserves the hardware frontier `x.frontier ≤ L_peak`, and completes in $2$ instructions. -/
-theorem inEpochQueryCode_exec {w L_peak : ℕ} {x : RData rInEpoch}
-    (_hx : x.Bounded w) (hfr : x.frontier ≤ L_peak) :
-    let x₁ := x.set inEpochZeroReg 0
-    let x₂ := x₁.set inEpochResTagReg (x₁.regs inEpochZeroReg)
-    ExecRCodeDist w inEpochQueryCode x (PMF.pure x₂) 2 L_peak := by
-  intro x₁ x₂
-  have hfit0 : Fits w 0 := Nat.two_pow_pos w
-  have e1 := RDemonicExec.const (B := .exact) (d := inEpochZeroReg) (v := 0) (w := w)
-    (L_peak := L_peak) (x := x) hfr hfit0
-  have hx₁_fr : x₁.frontier ≤ L_peak := by rw [RData.set_frontier]; exact hfr
-  have e2 := RDemonicExec.copy (B := .exact) (d := inEpochResTagReg) (s := inEpochZeroReg)
-    (w := w) (L_peak := L_peak) (x := x₁) hx₁_fr
-  unfold inEpochQueryCode
-  have hseq := (ExecRCodeDist.of_demonicExec e1).seq_pure (ExecRCodeDist.of_demonicExec e2)
-  exact hseq.congr_dist rfl (by norm_num)
-
-/-- Distributional execution certificate for `inEpochInsertCode`: executes in $2$ instructions,
-preserving `x.frontier ≤ L_peak`. -/
-theorem inEpochInsertCode_exec {w L_peak : ℕ} {x : RData rInEpoch}
-    (_hx : x.Bounded w) (hfr : x.frontier ≤ L_peak) :
-    let x₁ := x.set inEpochZeroReg 0
-    let x₂ := x₁.set inEpochOutReg (x₁.regs inEpochZeroReg)
-    ExecRCodeDist w inEpochInsertCode x (PMF.pure x₂) 2 L_peak := by
-  intro x₁ x₂
-  have hfit0 : Fits w 0 := Nat.two_pow_pos w
-  have e1 := RDemonicExec.const (B := .exact) (d := inEpochZeroReg) (v := 0) (w := w)
-    (L_peak := L_peak) (x := x) hfr hfit0
-  have hx₁_fr : x₁.frontier ≤ L_peak := by rw [RData.set_frontier]; exact hfr
-  have e2 := RDemonicExec.copy (B := .exact) (d := inEpochOutReg) (s := inEpochZeroReg)
-    (w := w) (L_peak := L_peak) (x := x₁) hx₁_fr
-  unfold inEpochInsertCode
-  have hseq := (ExecRCodeDist.of_demonicExec e1).seq_pure (ExecRCodeDist.of_demonicExec e2)
-  exact hseq.congr_dist rfl (by norm_num)
-
-/-- Distributional execution certificate for `inEpochDeleteCode`: executes in $2$ instructions,
-preserving `x.frontier ≤ L_peak`. -/
-theorem inEpochDeleteCode_exec {w L_peak : ℕ} {x : RData rInEpoch}
-    (_hx : x.Bounded w) (hfr : x.frontier ≤ L_peak) :
-    let x₁ := x.set inEpochZeroReg 0
-    let x₂ := x₁.set inEpochOutReg (x₁.regs inEpochZeroReg)
-    ExecRCodeDist w inEpochDeleteCode x (PMF.pure x₂) 2 L_peak := by
-  intro x₁ x₂
-  have hfit0 : Fits w 0 := Nat.two_pow_pos w
-  have e1 := RDemonicExec.const (B := .exact) (d := inEpochZeroReg) (v := 0) (w := w)
-    (L_peak := L_peak) (x := x) hfr hfit0
-  have hx₁_fr : x₁.frontier ≤ L_peak := by rw [RData.set_frontier]; exact hfr
-  have e2 := RDemonicExec.copy (B := .exact) (d := inEpochOutReg) (s := inEpochZeroReg)
-    (w := w) (L_peak := L_peak) (x := x₁) hx₁_fr
-  unfold inEpochDeleteCode
-  have hseq := (ExecRCodeDist.of_demonicExec e1).seq_pure (ExecRCodeDist.of_demonicExec e2)
-  exact hseq.congr_dist rfl (by norm_num)
 
 end Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct

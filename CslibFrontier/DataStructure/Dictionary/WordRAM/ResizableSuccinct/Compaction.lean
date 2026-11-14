@@ -725,7 +725,7 @@ theorem denseOfPhys_slotOf_lt_and_inv {N : ℕ} {gm td dt : ℕ → ℕ}
   intro d
   have hd_lt : d < epochTotalSlots N gm := by
     rcases Nat.eq_zero_or_pos (bucketBits N) with hb0 | hb_pos
-    · have hb_eq : b = 0 := by simp [numBuckets, hb0] at hb; omega
+    · have hb_eq : b = 0 := by simp only [numBuckets, hb0, pow_zero] at hb; omega
       subst hb_eq; unfold bCount at hj; simp only [hb0, ↓reduceIte] at hj
       simpa [d, denseOfPhys, slotOf, epochTotalSlots, hb0] using hj
     · have hb_ne : bucketBits N ≠ 0 := by omega

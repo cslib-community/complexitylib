@@ -269,6 +269,7 @@ private theorem innerClmulLoop_spec {w w₀ b b' k hashBase prodBase i uLimb rVa
         by rw [truncLimbs_zero, clmul_zero_right, Nat.zero_shiftLeft, Nat.xor_zero]⟩
   exact ⟨hsafe, hv, hcost, hfr', hprod', hpack', fun a ha => hmod a (by omega)⟩
 
+/-- Outer carryless multiplication step subroutine. -/
 def outerClmulStepGenProg : (HashParams × ℕ × ℕ × ℕ) × ℕ → Memory.Prog ℕ
   | ((hp, tBase, scratchBase, rVal), i) => do
     let uLimb ← Memory.read (scratchBase + i)
@@ -404,6 +405,7 @@ private theorem outerClmulLoop_spec {w w₀ b b' k hashBase scratchBase rVal acc
   refine ⟨hsafe, hv, hcost, hfr', fun d hd => ?_, fun a ha => hmod a (by omega)⟩
   rw [← hpack', getLimb_packLimbs_of_lt _ hd (hprod_lt' d hd)]
 
+/-- Remainder addition step subroutine. -/
 def reduceAddStepGenProg : (HashParams × ℕ × ℕ × ℕ) × ℕ → Memory.Prog ℕ
   | ((hp, hashBase, scratchBase, coeffOff), m) => do
     let seedLimb ← Memory.read (hashBase + coeffOff + m)
@@ -569,6 +571,7 @@ private theorem reduceAddLoop_spec {w w₀ b b' k hashBase scratchBase PVal : �
       0 s₀ ⟨rfl, rfl, hseed, hprod₀, fun _ hi => (Nat.not_lt_zero _ hi).elim⟩
   exact ⟨hsafe, hv, hcost, hfr', hacc', fun a ha => hmod a (by omega)⟩
 
+/-- Single Horner polynomial step subroutine. -/
 @[expose] def hornerStepGenProg : (HashParams × ℕ × ℕ × ℕ) × ℕ → Memory.Prog ℕ
   | ((hp, hashBase, scratchBase, rVal), j) => do
     Memory.write (scratchBase + accWords) 0
@@ -580,7 +583,8 @@ private theorem reduceAddLoop_spec {w w₀ b b' k hashBase scratchBase PVal : �
     let _ ← iterate reduceAddStepGenProg (hp, hashBase, scratchBase, coeffOff) (2 * hpL0 hp) 0
     pure (j + 1)
 
-@[expose] def HornerStepPre (w : ℕ) :
+/-- Precondition for `hornerStepGenProg`. -/
+def HornerStepPre (w : ℕ) :
     (HashParams × ℕ × ℕ × ℕ) × ℕ → Memory.State → Prop
   | ((hp, hashBase, scratchBase, rVal), j), s =>
     ∃ w₀ b b' k, ∃ θ : ReducedPolySeed w₀ b b' k, ∃ accVal : ℕ,

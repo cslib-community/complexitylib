@@ -7,6 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.Data.Nat.Log
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.BitPackedArray
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
 import Mathlib.Tactic.Linarith
@@ -228,6 +230,24 @@ theorem compactedItemWords_succ_sub_le_two {U V w N n : ℕ} (hw : 0 < w)
   let val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
   Function.update mem₁ (base + wOff + 1)
     (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))
+
+/-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `readBitSlice` coincides
+with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.readPacked`. -/
+theorem readBitSlice_eq_readPacked (base k w mem idx : ℕ) :
+    readBitSlice base (BitPackedArray.wordOffset k w idx)
+      (BitPackedArray.bitOffset k w idx) k w mem =
+      BitPackedArray.readPacked base k w mem idx := by
+  unfold readBitSlice BitPackedArray.readPacked BitPackedArray.lowWidth BitPackedArray.highWidth
+  rfl
+
+/-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `writeBitSlice` coincides
+with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.writePacked`. -/
+theorem writeBitSlice_eq_writePacked (base k w mem idx val : ℕ) :
+    writeBitSlice base (BitPackedArray.wordOffset k w idx)
+      (BitPackedArray.bitOffset k w idx) k w mem val =
+      BitPackedArray.writePacked base k w mem idx val := by
+  unfold writeBitSlice BitPackedArray.writePacked BitPackedArray.lowWidth BitPackedArray.highWidth
+  rfl
 
 theorem readBitSlice_lt (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) :
     readBitSlice base wOff bOff k w mem < 2 ^ k := by
@@ -636,23 +656,20 @@ theorem compactedEpochWords_mono {U V w N n₁ n₂ : ℕ} (h : n₁ ≤ n₂) :
   · omega
   · exact Nat.add_le_add_left (compactedItemWords_mono h) _
 
-theorem clog_two_mul_le (x : ℕ) : Nat.clog 2 (2 * x) ≤ Nat.clog 2 x + 1 := by
-  rw [Nat.clog_le_iff_le_pow one_lt_two, pow_succ']
-  exact Nat.mul_le_mul_left 2 (Nat.le_pow_clog one_lt_two x)
-
+/-- Scaling bound for `Dynamic.logLogFactor` under 2x epoch size expansion. -/
 theorem logLogFactor_two_mul_le_add_one (n : ℕ) :
     Dynamic.logLogFactor (2 * n) ≤ Dynamic.logLogFactor n + 1 := by
   unfold Dynamic.logLogFactor
   have hm : max (2 * n) 4 ≤ 2 * max n 4 := by omega
   have hc1 : Nat.clog 2 (max (2 * n) 4) ≤ 2 * Nat.clog 2 (max n 4) := by
     have hle1 := Nat.clog_mono_right 2 hm
-    have hle2 := clog_two_mul_le (max n 4)
+    have hle2 := Nat.clog_two_mul_le (max n 4)
     have hpos : 1 ≤ Nat.clog 2 (max n 4) := by
       have h4 := Nat.clog_mono_right 2 (le_max_right n 4)
       have : Nat.clog 2 4 = 2 := by decide
       omega
     omega
-  exact (Nat.clog_mono_right 2 hc1).trans (clog_two_mul_le _)
+  exact (Nat.clog_mono_right 2 hc1).trans (Nat.clog_two_mul_le _)
 
 theorem logLogFactor_four_mul_le_add_two (n : ℕ) :
     Dynamic.logLogFactor (4 * n) ≤ Dynamic.logLogFactor n + 2 := by
@@ -763,37 +780,65 @@ instance : WordEncoding CompParams := ⟨36, Function.Embedding.refl (Fin 36 →
   | 35 => epochHashSpace U w N
   | _ => 0
 
+/-- Word width $w$. -/
 abbrev cpW (cp : CompParams) : ℕ := cp ⟨0, by decide⟩
+/-- Capacity parameter $N$. -/
 abbrev cpN (cp : CompParams) : ℕ := cp ⟨1, by decide⟩
+/-- Capacity minus one, $N - 1$. -/
 abbrev cpNSubOne (cp : CompParams) : ℕ := cp ⟨2, by decide⟩
+/-- Quotient bit width $q$. -/
 abbrev cpQuotBits (cp : CompParams) : ℕ := cp ⟨3, by decide⟩
+/-- Value bit width $v$. -/
 abbrev cpValBits (cp : CompParams) : ℕ := cp ⟨4, by decide⟩
+/-- Local metadata subtable offset for coordinate $c < 9$. -/
 abbrev cpOffLMSub (c : Fin 9) (cp : CompParams) : ℕ :=
   match c.val with
   | 0 => cp ⟨5, by decide⟩ | 1 => cp ⟨6, by decide⟩ | 2 => cp ⟨7, by decide⟩
   | 3 => cp ⟨8, by decide⟩ | 4 => cp ⟨9, by decide⟩ | 5 => cp ⟨10, by decide⟩
   | 6 => cp ⟨11, by decide⟩ | 7 => cp ⟨12, by decide⟩ | _ => cp ⟨13, by decide⟩
+/-- Local metadata entry bit-length. -/
 abbrev cpLmBits (cp : CompParams) : ℕ := cp ⟨14, by decide⟩
+/-- Global metadata table offset. -/
 abbrev cpOffGM (cp : CompParams) : ℕ := cp ⟨15, by decide⟩
+/-- Global metadata entry bit-length. -/
 abbrev cpGmBits (cp : CompParams) : ℕ := cp ⟨16, by decide⟩
+/-- Tail-to-dense permutation offset. -/
 abbrev cpOffTD (cp : CompParams) : ℕ := cp ⟨17, by decide⟩
+/-- Dense-to-tail permutation offset. -/
 abbrev cpOffDT (cp : CompParams) : ℕ := cp ⟨18, by decide⟩
+/-- Maximum tail item capacity. -/
 abbrev cpMaxTail (cp : CompParams) : ℕ := cp ⟨19, by decide⟩
+/-- Number of bucket bits $\lceil \log_2 N \rceil$. -/
 abbrev cpBucketBits (cp : CompParams) : ℕ := cp ⟨20, by decide⟩
+/-- Bitmask for bucket bits $2^{\mathrm{bucketBits}} - 1$. -/
 abbrev cpBucketMask (cp : CompParams) : ℕ := cp ⟨21, by decide⟩
+/-- Bucket slab size parameter $K$. -/
 abbrev cpSlabSize (cp : CompParams) : ℕ := cp ⟨22, by decide⟩
+/-- Slab size minus one $K - 1$. -/
 abbrev cpSlabSizeSubOne (cp : CompParams) : ℕ := cp ⟨23, by decide⟩
+/-- Twice slab size $2K$. -/
 abbrev cpTwoSlabSize (cp : CompParams) : ℕ := cp ⟨24, by decide⟩
+/-- Direct slab count. -/
 abbrev cpDirSlabs (cp : CompParams) : ℕ := cp ⟨25, by decide⟩
+/-- Direct slab count minus one. -/
 abbrev cpDirSlabsSubOne (cp : CompParams) : ℕ := cp ⟨26, by decide⟩
+/-- Tail capacity parameter. -/
 abbrev cpTailCap (cp : CompParams) : ℕ := cp ⟨27, by decide⟩
+/-- Global metadata slab directory base index. -/
 abbrev cpGmSlabDirBase (cp : CompParams) : ℕ := cp ⟨28, by decide⟩
+/-- Global metadata tail pointer base index. -/
 abbrev cpGmTailPtrBase (cp : CompParams) : ℕ := cp ⟨29, by decide⟩
+/-- Global metadata tail owner base index. -/
 abbrev cpGmTailOwnerBase (cp : CompParams) : ℕ := cp ⟨30, by decide⟩
+/-- Global metadata slab metadata base index. -/
 abbrev cpGmSlabMetaBase (cp : CompParams) : ℕ := cp ⟨31, by decide⟩
+/-- Micro-block count. -/
 abbrev cpNumMicro (cp : CompParams) : ℕ := cp ⟨32, by decide⟩
+/-- Minimum capacity bound. -/
 abbrev cpMinCap (cp : CompParams) : ℕ := cp ⟨33, by decide⟩
+/-- Item array offset. -/
 abbrev cpOffItems (cp : CompParams) : ℕ := cp ⟨34, by decide⟩
+/-- Hash family workspace allocation words. -/
 abbrev cpHashSpace (cp : CompParams) : ℕ := cp ⟨35, by decide⟩
 
 @[simp] theorem cpOffLMSub_mk (U V w N : ℕ) (c : Fin 9) :
