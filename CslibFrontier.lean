@@ -5937,6 +5937,7 @@ public import CslibFrontier.Foundations.Data.ZMod.ModulusSwitch
 public import CslibFrontier.Foundations.Data.ZMod.Multiples
 public import CslibFrontier.Foundations.Data.ZMod.PolynomialRoots
 public import CslibFrontier.Foundations.Data.ZMod.SquareModulus
+public import CslibFrontier.Foundations.Data.ZMod.ValMinAbs
 public import CslibFrontier.Foundations.FieldTheory.Finite.Basic
 public import CslibFrontier.Foundations.FieldTheory.Finite.BinaryField
 public import CslibFrontier.Foundations.FieldTheory.Finite.LinearizedPolynomial

@@ -7,8 +7,7 @@ Authors: Karn Seth, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Init
-public import Mathlib.Data.ZMod.ValMinAbs
+public import CslibFrontier.Foundations.Data.ZMod.ValMinAbs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -24,7 +23,7 @@ coefficient decompositions. `Power2Round` compresses the public key by writing
 `r⁺ ∈ [0, q)` and its centered remainder `r₀ = r⁺ mod± 2^d`, and returns
 `((r⁺ - r₀) / 2^d, r₀)`. The coefficientwise `power2RoundVec` is the operation used on the
 uncompressed public-key vector `t`; reconstruction and the bound `|t₀| ≤ 2^(d-1)` are the facts
-used in the self-target MSIS calculation of [DucasEtAl2018], Section 6.2.1, Eq. (10).
+used in the self-target MSIS calculation of [BaiEtAl2021Dilithium], Section 6.2.1, Eq. (10).
 
 For `Decompose`, the centered remainder is `r₀ = r⁺ mod± α ∈ (-γ₂, γ₂]`. The algorithm returns
 `(r₁, r₀) = ((r⁺ - r₀) / α, r₀)`, except in the one *wrap-around* case
@@ -34,8 +33,6 @@ components.
 This module defines the decomposition on `ZMod q` and proves the facts that the scheme and its
 security reduction use:
 
-* a centered modular representative is no larger in magnitude than any chosen integer
-  representative (`abs_valMinAbs_intCast_le`);
 * `Power2Round` reconstructs its input and its low part has magnitude at most `2^(d-1)`
   (`intCast_power2Round_high_mul_add_low`, `abs_power2Round_low_le`);
 * the coefficientwise public-key decomposition reconstructs every coefficient and satisfies the
@@ -78,6 +75,8 @@ security reduction use:
 
 ## References
 
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
+  Documentation*, Version 3.1][BaiEtAl2021Dilithium]
 * [L. Ducas et al., *CRYSTALS-Dilithium: A Lattice-Based Digital Signature
   Scheme*][DucasEtAl2018]
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature
@@ -87,17 +86,6 @@ security reduction use:
 @[expose] public section
 
 namespace Cslib.Crypto.MLDSA
-
-/-! ### Centered modular representatives -/
-
-/-- The centered representative of an integer modulo `q` has no greater magnitude than the
-chosen integer representative. -/
-theorem abs_valMinAbs_intCast_le {q : ℕ} [NeZero q] (z : ℤ) :
-    |((z : ZMod q).valMinAbs)| ≤ |z| := by
-  rw [Int.abs_eq_natAbs, Int.abs_eq_natAbs]
-  norm_cast
-  exact ZMod.natAbs_min_of_le_div_two q ((z : ZMod q).valMinAbs) z
-    (by rw [ZMod.coe_valMinAbs]) (ZMod.natAbs_valMinAbs_le (z : ZMod q))
 
 /-! ### Public-key power-of-two rounding -/
 

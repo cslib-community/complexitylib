@@ -44,8 +44,8 @@ The range theorem below states this corrected bound.
 
 ## References
 
-* [L. Ducas et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
-  Documentation*, Version 3.1][DucasEtAl2018]
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
+  Documentation*, Version 3.1][BaiEtAl2021Dilithium]
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature
   Standard*][NISTFIPS204]
 -/
@@ -264,7 +264,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
           push_cast
           ring
     rw [heq]
-    exact (abs_valMinAbs_intCast_le _).trans (by
+    exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
       rw [abs_neg, abs_le]
       constructor <;> omega)
   · change
@@ -288,7 +288,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
               push_cast
               ring
         rw [heq]
-        exact (abs_valMinAbs_intCast_le _).trans (by
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonneg (by push_cast; omega)]
           push_cast
           omega)
@@ -319,7 +319,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
                       2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
                 _ = 2 * (γ₂ : ZMod q) + 1 - lowBits q γ₂ r := by rw [hmα]; ring
         rw [heq]
-        exact (abs_valMinAbs_intCast_le _).trans (by
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonneg (by push_cast; omega)]
           push_cast
           omega)
@@ -339,7 +339,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
               push_cast
               ring
         rw [heq]
-        exact (abs_valMinAbs_intCast_le _).trans (by
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonpos (by push_cast; omega)]
           push_cast
           omega)
@@ -367,7 +367,7 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
                       2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
                 _ = -(2 * (γ₂ : ZMod q)) - 1 - lowBits q γ₂ r := by rw [hmα]; ring
         rw [heq]
-        exact (abs_valMinAbs_intCast_le _).trans (by
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonpos (by push_cast; omega)]
           push_cast
           omega)

@@ -53,13 +53,13 @@ unforgeability, and classical/QROM Fiat--Shamir transformations are not represen
 
 ## References
 
-* [L. Ducas et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
-  Documentation*, Version 3.1][DucasEtAl2018]
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
+  Documentation*, Version 3.1][BaiEtAl2021Dilithium]
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature
   Standard*][NISTFIPS204]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.MLDSA
 
@@ -80,11 +80,11 @@ malformed-input behavior. -/
   c : Fin P.n → ZMod P.q
 
 /-- The public-key high term `t₁ 2ᵈ`, computed from the full semantic `t`. -/
-def publicKeyHighTerm (d : ℕ) (pk : PublicKey P) : Fin P.k → Fin P.n → ZMod P.q :=
+@[expose] def publicKeyHighTerm (d : ℕ) (pk : PublicKey P) : Fin P.k → Fin P.n → ZMod P.q :=
   fun i j => (((power2RoundVec P.q d pk.t).1 i j * (2 ^ d : ℕ) : ℤ) : ZMod P.q)
 
 /-- The public-key low term `t₀`, computed from the full semantic `t`. -/
-def publicKeyLowPart (d : ℕ) (pk : PublicKey P) : Fin P.k → Fin P.n → ZMod P.q :=
+@[expose] def publicKeyLowPart (d : ℕ) (pk : PublicKey P) : Fin P.k → Fin P.n → ZMod P.q :=
   fun i j => (((power2RoundVec P.q d pk.t).2 i j : ℤ) : ZMod P.q)
 
 variable {P}
@@ -100,7 +100,7 @@ theorem publicKeyHighTerm_add_lowPart [NeZero P.q] (d : ℕ) (pk : PublicKey P) 
 variable (P)
 
 /-- The compressed verifier's commitment `r = A z - c (t₁ 2ᵈ)`. -/
-def compressedVerifierCommitment (d : ℕ) (pk : PublicKey P)
+@[expose] def compressedVerifierCommitment (d : ℕ) (pk : PublicKey P)
     (z : Fin P.ℓ → Fin P.n → ZMod P.q) (c : Fin P.n → ZMod P.q) :
     Fin P.k → Fin P.n → ZMod P.q :=
   moduleSISMap pk.A z - fun i => negacyclicMul c (publicKeyHighTerm P d pk i)
@@ -108,7 +108,7 @@ def compressedVerifierCommitment (d : ℕ) (pk : PublicKey P)
 /-- Compressed verification in the simplified proof model. It checks the response and challenge,
 then hashes `UseHint(h, A z - c t₁ 2ᵈ, 2γ₂)`. The final FIPS hint-weight and byte-codec checks are
 not part of this semantic surface. -/
-def compressedVerify (d : ℕ) (H : Hash P) (pk : PublicKey P) (msg : List Bool)
+@[expose] def compressedVerify (d : ℕ) (H : Hash P) (pk : PublicKey P) (msg : List Bool)
     (σ : CompressedSignature P) : Bool :=
   decide (ResponseShort P σ.z) && decide (InBall P.τ σ.c) &&
     decide (H (fun i => useHintVec P.q P.γ₂ (σ.h i)
@@ -176,7 +176,7 @@ theorem isSelfTargetSolution_of_compressedVerify (hP : P.Valid) (hγq : 4 * P.γ
     have ht₀ : ∀ j', |(publicKeyLowPart P d pk i j').valMinAbs| ≤ 2 ^ (d - 1) :=
       fun j' => by
         unfold publicKeyLowPart
-        exact (abs_valMinAbs_intCast_le _).trans
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans
           (abs_power2RoundVec_low_le (q := P.q) hd pk.t i j')
     have hct₀ := abs_valMinAbs_negacyclicMul_le (s := publicKeyLowPart P d pk i) hc ht₀ j
     have hmax :

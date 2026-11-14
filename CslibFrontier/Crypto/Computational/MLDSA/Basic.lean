@@ -201,7 +201,7 @@ theorem abs_valMinAbs_negacyclicMul_le [NeZero q] {τ η : ℕ} {c s : Fin n →
   calc
     |(negacyclicMul c s i).valMinAbs| ≤ |negacyclicMul ĉ ŝ i| := by
       rw [hlift]
-      exact abs_valMinAbs_intCast_le _
+      exact ZMod.abs_valMinAbs_intCast_le _
     _ ≤ τ * η := hbound
 
 end Challenge
