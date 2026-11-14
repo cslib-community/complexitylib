@@ -120,14 +120,12 @@ def ofbWordKeystream (family : List Bool → List Bool → List Bool) (n : ℕ) 
 /-- OFB encryption ([BonehShoup2023], Exercise 5.15(b)): draw a uniform `n`-bit initial value
 `iv` and output `iv` followed by the message XORed with the keystream of `msg.length / n`
 blocks. -/
-@[expose]
 noncomputable def ofbWordEncrypt (family : List Bool → List Bool → List Bool) :
     ℕ → List Bool → List Bool → ProbComp (List Bool) :=
   ivStreamEncrypt (ofbWordKeystream family)
 
 /-- OFB decryption: accept an `n`-bit initial value followed by whole blocks, and XOR the blocks
 with the keystream from that initial value. -/
-@[expose]
 def ofbWordDecrypt (family : List Bool → List Bool → List Bool) :
     ℕ → List Bool → List Bool → Option (List Bool) :=
   ivStreamDecrypt (ofbWordKeystream family)
@@ -235,13 +233,11 @@ theorem computableInPolyTime_ofbWordDecrypt {family : List Bool → List Bool �
 
 /-- One chain value from the function oracle: query the current chain value, keep at most `n`
 bits of the reply as the next one and append it to the keystream so far. -/
-@[expose]
 def ofbKeystreamStep (n : ℕ) (state : List Bool × List Bool) :
     WordOracleComp Unit (List Bool × List Bool) :=
   (fun y => (y, state.2 ++ y)) <$> (List.take n <$> ProbOracleComp.query ((), state.1))
 
 /-- The keystream of `blocks` blocks from the function oracle, with one query per block. -/
-@[expose]
 def ofbKeystreamQueries (n : ℕ) (iv : List Bool) (blocks : ℕ) :
     WordOracleComp Unit (List Bool) :=
   Prod.snd <$> OracleComp.iterate blocks (ofbKeystreamStep n) (iv, [])
@@ -249,7 +245,6 @@ def ofbKeystreamQueries (n : ℕ) (iv : List Bool) (blocks : ℕ) :
 /-- The reduction's answer to one left-or-right request: on an admissible pair, draw a uniform
 `n`-bit initial value, obtain the keystream from the function oracle and XOR it with the message
 selected by `bit`; answer inadmissible requests with `[]` and no query. -/
-@[expose]
 noncomputable def ofbPrfHandler (n : ℕ) (bit : Bool) (request : Unit × List Bool) :
     WordOracleComp Unit (List Bool) :=
   let m0 := unframe request.2
@@ -263,7 +258,6 @@ noncomputable def ofbPrfHandler (n : ℕ) (bit : Bool) (request : Unit × List B
 
 /-- The PRF distinguisher built from a left-or-right CPA adversary against OFB mode: run the
 adversary and answer every request with `ofbPrfHandler n bit`. -/
-@[expose]
 noncomputable def ofbToPrfDistinguisher (adversary : OracleDistinguisher) (bit : Bool) :
     OracleDistinguisher :=
   fun n _ => ProbOracleComp.simulate (ofbPrfHandler n bit) (adversary n [])

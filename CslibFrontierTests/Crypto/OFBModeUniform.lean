@@ -3,6 +3,9 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
+
+module
+
 import CslibFrontier.Crypto.Computational.Encryption.OFBMode.Uniform
 
 /-!
@@ -10,7 +13,7 @@ import CslibFrontier.Crypto.Computational.Encryption.OFBMode.Uniform
 
 Checks for `CslibFrontier/Crypto/Computational/Encryption/OFBMode/Uniform.lean`: a concrete
 keystream and correctness for a toy family, the concrete bound for a query-free adversary, and the
-asymptotic theorem's premises.
+asymptotic theorem's premises. The file is a `module` client with ordinary imports.
 -/
 
 namespace CslibFrontierTests.Crypto.OFBModeUniform
@@ -18,9 +21,9 @@ namespace CslibFrontierTests.Crypto.OFBModeUniform
 open Cslib Cslib.Probability Cslib.Crypto Turing.MultiTapeTM
 
 /-- A toy keyed family: XOR of key and input (not pseudorandom). -/
-def xorFamily (key query : List Bool) : List Bool := List.zipWith xor key query
+public def xorFamily (key query : List Bool) : List Bool := List.zipWith xor key query
 
-theorem xorFamily_length (key query : List Bool) (h : query.length = key.length) :
+public theorem xorFamily_length (key query : List Bool) (h : query.length = key.length) :
     (xorFamily key query).length = key.length := by
   simp [xorFamily, h]
 
