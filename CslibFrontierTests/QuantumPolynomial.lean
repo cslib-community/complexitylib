@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Polynomial
 public import CslibFrontier.Computability.Circuit.Quantum.Basic
+public import CslibFrontier.Computability.Circuit.Quantum.GateMatrix
 public import CslibFrontier.Foundations.Quantum.Measurement
 public import CslibFrontier.Foundations.Data.BitString.Sign
 
@@ -94,6 +95,41 @@ example (W : Type) [Fintype W] (U : ℕ → State 3 W →ₗᵢ[ℂ] State 3 W) 
     (S : Finset (Fin 3 × Bool × W)) :
     (fun x => measureProb (run U ψ x 2) S) ∈ lowDegree ℝ (Fin 3) 4 :=
   measureProb_run_mem_lowDegree U ψ 2 S
+
+-- The Hadamard matrix satisfies all five equivalent unitarity characterizations (Claim 20.11).
+example : ∀ ψ : EuclideanSpace ℂ Bool,
+    ‖Matrix.toEuclideanCLM (n := Bool) (𝕜 := ℂ) Gate.hadamardMatrix ψ‖ = ‖ψ‖ :=
+  (Matrix.mem_unitaryGroup_iff_forall_norm_toEuclideanCLM Gate.hadamardMatrix).mp
+    Gate.hadamardMatrix_mem_unitaryGroup
+
+example : ∀ v : Bool → EuclideanSpace ℂ Bool, Orthonormal ℂ v →
+    Orthonormal ℂ
+      (fun i => Matrix.toEuclideanCLM (n := Bool) (𝕜 := ℂ) Gate.hadamardMatrix (v i)) :=
+  (Matrix.mem_unitaryGroup_iff_forall_orthonormal Gate.hadamardMatrix).mp
+    Gate.hadamardMatrix_mem_unitaryGroup
+
+example : Orthonormal ℂ (fun j : Bool => WithLp.toLp 2 (fun i => Gate.hadamardMatrix i j)) :=
+  (Matrix.mem_unitaryGroup_iff_orthonormal_cols Gate.hadamardMatrix).mp
+    Gate.hadamardMatrix_mem_unitaryGroup
+
+example : Orthonormal ℂ
+    (fun j : Bool => Matrix.toEuclideanCLM (n := Bool) (𝕜 := ℂ) Gate.hadamardMatrix (ket j)) :=
+  (mem_unitaryGroup_iff_orthonormal_toEuclideanCLM_ket Gate.hadamardMatrix).mp
+    Gate.hadamardMatrix_mem_unitaryGroup
+
+example : Orthonormal ℂ (fun i : Bool => WithLp.toLp 2 (Gate.hadamardMatrix i)) :=
+  (Matrix.mem_unitaryGroup_iff_orthonormal_rows Gate.hadamardMatrix).mp
+    Gate.hadamardMatrix_mem_unitaryGroup
+
+example (U : Matrix Bool Bool ℂ) :
+    List.TFAE
+      [U ∈ Matrix.unitaryGroup Bool ℂ,
+        ∀ ψ : EuclideanSpace ℂ Bool, ‖Matrix.toEuclideanCLM (n := Bool) (𝕜 := ℂ) U ψ‖ = ‖ψ‖,
+        ∀ v : Bool → EuclideanSpace ℂ Bool, Orthonormal ℂ v →
+          Orthonormal ℂ (fun i => Matrix.toEuclideanCLM (n := Bool) (𝕜 := ℂ) U (v i)),
+        Orthonormal ℂ (fun j : Bool => WithLp.toLp 2 (fun i => U i j)),
+        Orthonormal ℂ (fun i : Bool => WithLp.toLp 2 (U i))] :=
+  Matrix.unitaryGroup_tfae U
 
 end
 

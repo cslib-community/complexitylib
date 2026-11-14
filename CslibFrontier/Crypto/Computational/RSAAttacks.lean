@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -30,8 +30,11 @@ for the exact arithmetic it exploits; none of them uses a hardness assumption.
   ciphertexts is again `m ^ e`.
 * **Factoring from `φ(N)`.** `N = p * q` and `φ(N) = (p - 1) * (q - 1)` determine `p + q` and
   `(p - q) ^ 2`, hence `p` and `q` (`factorOfTotient`).
-* **Factoring from `(N, e, d)`.** Every unit `x` modulo `N` satisfies `x ^ (e * d - 1) ≡ 1`, and a
-  square root `y` of `1` modulo `N` other than `±1` gives the proper factor `gcd(y - 1, N)`.
+* **Factoring from `(N, e, d)` and nontrivial square roots of `1`.** Every unit `x` modulo `N`
+  satisfies `x ^ (e * d - 1) ≡ 1`, and for any `N` and `y`, a square root `y` of `1` modulo
+  `N` other than `±1` gives the proper factors `gcd(y - 1, N)` and `gcd(y + 1, N)`
+  (`gcd_sub_one_proper_of_sq_modEq_one`, `gcd_add_one_proper_of_sq_modEq_one`)
+  [Arora–Barak, Lemma 20.24][AroraBarak07].
 
 ## Main definitions
 
@@ -49,8 +52,11 @@ for the exact arithmetic it exploits; none of them uses a hardness assumption.
 * `Cslib.Crypto.chineseRemainderOfList_rsaEval_eq_pow`: the broadcast attack.
 * `Cslib.Crypto.factorOfTotient_eq`, `Cslib.Crypto.RSADesc.factorOfTotient_eq`: factoring from
   `φ(N)`.
-* `Cslib.Crypto.RSADesc.pow_mul_sub_one_modEq_one`, `Cslib.Crypto.RSADesc.gcd_sub_one_proper`:
-  the number-theoretic steps of factoring from `(N, e, d)`.
+* `Cslib.Crypto.gcd_sub_one_proper_of_sq_modEq_one`,
+  `Cslib.Crypto.gcd_add_one_proper_of_sq_modEq_one`,
+  `Cslib.Crypto.RSADesc.pow_mul_sub_one_modEq_one`, `Cslib.Crypto.RSADesc.gcd_sub_one_proper`,
+  `Cslib.Crypto.RSADesc.gcd_add_one_proper`: factoring from a nontrivial square root of `1` modulo
+  `N`, and the number-theoretic steps of factoring from `(N, e, d)`.
 
 ## Implementation notes
 
@@ -64,6 +70,8 @@ not attributed to a particular locator in [KatzLindell2020].
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07],
+  Lemma 20.24.
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
   Section 12.5.1, pp. 436–440 (plain RSA encryption Construction 12.26 and its attacks for
   small messages and for one message sent to several receivers) and Section 9.2.5, pp. 334–336
@@ -194,6 +202,67 @@ theorem factorOfTotient_eq {p q : ℕ} (hq : 0 < q) (hqp : q ≤ p) :
   rw [factorOfTotient, hsum, hdisc, Nat.sqrt_eq']
   ext <;> dsimp only <;> omega
 
+/-! ### Factoring from a nontrivial square root of `1` and from `(N, e, d)` -/
+
+/-- If `N > 1` divides `a * b` without dividing either `a` or `b`, then `gcd(a, N)` is a proper
+factor of `N`. -/
+private theorem proper_gcd_of_dvd_mul {N a b : ℕ} (hN : 1 < N) (hdvd : N ∣ a * b)
+    (ha : ¬ N ∣ a) (hb : ¬ N ∣ b) : 1 < Nat.gcd a N ∧ Nat.gcd a N < N := by
+  have hpos : 0 < Nat.gcd a N := Nat.gcd_pos_of_pos_right a (by omega)
+  have hne1 : Nat.gcd a N ≠ 1 := fun h1 =>
+    hb (Nat.Coprime.dvd_of_dvd_mul_left (Nat.Coprime.symm h1) hdvd)
+  exact ⟨by omega, lt_of_le_of_ne (Nat.gcd_le_right a (by omega)) fun h =>
+    ha (h ▸ Nat.gcd_dvd_left a N)⟩
+
+/-- If `y ^ 2 ≡ 1 [MOD N]` for `N > 1`, then `y ≥ 1` and `N ∣ (y - 1) * (y + 1)`. -/
+private theorem dvd_sub_one_mul_add_one_of_sq_modEq_one {N y : ℕ} (hN : 1 < N)
+    (hsq : y ^ 2 ≡ 1 [MOD N]) : 1 ≤ y ∧ N ∣ (y - 1) * (y + 1) := by
+  have hy : 1 ≤ y := by
+    rcases Nat.eq_zero_or_pos y with rfl | h
+    · exfalso
+      have h := hsq
+      rw [Nat.ModEq, zero_pow two_ne_zero, Nat.zero_mod, Nat.mod_eq_of_lt hN] at h
+      exact zero_ne_one h
+    · exact h
+  refine ⟨hy, ?_⟩
+  have h := (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ hy)).mp hsq.symm
+  rwa [show y ^ 2 - 1 = (y - 1) * (y + 1) by
+    obtain ⟨z, rfl⟩ := Nat.exists_eq_add_of_le hy
+    rw [show 1 + z - 1 = z by omega, show (1 + z) ^ 2 = z * (1 + z + 1) + 1 by ring]
+    omega] at h
+
+/-- If `y ^ 2 ≡ 1 [MOD N]` and `y ≢ 1 [MOD N]`, then `1 < N`. -/
+private theorem one_lt_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
+    (hone : ¬ y ≡ 1 [MOD N]) : 1 < N := by
+  rcases N with _ | _ | N
+  · simp only [Nat.ModEq, Nat.mod_zero] at hsq hone
+    exact False.elim (hone (by nlinarith))
+  · exact False.elim (hone (by simp [Nat.ModEq, Nat.mod_one]))
+  · omega
+
+/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y - 1, N)`)**: for any `N` and `y`,
+if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y - 1, N)` is a proper
+factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
+theorem gcd_sub_one_proper_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
+    (hone : ¬ y ≡ 1 [MOD N]) (hneg : ¬ y + 1 ≡ 0 [MOD N]) :
+    1 < Nat.gcd (y - 1) N ∧ Nat.gcd (y - 1) N < N := by
+  have hN : 1 < N := one_lt_of_sq_modEq_one hsq hone
+  obtain ⟨hy, hdvd⟩ := dvd_sub_one_mul_add_one_of_sq_modEq_one hN hsq
+  exact proper_gcd_of_dvd_mul hN hdvd (fun h => hone ((Nat.modEq_iff_dvd' hy).mpr h).symm)
+    (fun h => hneg (Nat.modEq_zero_iff_dvd.mpr h))
+
+/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y + 1, N)`)**: for any `N` and `y`,
+if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y + 1, N)` is a proper
+factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
+theorem gcd_add_one_proper_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
+    (hone : ¬ y ≡ 1 [MOD N]) (hneg : ¬ y + 1 ≡ 0 [MOD N]) :
+    1 < Nat.gcd (y + 1) N ∧ Nat.gcd (y + 1) N < N := by
+  have hN : 1 < N := one_lt_of_sq_modEq_one hsq hone
+  obtain ⟨hy, hdvd⟩ := dvd_sub_one_mul_add_one_of_sq_modEq_one hN hsq
+  exact proper_gcd_of_dvd_mul hN (mul_comm (y - 1) (y + 1) ▸ hdvd)
+    (fun h => hneg (Nat.modEq_zero_iff_dvd.mpr h))
+    (fun h => hone ((Nat.modEq_iff_dvd' hy).mpr h).symm)
+
 namespace RSADesc
 
 /-- The factorization `(max p q, min p q)` of an RSA modulus is computed from `N` and `φ(N)`. -/
@@ -204,8 +273,6 @@ theorem factorOfTotient_eq (desc : RSADesc) :
     exact Cslib.Crypto.factorOfTotient_eq desc.hq.pos h
   · rw [max_eq_right h, min_eq_left h, modulus, totient, mul_comm desc.p, mul_comm (desc.p - 1)]
     exact Cslib.Crypto.factorOfTotient_eq desc.hp.pos h
-
-/-! ### Factoring from `(N, e, d)` -/
 
 /-- `e * d - 1` is a multiple of the order of every unit modulo `N`: `x ^ (e * d - 1) ≡ 1` for
 every `x` coprime to `N`. -/
@@ -227,45 +294,15 @@ theorem pow_mul_sub_one_modEq_one (desc : RSADesc) {x : ℕ} (hx : Nat.Coprime x
 factor `gcd(y - 1, N)` of `N`. -/
 theorem gcd_sub_one_proper (desc : RSADesc) {y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD desc.modulus])
     (hone : ¬ y ≡ 1 [MOD desc.modulus]) (hneg : ¬ y + 1 ≡ 0 [MOD desc.modulus]) :
-    1 < Nat.gcd (y - 1) desc.modulus ∧ Nat.gcd (y - 1) desc.modulus < desc.modulus := by
-  have hN := desc.modulus_gt_one
-  have hy : 1 ≤ y := by
-    rcases Nat.eq_zero_or_pos y with rfl | h
-    · exfalso
-      have h := hsq
-      rw [Nat.ModEq, zero_pow two_ne_zero, Nat.zero_mod, Nat.mod_eq_of_lt hN] at h
-      exact zero_ne_one h
-    · exact h
-  have hcop : Nat.Coprime desc.p desc.q := (Nat.coprime_primes desc.hp desc.hq).mpr desc.hpq
-  -- `N` divides `(y - 1) * (y + 1) = y ^ 2 - 1`.
-  have hdvd : desc.modulus ∣ (y - 1) * (y + 1) := by
-    have h := (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ hy)).mp hsq.symm
-    rwa [show y ^ 2 - 1 = (y - 1) * (y + 1) by
-      obtain ⟨z, rfl⟩ := Nat.exists_eq_add_of_le hy
-      rw [show 1 + z - 1 = z by omega]
-      rw [show (1 + z) ^ 2 = z * (1 + z + 1) + 1 by ring]
-      omega] at h
-  have hone' : ¬ desc.modulus ∣ y - 1 := fun h => hone ((Nat.modEq_iff_dvd' hy).mpr h).symm
-  have hneg' : ¬ desc.modulus ∣ y + 1 := fun h => hneg (Nat.modEq_zero_iff_dvd.mpr h)
-  have hp := (Nat.Prime.dvd_mul desc.hp).mp (dvd_trans (dvd_mul_right _ _) hdvd)
-  have hq := (Nat.Prime.dvd_mul desc.hq).mp (dvd_trans (dvd_mul_left _ _) hdvd)
-  -- Exactly one of `p, q` divides `y - 1`.
-  have hfactor : desc.p ∣ y - 1 ∨ desc.q ∣ y - 1 := by
-    rcases hp with hp | hp
-    · exact Or.inl hp
-    rcases hq with hq | hq
-    · exact Or.inr hq
-    · exact absurd (hcop.mul_dvd_of_dvd_of_dvd hp hq) hneg'
-  refine ⟨?_, lt_of_le_of_ne (Nat.gcd_le_right _ desc.modulus_pos) fun h => hone' ?_⟩
-  · rcases hfactor with h | h
-    · exact lt_of_lt_of_le desc.hp.one_lt
-        (Nat.le_of_dvd (Nat.gcd_pos_of_pos_right _ desc.modulus_pos)
-          (Nat.dvd_gcd h (dvd_mul_right _ _)))
-    · exact lt_of_lt_of_le desc.hq.one_lt
-        (Nat.le_of_dvd (Nat.gcd_pos_of_pos_right _ desc.modulus_pos)
-          (Nat.dvd_gcd h (dvd_mul_left _ _)))
-  · rw [← h]
-    exact Nat.gcd_dvd_left _ _
+    1 < Nat.gcd (y - 1) desc.modulus ∧ Nat.gcd (y - 1) desc.modulus < desc.modulus :=
+  gcd_sub_one_proper_of_sq_modEq_one hsq hone hneg
+
+/-- A square root `y` of `1` modulo an RSA modulus `N = p * q`, other than `±1`, gives a proper
+factor `gcd(y + 1, N)` of `N`. -/
+theorem gcd_add_one_proper (desc : RSADesc) {y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD desc.modulus])
+    (hone : ¬ y ≡ 1 [MOD desc.modulus]) (hneg : ¬ y + 1 ≡ 0 [MOD desc.modulus]) :
+    1 < Nat.gcd (y + 1) desc.modulus ∧ Nat.gcd (y + 1) desc.modulus < desc.modulus :=
+  gcd_add_one_proper_of_sq_modEq_one hsq hone hneg
 
 end RSADesc
 

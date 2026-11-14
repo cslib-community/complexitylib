@@ -122,6 +122,22 @@ yielding Theorem 6.1 (`Lopsided.lintegral_resamplings_le`, `Lopsided.lintegral_s
 `Lopsided.exists_forall_notMem`, and symmetric `Lopsided.lintegral_resamplings_le_symmetric`,
 `Lopsided.ae_exists_forall_notMem_run_symmetric` and `Lopsided.exists_forall_notMem_symmetric`).
 
+The parallel Moser–Tardos algorithm (Algorithm 1.2, Lemma 4.1, and Theorem 1.3 of
+[mosertardos10]) is in `CslibFrontier.Probability.MoserTardos.Parallel`. An admissible parallel
+rule (`MoserTardos.IsValidParallelRule`) selects at each round a maximal independent subset of
+occurring events, including the computable greedy MIS rule `MoserTardos.greedyParallelList` and
+its canonical `Fintype` specialization `MoserTardos.greedyParallel`. Under the slack LLL condition
+`(1 - ε) * (x i * ∏ j ∈ Γ i, (1 - x j))` with `ε ∈ (0, 1]`, `MoserTardos.parallel_witness_depth`
+shows that the witness tree at any step of round `k` has depth `k`, yielding the tail
+bound `MoserTardos.table_succ_le_parallelRounds_le`, the expected round bound
+`MoserTardos.lintegral_parallelRounds_le` (`(max 0 (Real.log (∑ i, x i / (1 - x i))) + 1) / ε`),
+almost-sure finite termination `MoserTardos.ae_exists_forall_notMem_parallelRun`, symmetric
+versions `MoserTardos.lintegral_parallelRounds_le_symmetric_of_pos`,
+`MoserTardos.lintegral_parallelRounds_le_symmetric`, and
+`MoserTardos.ae_exists_forall_notMem_parallelRun_symmetric`, and `PMF.pi` bridges
+`MoserTardos.lintegral_parallelRounds_le_pmfPi` and
+`MoserTardos.ae_exists_forall_notMem_parallelRun_pmfPi`.
+
 For exact `k`-CNF satisfiability with improved constants,
 `CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma` instantiates these theorems on
 `CNF.IsExactDistinct k` formulas with the deterministic rule `Moser.firstViolatedRule`. Under
@@ -134,21 +150,31 @@ clauses sharing a variable with opposite polarity, yielding
 `Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,
 `Moser.lintegral_sum_resamplings_le_of_conflict_exp_mul_le`,
 `Moser.ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le` and
-`CNF.IsExactDistinct.satisfiable_of_conflict_exp_mul_le` under `Real.exp 1 * (d' + 1) ≤ 2 ^ k`.
+`CNF.IsExactDistinct.satisfiable_of_conflict_exp_mul_le` under `Real.exp 1 * (d' + 1) ≤ 2 ^ k`. For
+the parallel `k`-SAT bound `Real.exp 1 * (d + 1) ≤ (1 - ε) * 2 ^ k`, it provides the computable
+greedy MIS rule `Moser.greedyParallelCNF` (`Moser.isValidParallelRule_greedyParallelCNF`), expected
+round bounds `Moser.lintegral_parallelRounds_le_of_exp_mul_le_of_pos` and
+`Moser.lintegral_parallelRounds_le_of_exp_mul_le`, and almost-sure termination
+`Moser.ae_exists_eval_parallelRun_of_exp_mul_le` and
+`Moser.ae_exists_eval_parallelRun_greedy_of_exp_mul_le`.
 
-The model counts resamplings; it does not charge for sampling or for detecting occurring events.
-Theorems 1.3 (the parallel version) and 1.4 (the deterministic version) are not formalized. The
+The model counts resamplings (or parallel rounds); it does not charge for sampling or for detecting
+occurring events. Theorem 1.4 (the deterministic version) is not formalized. The
 [checked examples](../../CslibFrontierTests/MoserTardos.lean) give one fair coin, where the bound is
 `x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
 impossible event with `x = 0`, two complementary events for which no `x` satisfies the
 hypothesis, a concrete valid log on a fixed table whose witness tree is computed by `decide`
-and passes its check, symmetric (`d = 0` and `d = 1`) and `PMF.pi` bridges, and Section 6
-lopsided events sharing a variable where the standard bound fails; check them with
-`scripts/build.sh CslibFrontierTests.MoserTardos`. The
+and passes its check, symmetric (`d = 0` and `d = 1`) and `PMF.pi` bridges, Section 6
+lopsided events sharing a variable where the standard bound fails, and parallel Moser–Tardos checks
+(a `decide`-verified `greedyParallelList` trace, symmetric `d = 0`/`d = 1` round bounds,
+`table_succ_le_parallelRounds_le`, `PMF.pi` bridges, and negative counterexamples rejecting
+dependent or non-maximal batches); check them with `scripts/build.sh CslibFrontierTests.MoserTardos`.
+The
 [constructive `k`-SAT examples](../../CslibFrontierTests/MoserLocalLemma.lean) cover an exact
-`4`-CNF exceeding `degree < 2 ^ (k - 3)`, a `decide`-verified `firstViolatedRule` step, and
-exact `3`-CNFs where `conflictDegree` (`0` and `1`) succeeds while `degree = 3` fails the standard
-Local Lemma; check them with `scripts/build.sh CslibFrontierTests.MoserLocalLemma`.
+`4`-CNF exceeding `degree < 2 ^ (k - 3)`, a `decide`-verified `firstViolatedRule` step, exact
+`3`-CNFs where `conflictDegree` (`0` and `1`) succeeds while `degree = 3` fails the standard
+Local Lemma, and parallel `k`-SAT round bounds together with a `decide`-verified `greedyParallelCNF`
+step; check them with `scripts/build.sh CslibFrontierTests.MoserLocalLemma`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 

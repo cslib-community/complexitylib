@@ -4,12 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
+module
+
 import CslibFrontier.Crypto.Computational.RSAAttacks
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
 # Tests for the attacks on plain RSA
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.RSAAttacks
 
@@ -70,9 +74,26 @@ example : factorOfTotient rsa33.modulus rsa33.totient = (11, 3) := by
 example : 2 ^ (rsa33.e * rsa33.d - 1) ≡ 1 [MOD rsa33.modulus] :=
   rsa33.pow_mul_sub_one_modEq_one (by decide)
 
-/-- `10 ^ 2 ≡ 1 [MOD 33]` and `10 ≢ ±1`, so `gcd(9, 33) = 3` is a proper factor. -/
+/-- `10 ^ 2 ≡ 1 [MOD 33]` and `10 ≢ ±1`, so `gcd(9, 33) = 3` and `gcd(11, 33) = 11` are proper
+factors. -/
 example : 1 < Nat.gcd (10 - 1) rsa33.modulus ∧ Nat.gcd (10 - 1) rsa33.modulus < rsa33.modulus :=
   rsa33.gcd_sub_one_proper (by decide) (by decide) (by decide)
+
+example : 1 < Nat.gcd (10 + 1) rsa33.modulus ∧ Nat.gcd (10 + 1) rsa33.modulus < rsa33.modulus :=
+  rsa33.gcd_add_one_proper (by decide) (by decide) (by decide)
+
+/-- The general factoring lemma `gcd_sub_one_proper_of_sq_modEq_one` also applies to non-RSA
+composite moduli such as `N = 8` (`3 ^ 2 ≡ 1 [MOD 8]` and `3 ≢ ±1 [MOD 8]`) and `N = 45`
+(`19 ^ 2 ≡ 1 [MOD 45]`). -/
+example : 1 < Nat.gcd (3 - 1) 8 ∧ Nat.gcd (3 - 1) 8 < 8 :=
+  gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)
+
+example : 1 < Nat.gcd (19 - 1) 45 ∧ Nat.gcd (19 - 1) 45 < 45 ∧
+    1 < Nat.gcd (19 + 1) 45 ∧ Nat.gcd (19 + 1) 45 < 45 :=
+  ⟨(gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).1,
+   (gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).2,
+   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).1,
+   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).2⟩
 
 example : Nat.gcd (10 - 1) 33 = 3 := by decide
 

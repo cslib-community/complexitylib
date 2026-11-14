@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.NormNum.Prime
+
+set_option linter.privateModule false
 
 /-!
 # Tests: the interactive proof for quantified Boolean formulas
@@ -163,6 +167,24 @@ example {α : Type} (enc : α ↪ List Bool) {A : Set α} (hA : A ∈ coNP enc) 
 
 example {α : Type} (enc : α ↪ List Bool) (k : ℕ) : SigmaP k enc ⊆ PSPACE enc :=
   IP_eq_PSPACE enc ▸ (SigmaP_subset_PH k).trans (PH_subset_IP enc)
+
+/-- Every language in `IP` has a strict oracle-PPT verifier with completeness `1` and soundness
+error `1 / 3` (Exercise 8 §1(d)), and one with completeness `1 - 2 ^ (-|enc a|)` and soundness
+error `2 ^ (-|enc a|)` (Exercise 8 §1(c)). -/
+example : ∃ verifier : QBF ℕ → Cslib.Probability.WordOracleComp Unit Bool,
+    Cslib.Probability.IsOraclePPTOn encQBF Turing.MultiTapeTM.encBool verifier ∧
+      IsInteractiveProof verifier TQBFᶜ 1 (1 / 3) :=
+  exists_isInteractiveProof_one_of_mem_IP encQBF
+    (IP_eq_PSPACE encQBF ▸ compl_mem_PSPACE (IP_eq_PSPACE encQBF ▸ TQBF_mem_IP))
+
+example {α : Type} (enc : α ↪ List Bool) :
+    IP enc = {A | ∃ verifier : α → Cslib.Probability.WordOracleComp Unit Bool,
+      Cslib.Probability.IsOraclePPTOn enc Turing.MultiTapeTM.encBool verifier ∧
+        (∀ a ∈ A, ∃ P : Prover Unit,
+          1 - (2 ^ (enc a).length : ℝ≥0∞)⁻¹ ≤ Complexity.acceptProb (verifier a) P) ∧
+        (∀ a ∉ A, ∀ P : Prover Unit,
+          Complexity.acceptProb (verifier a) P ≤ (2 ^ (enc a).length : ℝ≥0∞)⁻¹)} :=
+  IP_eq_setOf_acceptProb_two_pow_length enc
 
 /-! ### Axioms -/
 

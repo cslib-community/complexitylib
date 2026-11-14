@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.Moser
 public import CslibFrontier.Probability.MoserTardos.Lopsided
+public import CslibFrontier.Probability.MoserTardos.Parallel
 import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Logics.Propositional.CNF.LocalLemma
 
@@ -25,6 +26,10 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
   `firstViolatedRule`, matching `CNF.IsExactDistinct.satisfiable_of_exp_mul_le`). Compare with
   `Cslib.Logic.PL.Moser.lintegral_resamplings_le` under the entropy-compression condition
   `r < 2 ^ (k - 3)`.
+* Under the slack symmetric bound `e (d + 1) ≤ (1 - ε) * 2 ^ k`, the parallel Moser–Tardos
+  algorithm (`MoserTardos.Parallel`) terminates in `O(log (φ.length / d) / ε)` expected parallel
+  rounds for every valid parallel selection rule, including the computable greedy MIS rule
+  `Moser.greedyParallelCNF`.
 * Using **lopsided Moser–Tardos** (`MoserTardos.Lopsided`, [MoserTardos2010, Section 6]), we show
   that two violated clause events can only be lopsidependent when they *conflict*
   (`Moser.Conflicts`: one contains a literal and the other its negation). Thus `e (d' + 1) ≤ 2 ^ k`
@@ -35,8 +40,10 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
 
 * `Cslib.Logic.PL.Moser.fairCoin`, `Cslib.Logic.PL.Moser.clauseVbl`,
   `Cslib.Logic.PL.Moser.violated`: the uniform product measure and violated-clause events.
-* `Cslib.Logic.PL.Moser.firstViolatedRule`: deterministic selection rule picking the first
-  violated clause.
+* `Cslib.Logic.PL.Moser.firstViolatedRule`: deterministic sequential selection rule picking the
+  first violated clause.
+* `Cslib.Logic.PL.Moser.greedyParallelCNF`: computable greedy maximal independent set parallel
+  selection rule for CNF clauses.
 * `Cslib.Logic.PL.Moser.Conflicts`, `Cslib.Logic.PL.Moser.conflictDegree`: clause conflicts and
   conflict-graph degree.
 
@@ -47,6 +54,12 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
   (`1 / d` per clause, `φ.length / d` total) under `e (d + 1) ≤ 2 ^ k` (`1 ≤ d`).
 * `Cslib.Logic.PL.Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le`: almost sure termination of
   `firstViolatedRule` at a satisfying assignment.
+* `Cslib.Logic.PL.Moser.isValidParallelRule_greedyParallelCNF`,
+  `Cslib.Logic.PL.Moser.lintegral_parallelRounds_le_of_exp_mul_le_of_pos`,
+  `Cslib.Logic.PL.Moser.lintegral_parallelRounds_le_of_exp_mul_le`,
+  `Cslib.Logic.PL.Moser.ae_exists_eval_parallelRun_of_exp_mul_le`,
+  `Cslib.Logic.PL.Moser.ae_exists_eval_parallelRun_greedy_of_exp_mul_le`: constructive parallel
+  `k`-SAT expected-round bounds and almost sure termination under `e (d + 1) ≤ (1 - ε) * 2 ^ k`.
 * `Cslib.Logic.PL.Moser.not_lopsidependent_of_not_conflicts`: non-conflicting clauses are not
   lopsidependent.
 * `Cslib.Logic.PL.Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,
@@ -58,7 +71,7 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
 ## References
 
 * [R. A. Moser, G. Tardos, *A constructive proof of the general Lovász Local Lemma*]
-  [MoserTardos2010, Sections 1, 6]
+  [MoserTardos2010, Sections 1, 4, 6]
 -/
 
 public section
@@ -83,7 +96,7 @@ instance (v : Fin n) : IsProbabilityMeasure (fairCoin (n := n) v) := by
   infer_instance
 
 /-- Variables occurring in clause `i` of `φ`. -/
-def clauseVbl (φ : CNF (Fin n)) (i : Fin φ.length) : Finset (Fin n) :=
+@[expose] def clauseVbl (φ : CNF (Fin n)) (i : Fin φ.length) : Finset (Fin n) :=
   (vbl φ[i]).toFinset
 
 /-- The event that clause `i` of `φ` evaluates to `false`. -/
@@ -113,7 +126,7 @@ theorem measureReal_violated {k : ℕ} {φ : CNF (Fin n)} (hφ : φ.IsExactDisti
   simp
 
 /-- Deterministic selection rule picking the first clause violated in the current assignment. -/
-def firstViolatedRule (φ : CNF (Fin n)) :
+@[expose] def firstViolatedRule (φ : CNF (Fin n)) :
     (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
       Option (Fin φ.length) :=
   fun T w => (List.finRange φ.length).find? fun i =>
@@ -142,10 +155,11 @@ theorem firstViolatedRule_notMem_violated {φ : CNF (Fin n)}
   have hev := (CNF.eval_eq_true_iff _ φ).1 (firstViolatedRule_eq_none h) φ[i] (getElem_mem_fin i)
   simpa [violated] using hev
 
-private theorem exp_mul_inv_pow_le {k d : ℕ} (hlll : Real.exp 1 * (d + 1) ≤ 2 ^ k) :
-    Real.exp 1 * (2⁻¹ ^ k : ℝ) * (d + 1) ≤ 1 := by
-  rw [inv_pow, mul_comm (Real.exp 1), mul_assoc, inv_mul_le_iff₀ (by positivity), mul_one]
-  exact hlll
+private theorem exp_mul_inv_pow_le {k d : ℕ} {r : ℝ}
+    (hlll : Real.exp 1 * (d + 1) ≤ r * 2 ^ k) :
+    Real.exp 1 * (2⁻¹ ^ k : ℝ) * (d + 1) ≤ r := by
+  rw [inv_pow, mul_comm (Real.exp 1), mul_assoc, inv_mul_le_iff₀ (by positivity)]
+  simpa [mul_comm r] using hlll
 
 private theorem card_fin_mul_inv_le_ofReal {m d : ℕ} {x : ℝ≥0∞}
     (hx : x ≤ Fintype.card (Fin m) * ENNReal.ofReal (1 / (d : ℝ))) :
@@ -155,14 +169,11 @@ private theorem card_fin_mul_inv_le_ofReal {m d : ℕ} {x : ℝ≥0∞}
     ← ENNReal.ofReal_mul (Nat.cast_nonneg _), mul_one_div]
 
 private theorem ae_eval_of_ae_notMem_violated (φ : CNF (Fin n))
-    {sel : (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
-      Option (Fin φ.length)}
+    (trace : (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → ℕ → List (Fin φ.length))
     (hae : ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
-      ∃ N, ∀ i, MoserTardos.current (clauseVbl φ) T
-        (MoserTardos.run (α := fun _ : Fin n => Bool) sel T N) ∉ violated φ i) :
+      ∃ N, ∀ i, MoserTardos.current (clauseVbl φ) T (trace T N) ∉ violated φ i) :
     ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
-      ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T
-        (MoserTardos.run (α := fun _ : Fin n => Bool) sel T N)) = true := by
+      ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T (trace T N)) = true := by
   filter_upwards [hae] with T ⟨N, hN⟩
   refine ⟨N, (CNF.eval_eq_true_iff _ φ).2 fun c hc => ?_⟩
   obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
@@ -199,7 +210,7 @@ theorem lintegral_resamplings_le_of_exp_mul_le {k d : ℕ} {φ : CNF (Fin n)}
       ∂MoserTardos.table (fairCoin (n := n)) ≤ ENNReal.ofReal (1 / (d : ℝ)) :=
   MoserTardos.lintegral_resamplings_le_symmetric (fairCoin (n := n)) (clauseVbl φ) (violated φ)
     (measurableSet_violated φ) (violated_dependsOn φ) hdpos (degree_card_le hdeg)
-    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le hlll) hsel i
+    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le (by simpa using hlll)) hsel i
 
 /-- Under `e (d + 1) ≤ 2 ^ k` with `1 ≤ d`, the expected total number of resamplings of any valid
 clause-resampling rule is at most `φ.length / d`. -/
@@ -214,7 +225,7 @@ theorem lintegral_sum_resamplings_le_of_exp_mul_le {k d : ℕ} {φ : CNF (Fin n)
   card_fin_mul_inv_le_ofReal (MoserTardos.lintegral_sum_resamplings_le_symmetric
     (fairCoin (n := n)) (clauseVbl φ) (violated φ) (measurableSet_violated φ)
     (violated_dependsOn φ) hdpos (degree_card_le hdeg)
-    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le hlll) hsel)
+    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le (by simpa using hlll)) hsel)
 
 /-- Under `e (d + 1) ≤ 2 ^ k`, almost surely any valid complete rule stops after finitely many
 steps at a satisfying assignment of `φ`. -/
@@ -228,10 +239,10 @@ theorem ae_exists_eval_run_of_exp_mul_le {k d : ℕ} {φ : CNF (Fin n)}
     ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
       ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T
         (MoserTardos.run (α := fun _ : Fin n => Bool) sel T N)) = true :=
-  ae_eval_of_ae_notMem_violated φ (MoserTardos.ae_exists_forall_notMem_run_symmetric
+  ae_eval_of_ae_notMem_violated φ _ (MoserTardos.ae_exists_forall_notMem_run_symmetric
     (fairCoin (n := n)) (clauseVbl φ) (violated φ) (measurableSet_violated φ)
     (violated_dependsOn φ) (degree_card_le hdeg) (fun j => (measureReal_violated hφ j).le)
-    (exp_mul_inv_pow_le hlll) hsel hstop)
+    (exp_mul_inv_pow_le (by simpa using hlll)) hsel hstop)
 
 /-- Under `e (d + 1) ≤ 2 ^ k`, almost surely the deterministic `firstViolatedRule` stops after
 finitely many resamplings with a satisfying assignment of `φ`. -/
@@ -339,7 +350,7 @@ theorem lintegral_resamplings_le_of_conflict_exp_mul_le {k d' : ℕ} {φ : CNF (
   MoserTardos.Lopsided.lintegral_resamplings_le_symmetric (fairCoin (n := n)) (clauseVbl φ)
     (violated φ) (measurableSet_violated φ) (violated_dependsOn φ) (conflictNbhd φ)
     (mem_conflictNbhd φ) hdpos (conflictNbhd_card_le hdeg)
-    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le hlll) hsel i
+    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le (by simpa using hlll)) hsel i
 
 /-- Under the lopsided conflict-graph condition `e (d' + 1) ≤ 2 ^ k` with `1 ≤ d'`, the expected
 total number of resamplings of any valid rule is at most `φ.length / d'`. -/
@@ -356,7 +367,7 @@ theorem lintegral_sum_resamplings_le_of_conflict_exp_mul_le {k d' : ℕ} {φ : C
     (fairCoin (n := n)) (clauseVbl φ) (violated φ) (measurableSet_violated φ)
     (violated_dependsOn φ) (conflictNbhd φ) (mem_conflictNbhd φ) hdpos
     (conflictNbhd_card_le hdeg) (fun j => (measureReal_violated hφ j).le)
-    (exp_mul_inv_pow_le hlll) hsel)
+    (exp_mul_inv_pow_le (by simpa using hlll)) hsel)
 
 /-- Under the lopsided conflict-graph condition `e (d' + 1) ≤ 2 ^ k` (for any `d' : ℕ`,
 including `d' = 0`), almost surely any valid complete rule stops at a satisfying assignment. -/
@@ -370,10 +381,11 @@ theorem ae_exists_eval_run_of_conflict_exp_mul_le {k d' : ℕ} {φ : CNF (Fin n)
     ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
       ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T
         (MoserTardos.run (α := fun _ : Fin n => Bool) sel T N)) = true :=
-  ae_eval_of_ae_notMem_violated φ (MoserTardos.Lopsided.ae_exists_forall_notMem_run_symmetric
+  ae_eval_of_ae_notMem_violated φ _ (MoserTardos.Lopsided.ae_exists_forall_notMem_run_symmetric
     (fairCoin (n := n)) (clauseVbl φ) (violated φ) (measurableSet_violated φ)
     (violated_dependsOn φ) (conflictNbhd φ) (mem_conflictNbhd φ) (conflictNbhd_card_le hdeg)
-    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le hlll) hsel hstop)
+    (fun j => (measureReal_violated hφ j).le) (exp_mul_inv_pow_le (by simpa using hlll))
+    hsel hstop)
 
 /-- Under `e (d' + 1) ≤ 2 ^ k` on `conflictDegree`, almost surely `firstViolatedRule` stops after
 finitely many resamplings with a satisfying assignment of `φ`. -/
@@ -388,6 +400,86 @@ theorem ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le {k d' : ℕ} {φ
     (fun _ _ h i => firstViolatedRule_notMem_violated h i)
 
 end ConflictLopsided
+
+section ParallelMT
+
+variable {n : ℕ}
+
+/-- Computable greedy maximal independent set parallel selection rule for CNF clauses. -/
+@[expose] def greedyParallelCNF (φ : CNF (Fin n)) :
+    (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
+      List (Fin φ.length) :=
+  MoserTardos.greedyParallelList (clauseVbl φ) (List.finRange φ.length) fun σ i => !φ[i].eval σ
+
+theorem isValidParallelRule_greedyParallelCNF (φ : CNF (Fin n)) :
+    MoserTardos.IsValidParallelRule (clauseVbl φ) (violated φ) (greedyParallelCNF φ) :=
+  MoserTardos.isValidParallelRule_greedyParallelList (clauseVbl φ) (violated φ)
+    (List.finRange φ.length) List.mem_finRange _ fun σ i => by
+      simp [violated]
+
+/-- Parallel Moser–Tardos theorem for `k`-SAT (`1 ≤ d`): under `e (d + 1) ≤ (1 - ε) * 2 ^ k`
+with `ε ∈ (0, 1]`, every admissible parallel clause-resampling rule terminates in at most
+`(max 0 (Real.log (φ.length / d)) + 1) / ε` expected parallel rounds. -/
+theorem lintegral_parallelRounds_le_of_exp_mul_le_of_pos {k d : ℕ} {ε : ℝ} {φ : CNF (Fin n)}
+    (hφ : φ.IsExactDistinct k) (hdpos : 1 ≤ d) (hdeg : ∀ i : Fin φ.length, degree φ i ≤ d)
+    (hε : ε ∈ Set.Ioc 0 1) (hlll : Real.exp 1 * (d + 1) ≤ (1 - ε) * 2 ^ k)
+    {psel : (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
+      List (Fin φ.length)}
+    (hrule : MoserTardos.IsValidParallelRule (clauseVbl φ) (violated φ) psel) :
+    ∫⁻ T, MoserTardos.parallelRounds (α := fun _ : Fin n => Bool) psel T
+        ∂MoserTardos.table (fairCoin (n := n)) ≤
+      ENNReal.ofReal ((max 0 (Real.log ((φ.length : ℝ) / d)) + 1) / ε) := by
+  simpa only [Fintype.card_fin] using
+    MoserTardos.lintegral_parallelRounds_le_symmetric_of_pos (fairCoin (n := n)) (clauseVbl φ)
+      (violated φ) (measurableSet_violated φ) (violated_dependsOn φ) hdpos
+      (degree_card_le hdeg) (fun j => (measureReal_violated hφ j).le) hε
+      (exp_mul_inv_pow_le hlll) hrule
+
+/-- Parallel Moser–Tardos theorem for `k`-SAT (all `d : ℕ`): under `e (d + 1) ≤ (1 - ε) * 2 ^ k`
+with `ε ∈ (0, 1]`, every admissible parallel clause-resampling rule terminates in at most
+`(max 0 (Real.log φ.length) + 1) / ε` expected parallel rounds. -/
+theorem lintegral_parallelRounds_le_of_exp_mul_le {k d : ℕ} {ε : ℝ} {φ : CNF (Fin n)}
+    (hφ : φ.IsExactDistinct k) (hdeg : ∀ i : Fin φ.length, degree φ i ≤ d)
+    (hε : ε ∈ Set.Ioc 0 1) (hlll : Real.exp 1 * (d + 1) ≤ (1 - ε) * 2 ^ k)
+    {psel : (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
+      List (Fin φ.length)}
+    (hrule : MoserTardos.IsValidParallelRule (clauseVbl φ) (violated φ) psel) :
+    ∫⁻ T, MoserTardos.parallelRounds (α := fun _ : Fin n => Bool) psel T
+        ∂MoserTardos.table (fairCoin (n := n)) ≤
+      ENNReal.ofReal ((max 0 (Real.log (φ.length : ℝ)) + 1) / ε) := by
+  simpa only [Fintype.card_fin] using
+    MoserTardos.lintegral_parallelRounds_le_symmetric (fairCoin (n := n)) (clauseVbl φ)
+      (violated φ) (measurableSet_violated φ) (violated_dependsOn φ)
+      (degree_card_le hdeg) (fun j => (measureReal_violated hφ j).le) hε
+      (exp_mul_inv_pow_le hlll) hrule
+
+/-- Under `e (d + 1) ≤ (1 - ε) * 2 ^ k` with `ε ∈ (0, 1]`, almost surely every admissible parallel
+clause-resampling rule reaches a satisfying assignment of `φ` in finitely many parallel rounds. -/
+theorem ae_exists_eval_parallelRun_of_exp_mul_le {k d : ℕ} {ε : ℝ} {φ : CNF (Fin n)}
+    (hφ : φ.IsExactDistinct k) (hdeg : ∀ i : Fin φ.length, degree φ i ≤ d)
+    (hε : ε ∈ Set.Ioc 0 1) (hlll : Real.exp 1 * (d + 1) ≤ (1 - ε) * 2 ^ k)
+    {psel : (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
+      List (Fin φ.length)}
+    (hrule : MoserTardos.IsValidParallelRule (clauseVbl φ) (violated φ) psel) :
+    ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
+      ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T
+        (MoserTardos.parallelRun (α := fun _ : Fin n => Bool) psel T N)) = true :=
+  ae_eval_of_ae_notMem_violated φ _ (MoserTardos.ae_exists_forall_notMem_parallelRun_symmetric
+    (fairCoin (n := n)) (clauseVbl φ) (violated φ) (measurableSet_violated φ)
+    (violated_dependsOn φ) (degree_card_le hdeg) (fun j => (measureReal_violated hφ j).le) hε
+    (exp_mul_inv_pow_le hlll) hrule)
+
+/-- Under `e (d + 1) ≤ (1 - ε) * 2 ^ k` with `ε ∈ (0, 1]`, almost surely `greedyParallelCNF`
+reaches a satisfying assignment of `φ` in finitely many parallel rounds. -/
+theorem ae_exists_eval_parallelRun_greedy_of_exp_mul_le {k d : ℕ} {ε : ℝ} {φ : CNF (Fin n)}
+    (hφ : φ.IsExactDistinct k) (hdeg : ∀ i : Fin φ.length, degree φ i ≤ d)
+    (hε : ε ∈ Set.Ioc 0 1) (hlll : Real.exp 1 * (d + 1) ≤ (1 - ε) * 2 ^ k) :
+    ∀ᵐ T ∂MoserTardos.table (fairCoin (n := n)),
+      ∃ N, φ.eval (MoserTardos.current (clauseVbl φ) T
+        (MoserTardos.parallelRun (α := fun _ : Fin n => Bool) (greedyParallelCNF φ) T N)) = true :=
+  ae_exists_eval_parallelRun_of_exp_mul_le hφ hdeg hε hlll (isValidParallelRule_greedyParallelCNF φ)
+
+end ParallelMT
 
 end Moser
 
