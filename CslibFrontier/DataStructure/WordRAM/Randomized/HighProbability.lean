@@ -763,11 +763,11 @@ variable {B B' : Basis} {r_ds k_init w base : ℕ}
   C.initTime + (4 * C.space + 6)
 
 /-- Extract next data structure state from a step outcome pair `((seed, data), steps)`. -/
-abbrev _root_.Prod.stepData {Seed : Type*} {r_ds : ℕ}
+abbrev stepData {Seed : Type*} {r_ds : ℕ}
     (q : (Seed × Data r_ds) × ℕ) : Data r_ds := q.1.2
 
 /-- Extract next seed from a step outcome pair `((seed, data), steps)`. -/
-abbrev _root_.Prod.stepSeed {Seed : Type*} {r_ds : ℕ}
+abbrev stepSeed {Seed : Type*} {r_ds : ℕ}
     (q : (Seed × Data r_ds) × ℕ) : Seed := q.1.1
 
 /-- Construct a `HighProbStateTransitionImpl` certificate with deterministic oblivious ghost state
@@ -822,11 +822,11 @@ noncomputable abbrev ofFnGhost {stepFn : (s : D.State) → (o : D.Op) → D.Stat
         (μ_step : Seed × Data r_ds → PMF ((Seed × Data r_ds) × ℕ)),
         (∀ p ∈ ν.support,
           ExecRand w P.code p.2 (m_step p) ∧
-          (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
+          (μ_step p).map (fun q => (stepData q, q.2)) = (m_step p).eval ∧
           ∀ q ∈ (μ_step p).support,
-            decode o q.stepData.regs = some (D.stepFn s o).2 ∧
-            ghostRep (ghostStep g o) q.stepSeed (D.stepFn s o).1 q.stepData ∧
-            Modifies (Block.mk base space).footprint p.2.mem q.stepData.mem) ∧
+            decode o (stepData q).regs = some (D.stepFn s o).2 ∧
+            ghostRep (ghostStep g o) (stepSeed q) (D.stepFn s o).1 (stepData q) ∧
+            Modifies (Block.mk base space).footprint p.2.mem (stepData q).mem) ∧
         (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ seedSlack * seedLaw θ') ∧
         (ν.bind μ_step).toOuterMeasure {q | worstCaseTime < q.2} ≤ failureProb) :
     HighProbStateTransitionImpl P D w base params s₀ where
@@ -967,11 +967,11 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
         (μ_step : Seed × Data r_ds → PMF ((Seed × Data r_ds) × ℕ)),
         (∀ p ∈ ν.support,
           ExecRand w P.code p.2 (m_step p) ∧
-          (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
+          (μ_step p).map (fun q => (stepData q, q.2)) = (m_step p).eval ∧
           ∀ q ∈ (μ_step p).support,
-            decode o q.stepData.regs = some (D.stepFn s o).2 ∧
-            rep q.stepSeed (D.stepFn s o).1 q.stepData ∧
-            Modifies (Block.mk base space).footprint p.2.mem q.stepData.mem) ∧
+            decode o (stepData q).regs = some (D.stepFn s o).2 ∧
+            rep (stepSeed q) (D.stepFn s o).1 (stepData q) ∧
+            Modifies (Block.mk base space).footprint p.2.mem (stepData q).mem) ∧
         (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ seedSlack * seedLaw θ') ∧
         (ν.bind μ_step).toOuterMeasure {q | worstCaseTime < q.2} ≤ failureProb) :
     HighProbStateTransitionImpl P D w base params s₀ :=
@@ -992,11 +992,11 @@ theorem step_exec_ofFn (C : HighProbStateTransitionImpl P D w base params s₀)
       (μ_step : C.Seed × Data r_ds → PMF ((C.Seed × Data r_ds) × ℕ)),
       (∀ p ∈ ν.support,
         ExecRand w P.code p.2 (m_step p) ∧
-        (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
+        (μ_step p).map (fun q => (stepData q, q.2)) = (m_step p).eval ∧
         ∀ q ∈ (μ_step p).support,
-          C.decode o q.stepData.regs = some (D.stepFn s o).2 ∧
-          C.ghostRep (C.ghostStep g o) q.stepSeed (D.stepFn s o).1 q.stepData ∧
-          Modifies (Block.mk base C.space).footprint p.2.mem q.stepData.mem) ∧
+          C.decode o (stepData q).regs = some (D.stepFn s o).2 ∧
+          C.ghostRep (C.ghostStep g o) (stepSeed q) (D.stepFn s o).1 (stepData q) ∧
+          Modifies (Block.mk base C.space).footprint p.2.mem (stepData q).mem) ∧
       (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ C.seedSlack * C.seedLaw θ') ∧
       (ν.bind μ_step).toOuterMeasure {q | C.worstCaseTime < q.2} ≤ C.failureProb := by
   let lift : C.Seed × Data r_ds → CoupledState C.Seed D.State r_ds := fun p => ⟨p.1, s, p.2⟩
@@ -1527,12 +1527,12 @@ variable {B : Basis} {r_ds k_init w base : ℕ}
 `seq_whp_ofFn`, `reachable_step_whp_ofFn`, `poly_seq_failureProb_le`) -/
 
 /-- Extract coupled state from an operational step outcome `((coupledState, res), steps)`. -/
-abbrev _root_.Prod.whpState {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
+abbrev whpState {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
     (p : (CoupledState Seed State r_ds × Res) × ℕ) : CoupledState Seed State r_ds :=
   p.1.1
 
 /-- Extract operation result from an operational step outcome `((coupledState, res), steps)`. -/
-abbrev _root_.Prod.whpRes {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
+abbrev whpRes {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
     (p : (CoupledState Seed State r_ds × Res) × ℕ) : Res :=
   p.1.2
 
@@ -1557,19 +1557,20 @@ inductive ExecWhpSteps (C : HighProbStateTransitionImpl P D w base params s₀) 
         let x_in := C.prepare o t.data
         RandFaultFree w (P.code.program out) ⟨0, x_in⟩ ∧
         ExecRand w P.code x_in (m_op t) ∧
-        (μ_step t).map (fun p => (p.whpState.data, p.2)) = (m_op t).eval ∧
+        (μ_step t).map (fun p => ((whpState p).data, p.2)) = (m_op t).eval ∧
         (∀ y : Data r_ds,
           (m_op t).eval.toOuterMeasure {z | z.1 = y ∧ z.2 ≤ C.worstCaseTime} ≤
             evalRand w (P.code.program out) (C.worstCaseTime + 1) ⟨0, x_in⟩
               (.halted (y.regs out) y)) ∧
         ∀ p ∈ (μ_step t).support,
-          D.step t.state o p.whpState.state p.whpRes ∧
-          C.decode o p.whpState.data.regs = some p.whpRes ∧
-          C.rep p.whpState.seed p.whpState.state p.whpState.data ∧
-          p.whpState.data.Bounded w ∧
-          Modifies (Block.mk base C.space).footprint t.data.mem p.whpState.data.mem)
+          D.step t.state o (whpState p).state (whpRes p) ∧
+          C.decode o (whpState p).data.regs = some (whpRes p) ∧
+          C.rep (whpState p).seed (whpState p).state (whpState p).data ∧
+          (whpState p).data.Bounded w ∧
+          Modifies (Block.mk base C.space).footprint t.data.mem (whpState p).data.mem)
       (hrest : C.ExecWhpSteps out ops
-        (τ.bind fun tr => (μ_step tr.current).map fun p => tr.appendStep o p.whpState p.whpRes p.2)
+        (τ.bind fun tr => (μ_step tr.current).map fun p =>
+          tr.appendStep o (whpState p) (whpRes p) p.2)
         τ_final) :
       C.ExecWhpSteps out (o :: ops) τ τ_final
 

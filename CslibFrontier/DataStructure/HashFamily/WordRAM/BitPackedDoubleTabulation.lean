@@ -139,7 +139,7 @@ abbrev Seed.alpha {w₀ c_tab d b_char M_out : ℕ}
 abbrev Seed.top {w₀ c_tab d b_char M_out : ℕ}
     (θ : Seed w₀ c_tab d b_char M_out) : DoubleTabTopSeed (c_tab + 1) d b_char := θ.2.1
 
-/-- Extract Stage 3 bottom table `T₂` from seed. -/
+/-- Extract Stage 2 bottom table `T₂` from seed. -/
 abbrev Seed.bot {w₀ c_tab d b_char M_out : ℕ}
     (θ : Seed w₀ c_tab d b_char M_out) : DoubleTabBotSeed d b_char M_out := θ.2.2
 

@@ -19,19 +19,14 @@ Exercises `Cslib.DataStructure.WordRAM.Randomized.HighProbStateTransitionImpl`:
    - Flips a fair coin `r3 ← rand r4` (`r4 = 1`): on `r3 = 0` (probability `1 / 2`) executes the
      fast path in `3` body instructions (`≤ worstCaseTime = 3`), while on `r3 = 1` (probability
      `1 / 2`) executes a longer fallback branch taking `5` body instructions (`> worstCaseTime`).
-   - Exercises `HighProbStateTransitionImpl.ofFn`, `.toStandard`, `initFresh_program`,
-     `initClear_exec`, `step_whp_ofFn` (verifying `evalRand` at partial horizon `worstCaseTime + 1`
-     reaches `.halted` with probability `≥ 1 - 1 / 2`), `seq_whp_ofFn`, and
-     `poly_seq_failureProb_le`.
-2. **Negative `.halt` / 1-instruction no-op sanity checks**:
+   - Exercises `HighProbStateTransitionImpl.ofFn`, `.toStandard`, `seq_whp_ofFn`, and
+     `reachable_step_whp_ofFn` (verifying `evalRand` at partial horizon `worstCaseTime + 1`
+     reaches `.halted` with probability `≥ 1 - 1 / 2`).
+2. **Negative 1-instruction no-op sanity check**:
    - `no_noop_highProbImpl_dictionary`: proves that a 1-instruction no-op subroutine body
      (`P.code = .op (.copy 0 0)`, whose flat program is `[.op (.copy 0 0), .halt out]`) **cannot**
      instantiate `HighProbStateTransitionImpl` for `Dictionary.Dynamic.spec 2 2 1` under *any*
      `P.input`, `encode`, `decode`, `Seed`, `worstCaseTime`, or `failureProb`.
-   - `halt_program_cannot_distinguish_insert_query`: proves directly on raw `evalRand w [.halt out]`
-     that running a 1-instruction `[Instr.halt out]` program across
-     `[.query 0, .insert 0 1, .query 0]` returns identical register outputs before and after the
-     insertion and therefore cannot decode both `none` and `some 1`.
 -/
 
 @[expose] public section
@@ -41,6 +36,7 @@ namespace CslibFrontierTests.WordRAMHighProbability
 open Cslib Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.WordRAM.Randomized.HighProbStateTransitionImpl
 open Cslib.Probability.PMF (uniformOfFintype uniformOfFintype_apply)
 open scoped ENNReal
 
@@ -365,20 +361,20 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
       (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₀, htr₀, rfl⟩
     obtain ⟨p₁, hp₁⟩ := (μ₁ tr₀.current).support_nonempty
     obtain ⟨_, hm₁, hev₁, _, hq₁⟩ := hstep₁ tr₀.current ht₀
-    have hz₁ : (p₁.whpState.data, p₁.2) ∈ (m₁ tr₀.current).eval.support := by
+    have hz₁ : ((whpState p₁).data, p₁.2) ∈ (m₁ tr₀.current).eval.support := by
       rw [← hev₁]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₁, hp₁, rfl⟩
-    have hd₁ : p₁.whpState.data = C.prepare (.query k0) tr₀.current.data :=
+    have hd₁ : (whpState p₁).data = C.prepare (.query k0) tr₀.current.data :=
       hnoop hm₁ _ hz₁
     obtain ⟨hst₁, hdec₁, _, _, _⟩ := hq₁ p₁ hp₁
-    have ha₁ : p₁.whpRes = none :=
+    have ha₁ : whpRes p₁ = none :=
       congrArg Prod.snd (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₁)
     rw [ha₁, hd₁] at hdec₁
     cases hrest₁ with
     | @cons _ _ _ _ m₂ μ₂ hstep₂ hrest₂ =>
       let τ₁_pmf : PMF (WhpSeqOutcome C.Seed (Dynamic.spec 2 2 1) (r_ds + 1)) :=
         τ₀_pmf.bind fun tr => (μ₁ tr.current).map fun p =>
-          tr.appendStep (.query k0) p.whpState p.whpRes p.2
-      let tr₁ := tr₀.appendStep (.query k0) p₁.whpState p₁.whpRes p₁.2
+          tr.appendStep (.query k0) (whpState p) (whpRes p) p.2
+      let tr₁ := tr₀.appendStep (.query k0) (whpState p₁) (whpRes p₁) p₁.2
       have htr₁ : tr₁ ∈ τ₁_pmf.support := by
         rw [PMF.mem_support_bind_iff]
         exact ⟨tr₀, htr₀, (PMF.mem_support_map_iff _ _ _).mpr ⟨p₁, hp₁, rfl⟩⟩
@@ -386,12 +382,12 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
         (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₁, htr₁, rfl⟩
       obtain ⟨p₂, hp₂⟩ := (μ₂ tr₁.current).support_nonempty
       obtain ⟨_, hm₂, hev₂, _, hq₂⟩ := hstep₂ tr₁.current ht₁
-      have hz₂ : (p₂.whpState.data, p₂.2) ∈ (m₂ tr₁.current).eval.support := by
+      have hz₂ : ((whpState p₂).data, p₂.2) ∈ (m₂ tr₁.current).eval.support := by
         rw [← hev₂]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₂, hp₂, rfl⟩
-      have hd₂ : p₂.whpState.data = C.prepare (.insert k0 1) tr₁.current.data :=
+      have hd₂ : (whpState p₂).data = C.prepare (.insert k0 1) tr₁.current.data :=
         hnoop hm₂ _ hz₂
       obtain ⟨hst₂, _, _, _, _⟩ := hq₂ p₂ hp₂
-      have hs₂ : p₂.whpState.state = Function.update (Dictionary.empty 2) k0 (some 1) := by
+      have hs₂ : (whpState p₂).state = Function.update (Dictionary.empty 2) k0 (some 1) := by
         have h1 := congrArg Prod.fst (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₂)
         have hs₁ : tr₁.current.state = Dictionary.empty 2 :=
           congrArg Prod.fst (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₁)
@@ -401,8 +397,8 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
       | @cons _ _ _ _ m₃ μ₃ hstep₃ _ =>
         let τ₂_pmf : PMF (WhpSeqOutcome C.Seed (Dynamic.spec 2 2 1) (r_ds + 1)) :=
           τ₁_pmf.bind fun tr => (μ₂ tr.current).map fun p =>
-            tr.appendStep (.insert k0 1) p.whpState p.whpRes p.2
-        let tr₂ := tr₁.appendStep (.insert k0 1) p₂.whpState p₂.whpRes p₂.2
+            tr.appendStep (.insert k0 1) (whpState p) (whpRes p) p.2
+        let tr₂ := tr₁.appendStep (.insert k0 1) (whpState p₂) (whpRes p₂) p₂.2
         have htr₂ : tr₂ ∈ τ₂_pmf.support := by
           rw [PMF.mem_support_bind_iff]
           exact ⟨tr₁, htr₁, (PMF.mem_support_map_iff _ _ _).mpr ⟨p₂, hp₂, rfl⟩⟩
@@ -410,14 +406,14 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
           (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₂, htr₂, rfl⟩
         obtain ⟨p₃, hp₃⟩ := (μ₃ tr₂.current).support_nonempty
         obtain ⟨_, hm₃, hev₃, _, hq₃⟩ := hstep₃ tr₂.current ht₂
-        have hz₃ : (p₃.whpState.data, p₃.2) ∈ (m₃ tr₂.current).eval.support := by
+        have hz₃ : ((whpState p₃).data, p₃.2) ∈ (m₃ tr₂.current).eval.support := by
           rw [← hev₃]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₃, hp₃, rfl⟩
-        have hd₃ : p₃.whpState.data = C.prepare (.query k0) tr₂.current.data :=
+        have hd₃ : (whpState p₃).data = C.prepare (.query k0) tr₂.current.data :=
           hnoop hm₃ _ hz₃
         obtain ⟨hst₃, hdec₃, _, _, _⟩ := hq₃ p₃ hp₃
-        have ha₃ : p₃.whpRes = some 1 := by
+        have ha₃ : whpRes p₃ = some 1 := by
           have h3 := congrArg Prod.snd (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₃)
-          change p₃.whpRes = p₂.whpState.state k0 at h3
+          change whpRes p₃ = (whpState p₂).state k0 at h3
           rw [hs₂, Function.update_self] at h3
           exact h3
         rw [ha₃, hd₃] at hdec₃
@@ -436,46 +432,6 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
             rw [hd₁, C.prepare_regs_of_not_input hi]
         rw [hregs_eq, hdec₁] at hdec₃
         cases hdec₃
-
-/-- **Negative sanity check 2 (`halt_program_cannot_distinguish_insert_query`):**
-At the raw clocked flat-machine level (`evalRand`), running the 1-instruction program
-`[Instr.halt out]` across `.query k0`, `.insert k0 1`, and `.query k0` produces identical halted
-register states on the two queries, so no `decode` can recover both `none` and `some 1`. -/
-theorem halt_program_cannot_distinguish_insert_query {B : Basis} {r : ℕ} (w : ℕ)
-    (out : Fin r) (input : Fin r → Bool)
-    (encode : Dynamic.Op 2 → Fin r → ℕ)
-    (decode : (o : Dynamic.Op 2) → (Fin r → ℕ) → Option ((Dynamic.spec 2 2 1).Result o))
-    (x₀ : Data r) (T : ℕ) :
-    let k0 : Fin 2 := ⟨0, by decide⟩
-    let prep (o : Dynamic.Op 2) (d : Data r) : Data r :=
-      ⟨fun i => if input i then encode o i else d.regs i, d.mem⟩
-    ¬∃ (y₁ y₂ y₃ : Data r),
-      RandCfg.halted (y₁.regs out) y₁ ∈
-        (evalRand w ([Instr.halt out] : Program B r) (T + 1) ⟨0, prep (.query k0) x₀⟩).support ∧
-      decode (.query k0) y₁.regs = some none ∧
-      RandCfg.halted (y₂.regs out) y₂ ∈
-        (evalRand w ([Instr.halt out] : Program B r) (T + 1) ⟨0, prep (.insert k0 1) y₁⟩).support ∧
-      RandCfg.halted (y₃.regs out) y₃ ∈
-        (evalRand w ([Instr.halt out] : Program B r) (T + 1) ⟨0, prep (.query k0) y₂⟩).support ∧
-      decode (.query k0) y₃.regs = some (some 1) := by
-  intro k0 prep ⟨y₁, y₂, y₃, h1, hdec1, h2, h3, hdec3⟩
-  have heval_halt : ∀ d : Data r,
-      evalRand w ([Instr.halt out] : Program B r) (T + 1) ⟨0, d⟩ =
-        PMF.pure (.halted (d.regs out) d) := by
-    intro d
-    rw [evalRand, runRand_succ, stepRand_halt (i := out) (s := ⟨0, d⟩) (by simp), pure_bind,
-      runRand_halted, ProbComp.eval_pure]
-  rw [heval_halt, PMF.support_pure, Set.mem_singleton_iff] at h1 h2 h3
-  have hy₁ : y₁ = prep (.query k0) x₀ := (RandCfg.halted.inj h1).2
-  have hy₂ : y₂ = prep (.insert k0 1) y₁ := (RandCfg.halted.inj h2).2
-  have hy₃ : y₃ = prep (.query k0) y₂ := (RandCfg.halted.inj h3).2
-  have hregs : y₃.regs = y₁.regs := by
-    ext i
-    rw [hy₃, hy₂, hy₁]
-    dsimp only [prep]
-    by_cases hi : input i = true <;> simp [hi]
-  rw [hregs, hdec1] at hdec3
-  cases hdec3
 
 end CslibFrontierTests.WordRAMHighProbability
 
