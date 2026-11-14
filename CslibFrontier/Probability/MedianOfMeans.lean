@@ -11,7 +11,7 @@ public import CslibFrontier.Foundations.Data.Finset.Median
 public import CslibFrontier.Probability.MedianTrick
 public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Data.Fintype.Pi
-import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Finset.Expect.Chebyshev
 import CslibFrontier.Probability.KWiseIndependent.SecondMoment
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -95,27 +95,11 @@ theorem dens_abs_medianOfMeans_sub_gt_le [Nonempty Ω] {r k : ℕ} [NeZero k] (g
   classical
   set μ := 𝔼 x, g x
   have hk : (0 : ℝ) < k := Nat.cast_pos.2 (Nat.pos_of_ne_zero (NeZero.ne k))
-  -- Chebyshev: at most a third of the groups are bad.
-  have hcheb : (dens {ω : Fin k → Ω | t ^ 2 ≤ (𝔼 l, g (ω l) - μ) ^ 2} : ℝ) * t ^ 2 ≤ t ^ 2 / 3 := by
-    have := Fintype.mul_dens_filter_le_expect (f := fun ω : Fin k → Ω => (𝔼 l, g (ω l) - μ) ^ 2)
-      (fun _ => sq_nonneg _) (t ^ 2)
-    rw [expect_expect_sub_sq] at this
-    calc _ = t ^ 2 * (dens {ω : Fin k → Ω | t ^ 2 ≤ (𝔼 l, g (ω l) - μ) ^ 2} : ℝ) := mul_comm _ _
-      _ ≤ _ := this
-      _ ≤ t ^ 2 / 3 := by
-        rw [div_le_div_iff₀ hk (by norm_num)]
-        linarith
   have hbad : (dens {ω : Fin k → Ω | t < |𝔼 l, g (ω l) - μ|} : ℝ) ≤ 1 / 3 := by
-    have hsub : ({ω : Fin k → Ω | t < |𝔼 l, g (ω l) - μ|} : Finset _) ⊆
-        ({ω : Fin k → Ω | t ^ 2 ≤ (𝔼 l, g (ω l) - μ) ^ 2} : Finset _) := fun ω hω => by
-      simp only [mem_filter, mem_univ, true_and] at hω ⊢
-      rw [← sq_abs (𝔼 l, g (ω l) - μ)]
-      exact pow_le_pow_left₀ ht.le hω.le 2
-    have h2 : (dens {ω : Fin k → Ω | t < |𝔼 l, g (ω l) - μ|} : ℝ) * t ^ 2 ≤ t ^ 2 / 3 :=
-      (mul_le_mul_of_nonneg_right (by exact_mod_cast dens_le_dens hsub) (sq_nonneg t)).trans hcheb
-    have ht2 : 0 < t ^ 2 := by positivity
-    rw [div_eq_mul_one_div (t ^ 2), mul_comm (t ^ 2)] at h2
-    exact le_of_mul_le_mul_right h2 ht2
+    refine (Fintype.dens_lt_abs_le_expect_sq_div_sq
+      (fun ω : Fin k → Ω => 𝔼 l, g (ω l) - μ) ht).trans ?_
+    rw [expect_expect_sub_sq, div_le_iff₀ (sq_pos_of_pos ht), div_le_iff₀ hk]
+    nlinarith [hvar]
   exact dens_abs_median_sub_gt_le (fun ω : Fin k → Ω => 𝔼 l, g (ω l)) hbad r
 
 end Cslib.Probability

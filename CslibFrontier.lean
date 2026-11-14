@@ -5750,6 +5750,7 @@ public import CslibFrontier.Foundations.Data.Finset.BigHalf
 public import CslibFrontier.Foundations.Data.Finset.CollisionInsert
 public import CslibFrontier.Foundations.Data.Finset.Density
 public import CslibFrontier.Foundations.Data.Finset.Expect
+public import CslibFrontier.Foundations.Data.Finset.Expect.Chebyshev
 public import CslibFrontier.Foundations.Data.Finset.ExpectPi
 public import CslibFrontier.Foundations.Data.Finset.ExpectResample
 public import CslibFrontier.Foundations.Data.Finset.Finpartition

@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.UniversalHash
-import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Finset.Expect.Chebyshev
 import CslibFrontier.Probability.KWiseIndependent.TugOfWar
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
@@ -155,22 +155,12 @@ theorem dens_abs_sum_ite_mul_sign_gt_le (hh : IsTwoUniversal (PMF.uniformOfFinty
     rw [this, zero_mul] at hw
     linarith
   set N := fun p : ι × κ => ∑ x ∈ S, if h p.1 x = h p.1 a then f x * ε (g p.2 x) else 0
-  have hsub : (dens {p : ι × κ | t < |N p|} : ℝ) ≤ dens {p : ι × κ | t ^ 2 ≤ N p ^ 2} := by
-    exact_mod_cast dens_le_dens fun p hp => by
-      simp only [mem_filter, mem_univ, true_and] at hp ⊢
-      rw [← sq_abs (N p)]
-      exact pow_le_pow_left₀ ht hp.le 2
-  have hmarkov := Fintype.mul_dens_filter_le_expect (f := fun p => N p ^ 2)
-    (fun _ => sq_nonneg _) (t ^ 2)
+  refine (Fintype.dens_lt_abs_le_expect_sq_div_sq N ht0).trans ?_
+  rw [div_le_iff₀ (sq_pos_of_pos ht0)]
   have hsecond := expect_sq_sum_ite_mul_sign_le (κ := κ) hh hg hε hε₀ ha f
-  have ht2 : 0 < t ^ 2 := by positivity
-  have key : t ^ 2 * (dens {p : ι × κ | t ^ 2 ≤ N p ^ 2} : ℝ) ≤ t ^ 2 / 3 :=
-    hmarkov.trans (hsecond.trans (by
-      rw [div_le_div_iff₀ hw0 (by norm_num)]
-      linarith))
-  have : (dens {p : ι × κ | t ^ 2 ≤ N p ^ 2} : ℝ) ≤ 1 / 3 := by
-    rw [div_eq_mul_one_div (t ^ 2)] at key
-    exact le_of_mul_le_mul_left key ht2
-  exact hsub.trans this
+  calc (𝔼 p, N p ^ 2) ≤ V / w := hsecond
+    _ ≤ 1 / 3 * t ^ 2 := by
+      rw [div_le_iff₀ hw0]
+      nlinarith [hw]
 
 end Cslib.Probability.CountSketch

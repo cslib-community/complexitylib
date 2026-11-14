@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PairwiseIndependentHash
-import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Finset.Expect.Chebyshev
 import Mathlib.Algebra.Order.BigOperators.Expect
 
 /-!
@@ -172,12 +172,9 @@ theorem dens_le_abs_card_filter_apply_mem_sub_le [Field 𝕜] [LinearOrder 𝕜]
     {ε : 𝕜} (hε : 0 < ε) :
     (dens {i | ε ≤ |(#{x ∈ S | h i x ∈ B} : 𝕜) - #S * (#B / Fintype.card Y)|} : 𝕜) ≤
       #S * (#B / Fintype.card Y) / ε ^ 2 := by
-  have hmarkov := Fintype.mul_dens_filter_le_expect
-    (f := fun i ↦ ((#{x ∈ S | h i x ∈ B} : 𝕜) - #S * (#B / Fintype.card Y)) ^ 2)
-    (fun _ ↦ sq_nonneg _) (ε ^ 2)
-  simp only [sq_le_sq, abs_of_pos hε] at hmarkov
-  rw [le_div_iff₀ (by positivity), mul_comm]
-  refine hmarkov.trans ?_
+  refine (Fintype.dens_le_abs_le_expect_sq_div_sq
+    (fun i => (#{x ∈ S | h i x ∈ B} : 𝕜) - #S * (#B / Fintype.card Y)) hε).trans ?_
+  apply div_le_div_of_nonneg_right _ (sq_nonneg ε)
   rw [hh.expect_card_filter_apply_mem_sub_sq]
   have hp : (#B : 𝕜) / Fintype.card Y ≥ 0 := by positivity
   exact mul_le_of_le_one_right (by positivity) (sub_le_self _ hp)

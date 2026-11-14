@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
@@ -143,21 +144,6 @@ private theorem one_sub_pow_le_exp (p : I) (m : ℕ) :
     (1 - p : ℝ) ^ m ≤ Real.exp (-(p * m)) :=
   Real.one_sub_pow_le_exp (unitInterval.le_one p) (by rw [mul_comm])
 
-/-- Upper bound on binomial coefficients: `C(n, k) ≤ (n e / k) ^ k`. -/
-theorem choose_le_mul_exp_div_pow (k n : ℕ) :
-    (n.choose k : ℝ) ≤ ((n : ℝ) * Real.exp 1 / k) ^ k := by
-  rcases Nat.eq_zero_or_pos k with rfl | hk
-  · simp
-  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
-  have hfact : (k : ℝ) ^ k / k.factorial ≤ Real.exp 1 ^ k := by
-    rw [← Real.exp_nat_mul, mul_one]
-    exact Real.pow_div_factorial_le_exp (x := (k : ℝ)) (hx := by positivity) (n := k)
-  calc (n.choose k : ℝ) ≤ (n : ℝ) ^ k / k.factorial := Nat.choose_le_pow_div k n
-    _ = ((n : ℝ) / k) ^ k * ((k : ℝ) ^ k / k.factorial) := by
-        rw [div_pow, div_mul_div_cancel₀ (by positivity)]
-    _ ≤ ((n : ℝ) / k) ^ k * Real.exp 1 ^ k := by gcongr
-    _ = ((n : ℝ) * Real.exp 1 / k) ^ k := by rw [← mul_pow, div_mul_eq_mul_div]
-
 /-- The `k`-th term of the union bound is at most `(n e exp (-(p (n - k))) / k) ^ k`. -/
 private theorem choose_mul_pow_le {n k : ℕ} (hkn : k ≤ n) (p : I) :
     (n.choose k : ℝ) * (1 - p : ℝ) ^ (k * (n - k)) ≤
@@ -169,7 +155,9 @@ private theorem choose_mul_pow_le {n k : ℕ} (hkn : k ≤ n) (p : I) :
   calc (n.choose k : ℝ) * (1 - p : ℝ) ^ (k * (n - k))
       ≤ ((n : ℝ) * Real.exp 1 / k) ^ k * ((1 - p : ℝ) ^ (n - k)) ^ k := by
         rw [← pow_mul, mul_comm (n - k) k]
-        exact mul_le_mul_of_nonneg_right (choose_le_mul_exp_div_pow k n) (by positivity)
+        exact mul_le_mul_of_nonneg_right
+          (by simpa only [mul_comm (n : ℝ)] using Nat.choose_le_exp_mul_div_pow n k)
+          (by positivity)
     _ ≤ ((n : ℝ) * Real.exp 1 / k) ^ k * Real.exp (-(p * ((n : ℝ) - k))) ^ k := by
         gcongr
     _ = ((n : ℝ) * Real.exp 1 * Real.exp (-(p * ((n : ℝ) - k))) / k) ^ k := by
