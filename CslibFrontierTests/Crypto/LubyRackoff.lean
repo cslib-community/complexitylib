@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import Mathlib.Data.ZMod.Basic
 
@@ -12,11 +14,15 @@ import Mathlib.Data.ZMod.Basic
 
 Checks concrete round and network evaluation, inversion, and swap-reversal conjugation over
 `ZMod 7` and `BitString 4`, instantiates a two-query adaptive distinguisher with proved query
-bound `Q = 2`, exercises the 3-round Luby–Rackoff CPA bounds, the 3-round CCA insecurity attack,
-the 4-round strong PRF-to-random-round reduction, and the full 4-round strong PRP Luby–Rackoff
-theorem, and audits the axiom dependencies of the headline theorems in
+bound `Q = 2` and a randomized two-query adversary, exercises the 3-round random-round bounds,
+the keyed 3-round Luby–Rackoff theorem with its explicit hybrid reductions, the 3-round CCA
+insecurity attack, the 4-round random-round collision bound and the keyed 4-round strong
+Luby–Rackoff theorem, and audits the axiom dependencies of the headline theorems in
 `CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff`.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.LubyRackoff
 
@@ -103,26 +109,39 @@ example :
     isDeltaUniversalHash_uniformOfFintype ?_ isQueryBounded_sampleDistinguisher
   exact ENNReal.inv_ne_top.mpr (by simp)
 
--- Concrete instantiation of the full keyed 3-round Luby–Rackoff PRF and PRP theorems over `ZMod 7`.
-example (keyGen : PMF (ZMod 7)) (F : ZMod 7 → ZMod 7 → ZMod 7) {ε₁ ε₂ ε₃ : ℝ}
-    (h₁ : ∀ g₂ g₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₁ g₂ g₃ sampleDistinguisher))
-        (prfSingleIdealGame (feistel3Reduction₁ g₂ g₃ sampleDistinguisher)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ g₁ g₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₂ g₁ g₃ sampleDistinguisher))
-        (prfSingleIdealGame (feistel3Reduction₂ g₁ g₃ sampleDistinguisher)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ g₁ g₂,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₃ g₁ g₂ sampleDistinguisher))
-        (prfSingleIdealGame (feistel3Reduction₃ g₁ g₂ sampleDistinguisher)) : ℝ) ≤ ε₃) :
-    (Game.advantage (feistel3KeyedGame keyGen F sampleDistinguisher)
-      (randomFunctionGame sampleDistinguisher) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + 2 * ((2 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ ∧
-    (Game.advantage (feistel3KeyedGame keyGen F sampleDistinguisher)
-      (idealPermGame sampleDistinguisher) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + 2 * ((2 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
-        ((2 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2 :=
-  ⟨advantage_feistel3KeyedGame_randomFunctionGame_le isQueryBounded_sampleDistinguisher h₁ h₂ h₃,
-   advantage_feistel3KeyedGame_idealPermGame_le isQueryBounded_sampleDistinguisher h₁ h₂ h₃⟩
+/-- A randomized two-query adversary over `ZMod 7 × ZMod 7`: it draws a private uniform `r`, queries
+`(0, r)`, then adaptively queries the reply, and outputs whether the two right halves agree. -/
+noncomputable def sampleAdversary :
+    ProbOracleComp (fun _ : ZMod 7 × ZMod 7 => ZMod 7 × ZMod 7) Bool := do
+  let r ← ProbOracleComp.sample (ProbComp.uniform (ZMod 7))
+  let (v₁, w₁) ← ProbOracleComp.query (spec := fun _ : ZMod 7 × ZMod 7 => ZMod 7 × ZMod 7) (0, r)
+  let (_, w₂) ← ProbOracleComp.query (spec := fun _ : ZMod 7 × ZMod 7 => ZMod 7 × ZMod 7) (v₁, w₁)
+  return decide (w₁ = w₂)
+
+theorem isQueryBounded_sampleAdversary : sampleAdversary.IsQueryBounded 2 := by
+  refine ((ProbOracleComp.IsQueryBounded.sample _).bind fun r =>
+    (ProbOracleComp.IsQueryBounded.query _).bind fun vw₁ =>
+      (ProbOracleComp.IsQueryBounded.query _).bind fun vw₂ =>
+        OracleComp.IsCostBounded.pure _ 0).mono (by omega)
+
+-- The keyed three-round Luby–Rackoff theorem over `ZMod 7` for `sampleAdversary` (`Q = 2`): the
+-- PRF terms are the advantages of three explicit hybrid reductions, each making at most `6`
+-- queries, and the multi-key PRF hybrid bounds the keyed rounds against random ones.
+example (F : ZMod 7 → ZMod 7 → ZMod 7) :
+    (PRF.advantage (fun keys => ⇑(feistel3Cipher F keys)) sampleAdversary : ℝ) ≤
+      ∑ j ∈ Finset.range 3, (PRF.advantage F (feistel3Reduction F j sampleAdversary) : ℝ) +
+        2 * ((2 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ ∧
+    (PRP.advantage (feistel3Cipher F) sampleAdversary : ℝ) ≤
+      ∑ j ∈ Finset.range 3, (PRF.advantage F (feistel3Reduction F j sampleAdversary) : ℝ) +
+        (2 * ((2 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
+          ((2 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2) ∧
+    (∀ j, (feistel3Reduction F j sampleAdversary).IsQueryBounded (3 * 2)) ∧
+    PRF.multiKeyAdvantage F (feistel3MultiKeyAdversary sampleAdversary) ≤
+      ∑ j ∈ Finset.range 3, PRF.advantage F (feistel3Reduction F j sampleAdversary) :=
+  ⟨prfAdvantage_feistel3Cipher_le F isQueryBounded_sampleAdversary,
+   prpAdvantage_feistel3Cipher_le F isQueryBounded_sampleAdversary,
+   fun j => isQueryBounded_feistel3Reduction F j isQueryBounded_sampleAdversary,
+   PRF.multiKeyAdvantage_le_sum F (feistel3MultiKeyAdversary sampleAdversary)⟩
 
 -- Concrete instantiation of the 3-round and 4-round bit-string specializations on `BitString 4`.
 example
@@ -208,53 +227,35 @@ example (program : OracleComp (RandomPermutation.PermOracleSpec (Fin 3)) Bool)
   ⟨RandomPermutation.uniform_interpret_eq_lazy program,
    RandomPermutation.abs_sub_uniformPerm_forgetful_le hQ PMF.pure true⟩
 
--- Concrete instantiation of the 4-round strong PRF-to-random-round hybrid bound, random-round
--- collision bound (`Q = 3`), and full 4-round strong PRP Luby–Rackoff theorem over `ZMod 7`.
-example (keyGen : PMF (ZMod 7)) (F : ZMod 7 → ZMod 7 → ZMod 7) {ε₁ ε₂ ε₃ ε₄ : ℝ}
-    (h₁ : ∀ g₂ g₃ g₄,
-      (Game.advantage
-        (prfSingleRealGame keyGen F
-          (feistel4StrongReduction₁ g₂ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
-        (prfSingleIdealGame
-          (feistel4StrongReduction₁ g₂ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₁)
-    (h₂ : ∀ g₁ g₃ g₄,
-      (Game.advantage
-        (prfSingleRealGame keyGen F
-          (feistel4StrongReduction₂ g₁ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
-        (prfSingleIdealGame
-          (feistel4StrongReduction₂ g₁ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₂)
-    (h₃ : ∀ g₁ g₂ g₄,
-      (Game.advantage
-        (prfSingleRealGame keyGen F
-          (feistel4StrongReduction₃ g₁ g₂ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
-        (prfSingleIdealGame
-          (feistel4StrongReduction₃ g₁ g₂ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₃)
-    (h₄ : ∀ g₁ g₂ g₃,
-      (Game.advantage
-        (prfSingleRealGame keyGen F
-          (feistel4StrongReduction₄ g₁ g₂ g₃ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
-        (prfSingleIdealGame
-          (feistel4StrongReduction₄ g₁ g₂ g₃ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₄) :
-    (Game.advantage
-      (feistel4StrongKeyedGame keyGen F (feistel3CCAAttack (0 : ZMod 7) 1 2))
-      (feistel4StrongRandomRoundsGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + ε₄ ∧
+/-- The three-round chosen-ciphertext attack (`l₀ = 0`, `l₁ = 1`, `r₀ = 2`) as an adversary of the
+finite strong PRP experiments over `ZMod 7 × ZMod 7`. -/
+def ccaAdversary : ProbOracleComp (RandomPermutation.PermOracleSpec (ZMod 7 × ZMod 7)) Bool :=
+  OracleComp.interpret
+    (fun q => ProbOracleComp.query (spec := RandomPermutation.PermOracleSpec (ZMod 7 × ZMod 7)) q)
+    (RandomPermutation.liftBoolProd (feistel3CCAAttack (0 : ZMod 7) 1 2))
+
+theorem isQueryBounded_ccaAdversary : ccaAdversary.IsQueryBounded 3 :=
+  (RandomPermutation.isQueryBounded_liftBoolProd
+    (isQueryBounded_feistel3CCAAttack (0 : ZMod 7) 1 2)).probOracleComp
+
+-- The random-round collision bound (`Q = 3`) and the keyed four-round strong Luby–Rackoff theorem
+-- over `ZMod 7`: the PRF terms are the advantages of four explicit hybrid reductions, each making
+-- at most `12` queries.
+example (F : ZMod 7 → ZMod 7 → ZMod 7) :
     (Game.advantage
       (feistel4StrongRandomRoundsGame (feistel3CCAAttack (0 : ZMod 7) 1 2))
       (idealStrongGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
       2 * ((3 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
         2 * ((3 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2 ∧
-    (Game.advantage
-      (feistel4StrongKeyedGame keyGen F (feistel3CCAAttack (0 : ZMod 7) 1 2))
-      (idealStrongGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + ε₄ +
-        2 * ((3 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
-        2 * ((3 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2 :=
-  ⟨advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le h₁ h₂ h₃ h₄,
-   advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
+    (PRP.strongAdvantage (feistel4Cipher F) ccaAdversary : ℝ) ≤
+      ∑ j ∈ Finset.range 4, (PRF.advantage F (feistel4StrongReduction F j ccaAdversary) : ℝ) +
+        (2 * ((3 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
+          2 * ((3 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2) ∧
+    ∀ j, (feistel4StrongReduction F j ccaAdversary).IsQueryBounded (4 * 3) :=
+  ⟨advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
      (isQueryBounded_feistel3CCAAttack 0 1 2),
-   advantage_feistel4StrongKeyedGame_idealStrongGame_le
-     (isQueryBounded_feistel3CCAAttack 0 1 2) h₁ h₂ h₃ h₄⟩
+   strongAdvantage_feistel4Cipher_le F isQueryBounded_ccaAdversary,
+   fun j => isQueryBounded_feistel4StrongReduction F j isQueryBounded_ccaAdversary⟩
 
 -- Concrete 3-round vs. 4-round CCA separation on `BitString 4`: for the 3-query attack
 -- `feistel3CCAAttack 0 (fun _ => true) 0`, 4-round random-round Feistel has strong-PRP advantage

@@ -8,18 +8,23 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Primitives.PRF.MultiKey
+public import CslibFrontier.Crypto.Primitives.PRP.Finite
 public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import CslibFrontier.Probability.HashFamily
 public import CslibFrontier.Probability.HashFamily.Uniform
 public import Mathlib.Data.Fintype.Perm
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 import CslibFrontier.Probability.BitString
+import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
@@ -61,18 +66,26 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
    `G × G` at most
    $$\frac{2 \binom{Q}{2}}{|G|} = \frac{Q (Q - 1)}{|G|}$$
    (`advantage_feistel3RandomRoundsGame_randomFunctionGame_le`).
-3. **Computational PRF-to-Feistel hybrid reductions (3-round and 4-round) and PRP switching**:
-   replacing keyed round functions `F kᵢ` with independent uniform random round functions adds at
-   most the sum of the single-round PRF advantages
-   (`advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le`,
-   `advantage_feistel3KeyedGame_randomFunctionGame_le`, and the four-round bidirectional
-   chosen-ciphertext hybrid bound
-   `advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le`). Combining with the
-   PRP/PRF switching bound on `G × G` (`advantage_idealPermGame_randomFunctionGame_le`) yields the
-   pseudorandom-permutation bounds against `idealPermGame`
-   (`advantage_feistel3HashIdealGame_idealPermGame_le`,
-   `advantage_feistel3RandomRoundsGame_idealPermGame_le`,
-   `advantage_feistel3KeyedGame_idealPermGame_le`).
+3. **PRP switching and the keyed three-round cipher**: the PRP/PRF switching bound on `G × G`
+   (`advantage_idealPermGame_randomFunctionGame_le`) yields the pseudorandom-permutation bounds
+   against `idealPermGame` (`advantage_feistel3HashIdealGame_idealPermGame_le`,
+   `advantage_feistel3RandomRoundsGame_idealPermGame_le`). For the cipher `feistel3Cipher F`
+   with three independent uniform keys of a finite round function `F : K → G → G`, and any
+   `Q`-query adversary `A` with private coins in the finite PRF/PRP experiments of
+   `Cslib.Crypto.PRF` and `Cslib.Crypto.PRP`,
+   $$\mathrm{PRPadv}[A] \le \sum_{j < 3} \mathrm{PRFadv}[B_j] + \frac{2 \binom{Q}{2}}{|G|} +
+   \frac{\binom{Q}{2}}{|G|^2}$$
+   (`prpAdvantage_feistel3Cipher_le`, and `prfAdvantage_feistel3Cipher_le` against a random
+   function). Here `B_j = feistel3Reduction F j A` is one explicit randomized PRF adversary:
+   the `j`-th hybrid reduction of the multi-key PRF hybrid (`PRF.multiKeyReduction`) applied to
+   the stateless adapter `feistel3MultiKeyAdversary A`. It samples its own keys for the rounds
+   after round `j + 1`, forwards round `j + 1` to its PRF challenger, and lazily samples the
+   rounds before it with a cache. This is the hybrid argument of [BonehShoup2023], Exercise 4.26,
+   which the proof of Theorem 4.9 uses for the three round keys. It makes at most
+   `3 * Q` queries (`isQueryBounded_feistel3Reduction`). Fixing the private coins of `A`
+   transfers the random-round bounds to randomized adversaries
+   (`advantage_feistel3RandomRounds_prfIdealExperiment_le`,
+   `advantage_feistel3RandomRounds_prpIdealExperiment_le`).
 4. **Three-round chosen-ciphertext separation ([BonehShoup2023], Section 4.1.3 and
    Exercise 4.15(b))**: with two forward
    encryption queries and one inverse decryption query, the explicit distinguisher
@@ -107,9 +120,13 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
    `feistel4StrongRandomRoundsGame_apply_le`,
    `idealStrongGame_apply_le_feistel4StrongRandomRoundsGame`,
    `advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le`,
-   `advantage_feistel4StrongRandomRoundsGame_bitString_le`). Combined with the four-round PRF
-   hybrid reduction, this gives the full four-round strong PRP theorem
-   `advantage_feistel4StrongKeyedGame_idealStrongGame_le`.
+   `advantage_feistel4StrongRandomRoundsGame_bitString_le`). For the cipher `feistel4Cipher F`
+   with four independent uniform keys and any `Q`-query chosen-ciphertext adversary `A` with
+   private coins, the strong PRP advantage is at most the sum of the PRF advantages of the four
+   explicit hybrid reductions `feistel4StrongReduction F j A` plus this bound
+   (`strongAdvantage_feistel4Cipher_le`). The bidirectional adapter
+   `feistel4StrongMultiKeyAdversary` evaluates inverse queries with the round functions forwards,
+   so each reduction again needs only forward PRF access.
 
 ## Main definitions
 
@@ -118,12 +135,17 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
 * `Cslib.Crypto.LubyRackoff.feistelNetwork`, `feistel3`, `feistel4`: multi-round, 3-round, and
   4-round Feistel permutations.
 * `Cslib.Crypto.LubyRackoff.feistel3FixedGame`, `feistel3HashIdealGame`,
-  `feistel3RandomRoundsGame`, `feistel3KeyedGame`, `randomFunctionGame`, `idealPermGame`: 3-round
-  Feistel, ideal random-function, and ideal random-permutation games.
+  `feistel3RandomRoundsGame`, `randomFunctionGame`, `idealPermGame`: 3-round Feistel, ideal
+  random-function, and ideal random-permutation games for coin-free programs.
 * `Cslib.Crypto.LubyRackoff.feistelStrongOracle`, `idealStrongGame`,
-  `independentTableStrongGame`, `feistel4StrongKeyedGame`, `feistel4StrongRandomRoundsGame`,
-  `feistel3CCAAttack`: bidirectional (forward + inverse) oracle games and the 3-query CCA attack
-  on 3-round Feistel.
+  `independentTableStrongGame`, `feistel4StrongRandomRoundsGame`, `feistel3CCAAttack`:
+  bidirectional (forward + inverse) oracle games and the 3-query CCA attack on 3-round Feistel.
+* `Cslib.Crypto.LubyRackoff.feistel3Cipher`, `feistel3ChannelQuery`, `feistel3MultiKeyAdversary`,
+  `feistel3Reduction`: the keyed three-round cipher, its three-channel adapter, and its hybrid
+  PRF reductions.
+* `Cslib.Crypto.LubyRackoff.feistel4Cipher`, `feistel4StrongChannelQuery`,
+  `feistel4StrongMultiKeyAdversary`, `feistel4StrongReduction`: the keyed four-round cipher, its
+  bidirectional four-channel adapter, and its hybrid PRF reductions.
 
 ## Main results
 
@@ -141,17 +163,24 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
 * `Cslib.Crypto.LubyRackoff.advantage_feistel3RandomRoundsGame_randomFunctionGame_le`,
   `Cslib.Crypto.LubyRackoff.advantage_feistel3RandomRoundsGame_idealPermGame_le`: 3-round
   Luby–Rackoff bounds with three uniform random round functions.
-* `Cslib.Crypto.LubyRackoff.advantage_feistel3KeyedGame_randomFunctionGame_le`,
-  `Cslib.Crypto.LubyRackoff.advantage_feistel3KeyedGame_idealPermGame_le`: Boneh–Shoup Theorem 4.9
-  combining the 3-round PRF hybrid reduction with the information-theoretic PRF and PRP bounds.
-* `Cslib.Crypto.LubyRackoff.advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le`,
-  `Cslib.Crypto.LubyRackoff.feistel4StrongRandomRoundsGame_apply_le`,
+* `Cslib.Crypto.LubyRackoff.prfAdvantage_feistel3Cipher_le`,
+  `Cslib.Crypto.LubyRackoff.prpAdvantage_feistel3Cipher_le`: Boneh–Shoup Theorem 4.9 for the
+  keyed three-round cipher, with the PRF advantages of explicit hybrid reductions.
+* `Cslib.Crypto.LubyRackoff.isQueryBounded_feistel3Reduction`,
+  `Cslib.Crypto.LubyRackoff.isQueryBounded_feistel4StrongReduction`: the reductions make at most
+  three (four) queries per query of the adversary.
+* `Cslib.Crypto.LubyRackoff.advantage_feistel3RandomRounds_prfIdealExperiment_le`,
+  `Cslib.Crypto.LubyRackoff.advantage_feistel3RandomRounds_prpIdealExperiment_le`,
+  `Cslib.Crypto.LubyRackoff.advantage_feistel4StrongRandomRounds_strongIdealExperiment_le`:
+  the random-round bounds for adversaries with private coins.
+* `Cslib.Crypto.LubyRackoff.feistel4StrongRandomRoundsGame_apply_le`,
   `Cslib.Crypto.LubyRackoff.idealStrongGame_apply_le_feistel4StrongRandomRoundsGame`,
   `Cslib.Crypto.LubyRackoff.advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le`,
-  `Cslib.Crypto.LubyRackoff.advantage_feistel4StrongKeyedGame_idealStrongGame_le`,
   `Cslib.Crypto.LubyRackoff.advantage_feistel4StrongRandomRoundsGame_bitString_le`:
-  4-round bidirectional PRF hybrid reduction, information-theoretic random-round collision bound,
-  and full 4-round strong PRP Luby–Rackoff theorem.
+  information-theoretic 4-round random-round collision bound.
+* `Cslib.Crypto.LubyRackoff.strongAdvantage_feistel4Cipher_le`: the 4-round strong
+  Luby–Rackoff theorem for the keyed cipher, with the PRF advantages of explicit hybrid
+  reductions.
 * `Cslib.Crypto.LubyRackoff.eval_feistel3_feistel3CCAAttack`,
   `Cslib.Crypto.LubyRackoff.advantage_feistel3CCAAttack_self`,
   `Cslib.Crypto.LubyRackoff.idealStrongGame_feistel3CCAAttack_true_le`,
@@ -163,7 +192,8 @@ We prove the **Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Sections 4.1.3 and 4.5 (Theorem 4.9 and Exercise 4.15(b)).
+  Version 0.6][BonehShoup2023], Sections 4.1.3 and 4.5 (Theorem 4.9 and Exercise 4.15(b)), and
+  Exercise 4.26 (parallel composition of PRFs).
 * [M. Luby, C. Rackoff, *How to Construct Pseudorandom Permutations from Pseudorandom
   Functions*][LubyRackoff1988].
 -/
@@ -1199,199 +1229,6 @@ theorem advantage_feistel3RandomRoundsGame_idealPermGame_le
     [advantage_feistel3RandomRoundsGame_randomFunctionGame_le hQ,
       advantage_idealPermGame_randomFunctionGame_le hQ]
 
-end LubyRackoff3
-
-/-! ### 3-round PRF-to-Feistel hybrid reductions (Boneh–Shoup Theorem 4.9) -/
-
-section Hybrid3
-
-variable {K K₁ G : Type} [AddGroup G] [Fintype G] [DecidableEq G]
-
-/-- Single-round PRF real game: sample `k ← keyGen` and answer queries with `F k`. -/
-noncomputable def prfSingleRealGame (keyGen : PMF K) (F : K → G → G)
-    (B : OracleComp (fun _ : G => G) Bool) : Game := do
-  let k ← keyGen
-  OracleComp.interpret (fun x => PMF.pure (F k x)) B
-
-/-- Single-round PRF ideal game: sample a uniform random function `f : G → G`. -/
-noncomputable def prfSingleIdealGame [Nonempty G] (B : OracleComp (fun _ : G => G) Bool) :
-    Game := do
-  let f ← PMF.uniformOfFintype (G → G)
-  OracleComp.interpret (fun x => PMF.pure (f x)) B
-
-/-- The 3-round Feistel game with three independent keyed round functions `F k₁, F k₂, F k₃`. -/
-noncomputable def feistel3KeyedGame (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) : Game := do
-  let k₁ ← keyGen
-  let k₂ ← keyGen
-  let k₃ ← keyGen
-  OracleComp.interpret (fun p => PMF.pure (feistel3 (F k₁) (F k₂) (F k₃) p)) program
-
-/-- Intermediate hybrid 1: uniform random `f₁` in Round 1, keyed `F k₂, F k₃` in Rounds 2 and 3. -/
-private noncomputable def feistel3Hybrid₁ (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) : Game := do
-  let f₁ ← PMF.uniformOfFintype (G → G)
-  let k₂ ← keyGen
-  let k₃ ← keyGen
-  OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ (F k₂) (F k₃) p)) program
-
-/-- Intermediate hybrid 2: uniform random `f₁, f₂` in Rounds 1 and 2, keyed `F k₃` in Round 3. -/
-private noncomputable def feistel3Hybrid₂ (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) : Game := do
-  let f₁ ← PMF.uniformOfFintype (G → G)
-  let f₂ ← PMF.uniformOfFintype (G → G)
-  let k₃ ← keyGen
-  OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ f₂ (F k₃) p)) program
-
-/-- Round-1 PRF reduction distinguisher for fixed `f₂, f₃ : G → G`. -/
-def feistel3Reduction₁ (f₂ f₃ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun p => do
-      let y₁ ← OracleComp.query (spec := fun _ : G => G) p.2
-      let u := p.1 + y₁
-      let v := p.2 + f₂ u
-      return (v, u + f₃ v))
-    program
-
-/-- Round-2 PRF reduction distinguisher for fixed `f₁, f₃ : G → G`. -/
-def feistel3Reduction₂ (f₁ f₃ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun p => do
-      let u := p.1 + f₁ p.2
-      let y₂ ← OracleComp.query (spec := fun _ : G => G) u
-      let v := p.2 + y₂
-      return (v, u + f₃ v))
-    program
-
-/-- Round-3 PRF reduction distinguisher for fixed `f₁, f₂ : G → G`. -/
-def feistel3Reduction₃ (f₁ f₂ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun p => do
-      let u := p.1 + f₁ p.2
-      let v := p.2 + f₂ u
-      let y₃ ← OracleComp.query (spec := fun _ : G => G) v
-      return (v, u + y₃))
-    program
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel3Reduction₁ (f₁ f₂ f₃ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₁ x)) (feistel3Reduction₁ f₂ f₃ program) =
-      OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ f₂ f₃ p)) program := by
-  rw [feistel3Reduction₁, OracleComp.interpret_interpret]
-  congr 1
-  funext p
-  simp [feistel3_apply]
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel3Reduction₂ (f₁ f₂ f₃ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₂ x)) (feistel3Reduction₂ f₁ f₃ program) =
-      OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ f₂ f₃ p)) program := by
-  rw [feistel3Reduction₂, OracleComp.interpret_interpret]
-  congr 1
-  funext p
-  simp [feistel3_apply]
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel3Reduction₃ (f₁ f₂ f₃ : G → G)
-    (program : OracleComp (fun _ : G × G => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₃ x)) (feistel3Reduction₃ f₁ f₂ program) =
-      OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ f₂ f₃ p)) program := by
-  rw [feistel3Reduction₃, OracleComp.interpret_interpret]
-  congr 1
-  funext p
-  simp [feistel3_apply]
-
-/-- Replacing the three keyed round functions `F k₁, F k₂, F k₃` with independent uniform random
-round functions adds at most the sum of the three single-round PRF advantages. -/
-theorem advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le
-    {keyGen : PMF K} {F : K → G → G}
-    {program : OracleComp (fun _ : G × G => G × G) Bool} {ε₁ ε₂ ε₃ : ℝ}
-    (h₁ : ∀ f₂ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₁ f₂ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₁ f₂ f₃ program)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ f₁ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₂ f₁ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₂ f₁ f₃ program)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ f₁ f₂,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₃ f₁ f₂ program))
-        (prfSingleIdealGame (feistel3Reduction₃ f₁ f₂ program)) : ℝ) ≤ ε₃) :
-    (Game.advantage (feistel3KeyedGame keyGen F program)
-      (feistel3RandomRoundsGame program) : ℝ) ≤ ε₁ + ε₂ + ε₃ := by
-  game_trans [feistel3Hybrid₁ keyGen F program, feistel3Hybrid₂ keyGen F program]
-  · unfold feistel3KeyedGame feistel3Hybrid₁; simp only [pmf_norm]
-    pmf_hoist (occ := 2) keyGen; peel_binds k₂
-    pmf_hoist (occ := 2) keyGen; peel_binds k₃
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₁,
-      pmf_norm] using h₁ (F k₂) (F k₃)
-  · unfold feistel3Hybrid₁ feistel3Hybrid₂; simp only [pmf_norm]
-    peel_binds f₁
-    pmf_hoist (occ := 2) keyGen; peel_binds k₃
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₂,
-      pmf_norm] using h₂ f₁ (F k₃)
-  · unfold feistel3Hybrid₂ feistel3RandomRoundsGame feistel3FixedGame
-    peel_binds f₁ f₂
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₃,
-      pmf_norm] using h₃ f₁ f₂
-  · rfl
-
-/-- **The Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 4.9; [LubyRackoff1988]): a
-3-round Feistel cipher built from three independently keyed instances of a round function `F` has
-distinguishing advantage against a uniform random function on `G × G` at most
-`ε₁ + ε₂ + ε₃ + 2 * Q.choose 2 / |G|`. -/
-theorem advantage_feistel3KeyedGame_randomFunctionGame_le
-    {keyGen : PMF K} {F : K → G → G}
-    {program : OracleComp (fun _ : G × G => G × G) Bool} {Q : ℕ}
-    (hQ : OracleComp.IsQueryBounded program Q) {ε₁ ε₂ ε₃ : ℝ}
-    (h₁ : ∀ f₂ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₁ f₂ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₁ f₂ f₃ program)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ f₁ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₂ f₁ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₂ f₁ f₃ program)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ f₁ f₂,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₃ f₁ f₂ program))
-        (prfSingleIdealGame (feistel3Reduction₃ f₁ f₂ program)) : ℝ) ≤ ε₃) :
-    (Game.advantage (feistel3KeyedGame keyGen F program)
-      (randomFunctionGame program) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + 2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ := by
-  game_trans [feistel3RandomRoundsGame program] using
-    [advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃,
-      advantage_feistel3RandomRoundsGame_randomFunctionGame_le hQ]
-
-/-- **The Luby–Rackoff PRP theorem** ([BonehShoup2023], Section 4.5, Theorem 4.9;
-[LubyRackoff1988]): a 3-round
-Feistel cipher built from three independently keyed instances of a round function `F` has
-distinguishing advantage against a uniform random permutation on `G × G` (`idealPermGame`) at most
-`ε₁ + ε₂ + ε₃ + 2 * Q.choose 2 / |G| + Q.choose 2 / |G| ^ 2`. -/
-theorem advantage_feistel3KeyedGame_idealPermGame_le
-    {keyGen : PMF K} {F : K → G → G}
-    {program : OracleComp (fun _ : G × G => G × G) Bool} {Q : ℕ}
-    (hQ : OracleComp.IsQueryBounded program Q) {ε₁ ε₂ ε₃ : ℝ}
-    (h₁ : ∀ f₂ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₁ f₂ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₁ f₂ f₃ program)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ f₁ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₂ f₁ f₃ program))
-        (prfSingleIdealGame (feistel3Reduction₂ f₁ f₃ program)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ f₁ f₂,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel3Reduction₃ f₁ f₂ program))
-        (prfSingleIdealGame (feistel3Reduction₃ f₁ f₂ program)) : ℝ) ≤ ε₃) :
-    (Game.advantage (feistel3KeyedGame keyGen F program)
-      (idealPermGame program) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + 2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
-        (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2 := by
-  game_trans [feistel3RandomRoundsGame program] using
-    [advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃,
-      advantage_feistel3RandomRoundsGame_idealPermGame_le hQ]
-
 /-- Concrete instantiation of the 3-round Luby–Rackoff theorem on `BitString n` (block size `2n`):
 the information-theoretic collision error is at most `2 * Q.choose 2 / 2 ^ n`. -/
 theorem advantage_feistel3RandomRoundsGame_bitString_le (n : ℕ)
@@ -1404,13 +1241,13 @@ theorem advantage_feistel3RandomRoundsGame_bitString_le (n : ℕ)
   simpa only [Fintype.card_pi, Fintype.card_fin, Fintype.card_bool, Finset.prod_const,
     Finset.card_univ, Nat.cast_pow, Nat.cast_ofNat] using h
 
-end Hybrid3
+end LubyRackoff3
 
-/-! ### Chosen-ciphertext separation for 3 rounds and 4-round bidirectional hybrid security -/
+/-! ### Chosen-ciphertext separation for 3 rounds and the 4-round random-rounds game -/
 
 section Strong4AndCCAAttack
 
-variable {K G : Type} [AddGroup G] [Fintype G] [DecidableEq G]
+variable {G : Type} [AddGroup G] [Fintype G] [DecidableEq G]
 
 /-- Bidirectional permutation oracle on `G × G`: `(false, p)` evaluates forward encryption `π p`,
 and `(true, q)` evaluates inverse decryption `π.symm q`. -/
@@ -1812,16 +1649,6 @@ theorem le_advantage_feistel3CCAAttack_idealStrongGame_of_ne (f₁ f₂ f₃ : G
         |1 - (idealStrongGame (feistel3CCAAttack l₀ l₁ r₀) true).toReal| := le_abs_self _
   linarith
 
-/-- 4-round Feistel strong (bidirectional) game with four independent keyed round functions
-`F k₁, F k₂, F k₃, F k₄`. -/
-noncomputable def feistel4StrongKeyedGame (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) : Game := do
-  let k₁ ← keyGen
-  let k₂ ← keyGen
-  let k₃ ← keyGen
-  let k₄ ← keyGen
-  OracleComp.interpret (feistelStrongOracle (feistel4 (F k₁) (F k₂) (F k₃) (F k₄))) program
-
 /-- 4-round Feistel strong (bidirectional) game with four independent uniform random round
 functions `f₁, f₂, f₃, f₄ : G → G`. -/
 noncomputable def feistel4StrongRandomRoundsGame
@@ -1831,212 +1658,6 @@ noncomputable def feistel4StrongRandomRoundsGame
   let f₃ ← PMF.uniformOfFintype (G → G)
   let f₄ ← PMF.uniformOfFintype (G → G)
   OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ f₄)) program
-
-/-- Intermediate strong hybrid 1 for 4-round Feistel. -/
-private noncomputable def feistel4StrongHybrid₁ (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) : Game := do
-  let f₁ ← PMF.uniformOfFintype (G → G)
-  let k₂ ← keyGen
-  let k₃ ← keyGen
-  let k₄ ← keyGen
-  OracleComp.interpret (feistelStrongOracle (feistel4 f₁ (F k₂) (F k₃) (F k₄))) program
-
-/-- Intermediate strong hybrid 2 for 4-round Feistel. -/
-private noncomputable def feistel4StrongHybrid₂ (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) : Game := do
-  let f₁ ← PMF.uniformOfFintype (G → G)
-  let f₂ ← PMF.uniformOfFintype (G → G)
-  let k₃ ← keyGen
-  let k₄ ← keyGen
-  OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ (F k₃) (F k₄))) program
-
-/-- Intermediate strong hybrid 3 for 4-round Feistel. -/
-private noncomputable def feistel4StrongHybrid₃ (keyGen : PMF K) (F : K → G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) : Game := do
-  let f₁ ← PMF.uniformOfFintype (G → G)
-  let f₂ ← PMF.uniformOfFintype (G → G)
-  let f₃ ← PMF.uniformOfFintype (G → G)
-  let k₄ ← keyGen
-  OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ (F k₄))) program
-
-/-- Round-1 bidirectional PRF reduction distinguisher for 4-round Feistel. -/
-def feistel4StrongReduction₁ (f₂ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun q => match q with
-      | (false, p) => do
-        let y₁ ← OracleComp.query (spec := fun _ : G => G) p.2
-        let u := p.1 + y₁
-        let v := p.2 + f₂ u
-        let w := u + f₃ v
-        return (w, v + f₄ w)
-      | (true, wz) => do
-        let v := wz.2 - f₄ wz.1
-        let u := wz.1 - f₃ v
-        let r := v - f₂ u
-        let y₁ ← OracleComp.query (spec := fun _ : G => G) r
-        return (u - y₁, r))
-    program
-
-/-- Round-2 bidirectional PRF reduction distinguisher for 4-round Feistel. -/
-def feistel4StrongReduction₂ (f₁ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun q => match q with
-      | (false, p) => do
-        let u := p.1 + f₁ p.2
-        let y₂ ← OracleComp.query (spec := fun _ : G => G) u
-        let v := p.2 + y₂
-        let w := u + f₃ v
-        return (w, v + f₄ w)
-      | (true, wz) => do
-        let v := wz.2 - f₄ wz.1
-        let u := wz.1 - f₃ v
-        let y₂ ← OracleComp.query (spec := fun _ : G => G) u
-        let r := v - y₂
-        return (u - f₁ r, r))
-    program
-
-/-- Round-3 bidirectional PRF reduction distinguisher for 4-round Feistel. -/
-def feistel4StrongReduction₃ (f₁ f₂ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun q => match q with
-      | (false, p) => do
-        let u := p.1 + f₁ p.2
-        let v := p.2 + f₂ u
-        let y₃ ← OracleComp.query (spec := fun _ : G => G) v
-        let w := u + y₃
-        return (w, v + f₄ w)
-      | (true, wz) => do
-        let v := wz.2 - f₄ wz.1
-        let y₃ ← OracleComp.query (spec := fun _ : G => G) v
-        let u := wz.1 - y₃
-        let r := v - f₂ u
-        return (u - f₁ r, r))
-    program
-
-/-- Round-4 bidirectional PRF reduction distinguisher for 4-round Feistel. -/
-def feistel4StrongReduction₄ (f₁ f₂ f₃ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp (fun _ : G => G) Bool :=
-  OracleComp.interpret
-    (fun q => match q with
-      | (false, p) => do
-        let u := p.1 + f₁ p.2
-        let v := p.2 + f₂ u
-        let w := u + f₃ v
-        let y₄ ← OracleComp.query (spec := fun _ : G => G) w
-        return (w, v + y₄)
-      | (true, wz) => do
-        let y₄ ← OracleComp.query (spec := fun _ : G => G) wz.1
-        let v := wz.2 - y₄
-        let u := wz.1 - f₃ v
-        let r := v - f₂ u
-        return (u - f₁ r, r))
-    program
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel4StrongReduction₁ (f₁ f₂ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₁ x))
-      (feistel4StrongReduction₁ f₂ f₃ f₄ program) =
-      OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ f₄)) program := by
-  rw [feistel4StrongReduction₁, OracleComp.interpret_interpret]
-  congr 1
-  funext ⟨b, p⟩
-  cases b <;>
-    simp [feistelStrongOracle, feistel4_apply, feistel4_symm_apply, feistelRound, feistelInvRound,
-      feistel3_apply, feistel3_symm_apply]
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel4StrongReduction₂ (f₁ f₂ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₂ x))
-      (feistel4StrongReduction₂ f₁ f₃ f₄ program) =
-      OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ f₄)) program := by
-  rw [feistel4StrongReduction₂, OracleComp.interpret_interpret]
-  congr 1
-  funext ⟨b, p⟩
-  cases b <;>
-    simp [feistelStrongOracle, feistel4_apply, feistel4_symm_apply, feistelRound, feistelInvRound,
-      feistel3_apply, feistel3_symm_apply]
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel4StrongReduction₃ (f₁ f₂ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₃ x))
-      (feistel4StrongReduction₃ f₁ f₂ f₄ program) =
-      OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ f₄)) program := by
-  rw [feistel4StrongReduction₃, OracleComp.interpret_interpret]
-  congr 1
-  funext ⟨b, p⟩
-  cases b <;>
-    simp [feistelStrongOracle, feistel4_apply, feistel4_symm_apply, feistelRound, feistelInvRound,
-      feistel3_apply, feistel3_symm_apply]
-
-omit [Fintype G] [DecidableEq G] in
-private theorem interpret_feistel4StrongReduction₄ (f₁ f₂ f₃ f₄ : G → G)
-    (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
-    OracleComp.interpret (fun x => PMF.pure (f₄ x))
-      (feistel4StrongReduction₄ f₁ f₂ f₃ program) =
-      OracleComp.interpret (feistelStrongOracle (feistel4 f₁ f₂ f₃ f₄)) program := by
-  rw [feistel4StrongReduction₄, OracleComp.interpret_interpret]
-  congr 1
-  funext ⟨b, p⟩
-  cases b <;>
-    simp [feistelStrongOracle, feistel4_apply, feistel4_symm_apply, feistelRound, feistelInvRound,
-      feistel3_apply, feistel3_symm_apply]
-
-/-- **4-round bidirectional PRF-to-Feistel hybrid theorem**: because Feistel inversion only
-evaluates the round functions in the forward direction, replacing four keyed round functions
-`F k₁, F k₂, F k₃, F k₄` with independent uniform random round functions against any bidirectional
-(chosen-ciphertext) adversary adds at most `ε₁ + ε₂ + ε₃ + ε₄`. -/
-theorem advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le
-    {keyGen : PMF K} {F : K → G → G}
-    {program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool} {ε₁ ε₂ ε₃ ε₄ : ℝ}
-    (h₁ : ∀ f₂ f₃ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₁ f₂ f₃ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₁ f₂ f₃ f₄ program)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ f₁ f₃ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₂ f₁ f₃ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₂ f₁ f₃ f₄ program)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ f₁ f₂ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₃ f₁ f₂ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₃ f₁ f₂ f₄ program)) : ℝ) ≤ ε₃)
-    (h₄ : ∀ f₁ f₂ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₄ f₁ f₂ f₃ program))
-        (prfSingleIdealGame (feistel4StrongReduction₄ f₁ f₂ f₃ program)) : ℝ) ≤ ε₄) :
-    (Game.advantage (feistel4StrongKeyedGame keyGen F program)
-      (feistel4StrongRandomRoundsGame program) : ℝ) ≤ ε₁ + ε₂ + ε₃ + ε₄ := by
-  game_trans [feistel4StrongHybrid₁ keyGen F program,
-    feistel4StrongHybrid₂ keyGen F program,
-    feistel4StrongHybrid₃ keyGen F program]
-  · unfold feistel4StrongKeyedGame feistel4StrongHybrid₁; simp only [pmf_norm]
-    pmf_hoist (occ := 2) keyGen; peel_binds k₂
-    pmf_hoist (occ := 2) keyGen; peel_binds k₃
-    pmf_hoist (occ := 2) keyGen; peel_binds k₄
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₁,
-      pmf_norm] using h₁ (F k₂) (F k₃) (F k₄)
-  · unfold feistel4StrongHybrid₁ feistel4StrongHybrid₂; simp only [pmf_norm]
-    peel_binds f₁
-    pmf_hoist (occ := 2) keyGen; peel_binds k₃
-    pmf_hoist (occ := 2) keyGen; peel_binds k₄
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₂,
-      pmf_norm] using h₂ f₁ (F k₃) (F k₄)
-  · unfold feistel4StrongHybrid₂ feistel4StrongHybrid₃; simp only [pmf_norm]
-    peel_binds f₁ f₂
-    pmf_hoist (occ := 2) keyGen; peel_binds k₄
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₃,
-      pmf_norm] using h₃ f₁ f₂ (F k₄)
-  · unfold feistel4StrongHybrid₃ feistel4StrongRandomRoundsGame
-    peel_binds f₁ f₂ f₃
-    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₄,
-      pmf_norm] using h₄ f₁ f₂ f₃
-  · rfl
 
 /-! ### 4-round bidirectional random-round collision analysis and strong PRP Luby–Rackoff theorem -/
 
@@ -2974,37 +2595,6 @@ theorem advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
     Fintype.card_prod, Nat.cast_mul, mul_inv, ← sq] at h
   exact h
 
-/-- **Full 4-round strong PRP Luby–Rackoff theorem** ([LubyRackoff1988]; see [BonehShoup2023],
-Section 4.1.3 for strongly secure block ciphers; the concrete constant comes from this proof):
-combining the 4-round bidirectional PRF hybrid reduction with the
-random-round collision bound shows that a 4-round Feistel network instantiated with four
-independent keys from a PRF `F : K → G → G` is a strong (chosen-ciphertext secure)
-pseudorandom permutation on `G × G`, with distinguishing advantage at most
-`ε₁ + ε₂ + ε₃ + ε₄ + 2 * Q.choose 2 * |G|⁻¹ + 2 * Q.choose 2 * (|G|⁻¹) ^ 2`. -/
-theorem advantage_feistel4StrongKeyedGame_idealStrongGame_le
-    {keyGen : PMF K} {F : K → G → G}
-    {program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool} {Q : ℕ}
-    (hQ : OracleComp.IsQueryBounded program Q) {ε₁ ε₂ ε₃ ε₄ : ℝ}
-    (h₁ : ∀ f₂ f₃ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₁ f₂ f₃ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₁ f₂ f₃ f₄ program)) : ℝ) ≤ ε₁)
-    (h₂ : ∀ f₁ f₃ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₂ f₁ f₃ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₂ f₁ f₃ f₄ program)) : ℝ) ≤ ε₂)
-    (h₃ : ∀ f₁ f₂ f₄,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₃ f₁ f₂ f₄ program))
-        (prfSingleIdealGame (feistel4StrongReduction₃ f₁ f₂ f₄ program)) : ℝ) ≤ ε₃)
-    (h₄ : ∀ f₁ f₂ f₃,
-      (Game.advantage (prfSingleRealGame keyGen F (feistel4StrongReduction₄ f₁ f₂ f₃ program))
-        (prfSingleIdealGame (feistel4StrongReduction₄ f₁ f₂ f₃ program)) : ℝ) ≤ ε₄) :
-    (Game.advantage (feistel4StrongKeyedGame keyGen F program)
-      (idealStrongGame program) : ℝ) ≤
-      ε₁ + ε₂ + ε₃ + ε₄ + 2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
-        2 * (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2 := by
-  game_trans [feistel4StrongRandomRoundsGame program] using
-    [advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le h₁ h₂ h₃ h₄,
-      advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le hQ]
-
 /-- Concrete instantiation of the 4-round strong Luby–Rackoff theorem on `BitString n`
 (block size `2n`): the information-theoretic chosen-ciphertext collision error is at most
 `2 * Q.choose 2 / 2 ^ n + 2 * Q.choose 2 / (2 ^ n) ^ 2`. -/
@@ -3021,5 +2611,381 @@ theorem advantage_feistel4StrongRandomRoundsGame_bitString_le (n : ℕ)
     Finset.card_univ, Nat.cast_pow, Nat.cast_ofNat] using h
 
 end Strong4AndCCAAttack
+
+/-! ### Keyed ciphers from a pseudorandom function
+
+The keyed ciphers use the finite PRF and PRP experiments of `Cslib.Crypto.PRF` and
+`Cslib.Crypto.PRP`, whose adversaries have private coins. An adapter answers each block query of
+the cipher by querying three (or four) PRF channels, one per round, and keeps no state. The
+`j`-th hybrid reduction `PRF.multiKeyReduction F j` of the multi-key PRF hybrid then turns the
+adapter into a single PRF adversary: it samples its own keys for the later rounds, forwards
+round `j + 1` to its PRF challenger, and lazily samples the earlier rounds with a cache. This is
+the hybrid argument of [BonehShoup2023], Exercise 4.26, which the proof of Theorem 4.9 uses for
+the three round keys. -/
+
+section Keyed3
+
+variable {K G : Type} [AddGroup G]
+
+/-- The three-round Luby–Rackoff cipher with three independent keys of a round function
+`F : K → G → G`, one per round. -/
+def feistel3Cipher (F : K → G → G) (keys : Fin 3 → K) : Equiv.Perm (G × G) :=
+  feistel3 (F (keys 0)) (F (keys 1)) (F (keys 2))
+
+/-- Answer one block query `(l, r)` of the three-round cipher through three PRF channels, channel
+`i` providing round `i + 1`. -/
+def feistel3ChannelQuery : G × G → ProbOracleComp (fun _ : Fin 3 × G => G) (G × G)
+  | (l, r) => do
+    let y₁ ← ProbOracleComp.query (spec := fun _ : Fin 3 × G => G) (0, r)
+    let u := l + y₁
+    let y₂ ← ProbOracleComp.query (spec := fun _ : Fin 3 × G => G) (1, u)
+    let v := r + y₂
+    let y₃ ← ProbOracleComp.query (spec := fun _ : Fin 3 × G => G) (2, v)
+    return (v, u + y₃)
+
+/-- Run a chosen-plaintext adversary of the three-round cipher against three PRF channels,
+answering each block query with `feistel3ChannelQuery`. -/
+def feistel3MultiKeyAdversary (A : PRF.Adversary (G × G) (G × G)) :
+    PRF.MultiKeyAdversary 3 G G :=
+  ProbOracleComp.simulate feistel3ChannelQuery A
+
+/-- The adapter makes three channel queries per block query. -/
+theorem isQueryBounded_feistel3MultiKeyAdversary {A : PRF.Adversary (G × G) (G × G)} {Q : ℕ}
+    (hQ : A.IsQueryBounded Q) : (feistel3MultiKeyAdversary A).IsQueryBounded (3 * Q) := by
+  have hquery (p : G × G) : (feistel3ChannelQuery p).IsQueryBounded 3 := by
+    obtain ⟨l, r⟩ := p
+    have h := (ProbOracleComp.IsQueryBounded.query (spec := fun _ : Fin 3 × G => G) (0, r)).bind
+      fun y₁ => (ProbOracleComp.IsQueryBounded.query (spec := fun _ : Fin 3 × G => G)
+        (1, l + y₁)).bind fun y₂ => (ProbOracleComp.IsQueryBounded.query
+          (spec := fun _ : Fin 3 × G => G) (2, r + y₂)).bind fun y₃ =>
+            OracleComp.IsCostBounded.pure (r + y₂, (l + y₁) + y₃) 0
+    simpa only [feistel3ChannelQuery] using h
+  have hA : OracleComp.IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 3)) A (3 * Q) := by
+    refine (((hQ.add hQ).add hQ).of_le fun q => ?_).mono (by omega)
+    rcases q with k | q <;> simp
+  rw [feistel3MultiKeyAdversary, mul_comm]
+  simpa only [mul_comm] using ProbOracleComp.isCostBounded_simulate (cost := fun _ => 3) hquery hA
+
+/-- The `j`-th hybrid PRF reduction for the three-round cipher: the multi-key reduction of the
+adapter. It samples keys for rounds after `j + 1`, forwards round `j + 1` to its PRF challenger
+and lazily samples the rounds before it. -/
+noncomputable abbrev feistel3Reduction [Fintype K] [Nonempty K] [DecidableEq G] [Fintype G]
+    (F : K → G → G) (j : ℕ) (A : PRF.Adversary (G × G) (G × G)) : PRF.Adversary G G :=
+  PRF.multiKeyReduction F j (feistel3MultiKeyAdversary A)
+
+/-- Each hybrid reduction makes at most three queries per query of the adversary. -/
+theorem isQueryBounded_feistel3Reduction [Fintype K] [Nonempty K] [DecidableEq G] [Fintype G]
+    (F : K → G → G) (j : ℕ) {A : PRF.Adversary (G × G) (G × G)} {Q : ℕ}
+    (hQ : A.IsQueryBounded Q) : (feistel3Reduction F j A).IsQueryBounded (3 * Q) :=
+  PRF.isQueryBounded_multiKeyReduction F j (isQueryBounded_feistel3MultiKeyAdversary hQ)
+
+variable [Fintype K] [Nonempty K] [Fintype G] [DecidableEq G]
+
+omit [Fintype G] [DecidableEq G] in
+/-- With keyed channels, the adapter plays the real chosen-plaintext experiment of the three-round
+cipher. -/
+theorem multiKeyRealExperiment_feistel3MultiKeyAdversary (F : K → G → G)
+    (A : PRF.Adversary (G × G) (G × G)) :
+    PRF.multiKeyRealExperiment F (feistel3MultiKeyAdversary A) =
+      PRP.realExperiment (feistel3Cipher F) A := by
+  simp only [PRF.multiKeyRealExperiment, feistel3MultiKeyAdversary, ProbOracleComp.run_simulate,
+    PRP.realExperiment, PRF.realExperiment]
+  rfl
+
+/-- With random channels, the adapter runs the adversary against the three-round Feistel network
+of three independent uniform random functions. -/
+theorem eval_multiKeyIdealExperiment_feistel3MultiKeyAdversary
+    (A : PRF.Adversary (G × G) (G × G)) :
+    ProbComp.eval (PRF.multiKeyIdealExperiment (feistel3MultiKeyAdversary A)) =
+      (PMF.uniformOfFintype (Fin 3 → G → G)).bind fun tables =>
+        OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+          (fun p => PMF.pure (feistel3 (tables 0) (tables 1) (tables 2) p))) A := by
+  simp only [PRF.multiKeyIdealExperiment, feistel3MultiKeyAdversary, ProbOracleComp.run_simulate,
+    ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_run]
+  congr 1 with tables : 1
+  congr 2 with p : 1
+  obtain ⟨l, r⟩ := p
+  simp [feistel3ChannelQuery, feistel3_apply]
+
+/-- **Three random rounds against a random function**, for adversaries with private coins
+([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round functions, a
+`Q`-query adversary distinguishes the three-round Feistel network from a uniform function on
+`G × G` with advantage at most `2 * Q.choose 2 / |G|`. -/
+theorem advantage_feistel3RandomRounds_prfIdealExperiment_le
+    {A : PRF.Adversary (G × G) (G × G)} {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (Game.advantage (ProbComp.eval (PRF.multiKeyIdealExperiment (feistel3MultiKeyAdversary A)))
+      (ProbComp.eval (PRF.idealExperiment A)) : ℝ) ≤
+      2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ := by
+  rw [eval_multiKeyIdealExperiment_feistel3MultiKeyAdversary, PRF.eval_idealExperiment,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind (PMF.uniformOfFintype (Fin 3 → G → G))
+      (fun tables p => feistel3 (tables 0) (tables 1) (tables 2) p) A,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind (PMF.uniformOfFintype (G × G → G × G))
+      (fun f p => f p) A]
+  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  rw [PMF.bind_uniformOfFintype_fin_three (fun f₁ f₂ f₃ => OracleComp.interpret
+    (fun p => PMF.pure (feistel3 f₁ f₂ f₃ p)) (ProbOracleComp.fixCoins A ω))]
+  simpa only [feistel3RandomRoundsGame, feistel3FixedGame, randomFunctionGame,
+    Probability.PMF.monad_bind_eq_bind] using
+    advantage_feistel3RandomRoundsGame_randomFunctionGame_le
+      (ProbOracleComp.isQueryBounded_fixCoins hQ ω)
+
+/-- **Three random rounds against a random permutation**, for adversaries with private coins
+([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round functions, a
+`Q`-query adversary distinguishes the three-round Feistel network from a uniform permutation of
+`G × G` with advantage at most `2 * Q.choose 2 / |G| + Q.choose 2 / |G| ^ 2`. -/
+theorem advantage_feistel3RandomRounds_prpIdealExperiment_le
+    {A : PRF.Adversary (G × G) (G × G)} {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (Game.advantage (ProbComp.eval (PRF.multiKeyIdealExperiment (feistel3MultiKeyAdversary A)))
+      (ProbComp.eval (PRP.idealExperiment A)) : ℝ) ≤
+      2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
+        (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2 := by
+  rw [eval_multiKeyIdealExperiment_feistel3MultiKeyAdversary, PRP.eval_idealExperiment,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind (PMF.uniformOfFintype (Fin 3 → G → G))
+      (fun tables p => feistel3 (tables 0) (tables 1) (tables 2) p) A,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Equiv.Perm (G × G))) (fun π p => π p) A]
+  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  rw [PMF.bind_uniformOfFintype_fin_three (fun f₁ f₂ f₃ => OracleComp.interpret
+    (fun p => PMF.pure (feistel3 f₁ f₂ f₃ p)) (ProbOracleComp.fixCoins A ω))]
+  simpa only [feistel3RandomRoundsGame, feistel3FixedGame, idealPermGame,
+    Probability.PMF.monad_bind_eq_bind] using advantage_feistel3RandomRoundsGame_idealPermGame_le
+      (ProbOracleComp.isQueryBounded_fixCoins hQ ω)
+
+/-- The keyed half of the three-round theorem: the chosen-plaintext real experiment of the
+three-round cipher is within the sum of the three hybrid reductions' PRF advantages of the
+adapter's random-rounds experiment. -/
+private theorem advantage_feistel3Cipher_randomRounds_le (F : K → G → G)
+    (A : PRF.Adversary (G × G) (G × G)) :
+    (Game.advantage (ProbComp.eval (PRP.realExperiment (feistel3Cipher F) A))
+      (ProbComp.eval (PRF.multiKeyIdealExperiment (feistel3MultiKeyAdversary A))) : ℝ) ≤
+      ∑ j ∈ Finset.range 3, (PRF.advantage F (feistel3Reduction F j A) : ℝ) := by
+  rw [← multiKeyRealExperiment_feistel3MultiKeyAdversary, ← NNReal.coe_sum, NNReal.coe_le_coe]
+  exact PRF.multiKeyAdvantage_le_sum F (feistel3MultiKeyAdversary A)
+
+/-- **The Luby–Rackoff theorem, concrete PRF form** ([BonehShoup2023], Theorem 4.9;
+[LubyRackoff1988]): against a `Q`-query adaptive chosen-plaintext adversary `A` with private
+coins, the PRF advantage of the three-round cipher built from three independent uniform keys of
+`F` is at most the PRF advantages of the three explicit hybrid reductions
+`feistel3Reduction F j A` plus `2 * Q.choose 2 / |G|`. This is a concrete bound for one finite
+instance in the standard model; running time is not modeled. The asymptotic theorem for
+oracle-PPT adversaries is `Cslib.Crypto.PseudorandomFunction.prp_lubyRackoffCipher`. -/
+theorem prfAdvantage_feistel3Cipher_le (F : K → G → G) {A : PRF.Adversary (G × G) (G × G)}
+    {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (PRF.advantage (fun keys => ⇑(feistel3Cipher F keys)) A : ℝ) ≤
+      ∑ j ∈ Finset.range 3, (PRF.advantage F (feistel3Reduction F j A) : ℝ) +
+        2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ :=
+  Game.coe_advantage_triangle_add _ _ _ (advantage_feistel3Cipher_randomRounds_le F A)
+    (advantage_feistel3RandomRounds_prfIdealExperiment_le hQ)
+
+/-- **The Luby–Rackoff theorem, concrete form** ([BonehShoup2023], Theorem 4.9; [LubyRackoff1988]):
+against a `Q`-query adaptive chosen-plaintext adversary `A` with private coins, the PRP advantage
+of the three-round cipher built from three independent uniform keys of `F` is at most the PRF
+advantages of the three explicit hybrid reductions `feistel3Reduction F j A` plus
+`2 * Q.choose 2 / |G| + Q.choose 2 / |G| ^ 2`. Each reduction makes at most `3 * Q` queries
+(`isQueryBounded_feistel3Reduction`). The PRF part deviates from Theorem 4.9, which has `3`
+times the advantage of one reduction that picks the hybrid at random: by the triangle inequality
+the sum of the three hybrid advantages is at least that quantity, so this bound follows from the
+book's form and may be weaker.
+This is a concrete bound for one finite instance in the standard model; running time is not
+modeled. The asymptotic theorem for oracle-PPT adversaries is
+`Cslib.Crypto.PseudorandomFunction.prp_lubyRackoffCipher`. -/
+theorem prpAdvantage_feistel3Cipher_le (F : K → G → G) {A : PRF.Adversary (G × G) (G × G)}
+    {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (PRP.advantage (feistel3Cipher F) A : ℝ) ≤
+      ∑ j ∈ Finset.range 3, (PRF.advantage F (feistel3Reduction F j A) : ℝ) +
+        (2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
+          (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2) :=
+  Game.coe_advantage_triangle_add _ _ _ (advantage_feistel3Cipher_randomRounds_le F A)
+    (advantage_feistel3RandomRounds_prpIdealExperiment_le hQ)
+
+end Keyed3
+
+section Keyed4
+
+open RandomPermutation (PermQuery PermOracleSpec evalPerm)
+
+variable {K G : Type} [AddGroup G]
+
+/-- The four-round Luby–Rackoff cipher with four independent keys of a round function
+`F : K → G → G`, one per round. -/
+def feistel4Cipher (F : K → G → G) (keys : Fin 4 → K) : Equiv.Perm (G × G) :=
+  feistel4 (F (keys 0)) (F (keys 1)) (F (keys 2)) (F (keys 3))
+
+/-- Answer one forward or inverse block query of the four-round cipher through four PRF channels,
+channel `i` providing round `i + 1`. Inversion evaluates the round functions forwards, in reverse
+order. -/
+def feistel4StrongChannelQuery :
+    PermQuery (G × G) → ProbOracleComp (fun _ : Fin 4 × G => G) (G × G)
+  | .forward (l, r) => do
+    let y₁ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (0, r)
+    let u := l + y₁
+    let y₂ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (1, u)
+    let v := r + y₂
+    let y₃ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (2, v)
+    let w := u + y₃
+    let y₄ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (3, w)
+    return (w, v + y₄)
+  | .inverse (w, z) => do
+    let y₄ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (3, w)
+    let v := z - y₄
+    let y₃ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (2, v)
+    let u := w - y₃
+    let y₂ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (1, u)
+    let r := v - y₂
+    let y₁ ← ProbOracleComp.query (spec := fun _ : Fin 4 × G => G) (0, r)
+    return (u - y₁, r)
+
+/-- Run a chosen-ciphertext adversary of the four-round cipher against four PRF channels,
+answering each forward or inverse block query with `feistel4StrongChannelQuery`. -/
+def feistel4StrongMultiKeyAdversary (A : PRP.StrongAdversary (G × G)) :
+    PRF.MultiKeyAdversary 4 G G :=
+  ProbOracleComp.simulate feistel4StrongChannelQuery A
+
+/-- The adapter makes four channel queries per block query. -/
+theorem isQueryBounded_feistel4StrongMultiKeyAdversary {A : PRP.StrongAdversary (G × G)} {Q : ℕ}
+    (hQ : A.IsQueryBounded Q) : (feistel4StrongMultiKeyAdversary A).IsQueryBounded (4 * Q) := by
+  have hq (i : Fin 4) (x : G) :=
+    ProbOracleComp.IsQueryBounded.query (spec := fun _ : Fin 4 × G => G) (i, x)
+  have hquery (q : PermQuery (G × G)) : (feistel4StrongChannelQuery q).IsQueryBounded 4 := by
+    rcases q with ⟨l, r⟩ | ⟨w, z⟩
+    · have h := (hq 0 r).bind fun y₁ => (hq 1 (l + y₁)).bind fun y₂ =>
+        (hq 2 (r + y₂)).bind fun y₃ => (hq 3 ((l + y₁) + y₃)).bind fun y₄ =>
+          OracleComp.IsCostBounded.pure ((l + y₁) + y₃, (r + y₂) + y₄) 0
+      simpa only [feistel4StrongChannelQuery] using h
+    · have h := (hq 3 w).bind fun y₄ => (hq 2 (z - y₄)).bind fun y₃ =>
+        (hq 1 (w - y₃)).bind fun y₂ => (hq 0 ((z - y₄) - y₂)).bind fun y₁ =>
+          OracleComp.IsCostBounded.pure ((w - y₃) - y₁, (z - y₄) - y₂) 0
+      simpa only [feistel4StrongChannelQuery] using h
+  have hA : OracleComp.IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 4)) A (4 * Q) := by
+    refine ((((hQ.add hQ).add hQ).add hQ).of_le fun q => ?_).mono (by omega)
+    rcases q with k | q <;> simp
+  rw [feistel4StrongMultiKeyAdversary, mul_comm]
+  simpa only [mul_comm] using ProbOracleComp.isCostBounded_simulate (cost := fun _ => 4) hquery hA
+
+/-- The `j`-th hybrid PRF reduction for the four-round cipher: the multi-key reduction of the
+bidirectional adapter. -/
+noncomputable abbrev feistel4StrongReduction [Fintype K] [Nonempty K] [DecidableEq G] [Fintype G]
+    (F : K → G → G) (j : ℕ) (A : PRP.StrongAdversary (G × G)) : PRF.Adversary G G :=
+  PRF.multiKeyReduction F j (feistel4StrongMultiKeyAdversary A)
+
+/-- Each hybrid reduction makes at most four queries per query of the adversary. -/
+theorem isQueryBounded_feistel4StrongReduction [Fintype K] [Nonempty K] [DecidableEq G]
+    [Fintype G] (F : K → G → G) (j : ℕ) {A : PRP.StrongAdversary (G × G)} {Q : ℕ}
+    (hQ : A.IsQueryBounded Q) : (feistel4StrongReduction F j A).IsQueryBounded (4 * Q) :=
+  PRF.isQueryBounded_multiKeyReduction F j (isQueryBounded_feistel4StrongMultiKeyAdversary hQ)
+
+variable [Fintype K] [Nonempty K] [Fintype G] [DecidableEq G]
+
+omit [Fintype K] [Nonempty K] [Fintype G] [DecidableEq G] in
+/-- The adapter's channel queries compute the four-round network in both directions. -/
+private theorem run_feistel4StrongChannelQuery (f : Fin 4 → G → G) (q : PermQuery (G × G)) :
+    (feistel4StrongChannelQuery q).run (fun request => pure (f request.1 request.2)) =
+      pure (evalPerm (feistel4 (f 0) (f 1) (f 2) (f 3)) q) := by
+  rcases q with ⟨l, r⟩ | ⟨w, z⟩
+  · simp [feistel4StrongChannelQuery, feistel4_apply, feistel3_apply, feistelRound]
+  · simp [feistel4StrongChannelQuery, feistel4_symm_apply, feistel3_symm_apply, feistelInvRound]
+
+omit [Fintype G] [DecidableEq G] in
+/-- With keyed channels, the adapter plays the real chosen-ciphertext experiment of the four-round
+cipher. -/
+theorem multiKeyRealExperiment_feistel4StrongMultiKeyAdversary (F : K → G → G)
+    (A : PRP.StrongAdversary (G × G)) :
+    PRF.multiKeyRealExperiment F (feistel4StrongMultiKeyAdversary A) =
+      PRP.strongRealExperiment (feistel4Cipher F) A := by
+  simp only [PRF.multiKeyRealExperiment, feistel4StrongMultiKeyAdversary,
+    ProbOracleComp.run_simulate, PRP.strongRealExperiment]
+  congr 1 with keys : 1
+  congr 1
+  funext q
+  exact run_feistel4StrongChannelQuery (fun i => F (keys i)) q
+
+/-- With random channels, the adapter runs the adversary against the four-round Feistel network of
+four independent uniform random functions, in both directions. -/
+theorem eval_multiKeyIdealExperiment_feistel4StrongMultiKeyAdversary
+    (A : PRP.StrongAdversary (G × G)) :
+    ProbComp.eval (PRF.multiKeyIdealExperiment (feistel4StrongMultiKeyAdversary A)) =
+      (PMF.uniformOfFintype (Fin 4 → G → G)).bind fun tables =>
+        OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+          (fun q => PMF.pure
+            (evalPerm (feistel4 (tables 0) (tables 1) (tables 2) (tables 3)) q))) A := by
+  simp only [PRF.multiKeyIdealExperiment, feistel4StrongMultiKeyAdversary,
+    ProbOracleComp.run_simulate, run_feistel4StrongChannelQuery, ProbComp.eval_bind,
+    ProbComp.eval_uniform, ProbOracleComp.eval_run, ProbComp.eval_pure]
+
+/-- Tag each query of a coin-free bidirectional program with a Boolean, as the random-rounds game
+`feistel4StrongRandomRoundsGame` expects: `false` for forward and `true` for inverse. -/
+private def tagQueries (program : OracleComp (PermOracleSpec (G × G)) Bool) :
+    OracleComp (fun _ : Bool × (G × G) => G × G) Bool :=
+  OracleComp.interpret (fun
+    | .forward x => OracleComp.query (spec := fun _ : Bool × (G × G) => G × G) (false, x)
+    | .inverse y => OracleComp.query (spec := fun _ : Bool × (G × G) => G × G) (true, y))
+    program
+
+omit [AddGroup G] [Fintype G] [DecidableEq G] in
+private theorem interpret_feistelStrongOracle_tagQueries (π : Equiv.Perm (G × G))
+    (program : OracleComp (PermOracleSpec (G × G)) Bool) :
+    OracleComp.interpret (feistelStrongOracle π) (tagQueries program) =
+      OracleComp.interpret (fun q => PMF.pure (evalPerm π q)) program := by
+  rw [tagQueries, OracleComp.interpret_interpret]
+  congr 1
+  funext q
+  cases q <;> simp [feistelStrongOracle]
+
+omit [AddGroup G] [Fintype G] [DecidableEq G] in
+private theorem isQueryBounded_tagQueries {program : OracleComp (PermOracleSpec (G × G)) Bool}
+    {Q : ℕ} (hQ : OracleComp.IsQueryBounded program Q) :
+    OracleComp.IsQueryBounded (tagQueries program) Q :=
+  hQ.interpret fun q => by cases q <;> exact OracleComp.IsCostBounded.query _
+
+/-- **Four random rounds against a random permutation, in both directions**, for adversaries with
+private coins ([LubyRackoff1988]): with independent uniform random round functions, a `Q`-query
+chosen-ciphertext adversary distinguishes the four-round Feistel network from a uniform
+permutation of `G × G` with advantage at most `2 * Q.choose 2 / |G| + 2 * Q.choose 2 / |G| ^ 2`.
+The constant comes from this proof. -/
+theorem advantage_feistel4StrongRandomRounds_strongIdealExperiment_le
+    {A : PRP.StrongAdversary (G × G)} {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (Game.advantage
+      (ProbComp.eval (PRF.multiKeyIdealExperiment (feistel4StrongMultiKeyAdversary A)))
+      (ProbComp.eval (PRP.strongIdealExperiment A)) : ℝ) ≤
+      2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
+        2 * (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2 := by
+  rw [eval_multiKeyIdealExperiment_feistel4StrongMultiKeyAdversary,
+    PRP.strongIdealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform]
+  simp only [ProbOracleComp.eval_run, ProbComp.eval_pure]
+  rw [ProbOracleComp.table_bind_interpret_eq_coinLaw_bind (PMF.uniformOfFintype (Fin 4 → G → G))
+      (fun tables q => evalPerm (feistel4 (tables 0) (tables 1) (tables 2) (tables 3)) q) A,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Equiv.Perm (G × G))) (fun π q => evalPerm π q) A]
+  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  have h := advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
+    (isQueryBounded_tagQueries (ProbOracleComp.isQueryBounded_fixCoins hQ ω))
+  rw [PMF.bind_uniformOfFintype_fin_four (fun f₁ f₂ f₃ f₄ => OracleComp.interpret
+    (fun q => PMF.pure (evalPerm (feistel4 f₁ f₂ f₃ f₄) q)) (ProbOracleComp.fixCoins A ω))]
+  simpa only [feistel4StrongRandomRoundsGame, idealStrongGame,
+    interpret_feistelStrongOracle_tagQueries, Probability.PMF.monad_bind_eq_bind] using h
+
+/-- **Four-round strong Luby–Rackoff theorem, concrete form** ([LubyRackoff1988]; strongly secure
+block ciphers as in [BonehShoup2023], Section 4.1.3): against a `Q`-query adaptive
+chosen-ciphertext adversary `A` with private coins, the strong PRP advantage of the four-round
+cipher built from four independent uniform keys of `F` is at most the PRF advantages of the four
+explicit hybrid reductions `feistel4StrongReduction F j A` plus
+`2 * Q.choose 2 / |G| + 2 * Q.choose 2 / |G| ^ 2`. Each reduction makes at most `4 * Q` queries
+(`isQueryBounded_feistel4StrongReduction`). The constant comes from this proof. This is a
+concrete bound for one finite instance in the standard model; running time is not modeled. The
+asymptotic theorem for oracle-PPT adversaries is
+`Cslib.Crypto.PseudorandomFunction.strongPRP_lubyRackoff4Cipher`. -/
+theorem strongAdvantage_feistel4Cipher_le (F : K → G → G) {A : PRP.StrongAdversary (G × G)}
+    {Q : ℕ} (hQ : A.IsQueryBounded Q) :
+    (PRP.strongAdvantage (feistel4Cipher F) A : ℝ) ≤
+      ∑ j ∈ Finset.range 4, (PRF.advantage F (feistel4StrongReduction F j A) : ℝ) +
+        (2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
+          2 * (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2) := by
+  refine Game.coe_advantage_triangle_add _ _ _ ?_
+    (advantage_feistel4StrongRandomRounds_strongIdealExperiment_le hQ)
+  rw [← multiKeyRealExperiment_feistel4StrongMultiKeyAdversary, ← NNReal.coe_sum,
+    NNReal.coe_le_coe]
+  exact PRF.multiKeyAdvantage_le_sum F (feistel4StrongMultiKeyAdversary A)
+
+end Keyed4
 
 end Cslib.Crypto.LubyRackoff
