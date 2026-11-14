@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Data.BitString.List.Binary
-public import CslibFrontier.Init
+public import CslibFrontier.Crypto.Primitives.ByteString
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Algebra.Order.Floor.Div
 import CslibFrontier.Foundations.Data.BitString.List.BinaryOrder
@@ -59,25 +58,7 @@ instantiations, or a security theorem.
 
 namespace Cslib.Crypto.SLHDSA
 
-open Cslib.BitString
-
-/-- One byte, represented by its unsigned integer value. -/
-abbrev Byte := Fin (2 ^ 8)
-
-/-- The bits of a byte string in the big-endian order used by FIPS 205. -/
-def byteStringBits : List Byte → List Bool
-  | [] => []
-  | x :: X => binaryWord 8 x ++ byteStringBits X
-
-/-- A byte string has eight serialized bits per byte. -/
-@[simp] theorem length_byteStringBits (X : List Byte) :
-    (byteStringBits X).length = 8 * X.length := by
-  induction X with
-  | nil => simp [byteStringBits]
-  | cons x X ih =>
-    simp only [byteStringBits, List.length_append, ih, List.length_cons]
-    rw [length_binaryWord x.isLt]
-    omega
+open Cslib.BitString Cslib.Crypto
 
 /-- The source precondition for Algorithm 4: `X` contains at least
 `ceil(outLen * b / 8)` bytes. -/
@@ -92,27 +73,27 @@ instance (X : List Byte) (b outLen : ℕ) : Decidable (Base2bInput X b outLen) :
 big-endian bit string. Its final argument enforces the source's byte-length precondition. -/
 def base2b (X : List Byte) (b outLen : ℕ) (_h : Base2bInput X b outLen) :
     Fin outLen → Fin (2 ^ b) := fun i =>
-  ⟨binaryValue ((byteStringBits X).drop (i.val * b) |>.take b), by
-    have h := binaryValue_lt_two_pow ((byteStringBits X).drop (i.val * b) |>.take b)
+  ⟨binaryValue ((bytesToBitsBE X).drop (i.val * b) |>.take b), by
+    have h := binaryValue_lt_two_pow ((bytesToBitsBE X).drop (i.val * b) |>.take b)
     exact h.trans_le (Nat.pow_le_pow_right (by decide) (List.length_take_le b _))⟩
 
 /-- Under Algorithm 4's source precondition, every requested output reads a complete `b`-bit
 chunk rather than a truncated suffix. -/
 theorem length_base2b_chunk (X : List Byte) (b outLen : ℕ) (h : Base2bInput X b outLen)
     (i : Fin outLen) :
-    (((byteStringBits X).drop (i.val * b)).take b).length = b := by
+    (((bytesToBitsBE X).drop (i.val * b)).take b).length = b := by
   have hcapacity : outLen * b ≤ 8 * X.length :=
     (ceilDiv_le_iff_le_mul (by decide : 0 < 8)).1 h
   have hi := Nat.mul_le_mul_right b (Nat.succ_le_of_lt i.isLt)
   rw [Nat.succ_mul] at hi
-  rw [List.length_take, List.length_drop, length_byteStringBits, Nat.min_eq_left]
+  rw [List.length_take, List.length_drop, length_bytesToBitsBE, Nat.min_eq_left]
   omega
 
 /-- Algorithm 4 reads the unsigned value of the `i`-th consecutive `b`-bit chunk. -/
 @[simp] theorem base2b_val (X : List Byte) (b outLen : ℕ) (h : Base2bInput X b outLen)
     (i : Fin outLen) :
     (base2b X b outLen h i).val =
-      binaryValue (((byteStringBits X).drop (i.val * b)).take b) :=
+      binaryValue (((bytesToBitsBE X).drop (i.val * b)).take b) :=
   rfl
 
 /-- Every Algorithm 4 output belongs to the advertised base-`2^b` digit range. -/
@@ -234,11 +215,11 @@ theorem checksum_base2bInput {p : SecurityBytes} (M : Message p) :
 
 /-- The two checksum bytes represent exactly the checksum shifted left by four bits. -/
 theorem binaryValue_checksumByteString {p : SecurityBytes} (M : Message p) :
-    binaryValue (byteStringBits (checksumByteString M)) = (shiftedChecksum M).val := by
-  rw [show byteStringBits (checksumByteString M) =
+    binaryValue (bytesToBitsBE (checksumByteString M)) = (shiftedChecksum M).val := by
+  rw [show bytesToBitsBE (checksumByteString M) =
       binaryWord 8 ((shiftedChecksum M).val / 2 ^ 8) ++
         binaryWord 8 ((shiftedChecksum M).val % 2 ^ 8) by
-    simp [byteStringBits, checksumByteString]]
+    simp [bytesToBitsBE, byteBitsBE, checksumByteString]]
   rw [binaryValue_append, binaryValue_binaryWord, binaryValue_binaryWord,
     length_binaryWord (Nat.mod_lt _ (by decide))]
   simpa [Nat.mul_comm] using Nat.div_add_mod (shiftedChecksum M).val 256
