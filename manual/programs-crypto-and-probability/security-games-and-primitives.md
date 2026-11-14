@@ -72,7 +72,7 @@ The check supplements review; a clean run is not evidence that a security theore
 | Schema | Principal source | Formal parameters and main use |
 |---|---|---|
 | One-way functions | [CslibFrontier/Crypto/Computational/OneWay.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWay.lean) | Deterministic native polynomial evaluation; uniform seed-length sampling; strict-PPT inverter gets unary length and image; any preimage may win |
-| Pseudorandom generator | [CslibFrontier/Crypto/Computational/PseudorandomGenerator.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/PseudorandomGenerator.lean) | Length schedule, expansion, native deterministic evaluation and indistinguishability |
+| Pseudorandom generator | [CslibFrontier/Crypto/Computational/PseudorandomGenerator.lean](../../CslibFrontier/Crypto/Computational/PseudorandomGenerator.lean), [CslibFrontier/Crypto/Computational/PseudorandomGenerator/NextBit.lean](../../CslibFrontier/Crypto/Computational/PseudorandomGenerator/NextBit.lean) | Length schedule, expansion, native deterministic evaluation, indistinguishability, and uniform Yao next-bit equivalence (`NextBitUnpredictable`, `NextBitUnpredictableRandomIndex`) |
 | Adaptive pseudorandom function | [CslibFrontier/Crypto/Computational/PseudorandomFunction.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/PseudorandomFunction.lean) | Oracle-PPT access, consistent ideal random function, explicit input/output widths and malformed-query convention |
 | Collision resistance | [CslibFrontier/Crypto/Computational/CollisionResistant.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/CollisionResistant.lean) | Public setup distribution/encoding and input-validity predicate; keyed word specialization; setup need not be efficiently sampleable in the general interface; [DiscreteLog/GroupHash.lean](../../CslibFrontier/Crypto/Computational/DiscreteLog/GroupHash.lean) instantiates it with the Katz–Lindell discrete-logarithm hash (`DiscreteLog.collisionResistantForOn_groupHash`, exact zero-loss reduction for the encoded outputs; fixed digest width, compression and efficient setup are not established) |
 | Target collision resistance | [CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean](../../CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean), [CslibFrontier/Crypto/Computational/NaorYungUOWHF.lean](../../CslibFrontier/Crypto/Computational/NaorYungUOWHF.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Two-stage pre-key target choice and post-key second-preimage search; polynomial key/block schedules, fixed-depth `2^n`-capacity tree extension, Naor–Yung UOWHFs from `OneWayPermutation`, and Rompel–HHRVW UOWHFs from `OneWay` |
@@ -248,6 +248,37 @@ stretch security and reverse/take postprocessing. [PRGStretch clients](../../Csl
 check zero widths, order-sensitive output, and native XOR encryption/recovery. This is the emitted-pad
 prerequisite for the stream-cipher route of Boneh–Shoup §3.2 [bs23][bs23]; adaptive arbitrary-word
 one-time encryption and hash-then-MAC/EtM remain open in [#2749](https://github.com/cslib-community/cslib-frontier/issues/2749).
+
+Yao's uniform next-bit characterization lives in
+[`PseudorandomGenerator/NextBit.lean`](../../CslibFrontier/Crypto/Computational/PseudorandomGenerator/NextBit.lean).
+It formalizes both the single-stage random-index game `nextBitPredictionGame`
+(`NextBitUnpredictableRandomIndex`, sampling a uniform `i : Fin (length n)` and returning a fair
+coin when `length n = 0`) and Boneh–Shoup Attack Game 3.2's stateful two-stage experiment
+`nextBitExperiment` (`NextBitUnpredictable`, [bs23][bs23], Definition 3.6 and Theorems 3.3 / 3.12,
+over `TwoStage Unit ℕ (List Bool) Bool σ` with arbitrary `σ ↪ List Bool` state and fair-coin
+fallback when stage 1 outputs `i ≥ length n`). Neither equivalence takes any caller-supplied
+closure or admissibility hypothesis: unary length computability (`ComputableInPolyTime length encUnary encUnary`)
+is extracted from `PseudorandomGenerator.polyTime_length`, `twoStageNextBitDistinguisher` clips
+the binary-encoded index at the unary bound (`min (length n) i`), and `wordNextBitPredictor`,
+`nextBitDistinguisher` and `wordNextBitTwoStage` sample uniform bit positions via
+`ProbComp.sampleDyadicIndex (length n - 1)`. All four reductions carry unconditional strict-PPT
+certificates (`isPPT_wordNextBitPredictor`, `isPPT_nextBitDistinguisher`,
+`isPPT_wordNextBitTwoStage`, `isPPT_twoStageNextBitDistinguisher`) with explicit concrete advantage
+relations (`guessingAdvantage_nextBitPredictionGame_wordNextBitPredictor` losing factor `length n`,
+`guessingAdvantage_nextBitPredictionGame_le` losing at most `2`,
+`guessingAdvantage_nextBitExperiment_wordNextBitTwoStage` losing `dyadicSize (length n - 1) ≤ 2 * length n`,
+and `guessingAdvantage_nextBitExperiment_eq` achieving exact factor `1`), yielding
+`pseudorandomGenerator_iff_nextBitUnpredictableRandomIndex` (`PseudorandomGenerator.nextBitUnpredictableRandomIndex`,
+`.of_nextBitUnpredictableRandomIndex`) and `pseudorandomGenerator_iff_nextBitUnpredictable`
+(`.nextBitUnpredictable`, `.of_nextBitUnpredictable`). Checked clients in
+[`CslibFrontierTests/Crypto/PseudorandomGeneratorNextBit.lean`](../../CslibFrontierTests/Crypto/PseudorandomGeneratorNextBit.lean)
+verify client-module PPT composition, full-output-index prediction on `appendFalse` (`seed ++ [false]`),
+the out-of-range stage-1 index guard, non-stretching separation on `id`, and derivation from any
+uniform `OneWay` function:
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.PseudorandomGeneratorNextBit
+```
 
 The Ideal Cipher Model models a block cipher as a key-indexed family of independent random permutation oracles supporting forward and inverse queries. [`IdealCipher.lean`](../../CslibFrontier/Languages/Probabilistic/IdealCipher.lean) formalizes lazy exact and forgetful ideal-cipher caches, proves partial bijection preservation (`uniform_interpret_eq_lazy`), and bounds the distinguishing advantage between a uniform ideal cipher and the forgetful sampler by `(Q.choose 2) * |Block|⁻¹` (`abs_sub_uniformPerm_forgetful_le`). Built upon this, [`Compression.lean`](../../CslibFrontier/Crypto/Primitives/IdealCipher/Compression.lean) models collision resistance (`collisionGame`), records the probability-`1` inverse-query attack on `cipherOutput` (`cipherOutputAdversary_wins`, [katzlindell20][katzlindell20] Exercise 7.23(a)), and proves the Davies–Meyer Ideal-Cipher collision-resistance upper bound of `2 * ((Q + 2).choose 2) * |Block|⁻¹ = ((Q + 2) * (Q + 1)) * |Block|⁻¹` for every `Q`-query adaptive adversary (`daviesMeyer_collisionGame_le`, `daviesMeyer_collisionGame_mul_le`; [katzlindell20][katzlindell20] Theorem 7.5), checked nonvacuously in [`CslibFrontierTests/Crypto/IdealCipherCompression.lean`](../../CslibFrontierTests/Crypto/IdealCipherCompression.lean).
 

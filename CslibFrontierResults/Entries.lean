@@ -178,6 +178,7 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Crypto.Computational.PseudorandomGenerator.NextBit
 import CslibFrontier.Crypto.Computational.SIS.Ajtai
 import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
@@ -5965,3 +5966,23 @@ register_result "tally-np-exp-nexp" where
   scope := "(∀ L ∈ TALLY, L ∈ NP encBits → L ∈ P encBits) → EXP enc = NEXP enc and E enc = NE enc \
     for every encoding enc; TALLY is the set of bit-languages of all-true words. Only this \
     direction of Hartmanis–Immerman–Sewelson is proved."
+
+register_result "yao-next-bit" where
+  title := "Yao's theorem: pseudorandom generators iff next-bit unpredictable"
+  topic := "cryptography"
+  sources := [
+    { paper := Yao1982, theorem := unverified, locator := unverified },
+    { paper := BonehShoup2023, theorem := unverified, locator := unverified },
+    { paper := Goldreich2001, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.pseudorandomGenerator_iff_nextBitUnpredictable,
+    Cslib.Crypto.pseudorandomGenerator_iff_nextBitUnpredictableRandomIndex
+  ]
+  scope := "Deterministic word generators List Bool → List Bool with output-length schedule \
+    length : ℕ → ℕ on uniform n-bit seeds, strict uniform PPT adversaries, and negligible \
+    guessing advantage. Covers both Attack Game 3.2 two-stage prefix predictors (with \
+    arbitrary encodable state σ ↪ List Bool and fair-coin fallback on indices ≥ length n) \
+    and single-stage uniform random-index predictors. Asymptotic equivalence; includes \
+    explicit strict-PPT reductions and polynomial-time unary length schedule extraction \
+    without caller-supplied closure hypotheses."
