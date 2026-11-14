@@ -93,7 +93,9 @@ STEPS = (
          ("test -x .lake/build/bin/mk_all",
           "python3 -B -m unittest discover -s scripts -p 'test_mk_all.py'")),
     Step("lake exe lint-style", ("lake exe lint-style",)),
-    Step("checkInitImports", ("lake exe checkInitImports",)),
+    Step("checkInitImports", ("command -v lean",
+                              "python3 -B -m unittest scripts/test_check_init_imports.py",
+                              "lake exe checkInitImports")),
 )
 
 # Run after `STEPS`; not CI steps, so `scripts/test_full_check.py` keeps their names apart from CI's.
