@@ -60,7 +60,10 @@ the hidden decision instance; simplifying only the proposition can leave an inst
 For composite slab effects, keep intermediate states abstract with explicit execution and
 readback equations, as in `pushBackSlotProg_execution` and `popBackSlotProg_execution`.
 The invariant helpers also take an abstract final state and its execution equation, so equality
-checking does not repeatedly evaluate the packed writes.
+checking does not repeatedly evaluate the packed writes. In their callers, generalize the
+intermediate `clientState` in the primitive's semantic facts before passing it to the execution
+helper, and pass the resulting state equation and explicit readback values. A `let` name with
+an `rfl` argument still lets equality checking unfold the entire execution body.
 
 ### FKS two-level perfect hashing (static, abstract cost model)
 

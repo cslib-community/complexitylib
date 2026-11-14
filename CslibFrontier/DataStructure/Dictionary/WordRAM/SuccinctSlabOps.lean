@@ -949,7 +949,13 @@ private theorem pushBackSlotProg_effect_of_clientState {U V w n_max h_space base
         hbc_b1, hbc_other1, hq_new1, hv_new1, hold1⟩ :=
       pushBackTailWriteProg_effect (U := U) (V := V) (h_space := h_space)
         hw hb_pos s hinv hb htot hq_lt hv_lt
-    let s₁ := (Memory.spec 0).clientState s (pushBackTailWriteProg U V w n_max h_space d)
+    -- Remove the execution body from semantic facts before matching helper arguments.
+    dsimp only at hf1 hout1 hl1 hgm1_eq htail1 hslab1 htot1 hqb1 hrb1 hother1
+      hbc_b1 hbc_other1 hq_new1 hv_new1 hold1
+    generalize hs₁ : (Memory.spec 0).clientState s
+      (pushBackTailWriteProg U V w n_max h_space d) = s₁ at
+      hf1 hout1 hl1 hgm1_eq htail1 hslab1 htot1 hqb1 hrb1 hother1
+      hbc_b1 hbc_other1 hq_new1 hv_new1 hold1
     let gm₁ := gmAt base U V w n_max h_space s₁.mem
     change (Memory.spec 0).clientResult s (pushBackTailWriteProg U V w n_max h_space d) =
       gm₀ (gmRIdx b) + 1 at hres1
@@ -974,7 +980,10 @@ private theorem pushBackSlotProg_effect_of_clientState {U V w n_max h_space base
         valAt base U V w n_max h_space s.mem (slotOf n_max gm₀ b' j) at hold1
     have htot0_lt : gm₀ 0 * slabSize n_max + gm₀ 1 < n_max := by
       unfold totalSlots at htot; rw [ite_eq_right hb0] at htot; exact htot
-    obtain ⟨hexec, hcharge⟩ := pushBackSlotProg_execution s s₁ hb0 rfl _ hres1
+    obtain ⟨hexec, hcharge⟩ := pushBackSlotProg_execution
+      (U := U) (V := V) (w := w) (n_max := n_max) (h_space := h_space)
+      (base := base) (b := b) (q_val := q_val) (v_val := v_val) s s₁ hb0 hs₁
+      (gm₀ (gmRIdx b) + 1) hres1
     rw [hrun] at hexec
     by_cases hprom : gm₀ (gmRIdx b) + 1 = 2 * slabSize n_max
     · have hst : s' = (Memory.spec 0).clientState s₁
@@ -1246,13 +1255,14 @@ private theorem popBackSlotProg_execution {U V w n_max h_space base b : ℕ}
   · rw [StateTransitionSpec.clientState_bind, hs1,
       StateTransitionSpec.clientState_bind, clientState_readGMProg, hr,
       StateTransitionSpec.clientState_bind, clientState_readGMProg, hq]
-    by_cases hr0 : r = 0 <;> by_cases hq0 : 0 < q <;> simp [hr0, hq0]
+    by_cases hr0 : r = 0 <;> by_cases hq0 : 0 < q <;>
+      simp [hr0, hq0] <;> rfl
   · simp only [← PFunctor.FreeM.bind_eq_bind]
     rw [memoryCost_bind, memoryCost_removeLastTailItemProg, hs1,
       memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hr,
       memoryCost_bind, memoryCost_readGMProg, clientState_readGMProg, hq]
     by_cases hr0 : r = 0 <;> by_cases hq0 : 0 < q <;>
-      simp [hr0, hq0, memoryCost_pure, Nat.add_assoc]
+      simp [hr0, hq0, memoryCost_pure] <;> omega
 
 -- Keep the final state abstract while proving its invariant and resource bound.
 private theorem popBackSlotProg_effect_of_clientState {U V w n_max h_space base b : ℕ}
@@ -1354,7 +1364,10 @@ private theorem popBackSlotProg_effect_of_clientState {U V w n_max h_space base 
     obtain ⟨hf1, hout1, hq1, hv1, hl1, hgm1_eq⟩ :=
       removeLastTailItemProg_effect (U := U) (V := V) (h_space := h_space)
         hw hb_pos hb s htail₀ hr0_pos
-    let s₁ := (Memory.spec 0).clientState s (removeLastTailItemProg U V w n_max h_space d)
+    dsimp only at hf1 hout1 hq1 hv1 hl1 hgm1_eq
+    generalize hs₁ : (Memory.spec 0).clientState s
+      (removeLastTailItemProg U V w n_max h_space d) = s₁ at
+      hf1 hout1 hq1 hv1 hl1 hgm1_eq
     let gm₁ := gmAt base U V w n_max h_space s₁.mem
     change gm₁ = gmRemoveTail n_max gm₀ b at hgm1_eq
     have hpres1 := gmRemoveTail_preserves_nonTail hb hr0_pos htail₀
@@ -1406,7 +1419,10 @@ private theorem popBackSlotProg_effect_of_clientState {U V w n_max h_space base 
     have hres_q : (Memory.spec 0).clientResult s₁
         (readGMProg U V w n_max h_space (base, 4 + 3 * b)) = gm₁ (gmQIdx b) :=
       clientResult_readGMProg s₁ hq_idx_lt
-    obtain ⟨hexec, hcharge⟩ := popBackSlotProg_execution s s₁ hb0 rfl _ _ hres_r hres_q
+    obtain ⟨hexec, hcharge⟩ := popBackSlotProg_execution
+      (U := U) (V := V) (w := w) (n_max := n_max) (h_space := h_space)
+      (base := base) (b := b) s s₁ hb0 hs₁
+      (gm₁ (gmRIdx b)) (gm₁ (gmQIdx b)) hres_r hres_q
     rw [hrun] at hexec
     have hguard : (gm₁ (gmRIdx b) = 0 ∧ 0 < gm₁ (gmQIdx b)) ↔
         (gm₀ (gmRIdx b) = 1 ∧ 0 < gm₀ (gmQIdx b)) := by
