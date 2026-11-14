@@ -6165,6 +6165,8 @@ public import CslibFrontier.Foundations.NumberTheory.Primality.EulerLiars
 public import CslibFrontier.Foundations.NumberTheory.Primality.RabinMonier
 public import CslibFrontier.Foundations.NumberTheory.Primality.StrongLiars
 public import CslibFrontier.Foundations.NumberTheory.Primality.Witness
+public import CslibFrontier.Foundations.NumberTheory.PrimeCollision
+public import CslibFrontier.Foundations.NumberTheory.PrimeCollisionWindow
 public import CslibFrontier.Foundations.NumberTheory.PrimeCounting
 public import CslibFrontier.Foundations.NumberTheory.PrimeDensity
 public import CslibFrontier.Foundations.NumberTheory.PrimeWindow
