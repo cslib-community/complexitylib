@@ -25,6 +25,8 @@ over arbitrary outcome values `β` (such as `ℝ` or an ordered alphabet `α`).
 
 * `Cslib.Quantum.measureOut_apply`: probability mass of an outcome value `b : β`.
 * `Cslib.Quantum.measureOut_ket`: reading a basis state returns its readout with certainty.
+* `Cslib.Quantum.measureOut_eq_ofReal_measureProb`: point mass at `b` equals the computational-basis
+  probability of the readout fiber over `b`.
 * `Cslib.Quantum.measureOut_toOuterMeasure_apply`: event probabilities under `measureOut`.
 -/
 
@@ -65,5 +67,13 @@ theorem measureOut_toOuterMeasure_apply {ι β : Type*} [Fintype ι]
   congr 1
   ext y
   simp
+
+/-- Point mass of `measureOut` at `b : β` equals `ENNReal.ofReal` of `measureProb` on the preimage
+fiber `{a | out a = b}`. -/
+theorem measureOut_eq_ofReal_measureProb {ι β : Type*} [Fintype ι] [DecidableEq β]
+    (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) (out : ι → β) (b : β) :
+    measureOut ψ hψ out b = ENNReal.ofReal (measureProb ψ {a | out a = b}) := by
+  have h := measureOut_toOuterMeasure_apply ψ hψ out (fun y => y = b)
+  rwa [Set.ofPred_eq_eq_singleton, PMF.toOuterMeasure_apply_singleton] at h
 
 end Cslib.Quantum

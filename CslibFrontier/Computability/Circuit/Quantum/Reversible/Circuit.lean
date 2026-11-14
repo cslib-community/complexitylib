@@ -47,9 +47,6 @@ open Circuits Circuits.Boolean GateCode Turing.MultiTapeTM
 
 namespace Reversible
 
-/-- The qubit holding output wire `o` of a gate list compiled with zero qubit `z`. -/
-@[expose] def outQubit (z o : ℕ) : ℕ := min z o
-
 /-- **The quantum gate codes of a De Morgan circuit code** on `n` inputs: compile its gates onto
 `n + G` qubits, with zero qubit `n + G`, and swap its first output wire into qubit `0`. -/
 @[expose] def circuitCodes (n : ℕ) (code : List (Op × List ℕ) × List ℕ) : List GateCode :=

@@ -80,6 +80,10 @@ onto qubit `n + j`, with `z` the zero qubit. -/
 def codes (n z : ℕ) (gates : List (Op × List ℕ)) : List GateCode :=
   gates.zipIdx.flatMap fun p => gateCodes z (n + p.2) p.1
 
+/-- The qubit holding a Boolean output wire `o` when `z` is the compiler's zero qubit. Malformed
+wire numbers at or above `z` read that zero qubit, matching `evalCode`'s default-false semantics. -/
+@[expose] def outQubit (z o : ℕ) : ℕ := min z o
+
 theorem codes_append_singleton (n z : ℕ) (gates : List (Op × List ℕ)) (g : Op × List ℕ) :
     codes n z (gates ++ [g]) = codes n z gates ++ gateCodes z (n + gates.length) g := by
   simp [codes, List.zipIdx_append]

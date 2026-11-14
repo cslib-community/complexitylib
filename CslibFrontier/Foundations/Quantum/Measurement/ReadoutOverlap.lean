@@ -23,8 +23,6 @@ problems such as permutation inversion.
 
 * `Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_disjoint`: overlap bound for disjoint accepting
   outcome sets `S₁` and `S₂`.
-* `Cslib.Quantum.measureOut_eq_ofReal_measureProb`: point mass of `measureOut` at `b` equals
-  `ENNReal.ofReal` of `measureProb` on the fiber `{a | out a = b}`.
 * `Cslib.Quantum.le_measureProb_of_le_measureOut_apply`: converts a lower bound on
   `measureOut ψ hψ out b` to `measureProb`.
 * `Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_readout_ne` and
@@ -60,14 +58,6 @@ theorem norm_inner_le_two_mul_sqrt_of_disjoint {ι : Type*} [Fintype ι]
     rw [measureProb_compl, hφ, one_pow] at hm
     linarith
   exact norm_inner_le_two_mul_sqrt_of_measureProb hψ hφ h₁ hφ₁ hε
-
-/-- Point mass of `measureOut` at `b : β` equals `ENNReal.ofReal` of `measureProb` on the preimage
-fiber `{a | out a = b}`. -/
-theorem measureOut_eq_ofReal_measureProb {ι β : Type*} [Fintype ι] [DecidableEq β]
-    (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) (out : ι → β) (b : β) :
-    measureOut ψ hψ out b = ENNReal.ofReal (measureProb ψ {a | out a = b}) := by
-  have h := measureOut_toOuterMeasure_apply ψ hψ out (fun y => y = b)
-  rwa [Set.ofPred_eq_eq_singleton, PMF.toOuterMeasure_apply_singleton] at h
 
 /-- Converts an `ENNReal.ofReal` lower bound on `measureOut ψ hψ out b` into a `measureProb` lower
 bound on the fiber `{a | out a = b}`. -/
