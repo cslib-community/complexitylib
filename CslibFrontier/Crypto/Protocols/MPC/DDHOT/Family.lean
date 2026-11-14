@@ -26,10 +26,11 @@ a group of prime order, a variant of the protocol of [BonehShoup2023], Section 2
 Figure 23.17, and relates it to the DDH experiment in one fixed group. This module runs it in the
 groups of a `PrimeOrderGroupFamily` `F` whose group parameters are drawn from a setup law, and
 proves, assuming `F.DDH setup`, that a run with one semi-honest corrupted party is
-computationally indistinguishable from the output of the explicit simulators of `DDHOT.lean`.
+computationally indistinguishable from the output of the exact-sampling simulators
+`ddhOTSenderSim` and `ddhOTReceiverSim` of `DDHOT.lean`.
 
 This is a step towards [BonehShoup2023], Theorem 23.7 (p. 1058), not the cited result: the
-theorem asks for efficient simulators, and the simulators here are not shown to be PPT (see the
+theorem asks for efficient simulators, and these simulators are not shown to be PPT (see the
 comparison below). Its reduction to DDH is the certified part.
 
 The security games run against a two-stage distinguisher `DDHOTDistinguisher`, which plays the
@@ -38,11 +39,12 @@ role of the environment `Z` in the source: given the security parameter `n` and 
 receiver's choice bit (`OTChoice`). It then sees the corrupted party's view and both parties'
 outputs and returns a bit. In `ddhOTRealGame` the view comes from a run of the protocol. In
 `ddhOTIdealGame` a simulator computes it from the corrupted party's input and output in the ideal
-oblivious-transfer functionality. `ddhOTRealIdealIndistinguishable` asks the two games to be
-indistinguishable: for every distinguisher when the sender is corrupted, with the simulator
-`ddhOTSenderSim`, and for every PPT distinguisher (`DDHOTDistinguisher.IsPPT`) when the receiver
-is corrupted, with the simulator `ddhOTReceiverSim`. Distinguishers receive group elements and
-their efficiency is stated on encodings, as for `DDHDistinguisher`.
+oblivious-transfer functionality. `ddhOTRealIdealIndistinguishable setup S₀ S₁` asks the two
+games to be indistinguishable with given simulator families: for every distinguisher when the
+sender is corrupted, with `S₀`, and for every PPT distinguisher (`DDHOTDistinguisher.IsPPT`) when
+the receiver is corrupted, with `S₁`. It asks nothing about the efficiency of `S₀` and `S₁`.
+Distinguishers receive group elements and their efficiency is stated on encodings, as for
+`DDHDistinguisher`.
 
 The library has no general asymptotic computational notion of semi-honest security for protocols
 (`Cslib.Crypto.Protocols.MPC.semiHonestAdvantage` is the advantage on one fixed input tuple), so
@@ -59,8 +61,8 @@ the random DDH game would be the ideal game
 (`Cslib.Crypto.Protocols.MPC.ideal_receiver_eq_ddhRandomExperiment`). The three approximate draws
 cost at most `3 / 2 ^ n` on each side (`advantage_bind_sampleExp_triple_le`), which gives
 `advantage_ddhOTReceiverGame_le`. `isPPT_ddhOTReceiverToDDHDistinguisher` proves that the reduction
-is PPT whenever `A` is, and `DDH.ddhOTRealIdealIndistinguishable` applies `F.DDH setup` to it
-through that certificate.
+is PPT whenever `A` is, and `DDH.ddhOTRealIdealIndistinguishable_exactSim` applies `F.DDH setup`
+to it through that certificate.
 
 ## Comparison with [BonehShoup2023], Theorem 23.7
 
@@ -75,8 +77,14 @@ through that certificate.
   `ZMod (F.order d)`, as the protocol's own coin sampler does, which no bounded-time fair-coin
   machine can do for an odd prime order, and `ddhOTRealIdealIndistinguishable` does not ask them
   to be PPT. This is why the result is a step and not Theorem 23.7. The reduction, which must be
-  PPT, draws its coins with `sampleExp` instead, the technique of Remark 23.5 (p. 1059);
-  simulators that draw their exponents the same way would close the gap.
+  PPT, draws its coins with `sampleExp` instead, the technique of Remark 23.5 (p. 1059).
+* Only the corruption of exactly one party is covered (`I = {0}` and `I = {1}`). Theorem 23.7
+  covers every set of corrupted parties; the source treats no corruption and full corruption as
+  the cases in which there is not much for the simulator to do (p. 1059).
+* The honest parties sample exact uniform exponents in `ZMod (F.order d)`, and their views hold
+  these exponents. The source requires the only random objects to be random bit strings, from
+  which the parties derive statistically near-uniform values ("Further assumptions about
+  randomness", p. 1059).
 * The protocol is a variant of Figure 23.17. `CslibFrontier/Crypto/Protocols/MPC/DDHOT.lean`
   lists the differences.
 * The setup law is an arbitrary distribution on group parameters, as in `F.DDH setup`.
@@ -87,15 +95,17 @@ through that certificate.
   saved state chosen by a distinguisher, and the encoding of a choice with word messages.
 * `Cslib.Crypto.Protocols.MPC.DDHOTJoint`: the corrupted parties' views and both outputs.
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDHOTDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.DDHOTSimulator`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhOTRealGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhOTIdealGame`: two-stage distinguishers and the real and
-  ideal games over the family.
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhOTIdealGame`: two-stage distinguishers, simulator
+  families, and the real and ideal games over the family.
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDHOTReceiverGuessInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encDDHOTReceiverGuessInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDHOTDistinguisher.IsPPT`: the input of a receiver-corrupting
   distinguisher's guess as a record, its encoding, and the distinguisher's efficiency.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhOTRealIdealIndistinguishable`: indistinguishability of
-  the real and simulated runs of `ddhOTProtocol` over the family, with the explicit simulators.
+  the real and simulated runs of `ddhOTProtocol` over the family, with given simulator families
+  and no efficiency requirement on them.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhOTReceiverToDDHDistinguisher`: the reduction to DDH.
 
 ## Main results
@@ -108,9 +118,10 @@ through that certificate.
   corrupted receiver is at most the DDH advantage of the reduction plus `6 / 2 ^ n`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_ddhOTReceiverToDDHDistinguisher`: the reduction is
   PPT.
-* `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable`: `F.DDH setup`
-  implies `F.ddhOTRealIdealIndistinguishable setup`, a step towards [BonehShoup2023],
-  Theorem 23.7.
+* `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable_exactSim`: a step
+  towards [BonehShoup2023], Theorem 23.7, not the cited result: `F.DDH setup` implies
+  `F.ddhOTRealIdealIndistinguishable setup` with the exact-sampling simulators `ddhOTSenderSim`
+  and `ddhOTReceiverSim`, which are not shown to be PPT.
 
 ## References
 
@@ -193,15 +204,20 @@ corrupted parties `I` and both outputs. -/
   let r ← (ddhOTProtocol (F.generator d) (F.order d)).realJoint noOracleWorld I c.inputs
   ProbComp.eval (A.guess n d c.state r)
 
+/-- A simulator family for the corrupted parties `I` of `ddhOTProtocol` over the family `F`: for
+the security parameter `n` and group parameters `d`, a simulator `S n d` that produces the views of
+the parties in `I` from their inputs and outputs. The simulator may depend on the security
+parameter, for instance to sample approximately uniform exponents with `sampleExp`. Nothing here
+asks it to be efficient. -/
+abbrev DDHOTSimulator (I : Finset (Fin 2)) : Type :=
+  ℕ → (d : F.Desc) → CoalitionSimulator (ddhOTSchedule (F.Carrier d)) (OTIn (F.Carrier d))
+    (DDHOTCoins (F.order d)) (OTOut (F.Carrier d)) I
+
 /-- The ideal game: draw group parameters `d` from the setup law, let `A` choose the inputs,
 compute the outputs of `otFunctionality`, let the simulator `S n d` produce the views of the
-corrupted parties `I` from their inputs and outputs, and give `A` these views and both outputs.
-The simulator may depend on the security parameter, for instance to sample approximately uniform
-exponents with `sampleExp`. -/
+corrupted parties `I` from their inputs and outputs, and give `A` these views and both outputs. -/
 @[expose] noncomputable def ddhOTIdealGame (setup : ℕ → PMF F.Desc) (I : Finset (Fin 2))
-    (S : ℕ → (d : F.Desc) → CoalitionSimulator (ddhOTSchedule (F.Carrier d)) (OTIn (F.Carrier d))
-      (DDHOTCoins (F.order d)) (OTOut (F.Carrier d)) I)
-    (A : F.DDHOTDistinguisher I) (n : ℕ) : Game := do
+    (S : F.DDHOTSimulator I) (A : F.DDHOTDistinguisher I) (n : ℕ) : Game := do
   let d ← setup n
   let c ← ProbComp.eval (A.choose n d)
   let r ← ProbComp.eval (idealJoint (otFunctionality (F.Carrier d)) I (S n d) c.inputs)
@@ -296,20 +312,18 @@ structure DDHOTDistinguisher.IsPPT (A : F.DDHOTDistinguisher {1}) : Prop where
 
 variable (F)
 
-/-- Indistinguishability of the real and simulated runs of `ddhOTProtocol` over the family `F`
-for a setup law, with the explicit simulators of `DDHOT.lean`. This is a step towards
-[BonehShoup2023], Theorem 23.7, not the cited result, which also asks the simulators to be
-efficient: `ddhOTSenderSim` and `ddhOTReceiverSim` sample exact uniform exponents and are not
-shown to be PPT. Against a corrupted sender, the real game and the ideal game with
-`ddhOTSenderSim` are indistinguishable for every distinguisher; against a corrupted receiver, the
-real game and the ideal game with `ddhOTReceiverSim` are indistinguishable for every PPT
-distinguisher. -/
-@[expose] def ddhOTRealIdealIndistinguishable (setup : ℕ → PMF F.Desc) : Prop :=
-  Game.Indistinguishable (F.ddhOTRealGame setup {0})
-      (F.ddhOTIdealGame setup {0} fun _ d => ddhOTSenderSim (F.generator d) (F.order d))
+/-- A step towards [BonehShoup2023], Theorem 23.7, not the security notion of that theorem:
+indistinguishability of the real and simulated runs of `ddhOTProtocol` over the family `F` for a
+setup law, with given simulator families `S₀` and `S₁` and no efficiency requirement on them. The
+source's notion asks for an efficient simulator (Definition 23.5, p. 1044, and Section 23.5.2.2,
+p. 1043). Against a corrupted sender, the real game and the ideal game with `S₀` are
+indistinguishable for every distinguisher; against a corrupted receiver, the real game and the
+ideal game with `S₁` are indistinguishable for every PPT distinguisher. -/
+@[expose] def ddhOTRealIdealIndistinguishable (setup : ℕ → PMF F.Desc) (S₀ : F.DDHOTSimulator {0})
+    (S₁ : F.DDHOTSimulator {1}) : Prop :=
+  Game.Indistinguishable (F.ddhOTRealGame setup {0}) (F.ddhOTIdealGame setup {0} S₀)
       (fun _ => True) ∧
-    Game.Indistinguishable (F.ddhOTRealGame setup {1})
-      (F.ddhOTIdealGame setup {1} fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
+    Game.Indistinguishable (F.ddhOTRealGame setup {1}) (F.ddhOTIdealGame setup {1} S₁)
       DDHOTDistinguisher.IsPPT
 
 /-! ### Corrupted sender -/
@@ -515,14 +529,16 @@ theorem isPPT_ddhOTReceiverToDDHDistinguisher {A : F.DDHOTDistinguisher {1}} (hA
       F.add_encode, hneg, neg_smul, ← sub_eq_add_neg, ZMod.val_natCast]
     rfl
 
-/-- **Under DDH, the real and simulated runs of DDH oblivious transfer are indistinguishable**:
-`F.DDH setup` implies `F.ddhOTRealIdealIndistinguishable setup`. This is a step towards
-[BonehShoup2023], Theorem 23.7, not the cited result: the theorem also asks the simulators to be
-efficient, and `ddhOTSenderSim` and `ddhOTReceiverSim` are not shown to be PPT. The only
-premise is `F.DDH setup`; the reduction is certified by
+/-- A step towards [BonehShoup2023], Theorem 23.7, not the cited result: `F.DDH setup` implies
+that the real runs of DDH oblivious transfer are indistinguishable from the ideal runs with the
+exact-sampling simulators `ddhOTSenderSim` and `ddhOTReceiverSim`. The theorem also asks the
+simulators to be efficient, and these sample exact uniform exponents and are not shown to be PPT.
+The only premise is `F.DDH setup`; the reduction is certified by
 `isPPT_ddhOTReceiverToDDHDistinguisher`. -/
-theorem DDH.ddhOTRealIdealIndistinguishable {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
-    (hDDH : F.DDH setup) : F.ddhOTRealIdealIndistinguishable setup := by
+theorem DDH.ddhOTRealIdealIndistinguishable_exactSim {F : PrimeOrderGroupFamily}
+    {setup : ℕ → PMF F.Desc} (hDDH : F.DDH setup) :
+    F.ddhOTRealIdealIndistinguishable setup (fun _ d => ddhOTSenderSim (F.generator d) (F.order d))
+      (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) := by
   refine ⟨fun A _ => ?_, fun A hA => ?_⟩
   · simp only [ddhOTRealGame_sender_eq, Game.advantage_self]
     negligible

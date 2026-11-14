@@ -14,8 +14,8 @@ Clients of `CslibFrontier.Crypto.Protocols.MPC.DDHOT.Family` under module encaps
 * the encoded words of `encOTChoice` and `encDDHOTReceiverGuessInput`;
 * a receiver-corrupting distinguisher that satisfies `DDHOTDistinguisher.IsPPT`, so the class of
   admitted distinguishers is not empty;
-* the two halves of `DDH.ddhOTRealIdealIndistinguishable` and the concrete bound behind the
-  receiver half. -/
+* the two halves of `DDH.ddhOTRealIdealIndistinguishable_exactSim` and the concrete bound behind
+  the receiver half. -/
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.MPC
   Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
@@ -81,7 +81,7 @@ example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH s
     (A : F.DDHOTDistinguisher {1}) (hA : A.IsPPT) :
     Negligible fun n => Game.advantage (F.ddhOTRealGame setup {1} A n)
       (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) :=
-  hDDH.ddhOTRealIdealIndistinguishable.2 A hA
+  hDDH.ddhOTRealIdealIndistinguishable_exactSim.2 A hA
 
 -- The same for the constant distinguisher.
 example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH setup)
@@ -89,7 +89,7 @@ example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH s
     Negligible fun n => Game.advantage (F.ddhOTRealGame setup {1} (constantDistinguisher F) n)
       (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
         (constantDistinguisher F) n) :=
-  hDDH.ddhOTRealIdealIndistinguishable.2 _ hA
+  hDDH.ddhOTRealIdealIndistinguishable_exactSim.2 _ hA
 
 -- Every joint value of a corrupted receiver is described by a guessing-stage input.
 example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc)
