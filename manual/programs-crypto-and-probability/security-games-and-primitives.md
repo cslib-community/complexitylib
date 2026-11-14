@@ -247,6 +247,7 @@ Plain-LWE bit encryption at modulus `2 ^ w` is formalized in [`LWE/Regev.lean`](
 Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR ePrint 2011/501, Sections 4–5) are in [`LWE/Trapdoor/Gadget.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean) and [`LWE/Trapdoor/Basic.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean) (re-exported by [`LWE/Trapdoor.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor.lean) and checked in [`CslibFrontierTests/Crypto/Computational/LWE/Trapdoor.lean`](../../CslibFrontierTests/Crypto/Computational/LWE/Trapdoor.lean)). `Gadget.lean` connects the power-of-two gadget matrix `gadgetMatrix w` (`G = I_ι ⊗ gᵀ`) to `GSW.bitCompose` and `GSW.powersOfTwo` (`gadgetMatrix_mulVec`, `vecMul_gadgetMatrix`), proves that binary decomposition is a right inverse, `G *ᵥ gadgetDecomp w u = u`, so `G` is primitive (`gadgetMatrix_mul_gadgetDecompMatrix`, `gadgetMatrix_surjective`), shows that `scalarBasis w` (`S_w`) has determinant `2 ^ w` (`det_scalarBasis`) and that the columns of `S_w` and of the block matrix `gadgetBasis w` (`S = I_ι ⊗ S_w`) lie in `Λ^⊥(gᵀ)` and `Λ^⊥(G)` respectively with entries at most `2` and squared column length at most `5` (`gadgetVector_vecMul_scalarBasis`, `gadgetMatrix_mul_gadgetBasis`, `sum_sq_scalarBasis_col_le_five`, `sum_sq_gadgetBasis_col_le_five`; Proposition 4.2), and proves that the iterative inversion of Section 4.1 recovers `s` from `sᵀ G + eᵀ` whenever `4 * |e p| < 2 ^ w` (`invertScalar_correct`, `invertGadget_gadgetLWE`). `Basic.lean` defines the tagged matrix `taggedMatrix w Abar R H = [Abar | H * G - Abar * R]` of Algorithm 1, proves the unrestricted tag identity `A * [R; I] = H * G` (`taggedMatrix_mul_trapdoorTransform`), and defines `IsHTagTrapdoor` requiring both `A * [R; I] = H * G` and an invertible tag `IsUnit H` as in Definition 5.2 (`isHTagTrapdoor_taggedMatrix`, `isHTagTrapdoor_untaggedMatrix`, `IsHTagTrapdoor.surjective`). It lifts binary gadget preimages to short preimages under `A` (`taggedMatrix_mulVec_invertSyndrome`) and lifts `S` to the kernel vectors `[R; I] * S` of `A`, the right-hand block of the basis in Lemma 5.3 (`taggedMatrix_mul_extendedGadgetBasis`). For Algorithm 2, it proves recovery of `s` whenever the projected error `e_1ᵀ R + e_2ᵀ` has every coordinate below `2 ^ w / 4` (`invertLWESecret_trapdoorLWE`), exact recovery of `(s, e)` when in addition every original error coordinate satisfies `2 * |e k| < 2 ^ w` (`invertLWE_trapdoorLWE`), and both from the entrywise bound `4 * (1 + |μ| * B_R) * B_e < 2 ^ w` (`invertLWE_trapdoorLWE_of_norm_bound`), the deterministic part of Theorem 5.4 with infinity-norm hypotheses. `genTrap` samples Algorithm 1 with centered-binomial `R` (`mem_support_genTrap`), and in the idealized hybrid `genTrapIdeal`, where `Abar * R` is replaced by a uniform block, the public matrix is exactly uniform for every tag (`eval_genTrapIdeal_eq_uniform`). Not formalized: the step from `genTrap` to `genTrapIdeal` (regularity or decision-LWE), so the near-uniformity of `A` in Theorem 5.1 is not proved; the basis property of `S_w` and the full basis of Lemma 5.3; the Gaussian-error claim of Theorem 5.4; non-power-of-two moduli; and discrete-Gaussian preimage sampling and delegation (Sections 5.4–5.5).
 
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
+[`MLDSA/Hint.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Hint.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
 [`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
 `power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
@@ -254,9 +255,12 @@ ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/C
 the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
 rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of the decomposition
 (`decompose_intCast_mul_add`) and stability of the high bits under `β`-short perturbations
-(`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+(`highBits_add_of_abs_lowBits_lt`). `makeHint` and `useHint` follow FIPS 204 Algorithms 39 and 40;
+`useHint_makeHint` proves Dilithium's short-correction recovery law, `useHint_injective` separates
+the two hint bits, and `useHint_lt` states NIST's proposed corrected strict output range.
+`signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (it does not yet use the available Power2Round layer, hints, byte
+function and mask sampler (it does not yet use the available Power2Round or hint layers, byte
 encodings or seed expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
@@ -265,7 +269,9 @@ self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
 formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
-signs, verifies, rejects a modified response and yields a self-target solution.
+signs, verifies, rejects a modified response and yields a self-target solution. The
+[hint client](../../CslibFrontierTests/Crypto/MLDSAHint.lean) covers both standardized `γ₂`
+families and positive, negative and wrap-around bucket adjustments.
 
 The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
 [`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
