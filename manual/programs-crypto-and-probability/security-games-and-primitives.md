@@ -330,7 +330,9 @@ Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR eP
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
 [`MLDSA/Hint.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Hint.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
-[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
+[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean), with the
+compressed-verification reduction in
+[`MLDSA/CompressedKeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/CompressedKeyOnly.lean).
 `power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
 `abs_power2RoundVec_low_le` give the coefficientwise public-key identity and low-part bound used by
 the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
@@ -339,20 +341,38 @@ rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of
 (`highBits_add_of_abs_lowBits_lt`). `makeHint` and `useHint` follow FIPS 204 Algorithms 39 and 40;
 `useHint_makeHint` proves Dilithium's short-correction recovery law, `useHint_injective` separates
 the two hint bits, and `useHint_lt` states NIST's proposed corrected strict output range.
+`hintResidual`, `useHint_mul_eq_add_hintResidual` and `abs_hintResidual_valMinAbs_le` formalize the
+arbitrary-hint identity and `2γ₂ + 1` bound of Dilithium v3.1 Lemma 1(2); the stronger sparse-hint
+conclusion remains open.
 `signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (it does not yet use the available Power2Round or hint layers, byte
-encodings or seed expansion), and
+function and mask sampler (it does not use the Power2Round or hint layers, byte encodings or seed
+expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
 `ModuleLWE.advantage` of `forgeryDistinguisher` for the short secret and error laws plus the
 self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
-formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
+formalized. The separate compressed surface computes `t₁` and `t₀` from the full semantic public
+vector `t`, verifies `H(UseHint(h, A z - c t₁ 2ᵈ), M) = c`, and proves the source's equations
+(9)--(12): every verifying key-only forgery gives a self-target solution at radius
+`max (γ₁ - β) (2γ₂ + 1 + τ 2^(d-1))`. Its explicit Module-LWE distinguisher and self-target solver
+give the analogous finite-game key-only bound. This is not a chosen-message, strong-unforgeability,
+asymptotic-negligibility or concrete ML-DSA-44/65/87 security theorem. The latter endpoints still
+need the corrected transform losses, failure and query terms, exact assumption parameters, and
+resource translations under an explicit coding convention. Those translations charge the encoded
+description size of each `B(A)`, time, space, randomness and queries, plus its actual online
+wrapper, controller, advice, layout, copying and interpreter costs. Offline `A ↦ B(A)` compiler
+time is not attack time unless the produced reduction executes that compiler.
+
+The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
 signs, verifies, rejects a modified response and yields a self-target solution. The
 [hint client](../../CslibFrontierTests/Crypto/MLDSAHint.lean) covers both standardized `γ₂`
-families and positive, negative and wrap-around bucket adjustments.
+families and positive, negative and wrap-around bucket adjustments. The
+[compressed client](../../CslibFrontierTests/Crypto/MLDSACompressedKeyOnly.lean) uses the
+ML-DSA-44 coefficient dimensions, exercises set and clear hints and a nonzero `Power2Round` low
+part, checks the exact self-target identity, and rejects after changing the hash-checked hint.
 
 The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
 [`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked

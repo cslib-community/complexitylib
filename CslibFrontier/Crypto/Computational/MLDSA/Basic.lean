@@ -182,10 +182,11 @@ theorem sum_abs_valMinAbs_le {τ : ℕ} {c : Fin n → ZMod q} (hc : InBall τ c
           · rw [not_not.mp h, ZMod.valMinAbs_zero, abs_zero]
     _ = τ := by rw [Finset.sum_boole, hc.2]
 
-/-- **Challenge times short is short.** If `c ∈ B_τ` and `‖s‖_∞ ≤ η`, with `2 τ η < q` so that
-the product has centered representatives, then `‖c s‖_∞ ≤ τ η` in `R_q`. -/
+/-- **Challenge times short is short.** If `c ∈ B_τ` and `‖s‖_∞ ≤ η`, then
+`‖c s‖_∞ ≤ τ η` in `R_q`. Centered reduction modulo `q` cannot increase the norm, so a
+no-wrap hypothesis is unnecessary. -/
 theorem abs_valMinAbs_negacyclicMul_le [NeZero q] {τ η : ℕ} {c s : Fin n → ZMod q}
-    (hc : InBall τ c) (hs : ∀ j, |(s j).valMinAbs| ≤ η) (hq : 2 * (τ * η) < q) (i : Fin n) :
+    (hc : InBall τ c) (hs : ∀ j, |(s j).valMinAbs| ≤ η) (i : Fin n) :
     |(negacyclicMul c s i).valMinAbs| ≤ τ * η := by
   set ĉ : Fin n → ℤ := fun j => (c j).valMinAbs
   set ŝ : Fin n → ℤ := fun j => (s j).valMinAbs
@@ -197,12 +198,11 @@ theorem abs_valMinAbs_negacyclicMul_le [NeZero q] {τ η : ℕ} {c s : Fin n →
   have hbound : |negacyclicMul ĉ ŝ i| ≤ τ * η := by
     calc |negacyclicMul ĉ ŝ i| ≤ (∑ j, |ĉ j|) * η := abs_negacyclicMul_le_sum_abs_mul hs i
       _ ≤ τ * η := mul_le_mul_of_nonneg_right (sum_abs_valMinAbs_le hc) (by positivity)
-  have hq' : (2 * (τ * η) : ℤ) < q := by exact_mod_cast hq
-  rw [hlift, (ZMod.valMinAbs_spec _ _).mpr ⟨rfl, ?_⟩]
-  · exact hbound
-  · rw [abs_le] at hbound
-    simp only [Set.mem_Ioc]
-    constructor <;> linarith [hbound.1, hbound.2]
+  calc
+    |(negacyclicMul c s i).valMinAbs| ≤ |negacyclicMul ĉ ŝ i| := by
+      rw [hlift]
+      exact ZMod.abs_valMinAbs_intCast_le _
+    _ ≤ τ * η := hbound
 
 end Challenge
 
@@ -333,12 +333,10 @@ theorem verify_signAttempt (hP : P.Valid) {H : Hash P} (hH : ∀ x, InBall P.τ 
   refine ⟨⟨hz, hH _⟩, ?_⟩
   rw [verifierCommitment_publicKey]
   -- `HighBits(w - c s₂) = HighBits(w)`, since `c s₂` is `β`-short.
-  have hq : 2 * (P.τ * P.η) < P.q := by
-    have := hP.τ_mul_η_le_β; have := hP.two_mul_β_lt_q; omega
   have hhigh : highBitsVec P (w - fun i => negacyclicMul c (sk.s₂ i)) = highBitsVec P w := by
     funext i j
     have hs : |(negacyclicMul c (sk.s₂ i) j).valMinAbs| ≤ P.β := by
-      have := abs_valMinAbs_negacyclicMul_le (hH (highBitsVec P w, msg)) (hs₂ i) hq j
+      have := abs_valMinAbs_negacyclicMul_le (hH (highBitsVec P w, msg)) (hs₂ i) j
       have hτη : ((P.τ * P.η : ℕ) : ℤ) ≤ P.β := by exact_mod_cast hP.τ_mul_η_le_β
       push_cast at hτη
       linarith

@@ -7,8 +7,7 @@ Authors: Karn Seth, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Init
-public import Mathlib.Data.ZMod.ValMinAbs
+public import CslibFrontier.Foundations.Data.ZMod.ValMinAbs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -24,7 +23,7 @@ coefficient decompositions. `Power2Round` compresses the public key by writing
 `r⁺ ∈ [0, q)` and its centered remainder `r₀ = r⁺ mod± 2^d`, and returns
 `((r⁺ - r₀) / 2^d, r₀)`. The coefficientwise `power2RoundVec` is the operation used on the
 uncompressed public-key vector `t`; reconstruction and the bound `|t₀| ≤ 2^(d-1)` are the facts
-used in the self-target MSIS calculation of [DucasEtAl2018], Section 6.2.1, Eq. (10).
+used in the self-target MSIS calculation of [BaiEtAl2021Dilithium], Section 6.2.1, Eq. (10).
 
 For `Decompose`, the centered remainder is `r₀ = r⁺ mod± α ∈ (-γ₂, γ₂]`. The algorithm returns
 `(r₁, r₀) = ((r⁺ - r₀) / α, r₀)`, except in the one *wrap-around* case
@@ -76,6 +75,8 @@ security reduction use:
 
 ## References
 
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
+  Documentation*, Version 3.1][BaiEtAl2021Dilithium]
 * [L. Ducas et al., *CRYSTALS-Dilithium: A Lattice-Based Digital Signature
   Scheme*][DucasEtAl2018]
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature

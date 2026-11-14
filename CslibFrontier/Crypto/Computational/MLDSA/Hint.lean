@@ -23,6 +23,8 @@ to move by one high-order bucket in the direction determined by the low bits. Th
 
 * `Cslib.Crypto.MLDSA.makeHint`: whether adding a correction changes the high bits.
 * `Cslib.Crypto.MLDSA.useHint`: adjust the high bits by the supplied hint.
+* `Cslib.Crypto.MLDSA.hintResidual`: the short residual between the hinted high part and the
+  original coefficient.
 * `Cslib.Crypto.MLDSA.makeHintVec`, `Cslib.Crypto.MLDSA.useHintVec`: coefficientwise forms.
 
 ## Main results
@@ -31,6 +33,9 @@ to move by one high-order bucket in the direction determined by the low bits. Th
   specification.
 * `Cslib.Crypto.MLDSA.useHint_nonneg`, `Cslib.Crypto.MLDSA.useHint_lt`: the output range.
 * `Cslib.Crypto.MLDSA.useHint_injective`: distinct hint bits give distinct adjusted high bits.
+* `Cslib.Crypto.MLDSA.useHint_mul_eq_add_hintResidual`,
+  `Cslib.Crypto.MLDSA.abs_hintResidual_valMinAbs_le`: the residual identity and bound in
+  Lemma 1(2) of the Dilithium specification.
 * `Cslib.Crypto.MLDSA.useHintVec_makeHintVec`: coefficientwise recovery.
 
 The printed output bound of Algorithm 40 is non-strict, but NIST's potential-updates spreadsheet
@@ -39,8 +44,8 @@ The range theorem below states this corrected bound.
 
 ## References
 
-* [L. Ducas et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
-  Documentation*, Version 3.1][DucasEtAl2018]
+* [S. Bai et al., *CRYSTALS-Dilithium: Algorithm Specifications and Supporting
+  Documentation*, Version 3.1][BaiEtAl2021Dilithium]
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature
   Standard*][NISTFIPS204]
 -/
@@ -63,6 +68,19 @@ def useHint (q γ₂ : ℕ) (h : Bool) (r : ZMod q) : ℤ :=
     if 0 < lowBits q γ₂ r then (highBits q γ₂ r + 1) % (m : ℤ)
     else (highBits q γ₂ r - 1) % (m : ℤ)
   | false => highBits q γ₂ r
+
+/-- The residual `u = 2 γ₂ · UseHint(h, r, 2 γ₂) - r` in `ℤ_q`. Lemma 1(2) of the
+Dilithium v3.1 specification bounds its centered representative by `2 γ₂ + 1`. -/
+def hintResidual (q γ₂ : ℕ) (h : Bool) (r : ZMod q) : ZMod q :=
+  ((useHint q γ₂ h r * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r
+
+/-- The hinted high part is the original coefficient plus its residual. This is the scalar
+identity used in Equation (9) of Section 6.2.1 of the Dilithium v3.1 specification. -/
+theorem useHint_mul_eq_add_hintResidual (q γ₂ : ℕ) (h : Bool) (r : ZMod q) :
+    ((useHint q γ₂ h r * (2 * γ₂ : ℕ) : ℤ) : ZMod q) =
+      r + hintResidual q γ₂ h r := by
+  simp only [hintResidual]
+  ring
 
 /-- `MakeHint` is set exactly when the correction changes the high bits. -/
 @[simp] theorem makeHint_eq_true_iff {q γ₂ : ℕ} {z r : ZMod q} :
@@ -96,6 +114,10 @@ private theorem two_le_bucketCount (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1
   have hqeq : q = m * (2 * γ₂) + 1 := by
     simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd
   nlinarith
+
+private theorem neg_one_emod_natCast {m : ℕ} (hm : 0 < m) :
+    (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
+  simpa using (Int.negSucc_emod 0 (b := (m : ℤ)) (by omega))
 
 /-- The exceptional negative representatives next to zero are precisely the wrap-around bucket. -/
 private theorem highBits_intCast_eq_zero_of_neg (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
@@ -183,10 +205,7 @@ theorem useHint_true_ne_highBits (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
     · rw [Int.emod_eq_of_lt (by omega) (by omega)]
       omega
     · have hrzero : highBits q γ₂ r = 0 := by omega
-      have hmod : (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-        rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-          Int.emod_eq_of_lt (by omega) (by omega)]
-        ring
+      have hmod := neg_one_emod_natCast (m := m) (by omega)
       rw [hrzero, zero_sub, hmod]
       omega
 
@@ -202,6 +221,154 @@ theorem useHint_injective (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1) (hq : 4
   · exfalso
     exact useHint_true_ne_highBits hγ hdvd hq r (by simpa only [useHint_false] using heq)
   · rfl
+
+/-- **Arbitrary-hint residual bound.** For every hint bit and coefficient, the centered residual
+between `r` and `2 γ₂ · UseHint(h, r, 2 γ₂)` has magnitude at most `2 γ₂ + 1`. This is the scalar
+norm statement in Lemma 1(2) of the Dilithium v3.1 specification. The vector lemma additionally
+states that only set-hint positions can exceed `γ₂`; that sparsity refinement is separate. -/
+theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
+    (hq : 4 * γ₂ < q) (h : Bool) (r : ZMod q) :
+    |(hintResidual q γ₂ h r).valMinAbs| ≤ 2 * γ₂ + 1 := by
+  have : NeZero q := ⟨by omega⟩
+  set m : ℕ := (q - 1) / (2 * γ₂)
+  have hm : 0 < m := by simpa only [m] using bucketCount_pos hγ hq
+  have hqeq : (q : ℤ) = (m : ℤ) * (2 * γ₂ : ℕ) + 1 := by
+    exact_mod_cast (show q = m * (2 * γ₂) + 1 by
+      simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd)
+  have hr₀ := abs_lowBits_le (q := q) hγ r
+  rw [abs_le] at hr₀
+  have hr₁₀ := highBits_nonneg (q := q) hγ r
+  have hr₁m := highBits_lt (q := q) hγ hdvd (by omega) r
+  change highBits q γ₂ r < (m : ℤ) at hr₁m
+  have hrec := intCast_highBits_mul_add_lowBits (γ₂ := γ₂) r
+  have hqzero :
+      (((m : ℤ) * (2 * γ₂ : ℕ) + 1 : ℤ) : ZMod q) = 0 := by
+    rw [← hqeq]
+    simp
+  have hmα : (m : ZMod q) * (2 * (γ₂ : ZMod q)) = -1 := by
+    have hqzero' := hqzero
+    push_cast at hqzero'
+    calc
+      (m : ZMod q) * (2 * (γ₂ : ZMod q)) =
+          (m : ZMod q) * (2 * (γ₂ : ZMod q)) + 1 - 1 := by ring
+      _ = 0 - 1 := by rw [hqzero']
+      _ = -1 := by ring
+  cases h
+  · have heq : hintResidual q γ₂ false r = ((-lowBits q γ₂ r : ℤ) : ZMod q) := by
+      simp only [hintResidual, useHint_false]
+      calc
+        ((highBits q γ₂ r * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+            ((highBits q γ₂ r * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+              ((highBits q γ₂ r * (2 * γ₂ : ℕ) + lowBits q γ₂ r : ℤ) :
+                ZMod q) := by rw [hrec]
+        _ = ((-lowBits q γ₂ r : ℤ) : ZMod q) := by
+          push_cast
+          ring
+    rw [heq]
+    exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
+      rw [abs_neg, abs_le]
+      constructor <;> omega)
+  · change
+      abs ((((if 0 < lowBits q γ₂ r then
+          (highBits q γ₂ r + 1) % (m : ℤ)
+        else (highBits q γ₂ r - 1) % (m : ℤ)) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+        r).valMinAbs ≤ 2 * γ₂ + 1
+    split
+    · rename_i hrpos
+      by_cases hnext : highBits q γ₂ r + 1 < (m : ℤ)
+      · rw [Int.emod_eq_of_lt (by omega) hnext]
+        have heq :
+            (((highBits q γ₂ r + 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+              (((2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
+          calc
+            (((highBits q γ₂ r + 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+                (((highBits q γ₂ r + 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+                  ((highBits q γ₂ r * (2 * γ₂ : ℕ) + lowBits q γ₂ r : ℤ) :
+                    ZMod q) := by rw [hrec]
+            _ = (((2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
+              push_cast
+              ring
+        rw [heq]
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
+          rw [abs_of_nonneg (by push_cast; omega)]
+          push_cast
+          omega)
+      · have hnext : highBits q γ₂ r + 1 = (m : ℤ) := by omega
+        rw [hnext, Int.emod_self]
+        have hnextZ := congrArg (fun z : ℤ => (z : ZMod q)) hnext
+        push_cast at hnextZ
+        have hr₁eq : (highBits q γ₂ r : ZMod q) = (m : ZMod q) - 1 := by
+          calc
+            (highBits q γ₂ r : ZMod q) = (highBits q γ₂ r : ZMod q) + 1 - 1 := by ring
+            _ = (m : ZMod q) - 1 := by rw [hnextZ]
+        have heq :
+            (((0 : ℤ) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+              (((2 * γ₂ : ℕ) + 1 - lowBits q γ₂ r : ℤ) : ZMod q) := by
+          push_cast at hnextZ hqzero
+          calc
+            (((0 : ℤ) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+                (((0 : ℤ) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+                  ((highBits q γ₂ r * (2 * γ₂ : ℕ) + lowBits q γ₂ r : ℤ) :
+                    ZMod q) := by rw [hrec]
+            _ = (((2 * γ₂ : ℕ) + 1 - lowBits q γ₂ r : ℤ) : ZMod q) := by
+              push_cast
+              rw [hr₁eq]
+              calc
+                0 * (2 * (γ₂ : ZMod q)) -
+                    (((m : ZMod q) - 1) * (2 * (γ₂ : ZMod q)) + lowBits q γ₂ r) =
+                    -((m : ZMod q) * (2 * (γ₂ : ZMod q))) +
+                      2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
+                _ = 2 * (γ₂ : ZMod q) + 1 - lowBits q γ₂ r := by rw [hmα]; ring
+        rw [heq]
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
+          rw [abs_of_nonneg (by push_cast; omega)]
+          push_cast
+          omega)
+    · rename_i hrpos
+      have hrnonpos : lowBits q γ₂ r ≤ 0 := le_of_not_gt hrpos
+      by_cases hr₁pos : 0 < highBits q γ₂ r
+      · rw [Int.emod_eq_of_lt (by omega) (by omega)]
+        have heq :
+            (((highBits q γ₂ r - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+              ((-(2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
+          calc
+            (((highBits q γ₂ r - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+                (((highBits q γ₂ r - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+                  ((highBits q γ₂ r * (2 * γ₂ : ℕ) + lowBits q γ₂ r : ℤ) :
+                    ZMod q) := by rw [hrec]
+            _ = ((-(2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
+              push_cast
+              ring
+        rw [heq]
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
+          rw [abs_of_nonpos (by push_cast; omega)]
+          push_cast
+          omega)
+      · have hr₁zero : highBits q γ₂ r = 0 := by omega
+        have hmod := neg_one_emod_natCast (m := m) (by omega)
+        rw [hr₁zero, zero_sub, hmod]
+        have heq :
+            ((((m : ℤ) - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+              ((-(2 * γ₂ : ℕ) - 1 - lowBits q γ₂ r : ℤ) : ZMod q) := by
+          calc
+            ((((m : ℤ) - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) - r =
+                ((((m : ℤ) - 1) * (2 * γ₂ : ℕ) : ℤ) : ZMod q) -
+                  ((highBits q γ₂ r * (2 * γ₂ : ℕ) + lowBits q γ₂ r : ℤ) :
+                    ZMod q) := by rw [hrec]
+            _ = ((-(2 * γ₂ : ℕ) - 1 - lowBits q γ₂ r : ℤ) : ZMod q) := by
+              push_cast
+              rw [hr₁zero]
+              simp only [Int.cast_zero, zero_mul, zero_add]
+              calc
+                ((m : ZMod q) - 1) * (2 * (γ₂ : ZMod q)) - lowBits q γ₂ r =
+                    (m : ZMod q) * (2 * (γ₂ : ZMod q)) -
+                      2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
+                _ = -(2 * (γ₂ : ZMod q)) - 1 - lowBits q γ₂ r := by rw [hmα]; ring
+        rw [heq]
+        exact (ZMod.abs_valMinAbs_intCast_le _).trans (by
+          rw [abs_of_nonpos (by push_cast; omega)]
+          push_cast
+          omega)
 
 /-- **Hint recovery.** If `|z| ≤ γ₂`, using the hint made from `z` and `r` recovers the high bits
 of `r + z`. This is the scalar form of Lemma 1(1) in the Dilithium v3.1 specification, with its
@@ -319,10 +486,7 @@ theorem useHint_makeHint (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1) (hq : 4 
           rw [hsum']
           exact highBits_intCast_mul_add hγ hdvd (by omega) (by omega)
             (by push_cast; linarith) (by push_cast; linarith)
-        have hmod : (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-          rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-            Int.emod_eq_of_lt (by omega) (by omega)]
-          ring
+        have hmod := neg_one_emod_natCast (m := m) (by omega)
         rw [hrzero, zero_sub, hmod, hv]
 
 /-- Apply `MakeHint` coefficientwise. -/
