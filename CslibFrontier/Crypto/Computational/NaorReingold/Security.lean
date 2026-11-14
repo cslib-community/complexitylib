@@ -1288,19 +1288,9 @@ private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
   · simp only [hk, ↓reduceIte,
       frontierLevelWithExpLaw_uniform_eq_multi F d i.val hk (adv d),
       ← multiDDHRandomTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
-    refine Game.advantage_bind_le_nnreal _ _ _ fun α => ?_
-    rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-      ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
-        (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))]
-    refine Game.advantage_bind_le_nnreal _ _ _ fun β => ?_
-    simpa only [ZMod.card] using
-      Game.advantage_bind_uniformOfFintype_of_ne_le (α * β)
-        (fun γ => (F.multiDDHRerandomizeLaw d (BitString i.val)
-          (α • F.generator d) (β • F.generator d) (γ • F.generator d)).bind
-          (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-        ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
-          (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-        (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_random d (BitString i.val) hγ])
+    simpa only [pmf_norm, PrimeOrderGroupFamily.ddhRandomTupleLaw] using
+      F.advantage_ddhRandomTupleLaw_multiDDHRerandomizeLaw_le d (BitString i.val)
+        (naorReingoldWordLevelTest F d i.val hk (adv d))
   · simp [hk]
 
 private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
@@ -2565,8 +2555,8 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
         (by positivity)
     · simp [show setup n d = 0 by simpa [PMF.mem_support_iff] using hd]
   have hadv_fin := Game.advantage_le_of_apply_le (by simp : ((lhlBound n : ℝ≥0) : ℝ≥0∞) ≠ ⊤)
-    (hle_apply g1 g2 fun d _ => (apply_true_le_of_advantage_le le_rfl).1)
-    (hle_apply g2 g1 fun d _ => (apply_true_le_of_advantage_le le_rfl).2)
+    (hle_apply g1 g2 fun d _ => (Game.apply_true_le_of_advantage_le le_rfl).1)
+    (hle_apply g2 g1 fun d _ => (Game.apply_true_le_of_advantage_le le_rfl).2)
   rw [ENNReal.coe_toReal] at hadv_fin
   exact NNReal.coe_le_coe.mp hadv_fin
 

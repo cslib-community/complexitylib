@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.DiffieHellman
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
@@ -194,23 +195,6 @@ theorem DDH.negligible_expected_inv_order {F : PrimeOrderGroupFamily} {setup : �
     ((hDDH (ddhZeroDistinguisher F) (isPPT_ddhZeroDistinguisher F)).const_mul 2)
     (expected_inv_order_le_two_mul_advantage_ddh F setup)
 
-/-- An `ℝ≥0` advantage bound between two games implies mutual `ℝ≥0∞` upper bounds on their
-acceptance probabilities. -/
-theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
-    (h : Game.advantage g₁ g₂ ≤ c) :
-    g₁ true ≤ g₂ true + (c : ℝ≥0∞) ∧ g₂ true ≤ g₁ true + (c : ℝ≥0∞) := by
-  have ha : (Game.advantage g₁ g₂ : ℝ) ≤ c := NNReal.coe_le_coe.mpr h
-  rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability] at ha
-  have hle {a b : Game} (hab : (a true).toReal ≤ (b true).toReal + (c : ℝ)) :
-      a true ≤ b true + (c : ℝ≥0∞) := by
-    have hof := ENNReal.ofReal_le_ofReal hab
-    rwa [ENNReal.ofReal_add ENNReal.toReal_nonneg (NNReal.coe_nonneg c),
-      ENNReal.ofReal_toReal (PMF.apply_ne_top _ _),
-      ENNReal.ofReal_toReal (PMF.apply_ne_top _ _),
-      ENNReal.ofReal_coe_nnreal] at hof
-  exact ⟨hle (sub_le_iff_le_add'.mp (abs_sub_le_iff.mp ha).1),
-    hle (sub_le_iff_le_add'.mp (abs_sub_le_iff.mp ha).2)⟩
-
 /-- If `Game.advantage (f d) (g d) ≤ (F.order d)⁻¹` for every group description `d`, then
 averaging over `setup` yields advantage at most `(∑' d, setup d * (F.order d)⁻¹).toNNReal`. -/
 theorem advantage_bind_le_expected_inv_order (F : PrimeOrderGroupFamily)
@@ -234,6 +218,6 @@ theorem advantage_bind_le_expected_inv_order (F : PrimeOrderGroupFamily)
   refine Game.advantage_bind_le_succProbability_bind setup f g errPMF fun d => ?_
   rw [herr_true, ← ENNReal.coe_natCast,
     ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
-  exact apply_true_le_of_advantage_le (h d)
+  exact Game.apply_true_le_of_advantage_le (h d)
 
 end Cslib.Crypto.PrimeOrderGroupFamily
