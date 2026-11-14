@@ -6386,6 +6386,7 @@ public import CslibFrontier.Probability.PMF.Expect
 public import CslibFrontier.Probability.PMF.Filter
 public import CslibFrontier.Probability.PMF.Finiteness
 public import CslibFrontier.Probability.PMF.Interaction
+public import CslibFrontier.Probability.PMF.Interaction.Process
 public import CslibFrontier.Probability.PMF.Map
 public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.ObservedProcess
