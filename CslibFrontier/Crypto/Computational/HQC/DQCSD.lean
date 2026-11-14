@@ -278,9 +278,10 @@ theorem NativeQuantumTwoDQCSDP.of_within {params : DQCSDParameters}
     {publicParity : ℕ → Bool} {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
     (h : NativeQuantumTwoDQCSDPWithin params publicParity ε)
     (hn : PolynomiallyBounded params.blockLength)
-    (hneg : ∀ qubits gates queries : ℕ → ℕ,
+    (hneg : ∀ qubits gates queries descriptionBits : ℕ → ℕ,
       PolynomiallyBounded qubits → PolynomiallyBounded gates → PolynomiallyBounded queries →
-      Negligible (fun κ => ε κ ⟨qubits κ, gates κ, queries κ⟩)) :
+      PolynomiallyBounded descriptionBits →
+      Negligible (fun κ => ε κ ⟨qubits κ, gates κ, queries κ, descriptionBits κ⟩)) :
     NativeQuantumTwoDQCSDP params publicParity := by
   apply NativeQuantum.ComputationallyIndistinguishable.of_within h
     (supportsLength_twoRealEnsemble params publicParity)
@@ -331,9 +332,10 @@ theorem NativeQuantumThreeDQCSDPT.of_within {params : DQCSDTruncatedParameters}
     {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
     (h : NativeQuantumThreeDQCSDPTWithin params firstParity secondParity ε)
     (hn : PolynomiallyBounded params.blockLength)
-    (hneg : ∀ qubits gates queries : ℕ → ℕ,
+    (hneg : ∀ qubits gates queries descriptionBits : ℕ → ℕ,
       PolynomiallyBounded qubits → PolynomiallyBounded gates → PolynomiallyBounded queries →
-      Negligible (fun κ => ε κ ⟨qubits κ, gates κ, queries κ⟩)) :
+      PolynomiallyBounded descriptionBits →
+      Negligible (fun κ => ε κ ⟨qubits κ, gates κ, queries κ, descriptionBits κ⟩)) :
     NativeQuantumThreeDQCSDPT params firstParity secondParity := by
   apply NativeQuantum.ComputationallyIndistinguishable.of_within h
     (supportsLength_threeRealEnsemble params firstParity secondParity)

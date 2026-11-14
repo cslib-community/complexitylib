@@ -31,7 +31,8 @@ polynomial-time certificate is preserved in `Reversible.Circuit`.
 * `Cslib.Quantum.Reversible.length_circuitCodes`: exact output-relocation overhead.
 * `Cslib.Quantum.Reversible.length_circuitCodes_le`: at most `3 * G + 3` gates.
 * `Cslib.Quantum.Reversible.length_encoding_circuitCodes_le`: encoded instruction length.
-* `Cslib.Quantum.Reversible.within_circuitCodes`: separate qubit, gate and zero-query budgets.
+* `Cslib.Quantum.Reversible.within_circuitCodes`: separate qubit, gate, zero-query and exact
+  instruction-description budgets.
 -/
 
 public section
@@ -83,7 +84,9 @@ theorem length_encoding_circuitCodes_le (n : ℕ) (code : List (Op × List ℕ) 
 /-- Reading the compiled elementary gates as oracle instructions introduces no coherent queries. -/
 theorem within_circuitCodes (n : ℕ) (code : List (Op × List ℕ) × List ℕ) :
     OracleCircuit.Within ((circuitCodes n code).map fun g => OracleGateCode.gate (false, g))
-      (n + code.1.length + 1) ⟨n + code.1.length + 1, 3 * code.1.length + 3, 0⟩ := by
+      (n + code.1.length + 1) (encList encGateCode (circuitCodes n code)).length
+      ⟨n + code.1.length + 1, 3 * code.1.length + 3, 0,
+        (encList encGateCode (circuitCodes n code)).length⟩ := by
   simp [OracleCircuit.Within, OracleCircuit.gateCount, OracleCircuit.queryCount,
     OracleGateCode.isQuery, List.countP_map, Function.comp_def, length_circuitCodes_le]
 

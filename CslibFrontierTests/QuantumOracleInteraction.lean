@@ -133,6 +133,8 @@ example : ∃ B : ℕ → ℕ, ComputableInPolyTime B encUnary encUnary ∧ Poly
       first.width + next.width ≤ B n ∧
       first.instructions.gateCount + next.instructions.gateCount ≤ B n ∧
       first.instructions.queryCount + next.instructions.queryCount ≤ B n ∧
+      (encOracleCircuitDescription first).length +
+        (encOracleCircuitDescription next).length ≤ B n ∧
       ℓ + first.outputWidth + 2 ≤ B n ∧ 1 ≤ B n :=
   firstFamily.exists_classicalQuery_resource_bound nextFamily
     PolynomiallyBounded.id (PolynomiallyBounded.const 2)

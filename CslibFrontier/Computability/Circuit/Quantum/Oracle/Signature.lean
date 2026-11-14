@@ -84,6 +84,7 @@ theorem polynomiallyBounded_widths (h : F.HasOracleSignature a b L) :
   obtain ⟨c, d, hbound⟩ := F.exists_resource_bound
   refine polynomiallyBounded_iff_le.mpr ⟨c * 2 ^ d, d, fun n => ?_⟩
   have hfit := (F.wellFormed n 0).query_le
+  have hwidth := (F.description n 0).width_add_length_le_encoding_length
   rw [h.queryWidth_eq n 0 (Nat.zero_le _), h.responseWidth_eq n 0 (Nat.zero_le _)] at hfit
   calc
     a n + b n ≤ c * (2 * n + 0 + 2) ^ d := by have := hbound n 0; omega
