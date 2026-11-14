@@ -1148,6 +1148,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Braverman.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Braverman.Resilience
 public import CslibFrontier.Computability.Circuit.Boolean.Broadcast
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead
+public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Local
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.PolyTime
@@ -1279,6 +1280,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.Layered.Padding
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.Padding.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.Size
+public import CslibFrontier.Computability.Circuit.Boolean.LocalValueGame
+public import CslibFrontier.Computability.Circuit.Boolean.LocalValueGame.Machine
 public import CslibFrontier.Computability.Circuit.Boolean.Lookup
 public import CslibFrontier.Computability.Circuit.Boolean.MachineSimulation
 public import CslibFrontier.Computability.Circuit.Boolean.Majority
@@ -3117,6 +3120,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Views
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.WordGame
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.WordGameTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator

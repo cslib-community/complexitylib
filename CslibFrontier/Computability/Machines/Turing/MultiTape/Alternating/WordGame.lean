@@ -397,6 +397,20 @@ position `U (u :: b :: r)` and uses at most `sR` cells. -/
       (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N (u :: b :: r)) []) tR).space ≤
         sR
 
+/-- Every reachable round computes the update and halts. Its time may depend on the position
+and move; no common time or space bound is part of this semantic contract. -/
+@[expose] def RoundComputes (R : MultiTapeTM k Bool S₂) (N : Fin k) (input : List Bool)
+    (U : List Bool → List Bool) (w₀ : List Bool) : Prop :=
+  ∀ u x r, Reach U w₀ (u :: x :: r) → ∀ b, ∃ t,
+    R.runFrom (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N (u :: b :: r)) []) t =
+      wordsCfg input none (Function.update (fun _ => []) N (U (u :: b :: r))) []
+
+/-- A uniformly bounded round implementation computes every reachable update. -/
+theorem RoundSpec.computes {R : MultiTapeTM k Bool S₂} {N : Fin k} {input : List Bool}
+    {U : List Bool → List Bool} {w₀ : List Bool} {tR sR : ℕ}
+    (h : RoundSpec R N input U w₀ tR sR) : RoundComputes R N input U w₀ :=
+  fun u x r hr b => ⟨tR, (h u x r hr b).1⟩
+
 variable {U : List Bool → List Bool} {w₀ : List Bool} {tR sR : ℕ}
 
 private theorem liftCfg_round_wordsCfg (q : Option S₂) (ws : Fin k → List Bool) :
@@ -431,7 +445,7 @@ private theorem exists_round {v v' : List Bool}
 private abbrev dcfg (N : Fin k) (w : List Bool) : Cfg k Bool (State S₁ S₂) input :=
   cfg N (some .disp0) w 0 []
 
-private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w : List Bool}
+private theorem acceptsWithin_of_wins (hR : RoundComputes R N input U w₀) {w : List Bool}
     (hw : Wins U w) (hreach : Reach U w₀ w) :
     ∃ n, (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) := by
   induction hw with
@@ -443,7 +457,7 @@ private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w
     rfl
   | @existsMove x r b hwin ih =>
     obtain ⟨n, hn⟩ := ih (Reach.move b hreach)
-    obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).1
+    obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).choose_spec
     refine ⟨n + τ + 3, ?_⟩
     rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · false (x :: r)),
       acceptsWithin_succ_of_next_eq (next_disp1_move P R N · false x rfl),
@@ -455,7 +469,7 @@ private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w
   | @forallMove x r hwin ih =>
     have h (b : Bool) := ih b (Reach.move b hreach)
     choose n hn using h
-    have hr (b : Bool) := exists_round (P := P) (hR true x r hreach b).1
+    have hr (b : Bool) := exists_round (P := P) (hR true x r hreach b).choose_spec
     choose τ hτ hnext hrun hd using hr
     refine ⟨max (n false + τ false) (n true + τ true) + 3, ?_⟩
     rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · true (x :: r)),
@@ -470,7 +484,7 @@ private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w
       · exact le_max_right _ _
     exact ⟨by omega, (hn b).mono (by omega)⟩
 
-private theorem wins_of_acceptsWithin (hR : RoundSpec R N input U w₀ tR sR) (n : ℕ) :
+private theorem wins_of_acceptsWithin (hR : RoundComputes R N input U w₀) (n : ℕ) :
     ∀ w, Reach U w₀ w → (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) →
       Wins U w := by
   induction n using Nat.strong_induction_on with
@@ -504,14 +518,14 @@ private theorem wins_of_acceptsWithin (hR : RoundSpec R N input U w₀ tR sR) (n
       cases u
       · rw [acceptsWithin_succ_of_existential _ rfl rfl] at hacc
         obtain ⟨b, hb⟩ := hacc
-        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).1
+        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).choose_spec
         rw [next_move P R N b false (by simp), List.set_cons_succ, List.set_cons_zero,
           acceptsWithin_iff_of_phase hnext hrun hd] at hb
         exact Wins.existsMove b (ih (m - τ) (by omega) _ (Reach.move b hreach) hb.2)
       · rw [acceptsWithin_succ_of_universal _ rfl rfl] at hacc
         refine Wins.forallMove fun b => ?_
         have hb := hacc b
-        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR true x r hreach b).1
+        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR true x r hreach b).choose_spec
         rw [next_move P R N b true (by simp), List.set_cons_succ, List.set_cons_zero,
           acceptsWithin_iff_of_phase hnext hrun hd] at hb
         exact ih (m - τ) (by omega) _ (Reach.move b hreach) hb.2
@@ -779,6 +793,25 @@ theorem runsInTime_wordGame_of_potential {k : ℕ} {S₁ S₂ : Type}
   exact ⟨by omega, (haltsWithin_of_potential (P := P) potential hR w₀ .start).mono (by omega)⟩
 
 open WordGame in
+/-- The native machine accepts exactly the winning positions whenever preparation and every
+reachable round halt with the specified words. Round times need not have a common bound. -/
+theorem accepts_wordGame_iff_of_computes {k : ℕ} {S₁ S₂ : Type}
+    {P : MultiTapeTM k Bool S₁} {R : MultiTapeTM k Bool S₂} {N : Fin k}
+    {input w₀ : List Bool} {U : List Bool → List Bool} {tP : ℕ}
+    (hP : P.runFrom (Cfg.init P.q₀ input) tP =
+      wordsCfg input none (Function.update (fun _ => []) N w₀) [])
+    (hR : RoundComputes R N input U w₀) :
+    (wordGame P R N).Accepts input ↔ Wins U w₀ := by
+  obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_prep (R := R) hP
+  constructor
+  · rintro ⟨n, hn⟩
+    rw [acceptsWithin_iff_of_phase hnext hrun hd] at hn
+    exact wins_of_acceptsWithin hR _ w₀ .start hn.2
+  · intro hw
+    obtain ⟨n, hn⟩ := acceptsWithin_of_wins (P := P) hR hw .start
+    exact ⟨n + τ, (acceptsWithin_iff_of_phase hnext hrun hd _).mpr (by simpa using hn)⟩
+
+open WordGame in
 /-- **The word game machine plays the word game.** If `P` writes the initial position `w₀` within
 `tP` steps and `sP` cells, and `R` performs the update `U` after every move from a reachable
 position within `tR` steps and `sR` cells, then every computation path of the machine stays within
@@ -794,15 +827,11 @@ theorem wordGame_spec {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
       ∀ n, Ends U n w₀ →
         (wordGame P R N).toPTM.toNTM.RunsInTime input (tP + (n * (tR + 3) + 2)) := by
   obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_prep (R := R) hP.1
-  refine ⟨fun p => ?_, ⟨fun ⟨n, hn⟩ => ?_, fun hw => ?_⟩, fun n hn => ?_⟩
+  refine ⟨fun p => ?_, accepts_wordGame_iff_of_computes hP.1 hR.computes, fun n hn => ?_⟩
   · refine MultiTapeNTM.RunPath.InWindow.space_le fun c hc i => ?_
     exact (good_of_mem hP hR p c hc).workTapePos_mem hP hR
       ((le_max_left _ _).trans (le_max_left _ _)) ((le_max_right _ _).trans (le_max_left _ _))
       (le_max_right _ _) i
-  · rw [acceptsWithin_iff_of_phase hnext hrun hd] at hn
-    exact wins_of_acceptsWithin hR _ w₀ .start hn.2
-  · obtain ⟨n, hn⟩ := acceptsWithin_of_wins (P := P) hR hw .start
-    exact ⟨n + τ, (acceptsWithin_iff_of_phase hnext hrun hd _).mpr (by simpa using hn)⟩
   · rw [runsInTime_iff_haltsWithin, haltsWithin_iff_of_phase hnext hrun hd]
     exact ⟨by omega, (haltsWithin_of_ends (P := P) hR n w₀ .start hn).mono (by omega)⟩
 

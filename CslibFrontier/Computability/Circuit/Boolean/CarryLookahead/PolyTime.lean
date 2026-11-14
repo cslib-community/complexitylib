@@ -74,7 +74,8 @@ def propagateCode (k distance i : ℕ) : List (Op × List ℕ) × List ℕ :=
   formulaCode (k + k) ((Formula.input (n := 2) 0).and (.input 1))
     ![k + i, k + neighbourIndex k distance i]
 
-private theorem generateCode_eq (k distance : ℕ) (i : Fin k) :
+/-- The local generate block is exactly the existing typed cell. -/
+theorem generateCode_eq (k distance : ℕ) (i : Fin k) :
     generateCode k distance i.val = (generateFormula k distance i).toCircuit.code := by
   let wires : Fin 3 → Fin (k + k) :=
     ![Fin.castAdd k i, Fin.natAdd k i, Fin.castAdd k (neighbour k distance i)]
@@ -86,7 +87,8 @@ private theorem generateCode_eq (k distance : ℕ) (i : Fin k) :
   rw [hw] at h
   exact h
 
-private theorem propagateCode_eq (k distance : ℕ) (i : Fin k) :
+/-- The local propagate block is exactly the existing typed cell. -/
+theorem propagateCode_eq (k distance : ℕ) (i : Fin k) :
     propagateCode k distance i.val = (propagateFormula k distance i).toCircuit.code := by
   let wires : Fin 2 → Fin (k + k) := ![Fin.natAdd k i, Fin.natAdd k (neighbour k distance i)]
   have hw : (fun j => (wires j).val) = ![k + i.val, k + neighbourIndex k distance i.val] := by
@@ -97,7 +99,8 @@ private theorem propagateCode_eq (k distance : ℕ) (i : Fin k) :
   rw [hw] at h
   exact h
 
-private theorem generateCode_polyTime {α : Type} {enc : α ↪ List Bool}
+/-- Generate one two-gate cell from binary parameters, without constructing its row. -/
+theorem generateCode_polyTime {α : Type} {enc : α ↪ List Bool}
     {k distance i : α → ℕ} (hk : ComputableInPolyTime k enc encNat)
     (hd : ComputableInPolyTime distance enc encNat)
     (hi : ComputableInPolyTime i enc encNat) :
@@ -112,7 +115,8 @@ private theorem generateCode_polyTime {α : Type} {enc : α ↪ List Bool}
     unfold neighbourIndex
     fun_prop
 
-private theorem propagateCode_polyTime {α : Type} {enc : α ↪ List Bool}
+/-- Generate one one-gate cell from binary parameters, without constructing its row. -/
+theorem propagateCode_polyTime {α : Type} {enc : α ↪ List Bool}
     {k distance i : α → ℕ} (hk : ComputableInPolyTime k enc encNat)
     (hd : ComputableInPolyTime distance enc encNat)
     (hi : ComputableInPolyTime i enc encNat) :
@@ -238,12 +242,14 @@ def initialPropagateCode (w i : ℕ) : List (Op × List ℕ) × List ℕ :=
   if i < w then ([(.or, [w - 1 - i, w + (w - 1 - i)])], [w + w + 1])
   else ([(.const false, [])], [w + w + 1])
 
-private theorem initialGenerateCode_eq (w : ℕ) (i : Fin (w + 1)) :
+/-- The local initial generate block is exactly the existing typed cell. -/
+theorem initialGenerateCode_eq (w : ℕ) (i : Fin (w + 1)) :
     initialGenerateCode w i.val = (initialGenerate w i).code := by
   unfold initialGenerateCode initialGenerate
   split <;> rfl
 
-private theorem initialPropagateCode_eq (w : ℕ) (i : Fin (w + 1)) :
+/-- The local initial propagate block is exactly the existing typed cell. -/
+theorem initialPropagateCode_eq (w : ℕ) (i : Fin (w + 1)) :
     initialPropagateCode w i.val = (initialPropagate w i).code := by
   unfold initialPropagateCode initialPropagate
   split <;> rfl
