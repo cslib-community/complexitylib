@@ -183,6 +183,21 @@ theorem expectedCost_mono {cost cost' : ι → ℝ≥0∞} (hcost : cost ≤ cos
     · exact hcost q
     · exact ih a
 
+/-- The expected cost is homogeneous under multiplying the cost function by a scalar. -/
+theorem expectedCost_const_mul (c : ℝ≥0∞) (cost : ι → ℝ≥0∞) (program : OracleComp spec α) :
+    expectedCost h (fun q => c * cost q) program = c * expectedCost h cost program := by
+  induction program using OracleComp.induction with
+  | pure _ => simp
+  | query_bind q cont ih =>
+    rw [expectedCost_query_bind, expectedCost_query_bind, mul_add]
+    congr 1
+    simp_rw [ih]
+    have hcomm : ∀ a, h q a * (c * expectedCost h cost (cont a)) =
+        c * (h q a * expectedCost h cost (cont a)) := fun a => by
+      rw [← mul_assoc, mul_comm (h q a) c, mul_assoc]
+    simp_rw [hcomm]
+    exact ENNReal.tsum_mul_left
+
 end Cost
 
 /-- The expected cost of a program whose calls were replaced by programs over another interface is

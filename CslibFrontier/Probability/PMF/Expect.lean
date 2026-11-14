@@ -64,6 +64,13 @@ theorem tsum_bind_mul {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β �
   simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left, mul_assoc]
   exact tsum_comm
 
+/-- Expectation of `k : α → ℝ≥0∞` under `PMF.pure a` equals `k a`. -/
+theorem tsum_pure_mul {α : Type*} (a : α) (k : α → ℝ≥0∞) :
+    (∑' x, (PMF.pure a : PMF α) x * k x) = k a := by
+  classical
+  rw [tsum_eq_single a fun b hb => by rw [PMF.pure_apply_of_ne _ _ hb, zero_mul],
+    PMF.pure_apply_self, one_mul]
+
 /-- Averaging a score after a deterministic map averages its composite with that map.
 Adapted from the cslib `crypto` branch at `5ff69ca`. -/
 theorem sum_map_mul {α β : Type*} [Fintype α] [Fintype β]

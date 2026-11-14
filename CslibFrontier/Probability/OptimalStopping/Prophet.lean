@@ -503,16 +503,10 @@ noncomputable def tightLaws (k : ℕ) : List (PMF ℝ≥0) := [PMF.pure 1, longS
 theorem tightLaws_eq (k : ℕ) : tightLaws k = [PMF.pure 1, longShot k] := by
   unfold tightLaws; rfl
 
-/-- The expectation under a point mass is the value at the point. -/
-theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
-    ∑' x, PMF.pure a x * f x = f a := by
-  rw [tsum_eq_single a fun b hb => by simp [PMF.pure_apply, hb]]
-  simp
-
 /-- On `tightLaws k`, every rule, even one using the whole history, collects at most `1`. -/
 theorem expectedReward_tightLaws_le (k : ℕ) (stop : List ℝ≥0 → Bool) :
     expectedReward stop (tightLaws k) ≤ 1 := by
-  rw [expectedReward, tightLaws, tsum_jointLaw_cons_mul, tsum_pure_mul, tsum_jointLaw_cons_mul]
+  rw [expectedReward, tightLaws, tsum_jointLaw_cons_mul, PMF.tsum_pure_mul, tsum_jointLaw_cons_mul]
   simp only [tsum_jointLaw_nil_mul]
   by_cases h1 : stop [1] = true
   · simp only [payoff_cons, h1, ↓reduceIte]
@@ -527,7 +521,7 @@ theorem expectedReward_tightLaws_le (k : ℕ) (stop : List ℝ≥0 → Bool) :
         simpa using ENNReal.div_self (a := (k : ℝ≥0∞) + 1) (by positivity) (by finiteness)
 
 theorem expectedMax_tightLaws (k : ℕ) : expectedMax (tightLaws k) = (2 * k + 1) / (k + 1) := by
-  rw [expectedMax, tightLaws, tsum_jointLaw_cons_mul, tsum_pure_mul, tsum_jointLaw_cons_mul]
+  rw [expectedMax, tightLaws, tsum_jointLaw_cons_mul, PMF.tsum_pure_mul, tsum_jointLaw_cons_mul]
   simp only [tsum_jointLaw_nil_mul]
   have h1 : (listMax [1, (k : ℝ≥0) + 1] : ℝ≥0∞) = k + 1 := by simp [listMax]
   have h0 : (listMax [1, 0] : ℝ≥0∞) = 1 := by simp [listMax]

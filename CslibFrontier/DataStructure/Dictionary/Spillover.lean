@@ -23,8 +23,8 @@ import Mathlib.Tactic.Ring
 This file formalizes the power-of-two spillover encoding of Mihai Pătrașcu, *Succincter*
 ([Patrascu2008, Lemma 3]), as specialized in Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei
 Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 3.4,
-Lemma 3.8 and Footnote 4]; [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF p. 12 /
-printed p. 11).
+Lemma 3.8 and Footnote 4]; [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF p. 11 /
+printed p. 10).
 
 Given a finite payload universe `Fin X` (`1 ≤ X`) and spillover parameter `r_sp ≥ 1`, we set
 `M := memBits X r_sp` (`0` when `X ≤ r_sp`, and `⌊log₂(X / r_sp)⌋` otherwise) and

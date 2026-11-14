@@ -274,6 +274,13 @@ theorem support_evalWith (h : (q : ι) → PMF (spec q)) (program : OracleComp s
     simp only [evalWith_bind, evalWith_query, PMF.mem_support_bind_iff,
       mem_supportWith_bind_iff, supportWith_query, ih]
 
+/-- Any result with non-zero probability under `evalWith` belongs to the program's
+unconstrained support. -/
+theorem mem_support_of_evalWith_ne_zero {h : (q : ι) → PMF (spec q)} {program : OracleComp spec α}
+    {a : α} (hne : evalWith h program a ≠ 0) : a ∈ program.support :=
+  supportWith_mono (fun _ _ _ => trivial) program
+    ((support_evalWith h program) ▸ (PMF.mem_support_iff _ a).mpr hne)
+
 /-! ### Stateful oracles -/
 
 section RunWith

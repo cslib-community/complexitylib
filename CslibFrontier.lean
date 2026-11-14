@@ -4956,6 +4956,13 @@ public import CslibFrontier.DataStructure.Dictionary.PerfectHashing.Construction
 public import CslibFrontier.DataStructure.Dictionary.PerfectHashing.Table
 public import CslibFrontier.DataStructure.Dictionary.Spec
 public import CslibFrontier.DataStructure.Dictionary.Spillover
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.BitBudget
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Canonical
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.NodeSeeds
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.NodeSlackBounds
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Params
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Schedule
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.SeedBounds
 public import CslibFrontier.DataStructure.Dictionary.SuccinctBucket
 public import CslibFrontier.DataStructure.Dictionary.UniformProbing
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.BitPackedArray

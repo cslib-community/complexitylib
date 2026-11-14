@@ -186,4 +186,20 @@ theorem iterate_two_pow_le_twoTower (k c : ℕ) :
     rw [Function.iterate_succ_apply', Nat.add_right_comm, twoTower_succ]
     exact Nat.pow_le_pow_right Nat.two_pos ih
 
+/-- Bound `log* x` in terms of three iterations of `⌈log₂ ·⌉`. -/
+theorem logStar_le_triple_clog_add_three (x : ℕ) :
+    logStar x ≤ clog 2 (clog 2 (clog 2 x)) + 3 := by
+  set m := clog 2 (clog 2 (clog 2 x))
+  rw [logStar_le_iff]
+  have h1 : x ≤ 2 ^ clog 2 x := le_pow_clog Nat.one_lt_two x
+  have h2 : clog 2 x ≤ 2 ^ clog 2 (clog 2 x) := le_pow_clog Nat.one_lt_two _
+  have h3 : clog 2 (clog 2 x) ≤ 2 ^ m := le_pow_clog Nat.one_lt_two _
+  have hm : m ≤ twoTower m := (lt_twoTower m).le
+  calc x ≤ 2 ^ (2 ^ (2 ^ m)) :=
+        h1.trans (Nat.pow_le_pow_right Nat.two_pos (h2.trans (Nat.pow_le_pow_right Nat.two_pos h3)))
+    _ ≤ 2 ^ (2 ^ (2 ^ twoTower m)) :=
+        Nat.pow_le_pow_right Nat.two_pos
+          (Nat.pow_le_pow_right Nat.two_pos (Nat.pow_le_pow_right Nat.two_pos hm))
+    _ = twoTower (m + 3) := rfl
+
 end Nat
