@@ -58,7 +58,7 @@ namespace Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.WordRAM Cslib.WordRAM.ExactLog Cslib.WordRAM.Realization
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
-open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
@@ -763,53 +763,6 @@ theorem decode_query_optionWords {U : ℕ} (u : Fin U) (res : Option ℕ)
 
 /-! ## Section 5: Memory footprint congruence lemmas for `TableRep`, `SeedRep`, `DictStateInv` -/
 
-theorem tableRep_congr {base w w₀ b b' k : ℕ} {mem₁ mem₂ : ℕ → ℕ}
-    (heq : ∀ a, base ≤ a → a < base + ReducedKWise.space w w₀ b b' k → mem₁ a = mem₂ a)
-    (htab : ReducedKWise.TableRep base w w₀ b b' k mem₁) :
-    ReducedKWise.TableRep base w w₀ b b' k mem₂ := by
-  rcases htab with ⟨hword, hentry⟩
-  refine ⟨fun wIdx hwIdx => ?_, fun idx hidx => ?_⟩
-  · rw [← heq (ReducedKWise.tabBase base w₀ b b' k + wIdx)
-      (by dsimp only [ReducedKWise.tabBase]; omega)
-      (by dsimp only [ReducedKWise.tabBase, ReducedKWise.space]; omega)]
-    exact hword wIdx hwIdx
-  · have hsh : idx >>> reducedPackShift (reducedTrinomialStep w₀ b b') w <
-        ReducedKWise.tableWords w w₀ b b' :=
-      shiftRight_lt_reducedTableWords hidx
-    rw [← heq
-      (ReducedKWise.tabBase base w₀ b b' k +
-        idx >>> reducedPackShift (reducedTrinomialStep w₀ b b') w)
-      (by dsimp only [ReducedKWise.tabBase]; rw [Nat.add_assoc]; exact Nat.le_add_right base _)
-      (by dsimp only [ReducedKWise.tabBase, ReducedKWise.space]; omega)]
-    exact hentry idx hidx
-
-theorem seedRep_congr {base w w₀ b b' k : ℕ} {θ : ReducedPolySeed w₀ b b' k}
-    {mem₁ mem₂ : ℕ → ℕ}
-    (heq : ∀ a, base ≤ a → a < base + ReducedKWise.space w w₀ b b' k → mem₁ a = mem₂ a)
-    (hseed : ReducedKWise.SeedRep base w₀ b b' k θ mem₁) :
-    ReducedKWise.SeedRep base w₀ b b' k θ mem₂ := by
-  rcases hseed with ⟨h0, hlimb⟩
-  have hs_pos : 0 < ReducedKWise.seedWords w₀ b b' k := ReducedKWise.seedWords_pos w₀ b b' k
-  refine ⟨?_, fun j m => ?_⟩
-  · rw [← heq base (le_refl base) (by dsimp only [ReducedKWise.space]; omega)]
-    exact h0
-  · have hidx : m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val <
-        k * reducedLimbCount (reducedTrinomialStep w₀ b b') := by
-      calc m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val
-          < reducedLimbCount (reducedTrinomialStep w₀ b b') +
-              reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val :=
-            Nat.add_lt_add_right m.isLt _
-        _ = (j.val + 1) * reducedLimbCount (reducedTrinomialStep w₀ b b') := by ring
-        _ ≤ k * reducedLimbCount (reducedTrinomialStep w₀ b b') :=
-            Nat.mul_le_mul_right _ j.isLt
-    have hlt_sp : base + 1 + (m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val) <
-        base + ReducedKWise.space w w₀ b b' k := by
-      dsimp only [ReducedKWise.space, ReducedKWise.seedWords]
-      omega
-    rw [← heq (base + 1 + (m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val))
-      (by omega) hlt_sp]
-    exact hlimb j m
-
 theorem bucketStateInv_congr {U V w n_max h_space base : ℕ} (hw : 0 < w)
     {mOf : ℕ → ℕ} {L : ℕ → ℕ → List ℕ} {B : ℕ → ℕ → Option ℕ} {s₁ s₂ : Memory.State}
     (heq : ∀ a, base + h_space ≤ a → a < base + totalSpace U V w n_max h_space →
@@ -1466,8 +1419,8 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
   have hy_bdd : y.Bounded w := hex_all.bounded hx_bdd
   have hy_rep : Rep U V w n_max base θ (Function.update s_abs u (some v)) y :=
     ⟨hy_bdd, hybase, hyfr,
-      tableRep_congr hhash_eq htab,
-      seedRep_congr hhash_eq hseed,
+      tableRep_congr htab hhash_eq,
+      seedRep_congr hseed hhash_eq,
       by rw [hm_ins]; exact hdict_ins⟩
   have hmod : Modifies (Block.mk base (space U V w n_max)).footprint x.mem y.mem := by
     refine modifies_footprint_of_table (fun a ha => ?_)
@@ -1772,8 +1725,8 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
   have hy_bdd : y.Bounded w := hex_all.bounded hx_bdd
   have hy_rep : Rep U V w n_max base θ (Function.update s_abs u none) y :=
     ⟨hy_bdd, hybase, hyfr,
-      tableRep_congr hhash_eq htab,
-      seedRep_congr hhash_eq hseed,
+      tableRep_congr htab hhash_eq,
+      seedRep_congr hseed hhash_eq,
       by rw [hm_fin]; exact hdict_fin⟩
   have hmod : Modifies (Block.mk base (space U V w n_max)).footprint x.mem y.mem := by
     refine modifies_footprint_of_table (fun a ha => ?_)

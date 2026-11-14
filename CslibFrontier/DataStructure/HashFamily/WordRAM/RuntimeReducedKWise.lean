@@ -51,7 +51,7 @@ namespace Cslib.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.WordRAM.Resizable
 open Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise
 open Cslib.Probability
 open scoped ENNReal
 
@@ -298,9 +298,9 @@ private theorem evalHashGenProg_aux {w U w₀ b b' k hashBase scratchBase : ℕ}
     zeroWordsLoop_spec (w := w) (baseAddr := scratchBase) (n := rLimbs w₀ b b') (s₀ := s₀)
       (by omega)
   have htab₁ : ReducedKWise.TableRep hashBase w w₀ b b' k s₁.mem :=
-    tableRep_congr hrep.1 fun a h1 h2 => hout_z a (by omega)
+    tableRep_congr hrep.1 fun a h1 h2 => (hout_z a (by omega)).symm
   have hseed₁ : ReducedKWise.SeedRep hashBase w₀ b b' k θ s₁.mem :=
-    seedRep_congr (w := w) hrep.2 fun a h1 h2 => hout_z a (by omega)
+    seedRep_congr (w := w) hrep.2 fun a h1 h2 => (hout_z a (by omega)).symm
   obtain ⟨hsafe_h, hv_h, hcost_h, hfr_h2, hacc_h, hout_h⟩ :=
     hornerLoop_spec hw₀ hc_lt (hfr_z.symm ▸ hfr_h) (hfr_z.symm ▸ hfr_s) hdisj htab₁ hseed₁ hz_mem
   let evalVal := (trinomialPolyEval (rStep w₀ b b') k (2 ^ min w₀ (3 * b)) θ.2 r).val

@@ -40,7 +40,7 @@ namespace Cslib.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.WordRAM.Resizable
 open Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise
 open Cslib.Probability
 
 local notation "rStep" => reducedTrinomialStep
@@ -227,7 +227,8 @@ private theorem innerClmulLoop_spec {w w₀ b b' k hashBase prodBase i uLimb rVa
             · rw [Function.update_of_ne (by omega), Function.update_of_ne hne0]
         refine ⟨⟨w₀, b, b', k, hashBase, hc_lt, rfl, rfl, hfr_eq.symm ▸ hfr_h, hfr_eq.symm ▸ hfr_p,
           hi_lt, hm, hu_lt, hr_fit.of_le (Nat.shiftRight_le _ _)⟩, ?_, le_rfl, rfl, hmod₁, ?_,
-          hfr_eq, tableRep_congr htab_s (fun a h1 h2 => hmod₁ a (by omega)), fun d hd => ?_, ?_⟩
+          hfr_eq, tableRep_congr htab_s (fun a h1 h2 => (hmod₁ a (by omega)).symm),
+          fun d hd => ?_, ?_⟩
         · have ht_fr :
               ReducedKWise.tabBase hashBase w₀ b b' k + reducedTableWords (rStep w₀ b b') w ≤
                 s.frontier := by
@@ -388,7 +389,8 @@ private theorem outerClmulLoop_spec {w w₀ b b' k hashBase scratchBase rVal acc
           by rw [hstep_eq, StateTransitionSpec.clientResult_bind,
                  StateTransitionSpec.clientResult_bind]; rfl,
           by rw [hs₁_eq, hfr_in, hfr_eq],
-          tableRep_congr htab_s (fun a h1 h2 => by rw [hs₁_eq]; exact hout_in a (by omega)),
+          tableRep_congr htab_s
+            (fun a h1 h2 => by rw [hs₁_eq]; exact (hout_in a (by omega)).symm),
           fun m hm => by rw [hs₁_eq, hout_in _ (Or.inl (by omega))]; exact hacc_s m hm,
           by rw [hs₁_eq]; exact hprod_in, ?_⟩
         · rw [hstep_eq, validHistory_bind', validHistory_bind']
@@ -561,7 +563,7 @@ private theorem reduceAddLoop_spec {w w₀ b b' k hashBase scratchBase PVal : �
         refine ⟨⟨w₀, b, b', k, hc_lt, rfl, hcoeff_le, hfr_eq.symm ▸ hfr_h, hfr_eq.symm ▸ hfr_s,
           hm⟩,
           hv_step, hc_step, hfr_step, hmod₁, hres_step.symm, hfr_step.trans hfr_eq,
-          seedRep_congr (w := w) hseed_s (fun a h1 h2 => hmod₁ a (by omega)),
+          seedRep_congr (w := w) hseed_s (fun a h1 h2 => (hmod₁ a (by omega)).symm),
           fun d hd => (hmod₁ _ (by omega)).trans (hprod_s d hd),
           fun i hi => ?_⟩
         rw [hs₁_mem]
@@ -647,7 +649,7 @@ private theorem hornerStep_spec {w w₀ b b' k hashBase scratchBase rVal accVal 
     fun a ha => (hout_z a (by dsimp only [prodBase]; omega)).trans
       (Function.update_of_ne (by dsimp only [prodBase]; omega) _ _)
   have htab₁ : ReducedKWise.TableRep hashBase w w₀ b b' k s₁.mem :=
-    tableRep_congr htab fun a h1 h2 => hs₁_out a (by omega)
+    tableRep_congr htab fun a h1 h2 => (hs₁_out a (by omega)).symm
   have hacc₁ :
       ∀ m < rLimbs w₀ b b', s₁.mem (scratchBase + m) = getLimb (rChunk w₀ b b') accVal m :=
     fun m hm => (hout_z _ (Or.inl (by dsimp only [prodBase]; omega))).trans
@@ -658,7 +660,7 @@ private theorem hornerStep_spec {w w₀ b b' k hashBase scratchBase rVal accVal 
   have hs₂_out : ∀ a, (a < scratchBase ∨ scratchBase + scratchWords ≤ a) → s₂.mem a = s.mem a :=
     fun a ha => (hout_o a (by omega)).trans (hs₁_out a ha)
   have hseed₂ : ReducedKWise.SeedRep hashBase w₀ b b' k θ s₂.mem :=
-    seedRep_congr (w := w) hseed fun a h1 h2 => hs₂_out a (by omega)
+    seedRep_congr (w := w) hseed fun a h1 h2 => (hs₂_out a (by omega)).symm
   have hP_lt : clmul accVal rVal < 2 ^ (2 * rLimbs w₀ b b' * rChunk w₀ b b') := by
     rw [Nat.mul_assoc]; exact clmul_lt_two_pow_two_mul hacc_lt hr_lt
   obtain ⟨hsafe_r, hv_r, hcost_r, hfr_r, hacc_r, hout_r⟩ :=
@@ -804,8 +806,8 @@ theorem hornerLoop_spec {w w₀ b b' k hashBase scratchBase : ℕ}
         refine ⟨⟨w₀, b, b', k, θ, accVal, hc_lt, rfl, hfr_cur.symm ▸ hfr_h, hfr_cur.symm ▸ hfr_s,
           hdisj, htab_cur, hseed_cur, hj, hr_fit, hr_lt, hacc_lt, hacc_cur⟩,
           hv_st, hc_st, hfr_st, hmod_st, hres_st.symm, hfr_st.trans hfr_cur,
-          tableRep_congr htab_cur (fun a h1 h2 => hmod_st a (by omega)),
-          seedRep_congr (w := w) hseed_cur (fun a h1 h2 => hmod_st a (by omega)),
+          tableRep_congr htab_cur (fun a h1 h2 => (hmod_st a (by omega)).symm),
+          seedRep_congr (w := w) hseed_cur (fun a h1 h2 => (hmod_st a (by omega)).symm),
           fun m hm => ?_⟩
         rw [hacc_st m hm]; congr 1
         have hmul_val : reduceTrinomialCode (rStep w₀ b b') (clmul accVal r.val) =

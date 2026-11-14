@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.Nat.Log
+public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.BitPackedArray
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
@@ -210,187 +211,21 @@ theorem compactedItemWords_succ_sub_le_two {U V w N n : ℕ} (hw : 0 < w)
           Nat.add_mul_div_right _ _ hw
   omega
 
-/-- Read a `k`-bit field starting at `(base + wOff, bOff)` across at most 2 words. -/
-@[expose] def readBitSlice (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) : ℕ :=
-  let k₀ := min k (w - bOff)
-  let k₁ := k - k₀
-  let low := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
-  let high := (mem (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
-  low ^^^ (high <<< k₀)
-
-/-- Write `val < 2 ^ k` into the `k`-bit field starting at `(base + wOff, bOff)`. -/
-@[expose] def writeBitSlice (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) (val : ℕ) : ℕ → ℕ :=
-  let k₀ := min k (w - bOff)
-  let k₁ := k - k₀
-  let old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
-  let val₀ := val &&& (2 ^ k₀ - 1)
-  let mem₁ := Function.update mem (base + wOff)
-    (mem (base + wOff) ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  let old₁ := (mem₁ (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
-  let val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
-  Function.update mem₁ (base + wOff + 1)
-    (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))
-
 /-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `readBitSlice` coincides
 with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.readPacked`. -/
 theorem readBitSlice_eq_readPacked (base k w mem idx : ℕ) :
-    readBitSlice base (BitPackedArray.wordOffset k w idx)
-      (BitPackedArray.bitOffset k w idx) k w mem =
-      BitPackedArray.readPacked base k w mem idx := by
-  unfold readBitSlice BitPackedArray.readPacked BitPackedArray.lowWidth BitPackedArray.highWidth
+    readBitSlice base (wordOffset k w idx)
+      (bitOffset k w idx) k w mem =
+      readPacked base k w mem idx :=
   rfl
 
 /-- Exact equivalence: on word-aligned offsets with `bOff = bitOffset`, `writeBitSlice` coincides
 with `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray.writePacked`. -/
 theorem writeBitSlice_eq_writePacked (base k w mem idx val : ℕ) :
-    writeBitSlice base (BitPackedArray.wordOffset k w idx)
-      (BitPackedArray.bitOffset k w idx) k w mem val =
-      BitPackedArray.writePacked base k w mem idx val := by
-  unfold writeBitSlice BitPackedArray.writePacked BitPackedArray.lowWidth BitPackedArray.highWidth
+    writeBitSlice base (wordOffset k w idx)
+      (bitOffset k w idx) k w mem val =
+      writePacked base k w mem idx val :=
   rfl
-
-theorem readBitSlice_lt (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) :
-    readBitSlice base wOff bOff k w mem < 2 ^ k := by
-  unfold readBitSlice
-  dsimp only
-  set k₀ := min k (w - bOff)
-  set k₁ := k - k₀
-  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
-  rw [← hsum]
-  have hlow : ((mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)) < 2 ^ k₀ := by
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  have hhigh : (((mem (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)) <<< k₀) < 2 ^ (k₀ + k₁) := by
-    rw [Nat.shiftLeft_eq, Nat.pow_add, Nat.mul_comm]
-    refine Nat.mul_lt_mul_of_pos_left ?_ (by positivity)
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  exact Nat.xor_lt_two_pow (hlow.trans_le (Nat.pow_le_pow_right (by decide) (by omega))) hhigh
-
-theorem readBitSlice_writeBitSlice_self (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) {val : ℕ}
-    (hval : val < 2 ^ k) :
-    readBitSlice base wOff bOff k w (writeBitSlice base wOff bOff k w mem val) = val := by
-  unfold readBitSlice writeBitSlice
-  dsimp only
-  set k₀ := min k (w - bOff)
-  set k₁ := k - k₀
-  set old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
-  set val₀ := val &&& (2 ^ k₀ - 1)
-  set mem₁ := Function.update mem (base + wOff)
-    (mem (base + wOff) ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  set old₁ := (mem₁ (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
-  set val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
-  have hne : base + wOff ≠ base + wOff + 1 := by omega
-  have hmem0 :
-      Function.update mem₁ (base + wOff + 1)
-        (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0)) (base + wOff) =
-        mem (base + wOff) ^^^ ((old₀ ^^^ val₀) <<< bOff) := by
-    rw [Function.update_of_ne hne]
-    exact Function.update_self _ _ _
-  have hmem1 :
-      Function.update mem₁ (base + wOff + 1)
-        (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0)) (base + wOff + 1) =
-        mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0) :=
-    Function.update_self _ _ _
-  rw [hmem0, hmem1]
-  have hval0_lt : val₀ < 2 ^ k₀ := by
-    dsimp only [val₀]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  have hval1_lt : val₁ < 2 ^ k₁ := by
-    dsimp only [val₁]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  rw [extract_xor_shiftLeft_self (mem (base + wOff)) bOff k₀ hval0_lt,
-    extract_xor_shiftLeft_self (mem₁ (base + wOff + 1)) 0 k₁ hval1_lt]
-  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
-  exact low_xor_high_shiftLeft (hsum.symm ▸ hval)
-
-/-- Non-interference of `writeBitSlice` and `readBitSlice` for disjoint global bit intervals. -/
-theorem readBitSlice_writeBitSlice_of_disjoint {base wOff bOff k wOff' bOff' k' w : ℕ}
-    (hb : bOff < w) (hb' : bOff' < w)
-    (hdisj : (wOff * w + bOff) + k ≤ wOff' * w + bOff' ∨
-      (wOff' * w + bOff') + k' ≤ wOff * w + bOff)
-    (mem : ℕ → ℕ) (val : ℕ) :
-    readBitSlice base wOff' bOff' k' w (writeBitSlice base wOff bOff k w mem val) =
-      readBitSlice base wOff' bOff' k' w mem := by
-  rcases Nat.eq_zero_or_pos k with rfl | _hk_pos
-  · unfold readBitSlice writeBitSlice; dsimp only; simp
-  unfold readBitSlice writeBitSlice
-  dsimp only
-  set k₀ := min k (w - bOff)
-  set k₁ := k - k₀
-  set k₀' := min k' (w - bOff')
-  set k₁' := k' - k₀'
-  set old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
-  set val₀ := val &&& (2 ^ k₀ - 1)
-  set mem₁ := Function.update mem (base + wOff)
-    (mem (base + wOff) ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  set old₁ := (mem₁ (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
-  set val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
-  set mem₂ := Function.update mem₁ (base + wOff + 1)
-    (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))
-  have hδ0 : old₀ ^^^ val₀ < 2 ^ k₀ := by
-    refine Nat.xor_lt_two_pow ?_ ?_ <;>
-    · dsimp only [old₀, val₀]
-      rw [Nat.and_two_pow_sub_one_eq_mod]
-      exact Nat.mod_lt _ (by positivity)
-  have hδ1 : old₁ ^^^ val₁ < 2 ^ k₁ := by
-    refine Nat.xor_lt_two_pow ?_ ?_ <;>
-    · dsimp only [old₁, val₁]
-      rw [Nat.and_two_pow_sub_one_eq_mod]
-      exact Nat.mod_lt _ (by positivity)
-  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
-  have hsum' : k₀' + k₁' = k' := Nat.add_sub_of_le (Nat.min_le_left _ _)
-  have hle0 : bOff + k₀ ≤ w := by have := Nat.min_le_right k (w - bOff); omega
-  have hle0' : bOff' + k₀' ≤ w := by have := Nat.min_le_right k' (w - bOff'); omega
-  have hbw_of_pos : 0 < k₁ → bOff + k₀ = w := fun hk1 => by
-    have hlt : w - bOff < k := by omega
-    have hmin : k₀ = w - bOff := Nat.min_eq_right hlt.le
-    omega
-  have hbw'_of_pos : 0 < k₁' → bOff' + k₀' = w := fun hk1' => by
-    have hlt : w - bOff' < k' := by omega
-    have hmin : k₀' = w - bOff' := Nat.min_eq_right hlt.le
-    omega
-  have hw_add : (wOff + 1) * w = wOff * w + w := Nat.succ_mul wOff w
-  have hw_add' : (wOff' + 1) * w = wOff' * w + w := Nat.succ_mul wOff' w
-  have hlow_eq :
-      ((mem₂ (base + wOff') >>> bOff') &&& (2 ^ k₀' - 1)) =
-        ((mem (base + wOff') >>> bOff') &&& (2 ^ k₀' - 1)) := by
-    rw [extract_update_xor_of_disjoint mem₁ (base + wOff + 1) (base + wOff') hδ1 (fun haddr => by
-      rcases Nat.eq_zero_or_pos k₁ with hk1_0 | hk1_pos
-      · left; omega
-      · have hbw := hbw_of_pos hk1_pos
-        have hw_eq : (wOff + 1) * w = wOff' * w := by
-          have : wOff + 1 = wOff' := by omega
-          rw [this]
-        omega)]
-    exact extract_update_xor_of_disjoint mem (base + wOff) (base + wOff') hδ0 (fun haddr => by
-      have hw_eq : wOff * w = wOff' * w := by
-        have : wOff = wOff' := by omega
-        rw [this]
-      omega)
-  have hhigh_eq :
-      ((mem₂ (base + wOff' + 1) >>> 0) &&& (2 ^ k₁' - 1)) =
-        ((mem (base + wOff' + 1) >>> 0) &&& (2 ^ k₁' - 1)) := by
-    rcases Nat.eq_zero_or_pos k₁' with hk1'_0 | hk1'_pos
-    · simp [hk1'_0]
-    · have hbw' := hbw'_of_pos hk1'_pos
-      rw [extract_update_xor_of_disjoint mem₁ (base + wOff + 1) (base + wOff' + 1) hδ1
-        (fun haddr => by
-          rcases Nat.eq_zero_or_pos k₁ with hk1_0 | hk1_pos
-          · left; omega
-          · have hbw := hbw_of_pos hk1_pos
-            have hw_eq : (wOff + 1) * w = (wOff' + 1) * w := by
-              have : wOff + 1 = wOff' + 1 := by omega
-              rw [this]
-            omega)]
-      exact extract_update_xor_of_disjoint mem (base + wOff) (base + wOff' + 1) hδ0 (fun haddr => by
-        have hw_eq : wOff * w = (wOff' + 1) * w := by
-          have : wOff = wOff' + 1 := by omega
-          rw [this]
-        omega)
-  rw [hlow_eq, hhigh_eq]
 
 /-- Pure extraction function for dense quotient `d < n` at `itemBase`. -/
 @[expose] def compQuotAt (itemBase U V w N n : ℕ) (mem : ℕ → ℕ) (d : ℕ) : ℕ :=
@@ -656,39 +491,12 @@ theorem compactedEpochWords_mono {U V w N n₁ n₂ : ℕ} (h : n₁ ≤ n₂) :
   · omega
   · exact Nat.add_le_add_left (compactedItemWords_mono h) _
 
-/-- Scaling bound for `Dynamic.logLogFactor` under 2x epoch size expansion. -/
-theorem logLogFactor_two_mul_le_add_one (n : ℕ) :
-    Dynamic.logLogFactor (2 * n) ≤ Dynamic.logLogFactor n + 1 := by
-  unfold Dynamic.logLogFactor
-  have hm : max (2 * n) 4 ≤ 2 * max n 4 := by omega
-  have hc1 : Nat.clog 2 (max (2 * n) 4) ≤ 2 * Nat.clog 2 (max n 4) := by
-    have hle1 := Nat.clog_mono_right 2 hm
-    have hle2 := Nat.clog_two_mul_le (max n 4)
-    have hpos : 1 ≤ Nat.clog 2 (max n 4) := by
-      have h4 := Nat.clog_mono_right 2 (le_max_right n 4)
-      have : Nat.clog 2 4 = 2 := by decide
-      omega
-    omega
-  exact (Nat.clog_mono_right 2 hc1).trans (Nat.clog_two_mul_le _)
-
-theorem logLogFactor_four_mul_le_add_two (n : ℕ) :
-    Dynamic.logLogFactor (4 * n) ≤ Dynamic.logLogFactor n + 2 := by
-  rw [show 4 * n = 2 * (2 * n) by ring]
-  exact (logLogFactor_two_mul_le_add_one (2 * n)).trans
-    (Nat.add_le_add_right (logLogFactor_two_mul_le_add_one n) 1)
-
-theorem logLogFactor_four_mul_le (n : ℕ) :
-    Dynamic.logLogFactor (4 * n) ≤ 4 * Dynamic.logLogFactor n := by
-  have h1 := logLogFactor_four_mul_le_add_two n
-  have h2 := Dynamic.one_le_logLogFactor n
-  omega
-
 theorem quotientBits_le_add_six_of_le_four_mul {n N : ℕ} (U : ℕ)
     (hnN : n ≤ N) (hN4 : N ≤ 4 * n) :
     quotientBits U N ≤ quotientBits U n + 6 := by
   have hlog : Nat.log 2 n ≤ Nat.log 2 N := Nat.log_mono_right hnN
   have hll : Dynamic.logLogFactor N ≤ Dynamic.logLogFactor n + 2 :=
-    (Dynamic.logLogFactor_mono hN4).trans (logLogFactor_four_mul_le_add_two n)
+    (Dynamic.logLogFactor_mono hN4).trans (Dynamic.logLogFactor_four_mul_le_add_two n)
   unfold quotientBits bucketBits
   omega
 

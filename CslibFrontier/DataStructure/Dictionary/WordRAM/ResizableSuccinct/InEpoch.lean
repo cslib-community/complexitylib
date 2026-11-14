@@ -19,35 +19,26 @@ This module formalizes Milestone `M3a` (part of `#3167`) of the resizable succin
 dictionary on the word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`).
 
 It establishes:
-1. **Stepwise `1 · OPT` space bounds** (`compactedEpochWords_le_succinctWords`,
-   `w_mul_compactedEpochWords_le_bits`): under `EpochValid U n N`, live compacted epoch footprint
-   is at most `Dynamic.succinctWords 1355 441 U V w n` words (`1 · OPT`, never `2 · OPT`).
-   The constant `1355` (vs theoretical `≤ 680` in asymptotic analyses) is an explicit upper bound
-   accounting for conservative bit-level bucket alignment and the worst-case epoch expansion
-   ratio $N / n \le 4$.
+1. **Static `1 · OPT` compacted epoch footprint bounds** (`compactedEpochWords_le_succinctWords`,
+   `w_mul_compactedEpochWords_le_bits`): under `EpochValid U n N`, the live compacted epoch
+   footprint formula is at most `Dynamic.succinctWords 1355 441 U V w n` words (`1 · OPT`,
+   never `2 · OPT`). The constant `1355` (vs theoretical `≤ 680` in the static analysis of
+   T59 §5.3) is an explicit upper bound accounting for conservative bit-level bucket alignment,
+   the worst-case epoch expansion ratio $N / n \le 4$, and the T59 §5.3 window-shift constant.
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.
-3. **Universal in-epoch register allocation** (`rInEpoch`, `inEpochBaseReg`, `inEpochTagReg`,
-   `inEpochKeyReg`, `inEpochValReg`, `inEpochOutReg`, `inEpochResTagReg`, `inEpochResValReg`,
-   `inEpochParamReg`, `inEpochTmpAddrReg`, etc.): static register assignments independent of all
-   parameters $(U, V, w, N, \mathrm{base})$.
 
 Operational execution (`inEpochOpCode`, `PeakFrontierLe ≤ base + compactedEpochWords`, and $O(1)$
-expected amortized dynamic step bounds) is deferred to Milestone `M3b` (`Row T91b` on `#3167`).
+expected amortized dynamic step bounds) is deferred to Milestone `M3b` (see GitHub issue comment
+https://github.com/cslib-community/cslib-frontier/issues/3167#issuecomment-6871600467 and `ROADMAP.md`).
 
 ## Main definitions
 
 * `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.CompactedSplitRep`:
   active epoch representation at arbitrary `(metaBase, itemBase)`.
 * `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.CompactedRep`:
-  live resting invariant on `RData rInEpoch` at `frontier = base + compactedEpochWords`.
-* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.rInEpoch`:
-  universal register count (`420`) independent of all parameters.
-* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.inEpochBaseReg`,
-  `inEpochTagReg`, `inEpochKeyReg`, `inEpochValReg`, `inEpochOutReg`,
-  `inEpochResTagReg`, `inEpochResValReg`, `inEpochParamReg`:
-  universal register allocations for in-epoch operations.
+  live resting invariant on `RData r` at `frontier = base + compactedEpochWords`.
 
 ## Main results
 
@@ -78,7 +69,7 @@ open Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.HashFamily.WordRAM
 open scoped BigOperators ENNReal
 
-/-! ## Section 1: Stepwise `1 · OPT` Word-Space and Bit-Space Bounds -/
+/-! ## Section 1: Compacted Epoch `1 · OPT` Word-Space and Bit-Space Bounds -/
 
 private theorem compactedEpochWords_pos_le_div_add {U V w N n : ℕ}
     (hw : 0 < w) (hNU : N ≤ U) (hU : U ≤ 2 ^ w) :
@@ -108,7 +99,7 @@ private theorem compactedEpochWords_pos_le_div_add {U V w N n : ℕ}
   unfold hashSpace qBits hashB at hh
   omega
 
-/-- **Stepwise `1 · OPT` word-space bound (`compactedEpochWords_le_succinctWords`):**
+/-- **Static `1 · OPT` word-space bound (`compactedEpochWords_le_succinctWords`):**
 whenever `EpochValid U n N` (`n = 0 ∧ N = 0` or `1 ≤ n ≤ N ≤ 4 * n ∧ N ≤ U`), the live compacted
 footprint `compactedEpochWords U V w N n` is at most `Dynamic.succinctWords 1355 441 U V w n`. -/
 theorem compactedEpochWords_le_succinctWords {U V w N n : ℕ}
@@ -128,7 +119,7 @@ theorem compactedEpochWords_le_succinctWords {U V w N n : ℕ}
       have hqv_opt := quotient_val_bits_le_optBits (U := U) (V := V) (n := n)
       have hll_n := Dynamic.one_le_logLogFactor n
       have hll_N : Dynamic.logLogFactor N ≤ 4 * Dynamic.logLogFactor n :=
-        (Dynamic.logLogFactor_mono hN4).trans (logLogFactor_four_mul_le n)
+        (Dynamic.logLogFactor_mono hN4).trans (Dynamic.logLogFactor_four_mul_le n)
       have hlm := localMetaLen_mul_effBucketPosBits_le N
       have hgm := globalMetaLen_mul_globalPtrBits_le N
       have htail := maxTailItems_mul_globalPtrBits_le N
@@ -187,7 +178,7 @@ theorem compactedEpochWords_le_succinctWords {U V w N n : ℕ}
       unfold Dynamic.succinctWords
       omega
 
-/-- **Stepwise `1 · OPT` bit-space bound (`w_mul_compactedEpochWords_le_bits`):**
+/-- **Static `1 · OPT` bit-space bound (`w_mul_compactedEpochWords_le_bits`):**
 multiplying `compactedEpochWords U V w N n` by `w` yields at most
 `Dynamic.optBits U V n + 1355 * n * Dynamic.logLogFactor n + 442 * w` bits across every valid
 epoch (`EpochValid U n N`). -/
@@ -384,41 +375,5 @@ theorem compactedRep_empty {r : ℕ} {U V w base : ℕ} {x : RData r}
   · unfold compactedEpochWords rootHdrWords; rw [hfr]; simp
   · simp only [Dictionary.dom_empty, Finset.card_empty]
   · intro u v hsome; cases hsome
-
-/-! ## Section 3: Universal In-Epoch Register Layout and Parameter-Free Codes -/
-
-/-- Universal in-epoch register count (`420`), accommodating `sReg` (`292`), `paramReg` (`36`),
-and scratch registers. -/
-def rInEpoch : ℕ := 420
-
-/-- Register holding the base address of the compacted dictionary segment. -/
-def inEpochBaseReg : Fin rInEpoch := ⟨0, by decide⟩
-/-- Register holding the operation tag (`query`, `insert`, or `delete`). -/
-def inEpochTagReg : Fin rInEpoch := ⟨244, by decide⟩
-/-- Register holding the input key. -/
-def inEpochKeyReg : Fin rInEpoch := ⟨245, by decide⟩
-/-- Register holding the input value. -/
-def inEpochValReg : Fin rInEpoch := ⟨246, by decide⟩
-/-- Register holding the output pointer or status. -/
-def inEpochOutReg : Fin rInEpoch := ⟨247, by decide⟩
-/-- Register holding the result response tag (`found`, `not_found`, etc.). -/
-def inEpochResTagReg : Fin rInEpoch := ⟨252, by decide⟩
-/-- Register holding the result value. -/
-def inEpochResValReg : Fin rInEpoch := ⟨253, by decide⟩
-
-/-- Scratch register `i < 36` for `CompParams`. -/
-def inEpochParamReg (i : Fin 36) : Fin rInEpoch :=
-  ⟨256 + i.val, by have hi := i.isLt; change 256 + i.val < 420; omega⟩
-
-/-- Temporary register for address calculation. -/
-def inEpochTmpAddrReg : Fin rInEpoch := ⟨293, by decide⟩
-/-- Temporary register for constant holding. -/
-def inEpochTmpConstReg : Fin rInEpoch := ⟨294, by decide⟩
-/-- Register holding the constant `0`. -/
-def inEpochZeroReg : Fin rInEpoch := ⟨295, by decide⟩
-/-- Register holding the constant `1`. -/
-def inEpochOneReg : Fin rInEpoch := ⟨296, by decide⟩
-/-- Register holding the constant `2`. -/
-def inEpochTwoReg : Fin rInEpoch := ⟨297, by decide⟩
 
 end Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct

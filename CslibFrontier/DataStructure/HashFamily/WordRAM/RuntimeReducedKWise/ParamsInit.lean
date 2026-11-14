@@ -52,7 +52,7 @@ namespace Cslib.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.WordRAM.Resizable
 open Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise
 open Cslib.Probability
 open scoped ENNReal
 
@@ -261,52 +261,6 @@ theorem iterate_spec {δ σ : Type} (body : δ × σ → Memory.Prog σ)
     · rw [iterate, StateTransitionSpec.clientState_bind]; exact (hmodn x hx).trans (hmod₀ x hx)
     · rw [iterate, StateTransitionSpec.clientResult_bind, StateTransitionSpec.clientState_bind]
       exact hinvn
-
-theorem tableRep_congr {hashBase w w₀ b b' k : ℕ} {m₁ m₂ : ℕ → ℕ}
-    (htab : ReducedKWise.TableRep hashBase w w₀ b b' k m₁)
-    (h : ∀ a, hashBase ≤ a → a < hashBase + ReducedKWise.space w w₀ b b' k → m₂ a = m₁ a) :
-    ReducedKWise.TableRep hashBase w w₀ b b' k m₂ := by
-  refine ⟨fun w' hw' => ?_, fun idx hidx => ?_⟩
-  · rw [h (ReducedKWise.tabBase hashBase w₀ b b' k + w')
-      (by unfold ReducedKWise.tabBase; omega)
-      (by unfold ReducedKWise.tabBase ReducedKWise.space; omega)]
-    exact htab.1 w' hw'
-  · have hlt := shiftRight_lt_reducedTableWords (w := w) hidx
-    rw [h (ReducedKWise.tabBase hashBase w₀ b b' k + (idx >>> rPack w w₀ b b'))
-      (by unfold ReducedKWise.tabBase
-          exact Nat.le_trans (Nat.le_add_right _ _) (Nat.le_add_right _ _))
-      (by unfold ReducedKWise.tabBase ReducedKWise.space ReducedKWise.tableWords
-          rw [← Nat.add_assoc]; exact Nat.add_lt_add_left hlt _)]
-    exact htab.2 idx hidx
-
-theorem seedRep_congr {hashBase w w₀ b b' k : ℕ} {θ : ReducedPolySeed w₀ b b' k}
-    {m₁ m₂ : ℕ → ℕ} (hseed : ReducedKWise.SeedRep hashBase w₀ b b' k θ m₁)
-    (h : ∀ a, hashBase ≤ a → a < hashBase + ReducedKWise.space w w₀ b b' k → m₂ a = m₁ a) :
-    ReducedKWise.SeedRep hashBase w₀ b b' k θ m₂ := by
-  refine ⟨?_, fun j i => ?_⟩
-  · rw [h hashBase le_rfl (by unfold ReducedKWise.space ReducedKWise.seedWords; omega)]
-    exact hseed.1
-  · have hlt : i.val + rLimbs w₀ b b' * j.val < k * rLimbs w₀ b b' := by
-      calc _ < rLimbs w₀ b b' + rLimbs w₀ b b' * j.val := Nat.add_lt_add_right i.isLt _
-        _ = (j.val + 1) * rLimbs w₀ b b' := by ring
-        _ ≤ k * rLimbs w₀ b b' := Nat.mul_le_mul_right _ j.isLt
-    rw [h _ (by omega) (by unfold ReducedKWise.space ReducedKWise.seedWords; omega)]
-    exact hseed.2 j i
-
-theorem and_two_pow_sub_one_lt (a n : ℕ) : a &&& (2 ^ n - 1) < 2 ^ n := by
-  rw [Nat.and_two_pow_sub_one_eq_mod]; exact Nat.mod_lt a (Nat.two_pow_pos n)
-
-theorem shiftRight_lt_pow_sub {m h a : ℕ} (hle : h ≤ m) (ha : a < 2 ^ m) :
-    a >>> h < 2 ^ (m - h) := by
-  rw [Nat.shiftRight_eq_div_pow]
-  exact Nat.div_lt_of_lt_mul (by rwa [← pow_add, Nat.add_sub_of_le hle])
-
-theorem getLimb_eq_zero_of_lt {c n d P : ℕ} (hP : P < 2 ^ (n * c)) (hd : n ≤ d) :
-    getLimb c P d = 0 := by
-  dsimp only [getLimb]
-  have hlt : P < 2 ^ (d * c) :=
-    lt_of_lt_of_le hP (Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_right c hd))
-  rw [Nat.shiftRight_eq_div_pow, Nat.div_eq_of_lt hlt, Nat.zero_and]
 
 /-! ## Section 2: Runtime `Memory.Prog` table construction (`initTableGenProg`) -/
 

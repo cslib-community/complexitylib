@@ -279,6 +279,55 @@ maps `[0, 1, 2, 3, 4, 5] ↦ [3, 4, 5, 6, 7, 0]`. -/
 theorem injective_fillMap240 : Function.Injective fillMap240 := by
   decide
 
+/-- `TableRep` depends only on memory in `[base, base + space w w₀ b b' k)`. -/
+theorem tableRep_congr {base w w₀ b b' k : ℕ} {mem₁ mem₂ : ℕ → ℕ}
+    (htab : TableRep base w w₀ b b' k mem₁)
+    (heq : ∀ a, base ≤ a → a < base + space w w₀ b b' k → mem₁ a = mem₂ a) :
+    TableRep base w w₀ b b' k mem₂ := by
+  rcases htab with ⟨hword, hentry⟩
+  refine ⟨fun wIdx hwIdx => ?_, fun idx hidx => ?_⟩
+  · rw [← heq (tabBase base w₀ b b' k + wIdx)
+      (by dsimp only [tabBase]; omega)
+      (by dsimp only [tabBase, space]; omega)]
+    exact hword wIdx hwIdx
+  · have hsh : idx >>> reducedPackShift (reducedTrinomialStep w₀ b b') w <
+        tableWords w w₀ b b' :=
+      shiftRight_lt_reducedTableWords hidx
+    rw [← heq
+      (tabBase base w₀ b b' k +
+        idx >>> reducedPackShift (reducedTrinomialStep w₀ b b') w)
+      (by dsimp only [tabBase]; rw [Nat.add_assoc]; exact Nat.le_add_right base _)
+      (by dsimp only [tabBase, space]; omega)]
+    exact hentry idx hidx
+
+/-- `SeedRep` depends only on memory in `[base, base + space w w₀ b b' k)`. -/
+theorem seedRep_congr {base w w₀ b b' k : ℕ} {θ : ReducedPolySeed w₀ b b' k}
+    {mem₁ mem₂ : ℕ → ℕ}
+    (hseed : SeedRep base w₀ b b' k θ mem₁)
+    (heq : ∀ a, base ≤ a → a < base + space w w₀ b b' k → mem₁ a = mem₂ a) :
+    SeedRep base w₀ b b' k θ mem₂ := by
+  rcases hseed with ⟨h0, hlimb⟩
+  have hs_pos : 0 < seedWords w₀ b b' k := seedWords_pos w₀ b b' k
+  refine ⟨?_, fun j m => ?_⟩
+  · rw [← heq base (le_refl base) (by dsimp only [space]; omega)]
+    exact h0
+  · have hidx : m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val <
+        k * reducedLimbCount (reducedTrinomialStep w₀ b b') := by
+      calc m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val
+          < reducedLimbCount (reducedTrinomialStep w₀ b b') +
+              reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val :=
+            Nat.add_lt_add_right m.isLt _
+        _ = (j.val + 1) * reducedLimbCount (reducedTrinomialStep w₀ b b') := by ring
+        _ ≤ k * reducedLimbCount (reducedTrinomialStep w₀ b b') :=
+            Nat.mul_le_mul_right _ j.isLt
+    have hlt_sp : base + 1 + (m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val) <
+        base + space w w₀ b b' k := by
+      dsimp only [space, seedWords]
+      omega
+    rw [← heq (base + 1 + (m.val + reducedLimbCount (reducedTrinomialStep w₀ b b') * j.val))
+      (by omega) hlt_sp]
+    exact hlimb j m
+
 /-! ## Section 2: Bit-packed Four-Russians table construction (`initTableCode`) -/
 
 /-- 11-instruction setup before `clmulTabLoop` on `Data 240`. -/
@@ -992,7 +1041,7 @@ private theorem seqAsc_exec {w : ℕ} (f : ℕ → Code .exact 240) (step : ℕ)
     rw [show (n + 1) * step + 1 = (n * step + 1) + step by ring]
     exact hy_exec.seq hz_exec
 
-private theorem and_two_pow_sub_one_lt (a n : ℕ) : a &&& (2 ^ n - 1) < 2 ^ n := by
+theorem and_two_pow_sub_one_lt (a n : ℕ) : a &&& (2 ^ n - 1) < 2 ^ n := by
   rw [Nat.and_two_pow_sub_one_eq_mod]
   exact Nat.mod_lt a (Nat.two_pow_pos n)
 
@@ -1084,7 +1133,7 @@ shifts in `regs 5..10`, and splits `α` and `x' = x.regs 1 &&& (2 ^ m - 1)` into
   .seq (halfMulSetupCode (w₀ - 1))
   (.seq halfMulCombineCode (finishReduceCode w₀ b))
 
-private theorem shiftRight_lt_pow_sub {m h a : ℕ} (hle : h ≤ m) (ha : a < 2 ^ m) :
+theorem shiftRight_lt_pow_sub {m h a : ℕ} (hle : h ≤ m) (ha : a < 2 ^ m) :
     a >>> h < 2 ^ (m - h) := by
   rw [Nat.shiftRight_eq_div_pow]
   apply Nat.div_lt_of_lt_mul
@@ -1940,7 +1989,7 @@ private theorem clmulLimbsCode_exec {base w w₀ b b' k r_val acc_val : ℕ}
   refine ⟨y, hy_exec, hy_inv.1, fun d hd => ?_, hy_mem⟩
   rw [← hy_pack, getLimb_packLimbs_of_lt c hd (hy_lt d hd)]
 
-private theorem getLimb_eq_zero_of_lt {c n d P : ℕ} (hP : P < 2 ^ (n * c)) (hd : n ≤ d) :
+theorem getLimb_eq_zero_of_lt {c n d P : ℕ} (hP : P < 2 ^ (n * c)) (hd : n ≤ d) :
     getLimb c P d = 0 := by
   dsimp only [getLimb]
   have hle : n * c ≤ d * c := Nat.mul_le_mul_right c hd

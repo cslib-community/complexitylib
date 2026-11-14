@@ -21,16 +21,14 @@ metadata and circular-window invariants in `Compaction.lean` and `SuccinctHash.l
   `winShrinkRightGenProg`, and `winShrinkLeftGenProg`;
 * register-width bounds `fits_mkCompParams` and `fits_const_of_compMetaEnv`;
 * compacted slot-resolution and owner-bucket recovery operations (`readCompBucketCountGenProg`,
-  `resolveCompSlotGenProg`, `resolveCompDenseSlotGenProg`, `lastCompSlotGenProg`,
-  `lastCompDenseSlotGenProg`, `recoverOwnerBucketGenProg`) and bijection `reconstructKeyAt_spec`.
+  `recoverOwnerBucketGenProg`) and bijection `reconstructKeyAt_spec`.
 
 ## Main definitions
 
 * `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.readCompBucketCountGenProg`,
-  `resolveCompSlotGenProg`, `resolveCompDenseSlotGenProg`, `lastCompSlotGenProg`,
-  `lastCompDenseSlotGenProg`, `recoverOwnerBucketGenProg`: $O(1)$ compacted slot resolvers.
-* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.reconstructKeyAt`,
-  `reconstructValAt`: mathematical key/value reconstruction at dense index `d < n`.
+  `recoverOwnerBucketGenProg`: compacted metadata accessors.
+* `Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct.reconstructKeyAt`:
+  mathematical key reconstruction at dense index `d < n`.
 
 ## Main results
 
@@ -57,6 +55,8 @@ open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
 open Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.HashFamily.WordRAM
+
+attribute [local simp] Realization.memoryCost_bind'
 
 /-! ## Section 1: Cross-Region Congruence and Pure `Function.update` Frame Laws -/
 
@@ -891,9 +891,5 @@ theorem realizesBounded_recoverOwnerBucketGen :
   let b := ownerBucketOfDense N (compGmAt metaBase U w N mem) (compDTAt metaBase U w N mem) d
   let q := compQuotAt itemBase U V w N n mem d
   feistelReconstruct (bucketBits N) (hValOfSeed U N θ) b q
-
-/-- Read the value `v` stored at dense index `d < n` at `itemBase`. -/
-@[expose] def reconstructValAt (itemBase U V w N n : ℕ) (mem : ℕ → ℕ) (d : ℕ) : ℕ :=
-  compValAt itemBase U V w N n mem d
 
 end Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct

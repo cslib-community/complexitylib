@@ -50,6 +50,8 @@ open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
 open Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.HashFamily.WordRAM
 
+attribute [local simp] Realization.memoryCost_bind'
+
 /-! ## Section 1: Item Copy/Clear and Metadata Array Accessors -/
 
 /-- Copy `(quot, val)` from dense slot `src` to `dst` at `itemBase`. -/

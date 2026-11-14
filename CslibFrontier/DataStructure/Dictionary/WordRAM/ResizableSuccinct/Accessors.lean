@@ -66,17 +66,12 @@ open Cslib.DataStructure.HashFamily.WordRAM
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (p >>= k))) =
       (Memory.spec 0).clientState ((Memory.spec 0).clientState s p)
         (k ((Memory.spec 0).clientResult s p)) := (Memory.spec 0).fst_snd_runClient_bind p k s
-@[simp, nolint simpNF] theorem prog_memoryCost_bind {α β : Type} (p : Memory.Prog α)
-    (k : α → Memory.Prog β) (s : Memory.State) :
-    memoryCost (p >>= k) s = memoryCost p s +
-      memoryCost (k ((Memory.spec 0).clientResult s p)) ((Memory.spec 0).clientState s p) :=
-  memoryCost_bind p k s
+attribute [local simp] Realization.memoryCost_bind'
+
 @[simp] theorem prog_clientResult_pure {α : Type} (x : α) (s : Memory.State) :
     (Memory.spec 0).clientResult s (pure x : Memory.Prog α) = x := rfl
 @[simp] theorem prog_runClient_state_pure {α : Type} (x : α) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (pure x : Memory.Prog α))) = s := rfl
-@[simp] theorem prog_memoryCost_pure {α : Type} (x : α) (s : Memory.State) :
-    memoryCost (pure x : Memory.Prog α) s = 0 := rfl
 @[simp] theorem prog_clientResult_map {α β : Type} (f : α → β) (p : Memory.Prog α)
     (s : Memory.State) :
     (Memory.spec 0).clientResult s (f <$> p) = f ((Memory.spec 0).clientResult s p) := by
@@ -87,7 +82,7 @@ open Cslib.DataStructure.HashFamily.WordRAM
       (Memory.spec 0).clientState s p := by rw [← bind_pure_comp, prog_runClient_state_bind]; rfl
 @[simp] theorem prog_memoryCost_map {α β : Type} (f : α → β) (p : Memory.Prog α)
     (s : Memory.State) : memoryCost (f <$> p) s = memoryCost p s := by
-  rw [← bind_pure_comp, prog_memoryCost_bind, prog_memoryCost_pure, Nat.add_zero]
+  rw [← bind_pure_comp, memoryCost_bind', memoryCost_pure, Nat.add_zero]
 @[simp] theorem prog_clientResult_read (a : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (Memory.read a) = s.mem a := rfl
 @[simp] theorem prog_runClient_state_read (a : ℕ) (s : Memory.State) :
@@ -462,7 +457,7 @@ def readPackedCompGenProg : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ → Memory.Pro
 @[simp] theorem clientResult_readPackedCompGenProg (base offset k w idx : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (readPackedCompGenProg (((base, offset), (k, w)), idx)) =
       readPacked (base + offset) k w s.mem idx := by
-  simp [readPackedCompGenProg, readBitSlice, readPacked, lowWidth, highWidth]
+  simp [readPackedCompGenProg, readBitSlice, readPacked]
 
 theorem clientState_readPackedCompGenProg
     (d : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) (s : Memory.State) :
@@ -526,7 +521,7 @@ theorem clientState_writePackedCompGenProg
         (writePackedCompGenProg ((((base, offset), (k, w)), idx), val)) =
       { mem := writePacked (base + offset) k w s.mem idx val, frontier := s.frontier } := by
   unfold StateTransitionSpec.clientState
-  simp [writePackedCompGenProg, writeBitSlice, writePacked, lowWidth, highWidth]
+  simp [writePackedCompGenProg, writeBitSlice, writePacked]
 
 @[simp] theorem runClient_state_writePackedCompGenProg
     (base offset k w idx val : ℕ) (s : Memory.State) :

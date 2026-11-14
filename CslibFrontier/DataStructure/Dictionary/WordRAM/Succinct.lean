@@ -125,6 +125,7 @@ open Cslib.WordRAM Cslib.WordRAM.ExactLog Cslib.WordRAM.Realization
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
@@ -479,8 +480,8 @@ noncomputable def impl {U V w n_max base : ℕ}
         simp only [Block.mem_footprint, Block.Owns]
         exact ⟨by omega, ha2⟩
       exact ⟨hx'_bdd, hbase', hfr',
-        tableRep_congr hhash_eq htab,
-        seedRep_congr hhash_eq hseed,
+        tableRep_congr htab hhash_eq,
+        seedRep_congr hseed hhash_eq,
         dictStateInv_congr hw htab_eq hdict⟩)
     (potential_supported := by
       intro θ s x x' _ hmem _
