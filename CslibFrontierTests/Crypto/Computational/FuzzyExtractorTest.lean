@@ -108,21 +108,18 @@ theorem lweAdvantage_uniform_error_eq_zero
       (fun b => ProbComp.eval (B A b))
   rw [LWE.advantage, hreal, Game.advantage_self]
 
-/-- The hypothesis of `computationallySecureFor_lweFuzzyExtractor` is satisfiable: for the
-uniform source, both LWE advantages vanish, so Construction 4.1 is `0`-secure for it. -/
+/-- For the uniform source, both LWE advantages in `securityAdvantage_lweFuzzyExtractor_le` vanish,
+so Construction 4.1 is `0`-secure for it against every distinguisher. -/
 example
     (decode : Matrix (Fin 4) (Fin (1 + 1)) (ZMod 7) → (Fin 4 → ZMod 7) →
       ProbComp (Option (Fin (1 + 1) → ZMod 7))) :
     (lweFuzzyExtractor 4 1 1 7 decode).ComputationallySecureFor
       {PMF.uniformOfFintype (Fin 4 → ZMod 7)} (fun _ => True) 0 := by
-  have h := computationallySecureFor_lweFuzzyExtractor decode
-    (sources := {PMF.uniformOfFintype (Fin 4 → ZMod 7)}) (Admissible := fun _ => True) (ε := 0)
-    (by
-      intro W hW D _
-      rw [Set.mem_singleton_iff] at hW
-      subst hW
-      simp only [lweAdvantage_uniform_error_eq_zero, le_refl, and_self])
-  simpa using h
+  intro W hW D _
+  rw [Set.mem_singleton_iff] at hW
+  subst hW
+  simpa only [lweAdvantage_uniform_error_eq_zero, add_zero] using
+    securityAdvantage_lweFuzzyExtractor_le decode (PMF.uniformOfFintype (Fin 4 → ZMod 7)) D
 
 /-! ### Separating fixture: reproducible for all `t`, but insecure -/
 
