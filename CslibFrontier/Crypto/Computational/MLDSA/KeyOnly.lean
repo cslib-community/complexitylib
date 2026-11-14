@@ -45,8 +45,10 @@ fixed hash function), with explicit reductions:
   (`koaGame_uniformKeyLaw`). The success probability of any key-only forger is therefore at most
   the Module-LWE advantage `ModuleLWE.advantage` of `forgeryDistinguisher` for these short laws,
   plus the success probability of the explicit solver `selfTargetReduction` against self-target
-  MSIS for a uniform matrix `[A | t]` (`succProbability_koaGame_le`). The uniform-secret
-  `Cslib.Crypto.DecisionModuleLWE` does not bound that advantage.
+  MSIS for a uniform matrix `[A | t]` (`succProbability_koaGame_le`). That advantage is the
+  quantity of the short-secret assumption `Cslib.Crypto.DecisionModuleLWEWith` for these laws, not
+  of the uniform-secret `Cslib.Crypto.DecisionModuleLWE`. The bound here is for one parameter set,
+  and no efficiency certificate for `forgeryDistinguisher` is proved.
 
 Hardness of self-target MSIS for the hash `H(HighBits(·), ·)` is the assumption, as in
 [DucasEtAl2018]; it is neither proved nor reduced to standard Module-SIS here.

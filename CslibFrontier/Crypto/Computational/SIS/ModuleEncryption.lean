@@ -51,7 +51,7 @@ Module-LWE sample masked by the encoded message:
    ciphertexts**:
    - Replacing the honest public key `(A, A · s + e)` with a uniform pair `(A, b)` is the
      word-level form of `DecisionModuleLWE k k n q noise` (`moduleLWEPublicKeyLaw_eq_sampleLaw`,
-     `publicKey_indistinguishable_of_decisionModuleLWE`, via `DecisionModuleLWE.encoded`).
+     `publicKey_indistinguishable_of_decisionModuleLWE`, via `DecisionModuleLWEWith.encoded`).
    - Under a uniform public key `(A, b)`, stacking `b` above `Aᵀ` via `extendPublicKeyMatrix` and
      `v` above `u` via `extendCiphertext` embeds `(pk, moduleLWEEncrypt pk r e₁ e₂ m)` into a
      `(k + 1) × k` Module-LWE sample masked by `(0, Fin.cons (encodePolyMsg q m) 0)`
@@ -446,10 +446,13 @@ noncomputable def moduleLWEPublicKeyLaw (k n q : ℕ) [NeZero q]
   let error ← PMF.pi (fun _ : Fin k => noise)
   return moduleLWEKeyGen A secret error
 
-/-- The honest public-key distribution is identical to `ModuleLWE.sampleLaw k k n q noise`. -/
+/-- The honest public-key distribution is the `k × k` Module-LWE sample law `ModuleLWE.sampleLaw`
+with a uniform secret and independent polynomial errors drawn from `noise`. -/
 @[simp] theorem moduleLWEPublicKeyLaw_eq_sampleLaw (k n q : ℕ) [NeZero q]
     (noise : PMF (Fin n → ZMod q)) :
-    moduleLWEPublicKeyLaw k n q noise = ModuleLWE.sampleLaw k k n q noise :=
+    moduleLWEPublicKeyLaw k n q noise =
+      ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+        (PMF.pi fun _ : Fin k => noise) :=
   rfl
 
 /-- **Public-key pseudorandomness (`DecisionModuleLWE` Hop 1)**: under
@@ -577,12 +580,14 @@ noncomputable def uniformKeyEncryptionLaw (k n q : ℕ) [NeZero q]
   return (extendPublicKeyMatrix pk, extendCiphertext (moduleLWEEncrypt pk r e₁ e₂ m))
 
 /-- **Second `DecisionModuleLWE` hop identity**: under a uniform public key `pk`, the extended
-encryption distribution `uniformKeyEncryptionLaw k n q noise m` is the pushforward of
-`ModuleLWE.sampleLaw (k + 1) k n q noise` by `maskExtendedSampleEquiv m`. -/
+encryption distribution `uniformKeyEncryptionLaw k n q noise m` is the pushforward by
+`maskExtendedSampleEquiv m` of the `(k + 1) × k` Module-LWE sample law `ModuleLWE.sampleLaw` with a
+uniform secret and independent polynomial errors drawn from `noise`. -/
 theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool) :
     uniformKeyEncryptionLaw k n q noise m =
-      (ModuleLWE.sampleLaw (k + 1) k n q noise).map (maskExtendedSampleEquiv m) := by
+      (ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+        (PMF.pi fun _ : Fin (k + 1) => noise)).map (maskExtendedSampleEquiv m) := by
   unfold uniformKeyEncryptionLaw ModuleLWE.sampleLaw
   simp only [pmf_norm]
   congr 1 with r : 1
@@ -659,12 +664,14 @@ def unextendMaskedSample {k n q : ℕ} (m : Fin n → Bool)
     ModuleLWEPublicKey k n q × ModuleLWECiphertext k n q :=
   unextendMaskedSampleEquiv m pair
 
-/-- `hybridEncryptionView k n q noise m` is the pushforward of
-`ModuleLWE.sampleLaw (k + 1) k n q noise` under `unextendMaskedSample m`. -/
+/-- `hybridEncryptionView k n q noise m` is the pushforward under `unextendMaskedSample m` of the
+`(k + 1) × k` Module-LWE sample law with a uniform secret and independent polynomial errors drawn
+from `noise`. -/
 theorem hybridEncryptionView_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool) :
     hybridEncryptionView k n q noise m =
-      (ModuleLWE.sampleLaw (k + 1) k n q noise).map (unextendMaskedSample m) := by
+      (ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+        (PMF.pi fun _ : Fin (k + 1) => noise)).map (unextendMaskedSample m) := by
   have hcomm :
       hybridEncryptionView k n q noise m =
         (uniformKeyEncryptionLaw k n q noise m).map
@@ -697,18 +704,21 @@ theorem advantage_realEncryptionView_uniform_le {k n q : ℕ} [NeZero q]
     Game.advantage ((realEncryptionView k n q noise m).bind D)
         ((uniformEncryptionView k n q).bind D) ≤
       Game.advantage
-        ((ModuleLWE.sampleLaw k k n q noise).bind fun pk =>
+        ((ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+            (PMF.pi fun _ : Fin k => noise)).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D)
         ((PMF.uniformOfFintype (ModuleLWEPublicKey k n q)).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D) +
       Game.advantage
-        ((ModuleLWE.sampleLaw (k + 1) k n q noise).bind (D ∘ unextendMaskedSample m))
+        ((ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+            (PMF.pi fun _ : Fin (k + 1) => noise)).bind (D ∘ unextendMaskedSample m))
         ((PMF.uniformOfFintype
           (Matrix (Fin (k + 1)) (Fin k) (Fin n → ZMod q) ×
             (Fin (k + 1) → Fin n → ZMod q))).bind (D ∘ unextendMaskedSample m)) := by
   have hreal :
       (realEncryptionView k n q noise m).bind D =
-        (ModuleLWE.sampleLaw k k n q noise).bind fun pk =>
+        (ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+            (PMF.pi fun _ : Fin k => noise)).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D := by
     simp only [pmf_norm, realEncryptionView, moduleLWEPublicKeyLaw_eq_sampleLaw,
       encryptionViewOfKeyLaw]
@@ -719,7 +729,8 @@ theorem advantage_realEncryptionView_uniform_le {k n q : ℕ} [NeZero q]
     simp only [pmf_norm, hybridEncryptionView, encryptionViewOfKeyLaw]
   have hhyb2 :
       (hybridEncryptionView k n q noise m).bind D =
-        (ModuleLWE.sampleLaw (k + 1) k n q noise).bind (D ∘ unextendMaskedSample m) := by
+        (ModuleLWE.sampleLaw (PMF.uniformOfFintype (Fin k → Fin n → ZMod q))
+            (PMF.pi fun _ : Fin (k + 1) => noise)).bind (D ∘ unextendMaskedSample m) := by
     rw [hybridEncryptionView_eq_sampleLaw_map, PMF.bind_map]
   have hunif :
       (uniformEncryptionView k n q).bind D =
