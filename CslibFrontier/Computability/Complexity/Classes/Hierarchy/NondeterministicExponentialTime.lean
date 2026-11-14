@@ -184,7 +184,7 @@ private theorem exists_computableInO_accepts : ∃ D, ComputableInO
     (fun y v => ((frame y ++ v).length + 1) ^ 2) 0 hclock
     (fun y v => by
       have h := length_encNat_sq_le (frame y ++ v).length
-      simp only [List.length_append, length_frame] at h
+      simp only [List.length_append, length_frame] at h ⊢
       omega) (fun y v => Nat.one_le_pow _ _ (Nat.succ_pos _))
   have e (q : List Bool × List Bool × List Bool) :
       accBound D q =
@@ -259,9 +259,9 @@ private theorem exists_computableInO_brute (k : ℕ) : ∃ K, ComputableInO
   -- the bounds
   refine ⟨3 * K₀ + 4, (h.mono (C + 3) (fun q => ?_) fun q => ?_).of_enc_eq fun q => rfl⟩
   all_goals
-    have e₁ : (encB (q, 2 ^ ((k + 1) * (q.2.length + 1)))).length =
+    have e₁ : (encPair encQ encUnary (q, 2 ^ ((k + 1) * (q.2.length + 1)))).length =
         2 * (encQ q).length + 1 + 2 ^ ((k + 1) * (q.2.length + 1)) := by
-      rw [hencB, length_encPair, encUnary_apply, List.length_replicate]
+      rw [length_encPair, encUnary_apply, List.length_replicate]
     have e₂ : (4 : ℕ) ^ ((k + 1) * (q.2.length + 1)) =
         2 ^ ((k + 1) * (q.2.length + 1)) * 2 ^ ((k + 1) * (q.2.length + 1)) := by
       rw [← mul_pow]
