@@ -14,11 +14,13 @@ import Mathlib.Data.List.OfFn
 # Injectivity of fixed-width low-order bits
 
 Two naturals below `2 ^ w` with the same `w` low-order bits (`lowBits`) are equal. Encodings
-that write a bounded number into a fixed-width field use this to decode the field uniquely.
+that write a bounded number into a fixed-width field use this to decode the field uniquely. The
+`w` low-order bits of a number are those of its remainder modulo `2 ^ w`.
 
 ## Main results
 
 * `Cslib.BitString.lowBits_injective_of_lt`: `lowBits w` is injective below `2 ^ w`.
+* `Cslib.BitString.lowBits_mod_two_pow`: `lowBits w` reads its argument modulo `2 ^ w`.
 -/
 
 public section
@@ -34,5 +36,10 @@ theorem lowBits_injective_of_lt {w a b : ℕ} (ha : a < 2 ^ w) (hb : b < 2 ^ w)
   · exact congrFun (List.ofFn_injective h) ⟨j, hj⟩
   · have hle : 2 ^ w ≤ 2 ^ j := Nat.pow_le_pow_right Nat.two_pos (by omega)
     rw [Nat.testBit_lt_two_pow (ha.trans_le hle), Nat.testBit_lt_two_pow (hb.trans_le hle)]
+
+/-- The `w` low-order bits of `a` are those of `a % 2 ^ w`. -/
+theorem lowBits_mod_two_pow (w a : ℕ) : lowBits w (a % 2 ^ w) = lowBits w a := by
+  refine List.map_congr_left fun j hj => ?_
+  rw [Nat.testBit_mod_two_pow, decide_eq_true (List.mem_range.mp hj), Bool.true_and]
 
 end Cslib.BitString
