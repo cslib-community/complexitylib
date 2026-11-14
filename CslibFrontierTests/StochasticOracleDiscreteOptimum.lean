@@ -4,6 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
 import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Optimum
 import CslibFrontierTests.StochasticOracleDiscreteRetention
 import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Prefix
@@ -20,6 +24,10 @@ attains two. A greater success target has infinite optimum because no policy
 is feasible. The deadline theorem is independent of invoice assumptions.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.DiscreteOptimum
 open Cslib.Probability Cslib.Probability.StochasticOracle
