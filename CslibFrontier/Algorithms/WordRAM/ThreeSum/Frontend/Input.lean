@@ -90,7 +90,6 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
   have hfront := array_budget_fits hw
   have hN : Fits w (1 + 4 * n) := hp.of_le (by
     dsimp only [ChanHe.Parameters.Math.budget]; omega)
-  have h1 : Fits w 1 := hN.of_le (by omega)
   have h2 : Fits w 2 := hp.of_le (by dsimp only [ChanHe.Parameters.Math.budget]; omega)
   have hB : Fits w l.digits := hp.of_le (by
     have hl := Nat.log_le_self 2 (4 * U)
@@ -111,7 +110,7 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     (radixRegisters RadixSort.dst) (n + 1)).set (radixRegisters RadixSort.bits) l.digits
   have hb : ExecWithin w radixSetup a b 4 := by
     have hn1 := hN.of_le (show n + 1 ≤ 1 + 4 * n by omega)
-    ram_eval [radixSetup, b, han, haB, h1, hB, hn1]
+    ram_eval [radixSetup, b, han, haB, hB, hn1]
   have hmem : Block.HoldsList 1 (input.map Signed.encode) (b.comap radixRegisters).mem := by
     intro i
     change a.mem (1 + i.val) = (input.map Signed.encode)[i.val]
@@ -163,7 +162,7 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     have f1 := hN.of_le (show n + n + 1 ≤ 1 + 4 * n by omega)
     have f2 := hN.of_le (show n + n + 1 + n ≤ 1 + 4 * n by omega)
     have f3 := hN.of_le (show n + n + 1 + n + n ≤ 1 + 4 * n by omega)
-    ram_eval [arraySetup, d, hcn, hcU, hcB, hcout, h1, f0, f1, f2, f3]
+    ram_eval [arraySetup, d, hcn, hcU, hcB, hcout, f0, f1, f2, f3]
   have hrawkeys : ∀ v ∈ rs, v.1 ≤ 2 * U + 1 ∧ v.1 / 2 ≤ U := by
     intro v hv
     obtain ⟨z, hz, he⟩ := List.mem_map.mp ((hset v.1).mp (List.mem_map.mpr ⟨v, hv, rfl⟩))

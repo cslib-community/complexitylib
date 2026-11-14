@@ -168,12 +168,10 @@ private theorem exec_header {w : ℕ} (x : Data 32)
   let b := x.regs base
   let M := x.regs size * x.regs dimension
   let a := x.set one 1 |>.set addr 6 |>.set 1 (b + 6) |>.set area M
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h6 : Fits w 6 := hfit.of_le (by omega)
   have hb6 : Fits w (x.regs base + 6) := hfit.of_le (by omega)
   have hM : Fits w (x.regs size * x.regs dimension) := hfit.of_le (by omega)
   have hsetup : ExecWithin w setup x a 4 := by
-    ram_eval [setup, a, b, M, one, addr, base, area, size, dimension, h1, h6, hb6, hM,
+    ram_eval [setup, a, b, M, one, addr, base, area, size, dimension, hb6, hM,
       Fin.mk.injEq]
   let y := a.set addr b |>.write b (x.regs rho)
     |>.set addr (b + 1) |>.write (b + 1) (x.regs piece)

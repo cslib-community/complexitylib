@@ -386,7 +386,6 @@ theorem mulAddLoop_spec {a Bd : ℕ} (haB : a ≤ Bd) (hf : Fits w (2 * Bd)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = d := by simpa using hh.get pre.length (by simp)
     obtain ⟨v, hv⟩ : ∃ v, d * a + cy = v := ⟨_, rfl⟩
-    have hf1 : Fits w (B + pre.length) := hfit.of_le (by omega)
     have hf2 : Fits w (d * a) := hf.of_le (by omega)
     have hf3 : Fits w v := hf.of_le (by omega)
     have hf4 : Fits w (v >>> 1) := hf3.of_le (by rw [Nat.shiftRight_eq_div_pow]; omega)
@@ -396,7 +395,7 @@ theorem mulAddLoop_spec {a Bd : ℕ} (haB : a ≤ Bd) (hf : Fits w (2 * Bd)) :
       v).set carry (v >>> 1)).set val (v &&& 1)).write (B + pre.length) (v &&& 1)).set idx
       (pre.length + 1))
     have hbody : ExecWithin w mulAddBody x y₁ 8 := by
-      ram_eval [mulAddBody, y₁, hB, hv, hone, ha, hc, hi, hmem, hf1, hf2, hf3, hf4, hf5, hf6]
+      ram_eval [mulAddBody, y₁, hB, hv, hone, ha, hc, hi, hmem, hf2, hf3, hf4, hf5, hf6]
     have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) (v % 2) := by
       simp [y₁, Nat.and_one_is_mod]
     have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
@@ -444,14 +443,13 @@ theorem carryLoop_spec : ∀ (cy : ℕ) (ds : List ℕ) (x : Data 24),
       have hc' : (Cond.lt zero carry).Holds x := by simp [Cond.holds_lt, hz, hc, hpos]
       obtain ⟨B, hB⟩ : ∃ B, x.regs bBase = B := ⟨_, rfl⟩
       rw [hB] at hh hfit ⊢
-      have hf1 : Fits w (B + ds.length) := hfit.of_le (by omega)
       have hf2 : Fits w (cy &&& 1) := hfc.of_le (by rw [Nat.and_one_is_mod]; omega)
       have hf3 : Fits w (cy >>> 1) := hfc.of_le (by rw [Nat.shiftRight_eq_div_pow]; omega)
       have hf4 : Fits w (ds.length + 1) := hfit.of_le (by omega)
       let y₁ : Data 24 := ((((x.set addr (B + ds.length)).set val (cy &&& 1)).write
         (B + ds.length) (cy &&& 1)).set carry (cy >>> 1)).set bLen (ds.length + 1)
       have hbody : ExecWithin w carryBody x y₁ 5 := by
-        ram_eval [carryBody, y₁, hB, hone, hc, hl, hf1, hf2, hf3, hf4]
+        ram_eval [carryBody, y₁, hB, hone, hc, hl, hf2, hf3, hf4]
       have hy₁m : y₁.mem = Function.update x.mem (B + ds.length) (cy % 2) := by
         simp [y₁, Nat.and_one_is_mod]
       have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
@@ -545,7 +543,6 @@ theorem divLoop_spec {d : ℕ} (hd : 0 < d) (hfd : Fits w (2 * d)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = b := by simpa using hh.get pre.length (by simp)
     obtain ⟨t, ht⟩ : ∃ t, r + r + b = t := ⟨_, rfl⟩
-    have hf1 : Fits w pre.length := hfit.of_le (by omega)
     have hf2 : Fits w (B + pre.length) := hfit.of_le (by omega)
     have hf3 : Fits w (r + r) := hfd.of_le (by omega)
     have hf4 : Fits w t := hfd.of_le (by omega)
@@ -554,7 +551,7 @@ theorem divLoop_spec {d : ℕ} (hd : 0 < d) (hfd : Fits w (2 * d)) :
     let y₁ : Data 24 := (((((((x.set idx pre.length).set addr (B + pre.length)).set val b).set tmp
       (r + r)).set tmp t).set val (t / d)).set rmd (t % d)).write (B + pre.length) (t / d)
     have hbody : ExecWithin w divBody x y₁ 8 := by
-      ram_eval [divBody, y₁, hB, ht, hone, hdv, hi, hr, hmem, Nat.add_sub_cancel, hf1, hf2, hf3,
+      ram_eval [divBody, y₁, hB, ht, hone, hdv, hi, hr, hmem, Nat.add_sub_cancel, hf2, hf3,
         hf4, hf5, hf6]
     have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) (t / d) := by simp [y₁]
     have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
@@ -638,14 +635,13 @@ theorem decLoop_spec : ∀ (ds pre : List ℕ) (x : Data 24),
     obtain ⟨B, hB⟩ : ∃ B, x.regs bBase = B := ⟨_, rfl⟩
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = d := by simpa using hh.get pre.length (by simp)
-    have hf1 : Fits w (B + pre.length) := hfit.of_le (by omega)
     by_cases h0 : d = 0
     · subst h0
       have hf2 : Fits w (pre.length + 1) := hfit.of_le (by omega)
       let y₁ : Data 24 := (((x.set addr (B + pre.length)).set val 0).write (B + pre.length)
         1).set idx (pre.length + 1)
       have hbody : ExecWithin w decBody x y₁ 5 := by
-        ram_eval [decBody, y₁, hB, hz, hone, hi, hmem, hf1, hf2]
+        ram_eval [decBody, y₁, hB, hz, hone, hi, hmem, hf2]
       have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) 1 := by simp [y₁]
       have hyB : y₁.regs bBase = B := by simp +decide [y₁, hB]
       obtain ⟨y, hy, hyh, hyf, hyb, hym⟩ := decLoop_spec ds (pre ++ [1]) y₁
@@ -668,7 +664,7 @@ theorem decLoop_spec : ∀ (ds pre : List ℕ) (x : Data 24),
       let y₁ : Data 24 := ((((x.set addr (B + pre.length)).set val d).write (B + pre.length)
         0).set found 1).set idx (pre.length + (ds.length + 1))
       have hbody : ExecWithin w decBody x y₁ 7 := by
-        ram_eval [decBody, y₁, hB, hz, hone, hi, hl, hmem, h0, hf1, hf2, hf3]
+        ram_eval [decBody, y₁, hB, hz, hone, hi, hl, hmem, h0, hf2, hf3]
       have hy₁m : y₁.mem = Function.update x.mem (B + pre.length) 0 := by simp [y₁]
       have hcy : ¬(Cond.lt idx bLen).Holds y₁ := by simp +decide [Cond.holds_lt, y₁, hl]
       refine ⟨y₁, (ExecWithin.loop_iter hc hbody (ExecWithin.loop_exit hcy)).mono

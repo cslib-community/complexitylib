@@ -762,13 +762,12 @@ theorem roundSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).l
       RoundFrame φ 2 ((encode φ).length + 1) (roundSetupData φ).mem (roundSetupData φ) := by
   have hf1 : Fits w 1 := hw.of_le (by omega)
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
-  have hf3 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
   have hf4 : Fits w ((encode φ).length + 1 + n) := hw.of_le (by omega)
   have hm0 : (Data.init (encode φ) : Data 32).mem 0 = (encode φ).length := rfl
   have hm1 : (Data.init (encode φ) : Data 32).mem 1 = n := rfl
   refine ⟨?run, ?frame⟩
   case run =>
-    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hf1, hf2, hf3, hf4]
+    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hf1, hf2, hf4]
   case frame =>
     refine ⟨by simp +decide [roundSetupData], by simp +decide [roundSetupData],
       by simp +decide [roundSetupData], by simp +decide [roundSetupData],

@@ -58,11 +58,10 @@ theorem exec_prepare_at {w N U src workspace : ℕ} (x : Data 64)
     ∃ y, ExecWithin w prepareAt x y (5 * Nat.sqrt N + 24) ∧
       ParametersAt N U src workspace y ∧ y.regs inst = 0 ∧ y.regs found = 0 ∧
       y.mem = x.mem := by
-  have h1 : Fits w 1 := hfill.of_le (by omega)
   have hd : Fits w (workspace - N) := hsize.of_le (by omega)
   let a := x.set savedSource src |>.set base (workspace - N) |>.set one 1 |>.set sqrtArg N
   have ha : ExecWithin w callerSetup x a 4 := by
-    ram_eval [callerSetup, a, hb, hab, hN, h1, hd,
+    ram_eval [callerSetup, a, hb, hab, hN, hd,
       savedSource, base, matAB, len, one, sqrtArg, Fin.mk.injEq]
   have han : a.regs sqrtArg = N := by simp [a]
   have hsi : sqrtRegisters.Injective := by

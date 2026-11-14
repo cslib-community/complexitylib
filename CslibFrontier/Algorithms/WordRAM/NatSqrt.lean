@@ -103,11 +103,10 @@ theorem exec {w : ℕ} (x : Data 6) (hfit : Fits w (4 * x.regs arg + 4)) :
   have hout : y.regs root = Nat.sqrt n := by
     have h := Nat.sqrt_lt.mpr hlarge
     omega
-  have h1 : Fits w 1 := hfit.of_le (by omega)
   have hbfit : Fits w (x.regs arg + 1) := hfit.of_le (by omega)
   have hinit : ExecWithin (B := .standard) w
       (ram[ root ← #0; next ← #1; square ← #1; one ← #1; bound ← arg + one ]) x x₀ 5 := by
-    ram_eval [x₀, n, h1, hbfit, root, next, square, one, bound, arg, Fin.mk.injEq]
+    ram_eval [x₀, n, hbfit, root, next, square, one, bound, arg, Fin.mk.injEq]
   refine ⟨y, ?_, hout, ha, hm, ho⟩
   convert hinit.seq he using 1
   · rfl

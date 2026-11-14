@@ -88,10 +88,9 @@ theorem exec_firstSetup {w : ℕ} (x : Data 64) (h3 : Fits w 3)
     (hsq : ∀ j, Fits w (x.regs (CountCall.length j) ^ 2))
     (hcut : ∀ j, Fits w (3 * x.regs digits * x.regs (CountCall.length j) ^ 2)) :
     ExecWithin w firstSetup x (firstState x) 9 := by
-  have h1 : Fits w 1 := h3.of_le (by omega)
   simp only [digits] at htriple
   simp only [CountCall.length, pow_two] at hsq hcut
-  ram_eval [firstSetup, firstState, h3, h1, htriple, hsq 0, hsq 1, hsq 2,
+  ram_eval [firstSetup, firstState, h3, htriple, hsq 0, hsq 1, hsq 2,
     hcut 0, hcut 1, hcut 2, digits, multiplier, Search.rawModulus, Search.factor,
     CountCall.length, CollisionTest.threshold, Fin.mk.injEq, pow_two, Nat.mul_comm]
 

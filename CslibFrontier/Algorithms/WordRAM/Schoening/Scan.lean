@@ -271,12 +271,9 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
         (by simpa using hl)
       simpa using this.2
     have hval : x.mem (x.regs aBase + l.1.val) = (σ l.1).toNat := hσ l.1
-    have hf1 : Fits w l.1.val := hw.of_le (by omega)
     have hf2 : Fits w l.2.toNat := hw.of_le (by have := Bool.toNat_le l.2; omega)
-    have hf3 : Fits w (x.regs aBase + l.1.val) := hw.of_le (by omega)
     have hf4 : Fits w ((σ l.1).toNat ^^^ l.2.toNat) := hw.of_le (by
       have := toNat_xor_le_one (σ l.1) l.2; omega)
-    have hf5 : Fits w (1 - ((σ l.1).toNat ^^^ l.2.toNat)) := hw.of_le (by omega)
     have hf6 : Fits w (s.toNat ||| (1 - ((σ l.1).toNat ^^^ l.2.toNat))) := hw.of_le (by
       rw [one_sub_toNat_xor, toNat_or]; have := Bool.toNat_le (s || (σ l.1 == l.2)); omega)
     have hf7 : Fits w (x.regs lptr + 1) := hw.of_le (by simp only [List.length_cons] at hend; omega)
@@ -299,8 +296,8 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
         (σ l.1).toNat).set addr ((σ l.1).toNat ^^^ l.2.toNat)).set addr
         (1 - ((σ l.1).toNat ^^^ l.2.toNat))).set sat
         (s.toNat ||| (1 - ((σ l.1).toNat ^^^ l.2.toNat)))).set lptr (x.regs lptr + 1)) 9 := by
-      ram_eval [litBody, hone, hlit, hval, hs, litCode_shiftRight, litCode_and_one, hf1, hf2, hf3,
-        hf4, hf5, hf6, hf7]
+      ram_eval [litBody, hone, hlit, hval, hs, litCode_shiftRight, litCode_and_one, hf2, hf4, hf6,
+        hf7]
     refine ⟨y, (ExecWithin.loop_iter hc hbody hy).mono (by simp; omega), ?_, ?_, ?_, ?_, hyo⟩
     · simpa using hym
     · rw [hys, Clause.eval_cons, Literal.eval, Bool.or_assoc]
@@ -334,12 +331,11 @@ theorem clauseLoop_spec (σ : Fin n → Bool) (ψ : CNF (Fin n)) (x : Data 24)
         (by simpa [encodeClause] using hpc)
       simpa using this.2
     have hc : (Cond.lt ptr aBase).Holds x := by simp only [Cond.holds_lt]; omega
-    have hf1 : Fits w (x.regs ptr + 1) := hw.of_le (by omega)
     have hf2 : Fits w (x.regs ptr + 1 + c.length) := hw.of_le (by omega)
     have hinit : ExecWithin w clauseInit x
         ((((x.set len c.length).set lptr (x.regs ptr + 1)).set lend
           (x.regs ptr + 1 + c.length)).set sat 0) 4 := by
-      ram_eval [clauseInit, hlen, hone, hzero, hf1, hf2]
+      ram_eval [clauseInit, hlen, hone, hzero, hf2]
     obtain ⟨x₂, hlit, hm₂, hs₂, hp₂, ha₂, ho₂⟩ := litLoop_spec (w := w) σ c
       ((((x.set len c.length).set lptr (x.regs ptr + 1)).set lend
           (x.regs ptr + 1 + c.length)).set sat 0) false

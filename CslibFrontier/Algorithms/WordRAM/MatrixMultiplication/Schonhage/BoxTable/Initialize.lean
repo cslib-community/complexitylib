@@ -60,13 +60,11 @@ theorem exec_loadInput {w L m t : ℕ} (x : Data registers)
   have ct : c.regs Reg.threshold = t :=
     (cf _ (by decide) (by decide) (by decide)).trans
       ((bf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans ath)
-  have hf4 : Fits w 4 := hfit.of_le (by omega)
-  have hfB : Fits w (4 + 10 ^ L) := hfit.of_le (by omega)
   have hfD : Fits w (4 + 10 ^ L + 10 ^ L) := hfit.of_le (by omega)
   let y := ((c.set Reg.arrayA 4).set Reg.arrayB (4 + 10 ^ L)).set
     Reg.directory (4 + 10 ^ L + 10 ^ L)
   have hd : ExecWithin w inputPointers c y 3 := by
-    ram_eval [inputPointers, y, cT, hf4, hfB, hfD, Reg.arrayA, Reg.arrayB,
+    ram_eval [inputPointers, y, cT, hfD, Reg.arrayA, Reg.arrayB,
       Reg.directory, Reg.span, Fin.mk.injEq]
   refine ⟨y, (ha.seq (hb.seq (hc.seq hd))).mono (by omega), ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa [y, Reg.levels, Reg.arrayA, Reg.arrayB, Reg.directory] using cL

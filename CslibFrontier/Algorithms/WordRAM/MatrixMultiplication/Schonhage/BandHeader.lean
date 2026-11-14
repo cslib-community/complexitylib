@@ -208,11 +208,8 @@ theorem exec_header {w L m N : ℕ} (hm : m ≤ L) (x : Data 96)
   let I := S + B
   let T := I + 2 ^ L
   let C := T + 2 ^ L
-  have hnd : Fits w (N * D m) := hlocal.of_le (by omega)
   have hnd2 : Fits w (N * D m * 2) := hlocal.of_le (by omega)
   have hB : Fits w B := hlocal.of_le (by dsimp [B]; omega)
-  have ht2 : Fits w (10 ^ L * 2) := hlocal.of_le (by omega)
-  have hts : Fits w (10 ^ L * 2 + 7 ^ L) := hlocal.of_le (by omega)
   have hts2 : Fits w (10 ^ L * 2 + 7 ^ L + 2) := hlocal.of_le (by omega)
   have hS : Fits w S := hlocal.of_le (by dsimp [S, B]; omega)
   have hI : Fits w I := hlocal.of_le (by dsimp [I, S, B]; omega)
@@ -223,7 +220,7 @@ theorem exec_header {w L m N : ℕ} (hm : m ≤ L) (x : Data 96)
     snapshot (10 ^ L * 2 + 7 ^ L + 2)).set snapshot S).set inverse I).set table T).set catalogue C)
   have hy : ExecWithin w headerLayout z y 10 := by
     ram_eval [headerLayout, y, B, S, I, T, C, hbasic.rows, hbasic.two, hbasic.four,
-      hS2, hS7, hS10, hD, hnd, hnd2, hB, ht2, hts, hts2, hS, hI, hT, hC,
+      hS2, hS7, hS10, hD, hnd2, hB, hts2, hS, hI, hT, hC,
       prefixSize, snapshot, inverse, table, catalogue, rows, columns, leaves, cells,
       masks, two, four, Fin.mk.injEq, Function.update_idem]
   have hfixed : BasicParameters L m N y := hbasic.of_frame (by

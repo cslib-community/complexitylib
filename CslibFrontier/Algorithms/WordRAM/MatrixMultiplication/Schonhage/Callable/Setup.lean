@@ -63,12 +63,7 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
   have hc : Nat.clog 2 (N + Q + 3) ≤ sourceWidth N Q := by unfold sourceWidth; omega
   have h0 : Fits W 0 := fits_zero _
   have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h4 : Fits W 4 := hfit.of_le (by omega)
-  have h128 : Fits W 128 := hfit.of_le (by omega)
-  have hb3 : Fits W (b + 3) := hfit.of_le (by omega)
   have hb4 : Fits W (b + 4) := hfit.of_le (by omega)
-  have hsum : Fits W (N + Q) := hfit.of_le (by omega)
   have hsize : Fits W (N + Q + 3) := hfit.of_le (by omega)
   have hs1 : Fits W (N + Q + 3 + 1) := hfit.of_le (by omega)
   have hc1 : Fits W (Nat.clog 2 (N + Q + 3) + 1) := hfit.of_le (by omega)
@@ -85,7 +80,7 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
       ∃ s, ExecWithin W readSize x s 9 ∧ s.regs Reg.result = N + Q + 3 ∧
         s.mem = x.mem ∧ s.regs Reg.base = b := by
     refine ⟨?s, ?run, ?result, ?memory, ?base⟩
-    case run => ram_eval [readSize, hb, hN, hQ, h3, h4, hb3, hb4, hsum, hsize,
+    case run => ram_eval [readSize, hb, hN, hQ, hb4, hsize,
         Reg.result, Reg.second, Reg.base, Reg.address, Fin.mk.injEq]
     case result => simp +decide
     case memory => rfl
@@ -105,7 +100,7 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
     simpa only [Nat.mul_comm] using hexp
   have hprep : ExecWithin W
       (ram[ Reg.third ← #128; Reg.fourth ← Reg.second * Reg.third; Reg.third ← #2 ]) l p 3 := by
-    ram_eval [p, lc, h128, h2, hexp', Reg.third, Reg.fourth, Reg.second,
+    ram_eval [p, lc, h2, hexp', Reg.third, Reg.fourth, Reg.second,
       Fin.mk.injEq]
   obtain ⟨z, hz, zv, _, _, am, _, _, hframe⟩ :=
     Power.exec_rename powerBank powerBank_injective (w := W) 2

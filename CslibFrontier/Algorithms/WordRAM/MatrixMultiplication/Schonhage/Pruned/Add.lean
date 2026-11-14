@@ -49,9 +49,8 @@ theorem exec_addValue {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
       (∀ i, ¬AddValueLocal i → y.regs i = x.regs i) := by
   let z := (((((x.set suffix (q / 10)).set address (x.regs valueBase + q)).set
     left (encode a)).set address (x.regs childValues + q / 10)).set right (encode b))
-  have hquot : Fits (w + 2) (q / 10) := hc.of_le (by omega)
   have hload : ExecWithin (w + 2) addValueLoad x z 5 := by
-    ram_eval [addValueLoad, z, hq, h10, hleft, hright, hp, hc, hquot, suffix, address,
+    ram_eval [addValueLoad, z, hq, h10, hleft, hright, hp, hc, suffix, address,
       valueBase, query, ten, childValues, left, right, Fin.mk.injEq]
   obtain ⟨u, hu, hsum, hframe⟩ := Signed.exec_add (r := 87) ha hb z
     (by simp +decide [z, left, right, address]) (by simp [z])

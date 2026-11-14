@@ -78,10 +78,7 @@ theorem exec_boxAddend {w D V T c e r : ℕ} {a : ℤ} (x : Data registers)
     (hfit : Fits w (D + V + e * T + c + r + 10)) :
     ∃ y, ExecWithin w boxAddend x y 7 ∧ y.regs Signed.right = Signed.encode a ∧
       y.mem = x.mem ∧ (∀ i, ¬LeafLocal i → y.regs i = x.regs i) := by
-  have hf0 : Fits w (e * T) := hfit.of_le (by omega)
-  have hf1 : Fits w (e * T + c) := hfit.of_le (by omega)
   have hfD : Fits w (D + (e * T + c)) := hfit.of_le (by omega)
-  have hfr : Fits w r := hfit.of_le (by omega)
   have hfV : Fits w (V + r) := hfit.of_le (by omega)
   let y := (((((((x.set Reg.temporary (e * T)).set Reg.temporary (e * T + c)).set
     BoxTable.Reg.address (D + (e * T + c))).set BoxTable.Reg.childRank (r + 1)).set
@@ -89,7 +86,7 @@ theorem exec_boxAddend {w D V T c e r : ℕ} {a : ℤ} (x : Data registers)
       Signed.right (Signed.encode a))
   have hy : ExecWithin w boxAddend x y 7 := by
     ram_eval [boxAddend, y, hD, hV, hT, hc, he, h1, hrank, hvalue,
-      hf0, hf1, hfD, hfr, hfV, Reg.temporary, Reg.code, Reg.stars,
+      hfD, hfV, Reg.temporary, Reg.code, Reg.stars,
       BoxTable.Reg.address, BoxTable.Reg.childRank, BoxTable.Reg.directory,
       BoxTable.Reg.values, BoxTable.Reg.span, BoxTable.Reg.one, Signed.right,
       Fin.mk.injEq, Nat.add_sub_cancel]

@@ -329,12 +329,10 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
   have hinit : ExecWithin w (ram[
       one ← #1; zero ← #0; two ← #2; cursor ← #0; stop ← limit + one;
       answer ← one; found ← zero]) x x₀ 7 := by
-    have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h2 : Fits w 2 := hfit.of_le (by omega)
     have h0 : Fits w 0 := hfit.of_le (by omega)
     have hm : Fits w (m + 1) := hfit.of_le (by change m + 1 ≤ m + 3; omega)
     ram_eval [x₀, m, one, zero, two, cursor, stop, limit, answer, found,
-      h1, h2, h0, hm, Fin.mk.injEq]
+      h0, hm, Fin.mk.injEq]
   have hi : P (x₀.regs cursor) x₀ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, Or.inl ⟨?_, ?_, ?_⟩⟩
     · exact stable_set_high (stable_set_high (stable_set_high (stable_set_high

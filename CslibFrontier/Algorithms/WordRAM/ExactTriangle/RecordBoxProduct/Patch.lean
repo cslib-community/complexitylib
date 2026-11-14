@@ -57,14 +57,7 @@ theorem exec_patchInput {W b m I : ℕ} (x : Data 320)
         b I) (b + I) (m / 9) ∧
       y.regs Reg.base = b ∧
       ∀ j : Fin 320, j.val < 65 → y.regs j = x.regs j := by
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h9 : Fits W 9 := hfit.of_le (by omega)
-  have h21 : Fits W 21 := hfit.of_le (by omega)
-  have hb2 : Fits W (b + 2) := hfit.of_le (by omega)
-  have hb1 : Fits W (b + 1) := hfit.of_le (by omega)
   have hL : Fits W (m * 21) := hfit.of_le (by omega)
-  have hIF : Fits W I := hfit.of_le (by omega)
   have hbI : Fits W (b + I) := hfit.of_le (by omega)
   have hquot : Fits W (m / 9) := hfit.of_le (by omega)
   have hsucc : I - 1 + 1 = I := by omega
@@ -76,8 +69,8 @@ theorem exec_patchInput {W b m I : ℕ} (x : Data 320)
     |>.write b I |>.set Reg.address (b + I) |>.set Reg.depth (m / 9)
     |>.write (b + I) (m / 9)
   have he : ExecWithin W patchInput x y 16 := by
-    ram_eval [patchInput, y, hb, hm, hlen, hsucc, h1, h2, h9, h21, hb1, hb2, hL,
-      hIF, hbI, hquot, Reg.one, Reg.two, PatchReg.divisor, PatchReg.factor, Reg.address,
+    ram_eval [patchInput, y, hb, hm, hlen, hsucc, hL,
+      hbI, hquot, Reg.one, Reg.two, PatchReg.divisor, PatchReg.factor, Reg.address,
       Reg.base, Reg.depth, Reg.level, Reg.payloadLength, hne, Fin.mk.injEq]
   refine ⟨y, he, ?_, ?_, ?_⟩
   · simp only [y, Data.set_mem, Data.write_mem, Nat.mul_comm m 21]

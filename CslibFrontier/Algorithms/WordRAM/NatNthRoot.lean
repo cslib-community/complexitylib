@@ -201,7 +201,6 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
   set e := x.regs k
   have he0 : e ≠ 0 := by omega
   have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
   let I (y : Data 10) : Prop := y.regs n = N ∧ y.regs k = e ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
     y.regs t = y.regs lo + 1 ∧ y.regs lo < y.regs hi ∧ y.regs hi ≤ N + 1 ∧
     y.regs lo ^ e ≤ N ∧ N < y.regs hi ^ e ∧ y.mem = x.mem
@@ -293,7 +292,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
   have hhi : y.regs hi = y.regs lo + 1 := by simp only [Cond.holds_lt, hyt] at hc; omega
   have hinit : ExecWithin (B := .standard) w
       (ram[ lo ← #0; one ← #1; two ← #2; hi ← n + one; t ← lo + one ]) x x₀ 5 := by
-    ram_eval [x₀, N, h1, h2, hn1]
+    ram_eval [x₀, N, h1, hn1]
   refine ⟨y, ?_, ?_, hyn, hyk, hyo, hytwo, hymem⟩
   · have hμ : Nat.clog 2 (x₀.regs hi - x₀.regs lo) = Nat.clog 2 (N + 1) := by
       simp +decide [x₀]

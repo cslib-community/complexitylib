@@ -68,7 +68,6 @@ theorem exec_push {w F n k c u e p : ℕ} (x : Data registers)
       y.mem = writeTask F n k c u e p x.mem ∧
       (∀ i, ¬PushLocal i → y.regs i = x.regs i) := by
   let a := F + n * 5
-  have hfn : Fits w (n * 5) := hfit.of_le (by omega)
   have hfa : Fits w a := hfit.of_le (by dsimp only [a]; omega)
   have hf1 : Fits w (a + 1) := hfit.of_le (by dsimp only [a]; omega)
   have hf2 : Fits w (a + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
@@ -83,7 +82,7 @@ theorem exec_push {w F n k c u e p : ℕ} (x : Data registers)
   let y := (z4.write (a + 1 + 1 + 1 + 1) p).set Reg.top (n + 1)
   have hy : ExecWithin w push x y 12 := by
     ram_eval [push, y, z4, z3, z2, z1, z0, a, hF, hn, hk, hc, hu, he, hp,
-      h5, h1, hfn, hfa, hf1, hf2, hf3, hf4, hfnext,
+      h5, h1, hfa, hf1, hf2, hf3, hf4, hfnext,
       Reg.cursor, Reg.top, Reg.stack, Reg.depth, Reg.childCode, Reg.childUsed,
       Reg.childStars, Reg.childPower, Reg.five, BoxTable.Reg.one, Fin.mk.injEq]
   refine ⟨y, hy, by simp [y], ?_, fun i hi => hy.regs_eq (push_preserves i hi)⟩
@@ -114,7 +113,6 @@ theorem exec_pop {w F n k c u e p : ℕ} (x : Data registers)
       y.regs Reg.stars = e ∧ y.regs Reg.power = p ∧ y.mem = x.mem ∧
       (∀ i, ¬PopLocal i → y.regs i = x.regs i) := by
   let a := F + n * 5
-  have hfn : Fits w n := hfit.of_le (by omega)
   have hfm : Fits w (n * 5) := hfit.of_le (by omega)
   have hfa : Fits w a := hfit.of_le (by dsimp only [a]; omega)
   have hf1 : Fits w (a + 1) := hfit.of_le (by dsimp only [a]; omega)
@@ -132,7 +130,7 @@ theorem exec_pop {w F n k c u e p : ℕ} (x : Data registers)
   let y := z4.set Reg.power p
   have hy : ExecWithin w pop x y 12 := by
     ram_eval [pop, y, z4, z3, z2, z1, z0, a, hF, hn, h5, h1, hk, hc, hu', he', hp',
-      hfn, hfm, hfa, hf1, hf2, hf3, hf4, Reg.top, Reg.cursor, Reg.stack,
+      hfm, hfa, hf1, hf2, hf3, hf4, Reg.top, Reg.cursor, Reg.stack,
       Reg.depth, Reg.code, Reg.used, Reg.stars, Reg.power, Reg.five,
       BoxTable.Reg.one, Fin.mk.injEq, Nat.add_sub_cancel]
   refine ⟨y, hy, ?_, ?_, ?_, ?_, ?_, ?_, rfl,

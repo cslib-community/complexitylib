@@ -693,14 +693,9 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hf3 : Fits w 3 := hw.of_le (by simp [encode]; omega)
   have hf4 : Fits w 4 := hw.of_le (by simp [encode]; omega)
-  have hf5 : Fits w ((k :: c :: encode φ).length + 1) := hw.of_le (by omega)
-  have hf6 : Fits w ((k :: c :: encode φ).length + 1 + n) := hw.of_le (by omega)
   have hf7 : Fits w ((k :: c :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
   have hkn : (k - 1) * n ≤ k * n := Nat.mul_le_mul_right n (Nat.sub_le k 1)
-  have hf8 : Fits w (k - 1) := hw.of_le (by omega)
-  have hf9 : Fits w ((k - 1) * n) := hw.of_le (by omega)
   have hf10 : Fits w ((k - 1) * n + k) := hw.of_le (by omega)
-  have hf11 : Fits w ((k - 1) * n + k - 1) := hw.of_le (by omega)
   have hf12 : Fits w (((k - 1) * n + k - 1) / k) := hw.of_le (by
     have := Nat.div_le_self ((k - 1) * n + k - 1) k; omega)
   have hm0 : (Data.init (k :: c :: encode φ) : Data 32).mem 0 = (k :: c :: encode φ).length :=
@@ -711,7 +706,7 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   refine ⟨?run, ?frame⟩
   case run =>
     ram_eval [ampSetup, ampSetupData, ppzExp, Data.init_regs, hm0, hm1, hm2, hm3, hf1, hf2, hf3,
-      hf4, hf5, hf6, hf7, hf8, hf9, hf10, hf11, hf12]
+      hf4, hf7, hf10, hf12]
   case frame =>
     refine ⟨by simp +decide [ampSetupData], by simp +decide [ampSetupData],
       by simp +decide [ampSetupData], by simp +decide [ampSetupData],

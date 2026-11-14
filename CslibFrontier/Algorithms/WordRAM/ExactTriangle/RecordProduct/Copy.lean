@@ -37,15 +37,12 @@ theorem exec_copyInputs {W b A Q s t q : ℕ} (x : Data 320)
       (∀ a < 2 * Q, y.mem (b + 5 + 2 * A + a) = x.mem (q + a)) ∧
       (∀ a, a < b + 5 ∨ b + 5 + 2 * A + 2 * Q ≤ a → y.mem a = x.mem a) ∧
       ∀ i : Fin 320, i.val < 96 → i ≠ Reg.address → y.regs i = x.regs i := by
-  have h5 : Fits W 5 := hfit.of_le (by omega)
-  have hb5 : Fits W (b + 5) := hfit.of_le (by omega)
-  have hbA : Fits W (b + 5 + A) := hfit.of_le (by omega)
   have hbAA : Fits W (b + 5 + A + A) := hfit.of_le (by omega)
   have hQQ : Fits W (Q + Q) := hfit.of_le (by omega)
   let l := x.set Reg.source s |>.set Reg.address 5 |>.set Reg.destination (b + 5)
     |>.set Reg.length A
   have hl : ExecWithin W deliverLeft x l 4 := by
-    ram_eval [deliverLeft, l, hs, hb, hA, h5, hb5, Reg.source, Reg.left, Reg.address,
+    ram_eval [deliverLeft, l, hs, hb, hA, Reg.source, Reg.left, Reg.address,
       Reg.destination, Reg.base, Reg.length, Reg.area]
   have lmeta (i : Fin 320) (hi : i.val < 96) (hne : i ≠ Reg.address) :
       l.regs i = x.regs i := by
@@ -64,7 +61,7 @@ theorem exec_copyInputs {W b A Q s t q : ℕ} (x : Data 320)
     (ar _ (by decide)).trans ((lmeta _ (by decide) (by decide)).trans ht)
   let r := a.set Reg.source t |>.set Reg.destination (b + 5 + A)
   have hr : ExecWithin W deliverRight a r 2 := by
-    ram_eval [deliverRight, r, aRight, adst, aA, hbA, Reg.source, Reg.right,
+    ram_eval [deliverRight, r, aRight, adst, aA, Reg.source, Reg.right,
       Reg.destination, Reg.area]
   obtain ⟨c, hc, cm, csrc, cdst, clen, cr⟩ := exec_copy r
     (by simp +decide [r, Reg.source, Reg.destination]) (by simp [r])

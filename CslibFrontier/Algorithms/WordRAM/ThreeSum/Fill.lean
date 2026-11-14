@@ -137,7 +137,6 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
       · exact hmemory
     · simp only [Data.set_regs, Function.update_self]
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
-  have harea : Fits (w + 2) (A.t * A.t) := hacfit.of_le (by omega)
   let x₀ := ((x.set Cell.cell 0).set one 1).set area (A.t * A.t)
   have hx₀ : Inv (x₀.regs Cell.cell) x₀ := by
     refine ⟨?_, ?_, ?_, ?_⟩
@@ -174,7 +173,7 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
     (hr Cell.base (by decide)).trans hbase, (hr Cell.filler (by decide)).trans hf⟩
   have hinit : ExecWithin (w + 2)
       (ram[ Cell.cell ← #0; one ← #1; area ← Cell.side * Cell.side ]) x x₀ 3 := by
-    ram_eval [x₀, ht, h1, harea, Cell.cell, Cell.side, one, area, Fin.mk.injEq]
+    ram_eval [x₀, ht, h1, Cell.cell, Cell.side, one, area, Fin.mk.injEq]
   have hall := hinit.seq he
   convert hall using 1
   · rfl

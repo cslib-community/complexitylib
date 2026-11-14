@@ -199,7 +199,6 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
     simpa [Signed.encode, two_mul, show ¬(p : ℤ) < 0 by omega] using h
   have hsizeFit : Fits (w + 2) n := hN.of_le
     (by simpa only [N, pow_two] using Nat.le_self_pow two_ne_zero n)
-  have hpFit : Fits (w + 2) p := hmodfit.of_le (by omega)
   let a := initial.set one 1 |>.set 0 header |>.set size n |>.set 0 (header + 1) |>.set modulus p
     |>.set weights base |>.set area N |>.set 11 (N + N) |>.set 11 (N + N + N)
     |>.set 9 base |>.set 10 (base + (N + N + N)) |>.set residues (base + (N + N + N))
@@ -208,8 +207,8 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
   have hsetup : ExecWithin (w + 2) (setupAt header) initial a 15 := by
     dsimp [N, base] at hN h2N h3N hres hcounts hqueries
     ram_eval [setupAt, a, N, base, h1, hhead, hhead1, hbase, hN, h2N, h3N, hres,
-      hcounts, hqueries, hmodfit, hsizeFit, hpFit,
-      one, size, modulus, weights, area, residues, counts, queries,
+      hcounts, hqueries, hmodfit, hsizeFit, one, size, modulus, weights, area, residues,
+      counts, queries,
       temp, weightLen, weightSrc, weightDst, encodedMod, hnHeader, hpHeader, Fin.mk.injEq]
   have ha9 : (a.comap (bank 16 (by decide))).regs Residues.src = base := by
     simp +decide [a, bank, Residues.src, one, size, modulus, weights, area, residues,

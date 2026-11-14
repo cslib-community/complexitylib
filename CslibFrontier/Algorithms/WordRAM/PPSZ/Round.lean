@@ -159,10 +159,8 @@ theorem roundSetup_exec (s : ℕ) (φ : CNF (Fin n)) {w : ℕ}
     ExecWithin w roundSetup (Data.init (s :: encode φ)) (roundSetupData s φ) 12 ∧
       RoundFrame φ 3 ((s :: encode φ).length + 1) (roundSetupData s φ).mem
         (roundSetupData s φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hf3 : Fits w 3 := hw.of_le (by simp [encode]; omega)
-  have hf4 : Fits w ((s :: encode φ).length + 1) := hw.of_le (by omega)
   have hf5 : Fits w ((s :: encode φ).length + 1 + n) := hw.of_le (by omega)
   have hf6 : Fits w ((s :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
   have hm0 : (Data.init (s :: encode φ) : Data 32).mem 0 = (s :: encode φ).length := rfl
@@ -170,7 +168,7 @@ theorem roundSetup_exec (s : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   have hm2 : (Data.init (s :: encode φ) : Data 32).mem 2 = n := rfl
   refine ⟨?run, ?frame⟩
   case run =>
-    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hm2, hf1, hf2, hf3, hf4, hf5,
+    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hm2, hf2, hf3, hf5,
       hf6]
   case frame =>
     refine ⟨by simp +decide [roundSetupData], by simp +decide [roundSetupData],

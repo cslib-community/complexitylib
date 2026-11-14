@@ -365,15 +365,13 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     ∃ y, ExecWithin w program x y (39 * (t * (t * t)) + 9) ∧ y.regs out ≤ 1 ∧
       (y.regs out = 1 ↔ Cslib.Algorithms.ExactTriangle.HasZeroTriangle A B C) ∧
       y.mem = x.mem := by
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
   have harea : Fits w (t * t) := hfit.of_le (by omega)
   have hstop : Fits w ((t * t) * t) := hfit.of_le (by rw [Nat.mul_assoc]; omega)
   rw [Nat.mul_assoc] at hstop
   let a := x.set current 0 |>.set area (t * t) |>.set stop (t * (t * t))
     |>.set one 1 |>.set two 2 |>.set zero 0 |>.set out 0
   have ha : ExecWithin w setup x a 7 := by
-    ram_eval [setup, a, ht, harea, hstop, h1, h2, side, current, area, stop,
+    ram_eval [setup, a, ht, harea, hstop, side, current, area, stop,
       one, two, zero, out, Nat.mul_assoc, Fin.mk.injEq]
   have hpa : Control t abp bcp acp a := by
     constructor <;> simp +decide [a, side, ab, bc, ac, current, area, stop,

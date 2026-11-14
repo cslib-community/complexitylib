@@ -91,7 +91,6 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
   have hmp : x.regs maskPower ≤ 10 ^ L := by rw [hx.mask_power]; exact hpow 2 (by decide)
   have hop : x.regs outerPower ≤ 10 ^ L := hx.outer_power.trans (hpow 3 (by decide))
   have hip : x.regs innerPower ≤ 10 ^ L := hx.inner_power.trans (hpow 4 (by decide))
-  have hdFit : Fits w (x.regs residue % 7) := hfit.of_le (by omega)
   have hrFit : Fits w (x.regs residue / 7) :=
     hfit.of_le ((Nat.div_le_self _ _).trans (by have := hx.residue_le; omega))
   have hmFit : Fits w (x.regs maskPower * 2) := hfit.of_le (by omega)
@@ -113,7 +112,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
       level (x.regs level + 1))
     have he : ExecWithin w splitBody x y 11 := by
       ram_eval [splitBody, y, hx.fixed.one, hx.fixed.two, hx.fixed.three, hx.fixed.seven,
-        hdFit, hrFit, hmFit, hjFit, hmul, hadd, hpower, houter,
+        hrFit, hmFit, hjFit, hmul, hadd, hpower, houter,
         digit, residue, temporary, outerAcc, outerPower, maskPower, level, one, two,
         three, seven, Fin.mk.injEq]
     have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)
@@ -157,7 +156,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
       maskPower (x.regs maskPower * 2)).set level (x.regs level + 1))
     have he : ExecWithin w splitBody x y 11 := by
       ram_eval [splitBody, y, hx.fixed.one, hx.fixed.two, hx.fixed.three, hx.fixed.four,
-        hx.fixed.seven, hdFit, hrFit, hmFit, hjFit, hsub, hmul, hadd, hpower, hmask, houter,
+        hx.fixed.seven, hrFit, hmFit, hjFit, hsub, hmul, hadd, hpower, hmask, houter,
         digit, residue, temporary, innerAcc, innerPower, maskAcc, maskPower, level,
         one, two, three, four, seven, Fin.mk.injEq]
     have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)
@@ -193,11 +192,10 @@ theorem exec_split {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitParameters L x
       y.regs maskAcc = (parts L a).mask ∧ y.regs outerAcc = (parts L a).outer ∧
       y.regs innerAcc = (parts L a).inner ∧ y.mem = x.mem := by
   have h0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
   let start := ((((((((x.set residue a).set maskAcc 0).set outerAcc 0).set innerAcc 0).set
     maskPower 1).set outerPower 1).set innerPower 1).set level 0)
   have hs : ExecWithin w splitHead x start 8 := by
-    ram_eval [splitHead, start, ha, h0, h1, residue, index, maskAcc, outerAcc, innerAcc,
+    ram_eval [splitHead, start, ha, h0, residue, index, maskAcc, outerAcc, innerAcc,
       maskPower, outerPower, innerPower, level, Fin.mk.injEq]
   have hp : SplitParameters L start := hx.of_eq (by
     intro i hi

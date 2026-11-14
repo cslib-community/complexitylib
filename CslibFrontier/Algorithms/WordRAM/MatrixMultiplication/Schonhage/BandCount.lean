@@ -37,10 +37,9 @@ theorem exec_countMasks {w : ℕ} (L m : ℕ) (x : Data 96)
       y.regs count = K L m ∧ y.regs mask = 2 ^ L ∧ y.mem = x.mem ∧
       (∀ i, i ≠ mask → i ≠ count → i ≠ residue → i ≠ population → i ≠ counter →
         i ≠ digit → y.regs i = x.regs i) := by
-  have h0 : Fits w 0 := hfit.of_le (by omega)
   let start := (x.set mask 0).set count 0
   have hs : ExecWithin (B := .standard) w (ram[ mask ← #0; count ← #0 ]) x start 2 := by
-    ram_eval [start, h0, mask, count, Fin.mk.injEq]
+    ram_eval [start, mask, count, Fin.mk.injEq]
   let P (j : ℕ) (y : Data 96) : Prop :=
     y.mem = x.mem ∧ y.regs levels = L ∧ y.regs inner = m ∧ y.regs masks = 2 ^ L ∧
       y.regs one = 1 ∧ y.regs two = 2 ∧

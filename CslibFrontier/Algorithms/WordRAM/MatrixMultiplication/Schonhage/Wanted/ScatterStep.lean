@@ -64,8 +64,6 @@ theorem exec_scatterStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ
   have hend := memoryLimit_eq L m N Q
   have h10 := Nat.zero_le (10 ^ L)
   have h2 := Nat.zero_le (2 ^ L)
-  have hn2 : Fits w (n * 2) := hl.of_le (by omega)
-  have ha : Fits w (n * 2 + 5) := hl.of_le (by omega)
   have ha1 : Fits w (n * 2 + 5 + 1) := hl.of_le (by omega)
   have hI : x.mem (n * 2 + 5) = I.val :=
     (congrArg x.mem (by omega : n * 2 + 5 = 5 + 2 * n)).trans hinput.1
@@ -75,7 +73,7 @@ theorem exec_scatterStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ
     pointer (n * 2 + 5 + 1)).set queryCol J.val
   have hload : ExecWithin w loadQuery x loaded 5 := by
     ram_eval [loadQuery, loaded, hx.queries, hx.tables.two, hx.tables.one, hi, hI, hJ,
-      hn2, ha, ha1, pointer, index, queries, queryRow, queryCol,
+      ha1, pointer, index, queries, queryRow, queryCol,
       BandPreparation.one, BandPreparation.two, Fin.mk.injEq]
   have lp : Parameters L m N Q loaded := hx.of_exec hload (by decide +kernel)
   have hrfit : Fits w (routeBudget L m N (tableAddress L Q)) := hfit.of_le (by

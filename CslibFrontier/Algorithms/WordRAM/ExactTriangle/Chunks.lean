@@ -250,8 +250,7 @@ theorem exec {w : ℕ} (x : Data 14) (hcap : 0 < x.regs capacity)
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; three ← #3; pos ← #0; count ← #0; ptr ← queries ]) x x₀ 5 := by
     have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h3 : Fits w 3 := hfit.of_le (by omega)
-    ram_eval [x₀, b, h1, h3, one, three, pos, count, ptr, queries, Fin.mk.injEq]
+    ram_eval [x₀, b, h1, one, three, pos, count, ptr, queries, Fin.mk.injEq]
   obtain ⟨y, hy, hI, hc⟩ := ExecWithin.loop_invariant I
     (fun y => N - y.regs pos) hbody hx₀
   obtain ⟨hyr, -, -, hyp, hymin, hyc, hylast, -, hycells, hyframe⟩ := hI

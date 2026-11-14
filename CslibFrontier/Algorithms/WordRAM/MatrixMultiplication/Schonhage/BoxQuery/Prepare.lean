@@ -75,13 +75,11 @@ theorem exec_loadInput {w L m t Q : ℕ} (x : Data registers)
   have cQ : c.regs Reg.query = Q :=
     (cf _ (by decide) (by decide) (by decide)).trans
       ((bf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans aQ)
-  have hf5 : Fits w 5 := hfit.of_le (by omega)
-  have hfB : Fits w (5 + 10 ^ L) := hfit.of_le (by omega)
   have hfD : Fits w (5 + 10 ^ L + 10 ^ L) := hfit.of_le (by omega)
   let y := ((c.set BoxTable.Reg.arrayA 5).set BoxTable.Reg.arrayB (5 + 10 ^ L)).set
     BoxTable.Reg.directory (5 + 10 ^ L + 10 ^ L)
   have hd : ExecWithin w inputPointers c y 3 := by
-    ram_eval [inputPointers, y, cT, hf5, hfB, hfD, BoxTable.Reg.arrayA,
+    ram_eval [inputPointers, y, cT, hfD, BoxTable.Reg.arrayA,
       BoxTable.Reg.arrayB, BoxTable.Reg.directory, BoxTable.Reg.span, Fin.mk.injEq]
   refine ⟨y, (ha.seq (hb.seq (hc.seq hd))).mono (by omega), ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa [y, BoxTable.Reg.levels, BoxTable.Reg.arrayA,

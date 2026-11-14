@@ -69,7 +69,6 @@ theorem exec_lookupDigit {w L k C d s f c v : ℕ} (x : Data registers)
   have hfs : Fits w (s + 1) := hfit.of_le (by omega)
   have hff : Fits w (f + 1) := hfit.of_le (by omega)
   have hf0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have hf1 : Fits w 1 := hfit.of_le (by omega)
   have hfm : Fits w (digit * 10 ^ k) := hfit.of_le (by omega)
   have hfc : Fits w (c + digit * 10 ^ k) := hfit.of_le (by omega)
   have hfp : Fits w (10 ^ k * 10) := by
@@ -94,7 +93,7 @@ theorem exec_lookupDigit {w L k C d s f c v : ℕ} (x : Data registers)
       have hv0 : d = 10 → ¬0 < v := by intro h; rw [horder h]; omega
       ram_eval [lookupDigit, y, counted, starred, checked, loaded, digit, hd10, hd9, hn10,
         hv0, horder, hC, hread, hlevel, hstars, hpop, hcode, hseen, hinvalid, hpow,
-        h0, h1, h9, h10, hfa, hfl, hfs, hff, hf0, hf1, hfm, hfc, hfp,
+        h0, h1, h9, h10, hfa, hfl, hfs, hff, hf0, hfm, hfc, hfp,
         Reg.address, Reg.digit, Reg.invalid, Reg.fixedSeen, Reg.stars, Reg.population,
         Reg.temporary, Reg.completion, Reg.power, Reg.level, Reg.cube, Reg.nil,
         Reg.one, Reg.nine, Reg.ten, Fin.mk.injEq]

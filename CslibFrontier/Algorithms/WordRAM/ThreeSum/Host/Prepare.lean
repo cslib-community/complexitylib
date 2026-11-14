@@ -164,18 +164,15 @@ theorem exec_layout_at {w N U src : ℕ} (x : Data 64)
   have ht : Fits w t := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
   have ha : Fits w (t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hs : Fits w (t + t) := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
-  have hab : Fits w (src + N) := hsize.of_le (by omega)
   have hbc : Fits w (src + N + t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hac : Fits w (src + N + t * t + t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hfree : Fits w (src + N + t * t + t * t + t * t) :=
     hsize.of_le (by dsimp [t] at *; omega)
-  have hu2 : Fits w (U + U) := hfill.of_le (by omega)
-  have hu1 : Fits w (U + U + 1) := hfill.of_le (by omega)
   have hu4 : Fits w (U + U + 1 + (U + U + 1)) := hfill.of_le (by omega)
   refine ⟨?y, ?run, ?parameters, ?counter, ?found, ?memory⟩
   case run =>
-    ram_eval [layout, hr, ho, hN, hU, hb, ht, ha, hs, hab, hbc, hac, hfree,
-      hu2, hu1, hu4, t, sideLength, len, upper, base, matAB, matBC, matAC,
+    ram_eval [layout, hr, ho, hN, hU, hb, ht, ha, hs, hbc, hac, hfree,
+      hu4, t, sideLength, len, upper, base, matAB, matBC, matAC,
       free, side, inst, stop, found, one, filler, encodedFiller, area, sqrtRoot, Fin.mk.injEq]
   case parameters =>
     constructor <;>

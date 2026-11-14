@@ -80,15 +80,13 @@ theorem exec_geometrySetup {w L m t D : ℕ} (x : Data registers)
       y.regs Reg.slot = 0 ∧ y.regs Reg.count = 0 ∧ y.mem = x.mem := by
   let S := (m - t + 1) * 10 ^ L
   have hp : 0 < 10 ^ L := by positivity
-  have hh : Fits w (m - t) := hfit.of_le (by omega)
   have hh1 : Fits w (m - t + 1) := hfit.of_le (by omega)
-  have hS : Fits w S := hfit.of_le (by omega)
   have hR : Fits w (D + S) := hfit.of_le (by omega)
   have hf0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
   let a := ((x.set Reg.height (m - t)).set Reg.slots (m - t + 1)).set Reg.slots S
   let y := ((a.set Reg.records (D + S)).set Reg.slot 0).set Reg.count 0
   have he : ExecWithin w geometrySetup x y 6 := by
-    ram_eval [geometrySetup, y, a, S, hm, ht, hD, hT, h1, hh, hh1, hS, hR, hf0,
+    ram_eval [geometrySetup, y, a, S, hm, ht, hD, hT, h1, hh1, hR, hf0,
       Reg.height, Reg.slots, Reg.records, Reg.slot, Reg.count, Reg.inner, Reg.threshold,
       Reg.directory, Reg.span, Reg.one, Fin.mk.injEq]
   refine ⟨y, he, ?_, ?_, ?_, rfl⟩

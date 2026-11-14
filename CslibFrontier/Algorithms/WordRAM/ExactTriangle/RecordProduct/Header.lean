@@ -37,12 +37,8 @@ theorem exec_writeHeader {W b m n A Q : ℕ} (x : Data 320)
       ∀ i : Fin 320, i.val < 78 → y.regs i = x.regs i := by
   have hdepth : Fits W m := hfit.of_le (by omega)
   have hlevel : Fits W (m * 19) := hfit.of_le (by omega)
-  have hAQ : Fits W (2 * A + Q) := hfit.of_le (by omega)
   have hAQQ : Fits W (2 * A + Q + Q) := hfit.of_le (by omega)
   have hlen : Fits W (2 * A + Q + Q + 4) := hfit.of_le (by omega)
-  have hb1 : Fits W (b + 1) := hfit.of_le (by omega)
-  have hb2 : Fits W (b + 1 + 1) := hfit.of_le (by omega)
-  have hb3 : Fits W (b + 1 + 1 + 1) := hfit.of_le (by omega)
   have hb4 : Fits W (b + 1 + 1 + 1 + 1) := hfit.of_le (by omega)
   have hquot : 2 * m / 2 = m := by omega
   let y := x.set Reg.depth m |>.set Reg.level (m * 19)
@@ -54,7 +50,7 @@ theorem exec_writeHeader {W b m n A Q : ℕ} (x : Data 320)
     |>.set Reg.address (b + 1 + 1 + 1 + 1) |>.write (b + 1 + 1 + 1 + 1) Q
   have he : ExecWithin W writeHeader x y 15 := by
     ram_eval [writeHeader, y, hb, hm, hA, hQ, hn, h1, h2, h19, h4, hquot, hdepth, hlevel,
-      hAQ, hAQQ, hlen, hb1, hb2, hb3, hb4, Reg.depth, Reg.destination, Reg.two,
+      hAQQ, hlen, hb4, Reg.depth, Reg.destination, Reg.two,
       Reg.level, Reg.nineteen, Reg.payloadLength, Reg.twiceArea, Reg.count, Reg.four,
       Reg.address, Reg.base, Reg.one, Reg.size]
   refine ⟨y, he, ?_, ?_, ?_⟩

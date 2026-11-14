@@ -120,8 +120,6 @@ theorem exec_deliverPair {W n first length out queries count i scans a b : ℕ} 
       ∀ j : Fin 400, j.val < 326 ∨ j = Reg.one ∨ j = Reg.zero ∨
         (345 ≤ j.val ∧ j.val ≤ 348) ∨ (351 ≤ j.val ∧ j.val ≤ 352) →
         y.regs j = x.regs j := by
-  have hd : Fits W (i + i) := hfit.of_le (by omega)
-  have hp : Fits W (i + i + queries) := hfit.of_le (by omega)
   have hp1 : Fits W (i + i + queries + 1) := hfit.of_le (by omega)
   have hs1 : Fits W (scans + 1) := hfit.of_le (by omega)
   have hreadA : x.mem (i + i + queries) = a := by simpa only [two_mul, Nat.add_comm] using ha
@@ -132,7 +130,7 @@ theorem exec_deliverPair {W n first length out queries count i scans a b : ℕ} 
     |>.set (scanBank WitnessScan.Reg.b) b |>.set Reg.scans (scans + 1)
   have he : ExecWithin W deliverPair x y 6 := by
     ram_eval [deliverPair, y, hi, hs, hx.queries, hx.one, hreadA, hreadB,
-      hd, hp, hp1, hs1, Reg.address, Reg.index, Reg.queries, Reg.one, Reg.scans,
+      hp1, hs1, Reg.address, Reg.index, Reg.queries, Reg.one, Reg.scans,
       scanBank, WitnessScan.Reg.a, WitnessScan.Reg.b]
   have frame (j : Fin 400) (hj : Stable j) : y.regs j = x.regs j :=
     he.regs_eq (deliverPair_preserves j hj)

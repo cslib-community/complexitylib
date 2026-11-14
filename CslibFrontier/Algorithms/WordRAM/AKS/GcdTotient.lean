@@ -224,11 +224,10 @@ theorem exec {w : ℕ} (x : Data 11) {N R : ℕ} (hn : x.regs n = N) (hr : x.reg
     ∃ y, ExecWithin w program x y (time R) ∧ y.regs ok ≤ 1 ∧
       (y.regs ok = 1 ↔ ∀ b, 1 ≤ b → b ≤ R → b.gcd N = 1 ∨ b.gcd N = N) ∧
       y.regs phi = Nat.totient R ∧ y.regs n = N ∧ y.regs r = R := by
-  have h1f : Fits w 1 := hfR.of_le (by omega)
   let x₀ := ((((x.set one 1).set lim (R + 1)).set a 0).set ok 1).set phi 0
   have hrun₀ : ExecWithin (B := .standard) w
       (ram[ one ← #1; lim ← r + one; a ← #0; ok ← #1; phi ← #0 ]) x x₀ 5 := by
-    ram_eval [x₀, hr, h1f, hfR]
+    ram_eval [x₀, hr, hfR]
   have hx₀ : Inv N R (x₀.regs a) x₀ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [x₀, hn, hr]
   obtain ⟨y, hrun, ⟨hyn, hyr, _, _, hyok, hyiff, hyphi⟩, _⟩ :=

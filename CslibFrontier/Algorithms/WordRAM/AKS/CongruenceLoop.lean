@@ -117,7 +117,6 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
       (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v ≤ A₀ → Congruence n r v) ∧
       y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧ y.regs nn = n := by
   classical
-  have h1 : Fits w 1 := hfA.of_le (by omega)
   let P (j : ℕ) (y : Data 29) : Prop := y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧
     y.regs nn = n ∧ y.regs lim = A₀ + 1 ∧ y.regs c1 = 1 ∧ 1 ≤ j ∧ y.regs ok ≤ 1 ∧
     (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v < j → Congruence n r v)
@@ -176,7 +175,7 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
   let x₀ := (((x.set c1 1).set lim (A₀ + 1)).set av 1).set ok 1
   have hrun₀ : ExecWithin (B := .standard) w (ram[ c1 ← #1; lim ← A + c1; av ← c1; ok ← #1 ])
       x x₀ 4 := by
-    ram_eval [x₀, hA, h1, hfA]
+    ram_eval [x₀, hA, hfA]
   have hx₀ : P (x₀.regs av) x₀ := by
     refine ⟨by simp +decide [x₀, ha], by simp +decide [x₀, hb], by simp +decide [x₀, ht],
       by simp +decide [x₀, hr], by simp +decide [x₀, hn], by simp +decide [x₀],
