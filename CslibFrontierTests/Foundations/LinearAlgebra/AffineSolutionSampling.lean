@@ -30,12 +30,13 @@ namespace Cslib.LinearAlgebra.AffineSolutionSamplingTests
 
 open Cslib.LinearAlgebra
 
-abbrev F := ZMod 2
-abbrev Input := Fin 2 → F
-abbrev Output := Fin 1 → F
+abbrev Input (K : Type*) := Fin 2 → K
+abbrev Output (K : Type*) := Fin 1 → K
+
+variable {K : Type*} [Field K]
 
 /-- The underdetermined map `(x₀, x₁) ↦ x₀ + x₁`. -/
-def sumMap : Input →ₗ[F] Output where
+def sumMap : Input K →ₗ[K] Output K where
   toFun x := fun _ ↦ x 0 + x 1
   map_add' x y := by
     funext i
@@ -43,11 +44,11 @@ def sumMap : Input →ₗ[F] Output where
     ring
   map_smul' c x := by
     funext i
-    simp only [Pi.smul_apply, smul_eq_mul]
+    simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]
     ring
 
 /-- A canonical solver for `sumMap`, setting its second coordinate to zero. -/
-def sumSolver : AffineSolutionSolver sumMap where
+def sumSolver : AffineSolutionSolver (sumMap (K := K)) where
   solve y := some fun i ↦ if i = 0 then y 0 else 0
   map_eq_of_solve_eq_some := by
     intro y x h
@@ -65,11 +66,11 @@ def sumSolver : AffineSolutionSolver sumMap where
     simp [sumMap]
 
 /-- A nonsurjective zero map, used to exercise mandatory failure on a consistent target. -/
-def zeroMap : Input →ₗ[F] Output := 0
+def zeroMap : Input K →ₗ[K] Output K := 0
 
 /-- The source-shaped solver contract for `zeroMap`: every target is rejected because the map is
 not surjective. -/
-def zeroSolver : AffineSolutionSolver zeroMap where
+def zeroSolver : AffineSolutionSolver (zeroMap (K := K)) where
   solve _ := none
   map_eq_of_solve_eq_some := by simp
   solve_eq_none_iff_not_surjective _ := by
@@ -82,17 +83,18 @@ def zeroSolver : AffineSolutionSolver zeroMap where
       rfl
 
 /-- A nonzero shift for the underdetermined system. -/
-def shift : Input := ![1, 1]
+def shift : Input K := ![1, 1]
 
 /-- The target used by the successful attempt. -/
-def oneTarget : Output := fun _ ↦ 1
+def oneTarget : Output K := fun _ ↦ 1
 
 /-- Shifting changes the canonical solution from `(1, 0)` to `(0, 1)`. -/
-example : sumSolver.sampleSolution oneTarget shift = some ![0, 1] := by
+example : (sumSolver (K := ZMod 2)).sampleSolution
+    (oneTarget (K := ZMod 2)) (shift (K := ZMod 2)) = some ![0, 1] := by
   decide +kernel
 
 /-- The shifted result still solves the original affine system. -/
-example : sumMap ![0, 1] = oneTarget := by
+example : sumMap (K := ZMod 2) ![0, 1] = oneTarget (K := ZMod 2) := by
   decide +kernel
 
 inductive Attempt where
@@ -101,34 +103,37 @@ inductive Attempt where
   deriving DecidableEq
 
 /-- Each attempt carries its own linear system. -/
-def system : Attempt → Input →ₗ[F] Output
-  | .rankDeficient => zeroMap
-  | .fullRank => sumMap
+def system : Attempt → Input K →ₗ[K] Output K
+  | .rankDeficient => zeroMap (K := K)
+  | .fullRank => sumMap (K := K)
 
 /-- Solver contracts for the two attempt systems. -/
-def solver : (a : Attempt) → AffineSolutionSolver (system a)
-  | .rankDeficient => zeroSolver
-  | .fullRank => sumSolver
+def solver : (a : Attempt) → AffineSolutionSolver (system (K := K) a)
+  | .rankDeficient => zeroSolver (K := K)
+  | .fullRank => sumSolver (K := K)
 
 /-- Targets remain explicit per attempt; the rank-deficient attempt is consistent but must fail. -/
-def target : Attempt → Output
+def target : Attempt → Output K
   | .rankDeficient => 0
-  | .fullRank => oneTarget
+  | .fullRank => oneTarget (K := K)
 
 /-- Randomness remains explicit per attempt. -/
-def randomness : Attempt → Input
+def randomness : Attempt → Input K
   | .rankDeficient => ![1, 0]
-  | .fullRank => shift
+  | .fullRank => shift (K := K)
 
 /-- Retry skips the consistent but rank-deficient system, returns the next solution, and retains
 the successful attempt tag. -/
 example : retrySampleSolution [.rankDeficient, .fullRank]
-    system solver target randomness = some (.fullRank, ![0, 1]) := by
+    (system (K := ZMod 2)) (solver (K := ZMod 2))
+    (target (K := ZMod 2)) (randomness (K := ZMod 2)) =
+      some (.fullRank, ![0, 1]) := by
   decide +kernel
 
 /-- A bounded list with no surjective system reports failure. -/
 example : retrySampleSolution [.rankDeficient, .rankDeficient]
-    system solver target randomness = none := by
+    (system (K := ZMod 2)) (solver (K := ZMod 2))
+    (target (K := ZMod 2)) (randomness (K := ZMod 2)) = none := by
   decide +kernel
 
 end Cslib.LinearAlgebra.AffineSolutionSamplingTests
