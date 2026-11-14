@@ -209,4 +209,39 @@ example {γ : Type*} [Fintype γ] [DecidableEq γ] (n : ℕ) (p : PMF γ) {ε : 
   have h := (hasBoundedDifferences_distinct n).pi_abs_sub_mean_ge (fun _ => p) hε
   rwa [Finset.sum_const, one_pow, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one] at h
 
+/-! ### Hoeffding's inequality for `[0, 1]` scores -/
+
+-- `n` fair coins: the number of heads is `n γ` away from `n / 2` with probability at most
+-- `2 exp (-2 n γ²)`, with no renormalization of the exponent.
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => uniformOfFintype Bool).toOuterMeasure
+      {x | n * γ ≤ |(∑ i, if x i then (1 : ℝ) else 0) - n / 2|}).toReal ≤
+        2 * Real.exp (-2 * n * γ ^ 2) := by
+  have h := pi_sum_abs_sub_mean_ge_card_mul (fun _ : Fin n => uniformOfFintype Bool)
+    (fun _ b => if b then (1 : ℝ) else 0) (fun _ b _ => by cases b <;> simp) hγ
+  have hmean : ∑ _i : Fin n, ∑ b, ((uniformOfFintype Bool) b).toReal *
+      (if b then (1 : ℝ) else 0) = n / 2 := by
+    simp [div_eq_mul_inv]
+  rwa [hmean, Fintype.card_fin] at h
+
+-- The scores need only lie in `[0, 1]` on the support: a point mass at `false` may score `100`
+-- at `true`, and both one-sided tails at deviation `n γ` still get the bound `exp (-2 n γ²)`.
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
+      {x | (∑ i, if x i then (100 : ℝ) else 0) ≤
+        (∑ _i : Fin n, ∑ b, ((PMF.pure false) b).toReal * (if b then (100 : ℝ) else 0)) -
+          Fintype.card (Fin n) * γ}).toReal ≤
+        Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
+  pi_sum_le_mean_sub_card_mul (fun _ : Fin n => PMF.pure false)
+    (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
+
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
+      {x | (∑ _i : Fin n, ∑ b, ((PMF.pure false) b).toReal * (if b then (100 : ℝ) else 0)) +
+          Fintype.card (Fin n) * γ ≤
+        ∑ i, if x i then (100 : ℝ) else 0}).toReal ≤
+        Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
+  pi_sum_ge_mean_add_card_mul (fun _ : Fin n => PMF.pure false)
+    (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
+
 end CslibFrontierTests.ProbabilityToolkit3

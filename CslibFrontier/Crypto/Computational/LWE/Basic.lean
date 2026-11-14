@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.Product
 public import Mathlib.Data.Matrix.Mul
 public import Mathlib.LinearAlgebra.Matrix.Notation
 import CslibFrontier.Computability.Probabilistic.PPT.Extension
+import CslibFrontier.Probability.PMF.Uniform
 
 /-!
 # Decision LWE
@@ -53,6 +54,7 @@ reduction.
 * `Cslib.Crypto.LWE.Distinguisher`, `Cslib.Crypto.LWE.Distinguisher.IsPPT`: typed distinguishers
   and their efficiency.
 * `Cslib.Crypto.DecisionLWE`: the decision-LWE assumption.
+* `Cslib.Crypto.DecisionLWEWithErrors`: the same assumption with a joint law on the error vector.
 * `Cslib.Crypto.LWE.publicMatrix`, `Cslib.Crypto.LWE.publicMatrixLaw`: the matrix `[B * t + e | B]`
   and its law, as produced by key generation.
 * `Cslib.Crypto.LWE.realEnsemble`, `Cslib.Crypto.LWE.uniformEnsemble`: the encoded matrices.
@@ -60,6 +62,11 @@ reduction.
 ## Main results
 
 * `Cslib.Crypto.decisionLWE_iff_encoded`: `DecisionLWE` is the word-level assumption.
+* `Cslib.Crypto.decisionLWE_iff_decisionLWEWithErrors`: `DecisionLWE` is the case of independent
+  error coordinates.
+* `Cslib.Crypto.LWE.realGame_uniform_error_eq_randomGame`,
+  `Cslib.Crypto.LWE.advantage_uniform_error_eq_zero`: with uniform errors the real game is the
+  random game, so every distinguisher has advantage `0`.
 * `Cslib.Crypto.LWE.uniformOfFintype_augmentedMatrix`: `[b | A]` of a uniform pair is uniform.
 * `Cslib.Crypto.LWE.length_of_mem_support_realEnsemble`: every real sample has the declared length.
 * `Cslib.Crypto.LWE.length_of_mem_support_uniformEnsemble`: the comparison uses the same length.
@@ -188,6 +195,27 @@ theorem randomGame_congr {D D' : Matrix (Fin m) (Fin n) R → (Fin m → R) → 
     (h : ∀ A b, ProbComp.eval (D A b) = ProbComp.eval (D' A b)) :
     randomGame D = randomGame D' := by
   simp only [randomGame, eval_randomExperiment, h]
+
+/-- With uniform errors the real game is the random game, for every secret law: `A *ᵥ s + e` is
+uniform and independent of `(A, s)`. -/
+theorem realGame_uniform_error_eq_randomGame (secretLaw : PMF (Fin n → R))
+    (distinguisher : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool) :
+    realGame secretLaw (PMF.uniformOfFintype (Fin m → R)) distinguisher =
+      randomGame distinguisher := by
+  simp only [realGame, randomGame, eval_realExperiment, eval_randomExperiment,
+    PMF.monad_bind_eq_bind]
+  refine Eq.trans ?_ (PMF.bind_const secretLaw _)
+  congr 1 with s : 1
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → R))]
+  congr 1 with A : 1
+  exact Probability.PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A *ᵥ s))
+    fun b => ProbComp.eval (distinguisher A b)
+
+/-- With uniform errors every distinguisher has advantage `0`, for every secret law. -/
+theorem advantage_uniform_error_eq_zero (secretLaw : PMF (Fin n → R))
+    (distinguisher : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool) :
+    advantage secretLaw (PMF.uniformOfFintype (Fin m → R)) distinguisher = 0 := by
+  rw [advantage, realGame_uniform_error_eq_randomGame, Game.advantage_self]
 
 end Experiment
 
@@ -330,16 +358,36 @@ theorem distinguishingGame_uniformEnsemble (W : Crypto.Distinguisher) (κ : ℕ)
 end LWE
 
 /-- The decision-LWE assumption with `n κ` secret coordinates, `m κ` samples, modulus `2 ^ w κ`
-and error law `noise κ` for each coordinate: every PPT distinguisher has negligible advantage
-between `LWE.realGame`, with a uniform secret and independent errors, and `LWE.randomGame`. This is
-a hypothesis against uniform classical strict PPT distinguishers, not a theorem of hardness or a
-claim about quantum adversaries. -/
-def DecisionLWE (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) : Prop :=
+and a joint law `errors κ` on the whole error vector: every PPT distinguisher has negligible
+advantage between `LWE.realGame`, with a uniform secret and an error vector drawn from `errors κ`,
+and `LWE.randomGame`. The coordinates of the error vector need not be independent or identically
+distributed, which is the form needed when a noisy source supplies the errors, as in the LWE fuzzy
+extractor. `DecisionLWE` is the case of independent coordinates. This is a hypothesis against
+uniform classical strict PPT distinguishers, not a theorem of hardness or a claim about quantum
+adversaries; whether it holds depends on the error laws. -/
+def DecisionLWEWithErrors (n m w : ℕ → ℕ)
+    (errors : (κ : ℕ) → PMF (Fin (m κ) → ZMod (2 ^ w κ))) : Prop :=
   Game.Indistinguishable
     (fun (D : LWE.Distinguisher n m w) κ =>
-      LWE.realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
-        (PMF.pi fun _ : Fin (m κ) => noise κ) (D κ))
+      LWE.realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ))) (errors κ) (D κ))
     (fun D κ => LWE.randomGame (D κ)) LWE.Distinguisher.IsPPT
+
+/-- The decision-LWE assumption with `n κ` secret coordinates, `m κ` samples, modulus `2 ^ w κ`
+and error law `noise κ` for each coordinate: every PPT distinguisher has negligible advantage
+between `LWE.realGame`, with a uniform secret and independent errors, and `LWE.randomGame`. It is
+`DecisionLWEWithErrors` for the product error law (`decisionLWE_iff_decisionLWEWithErrors`). This
+is a hypothesis against uniform classical strict PPT distinguishers, not a theorem of hardness or a
+claim about quantum adversaries. -/
+def DecisionLWE (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) : Prop :=
+  DecisionLWEWithErrors n m w fun κ => PMF.pi fun _ : Fin (m κ) => noise κ
+
+/-- `DecisionLWE` is `DecisionLWEWithErrors` for the error vector with independent coordinates
+drawn from `noise κ`. -/
+theorem decisionLWE_iff_decisionLWEWithErrors (n m w : ℕ → ℕ)
+    (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) :
+    DecisionLWE n m w noise ↔
+      DecisionLWEWithErrors n m w fun κ => PMF.pi fun _ : Fin (m κ) => noise κ :=
+  Iff.rfl
 
 /-- **`DecisionLWE` is the word-level decision-LWE assumption.** Quantifying over distinguishers
 that read the encoded matrix `[b | A]` as a word gives the same assumption as quantifying over

@@ -11,6 +11,11 @@ the source-to-Lean mapping or why existing definitions could not be reused.
 For API/reuse refactors, identify a representative caller and what it no longer repeats;
 follow AGENTS.md#check-the-api-through-its-callers.
 New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception.
+For each headline (AGENTS.md#faithful-headlines), say whether it states the cited result or is
+original; a conditional or restricted stand-in is named and documented as a step or helper, leaves
+the cited objective open, and is never presented as the cited result in the title, description or
+inventory (a "Limitations" list does not substitute for this). Name any stand-in this change
+supersedes and removes.
 Computational security theorems follow AGENTS.md#security-theorems: they assume only named
 hardness assumptions, the adversary's class and properties of components the cited result takes as
 given, never anything about a reduction, simulator or extractor that the proof constructs, and

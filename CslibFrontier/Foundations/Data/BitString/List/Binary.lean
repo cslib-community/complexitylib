@@ -67,6 +67,14 @@ theorem lowBits_two_pow (width : ℕ) : lowBits width (2 ^ width) = lowBits widt
   simp only [lowBits]; refine List.map_congr_left fun i hi => ?_
   rw [Nat.testBit_two_pow_of_ne (ne_of_gt (List.mem_range.mp hi)), Nat.zero_testBit]
 
+/-- Only the low `width` digits are read, so reducing modulo `2 ^ width` does not change
+`lowBits`. -/
+theorem lowBits_mod_two_pow (width value : ℕ) :
+    lowBits width (value % 2 ^ width) = lowBits width value := by
+  simp only [lowBits]
+  refine List.map_congr_left fun i hi => ?_
+  simp [Nat.testBit_mod_two_pow, List.mem_range.mp hi]
+
 /-- The natural number represented by a word, most significant bit first. -/
 def binaryValue (word : List Bool) : ℕ :=
   word.foldl (fun value bit => 2 * value + bit.toNat) 0

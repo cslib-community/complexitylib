@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.Parameter
+public import CslibFrontier.Crypto.Computational.Encryption.SymmetricCPA
 public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 public import CslibFrontier.Crypto.Game.UntilBad
 public import CslibFrontier.Languages.Probabilistic.UniformNat
@@ -22,6 +23,7 @@ import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
@@ -144,6 +146,9 @@ Section 5.4.1, Example 5.2 and Theorem 5.2, printed pp. 183–187) are formalize
   `isPPT_ciOneTimeGame`, `isPPTOn_ccaGame`, `isPPT_ccaGame`, `isPPTOn_ccaOneTimeGame`,
   `isPPT_ccaOneTimeGame`: strict PPT certificates for the multi-query and one-time CPA, CI, and CCA
   experiments.
+* `Cslib.Crypto.SymmetricCipher.cpaGame_eq_symmetricCPAGameOn`,
+  `Cslib.Crypto.SymmetricCipher.indcpa_iff`: `cpaGame` and `INDCPA` are the `n`-bit case of
+  `symmetricCPAGameOn` and `SymmetricINDCPAOn` (`SymmetricCPA.lean`).
 * `Cslib.Crypto.SymmetricCipher.encrypt_eq_of_ciphertext_length_eq`,
   `Cslib.Crypto.SymmetricCipher.advantage_cpaGame_detCPAAdversary`,
   `Cslib.Crypto.SymmetricCipher.not_indcpa_of_ciphertext_length_eq`: any cipher whose ciphertexts on
@@ -457,6 +462,30 @@ def INDCPA (E : SymmetricCipher) : Prop :=
     (fun adversary n => ProbComp.eval (E.cpaGame adversary false n))
     (fun adversary n => ProbComp.eval (E.cpaGame adversary true n))
     (IsOraclePPT encBool)
+
+/-- `SymmetricCipher.cpaGame` is the experiment on pairs of `n`-bit messages. -/
+theorem cpaGame_eq_symmetricCPAGameOn (E : SymmetricCipher)
+    (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ) :
+    E.cpaGame adversary bit n =
+      symmetricCPAGameOn (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.keyGen
+        E.encrypt adversary bit n := by
+  have horacle : E.cpaEncryptionOracle n = fun k bit request (s : Unit) =>
+      (fun ct => (ct, s)) <$> symmetricCPAReplyOn
+        (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.encrypt n k bit request := by
+    funext k bit request s
+    unfold cpaEncryptionOracle symmetricCPAReplyOn
+    by_cases hvalid :
+        ((unframe request.2).length == n && (dropFrame request.2).length == n) = true <;>
+      simp [hvalid, map_eq_bind_pure_comp]
+  simp only [cpaGame, symmetricCPAGameOn, horacle,
+    OracleComp.run_interpret_sumHandler_readOnly, ProbOracleComp.run, bind_map_left, bind_pure]
+
+/-- `SymmetricCipher.INDCPA` is chosen-plaintext security on pairs of `n`-bit messages. -/
+theorem indcpa_iff (E : SymmetricCipher) :
+    E.INDCPA ↔
+      SymmetricINDCPAOn (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.keyGen
+        E.encrypt := by
+  simp only [INDCPA, SymmetricINDCPAOn, E.cpaGame_eq_symmetricCPAGameOn]
 
 /-- Stateful one-time left-or-right CPA encryption oracle ([BonehShoup2023], Section 2.2,
 Attack Game 2.1 and Definition 2.2; Section 9.1.1, Definition 9.4, printed p. 360): answers at most

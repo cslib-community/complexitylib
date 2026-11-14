@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
@@ -201,19 +202,16 @@ private theorem publicKeySerialized_eq (n m w : ℕ) (inputs : SerializedKeyInpu
 theorem eval_keyGenSerialized_fst (n m w : ℕ) :
     (ProbComp.eval (keyGenSerialized n m w)).map Prod.fst =
       (ProbComp.eval (keyGen n m w)).map (fun keys => serializePublicKey keys.1) := by
-  have hrow := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
-  have hmat := ProbComp.eval_replicateFin_map hrow m
   have hbits := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (ProbComp.uniform Bool))).symm m
-  change _ = (ProbComp.eval (LWE.sampleMatrix m n w)).map _ at hmat
-  rw [LWE.eval_sampleMatrix] at hmat
   have hlhs : (ProbComp.eval (keyGenSerialized n m w)).map Prod.fst =
       (PMF.uniformOfFintype (_root_.Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
         (PMF.uniformOfFintype (Fin m → Bool)).bind fun bits =>
           PMF.pure (serializePublicKey (publicKeyOf A fun i => (bits i).toNat)) := by
     unfold keyGenSerialized sampleKeyInputsSerialized
-    simp only [pmf_norm, hmat, hbits, ProbComp.eval_replicateFin, ProbComp.eval_uniform,
-      PMF.pi_uniformOfFintype, _root_.Matrix, publicKeySerialized_eq]
+    simp only [pmf_norm, ProbComp.eval_replicate_replicate_sampleBinaryNat, hbits,
+      ProbComp.eval_replicateFin, ProbComp.eval_uniform, PMF.pi_uniformOfFintype, _root_.Matrix,
+      publicKeySerialized_eq]
     congr 1 with A : 1
     congr 1 with bits : 1
     refine congrArg PMF.pure (congrArg serializePublicKey ?_)
@@ -334,13 +332,11 @@ theorem eval_encryptSerialized (n m w η : ℕ) (publicWord : List Bool) (messag
     ProbComp.eval (encryptSerialized n m w η publicWord message) =
       (ProbComp.eval (encrypt η (decodePublicKey n m w publicWord) message)).map
         serializeCiphertext := by
-  have hs := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
   have hx := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
-  change _ = (ProbComp.eval (LWE.sampleVector n w)).map _ at hs
-  rw [LWE.eval_sampleVector] at hs
-  simp only [pmf_norm, encryptSerialized, sampleEncCoinsSerialized, hs, hx, encrypt,
-    LWE.eval_sampleVector, Function.comp_def, encryptWithCoinsSerialized_eq]
+  simp only [pmf_norm, encryptSerialized, sampleEncCoinsSerialized,
+    ProbComp.eval_replicate_sampleBinaryNat, hx, encrypt, LWE.eval_sampleVector,
+    Function.comp_def, encryptWithCoinsSerialized_eq]
   congr 1 with s : 1
   congr 1 with x : 1
   congr 1 with x₀ : 1
@@ -581,22 +577,6 @@ def lweExtractChallenge (m n w : ℕ) (lweWord : List Bool) (message : Bool) : L
     (List.range m).flatMap fun i =>
       lowBits w (Cslib.Matrix.binaryEntry (n + 1) w lweWord (i + 1) 0)
 
-private theorem lowBits_mod_two_pow (w x : ℕ) :
-    lowBits w (x % 2 ^ w) = lowBits w x := by
-  simp only [lowBits]
-  refine List.map_congr_left fun k hk => ?_
-  simp [Nat.testBit_mod_two_pow, List.mem_range.mp hk]
-
-private theorem lowBits_zmod (w x : ℕ) :
-    lowBits w x = lowBits w (x : ZMod (2 ^ w)).val := by
-  rw [ZMod.val_natCast, lowBits_mod_two_pow]
-
-private theorem binaryEntry_zmod {m n w : ℕ}
-    (M : _root_.Matrix (Fin m) (Fin n) (ZMod (2 ^ w))) (i : Fin m) (j : Fin n) :
-    (Cslib.Matrix.binaryEntry n w (Cslib.Matrix.toBinary M) i.val j.val : ZMod (2 ^ w)) =
-      M i j := by
-  rw [← Cslib.Matrix.ofBinary_apply m n w, Cslib.Matrix.ofBinary_toBinary]
-
 private theorem lweExtractPublicKey_toBinary {n m w : ℕ}
     (M : _root_.Matrix (Fin (m + 1)) (Fin (n + 1)) (ZMod (2 ^ w))) :
     lweExtractPublicKey n m w (Cslib.Matrix.toBinary M) =
@@ -610,7 +590,8 @@ private theorem lweExtractPublicKey_toBinary {n m w : ℕ}
   congr 1
   apply congrArg List.ofFn
   funext j
-  rw [lowBits_zmod, ← Fin.val_succ j, binaryEntry_zmod M i j.succ, lowBits_eq_ofFn]
+  rw [← lowBits_val_natCast, ← Fin.val_succ j, Cslib.Matrix.binaryEntry_toBinary M i j.succ,
+    lowBits_eq_ofFn]
   refine Fin.cases rfl (fun _ => rfl) i
 
 private theorem lweExtractChallenge_toBinary {n m w : ℕ}
@@ -623,17 +604,17 @@ private theorem lweExtractChallenge_toBinary {n m w : ℕ}
     List.append_nil, List.flatMap_def, List.map_range_eq_ofFn, _root_.Matrix.of_apply,
     Fin.cons_zero, Fin.cons_succ]
   congr 1
-  · have h0 := binaryEntry_zmod M 0 0
+  · have h0 := Cslib.Matrix.binaryEntry_toBinary M 0 0
     simp only [Fin.val_zero] at h0
-    rw [lowBits_mod_two_pow, lowBits_zmod, Nat.cast_add, Nat.cast_mul, Nat.cast_pow,
+    rw [lowBits_mod_two_pow, ← lowBits_val_natCast, Nat.cast_add, Nat.cast_mul, Nat.cast_pow,
       Nat.cast_ofNat, h0, lowBits_eq_ofFn]
     cases message <;> simp [LWE.encodeBit]
   · congr 1
     apply congrArg List.ofFn
     funext i
-    have hi := binaryEntry_zmod M i.succ 0
+    have hi := Cslib.Matrix.binaryEntry_toBinary M i.succ 0
     simp only [Fin.val_zero] at hi
-    rw [lowBits_zmod, ← Fin.val_succ i, hi, lowBits_eq_ofFn]
+    rw [← lowBits_val_natCast, ← Fin.val_succ i, hi, lowBits_eq_ofFn]
 
 /-- Uniform hidden-bit reduction turning an `(m + 1)`-sample `DecisionLWE` challenge matrix word
 into a dual-Regev IND-CPA challenge. -/

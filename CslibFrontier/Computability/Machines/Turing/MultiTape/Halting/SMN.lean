@@ -26,6 +26,10 @@ this is the s-m-n theorem for native descriptions, the counterpart of
 `d` and from the symbols of `p` by the list operations of the polynomial-time calculus, which
 `fun_prop` assembles from the fields of keys, actions and descriptions, using the shared bit
 coding rules in `CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime`.
+The exact framed unary length of the generated description and a concrete quadratic upper bound
+are proved separately in
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds`. The transformation is
+offline; its runtime is not part of executing the generated description.
 
 ## Main definitions
 

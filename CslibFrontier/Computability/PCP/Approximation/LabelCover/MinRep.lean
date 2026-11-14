@@ -14,6 +14,7 @@ import CslibFrontier.Foundations.Data.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Mathlib.Data.List.GetD
 
@@ -650,8 +651,7 @@ theorem isPolyTime_minRep :
       (isPolyTime_blockWeights hdsts)
   have hthreshold : ComputableInPolyTime (fun G : Graph (β → γ) => max (2 * G.edges.length) 1)
       (Graph.encoding encC) encUnary :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_max).comp
-      ((ComputableInPolyTime.unary_mul' (.const 2) hlen).prod (.const 1))
+    ComputableInPolyTime.unary_max' (.unary_mul' (.const 2) hlen) (.const 1)
   have hformulas : ComputableInPolyTime (fun G : Graph (β → γ) => G.edges.map (formula eβ eγ G))
       (Graph.encoding encC) (encList (encDNFOver encNat)) :=
     ComputableInPolyTime.mapWithInput hedges

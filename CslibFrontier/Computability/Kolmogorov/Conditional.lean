@@ -183,30 +183,6 @@ theorem computableInPolyTime_condUniversalTMRunFor :
 
 /-! ### Clock-preserving conditional simulation of every binary `MultiTapeTM` -/
 
-private noncomputable def condMachineHeader {k : ℕ} {State : Type} [Fintype State]
-    (eS : State ↪ ℕ) (tm : MultiTapeTM k Bool State) : List Bool :=
-  frame (eDesc (desc eS eBit tm))
-
-private theorem condUniversalTM_runFor_condMachineHeader_append {k : ℕ} {State : Type}
-    [Fintype State] (eS : State ↪ ℕ) (tm : MultiTapeTM k Bool State)
-    (w y : List Bool) (t : ℕ) :
-    ((condUniversalTM y).run (condMachineHeader eS tm ++ w)).runFor t =
-      ((ofMultiTapeTM tm).run (encPair encBits encBits (w, y))).runFor t := by
-  have hprog : condUniversalTMProgram (condMachineHeader eS tm ++ w) y =
-      condMachineHeader eS tm ++ encPair encBits encBits (w, y) := by
-    simp [condUniversalTMProgram, condMachineHeader]
-  rw [condUniversalTM_runFor, condUniversalTMRunFor, hprog, condMachineHeader,
-    universalTMRunFor, Desc.runFor, unframe_frame_append, decodeDesc_eDesc,
-    dropFrame_frame_append]
-  have hsim : ((ofMultiTapeTM tm).run (encPair encBits encBits (w, y))).runFor t =
-      let r := simulate (desc eS eBit tm) ((encPair encBits encBits (w, y)).map eBit) t
-      if r.2 then some (r.1.map (· != 0)) else none :=
-    tm.runFor_eq_simulate eS (encPair encBits encBits (w, y)) t
-  rw [hsim]
-  dsimp only
-  rcases simulate (desc eS eBit tm) ((encPair encBits encBits (w, y)).map eBit) t with
-    ⟨out, _ | _⟩ <;> rfl
-
 /-- **Clock-preserving conditional simulation of `MultiTapeTM`:** for every finite-state binary
 `MultiTapeTM`, there is a constant `c` such that whenever `tm` on input
 `encPair encBits encBits (w, y)` halts within `t` steps and outputs `x`, `condUniversalTM y`
@@ -219,10 +195,18 @@ theorem exists_etimeBoundedComplexity_condUniversalTM_le_ofMultiTapeTM {k : ℕ}
           (condUniversalTM y).etimeBoundedComplexity t x ≤ (w.length + c : ℕ) := by
   have := Fintype.ofFinite State
   let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  refine ⟨(condMachineHeader eS tm).length, fun t w y x htime hcomp => ?_⟩
+  let hdr := frame (eDesc (desc eS eBit tm))
+  refine ⟨hdr.length, fun t w y x htime hcomp => ?_⟩
   have hmem : x ∈ ((ofMultiTapeTM tm).run (encPair encBits encBits (w, y))).runFor t :=
     mem_ofMultiTapeTM_runFor_iff.mpr ⟨htime, hcomp⟩
-  rw [← condUniversalTM_runFor_condMachineHeader_append eS tm w y t] at hmem
+  have hrun : ((condUniversalTM y).run (hdr ++ w)).runFor t =
+      ((ofMultiTapeTM tm).run (encPair encBits encBits (w, y))).runFor t := by
+    have hprog : condUniversalTMProgram (hdr ++ w) y = hdr ++ encPair encBits encBits (w, y) := by
+      simp [condUniversalTMProgram, hdr]
+    rw [condUniversalTM_runFor, condUniversalTMRunFor, hprog,
+      universalTMRunFor_frame_eDesc_append]
+    rfl
+  rw [← hrun] at hmem
   refine (etimeBoundedComplexity_le_length hmem).trans ?_
   rw [List.length_append, Nat.add_comm]
 

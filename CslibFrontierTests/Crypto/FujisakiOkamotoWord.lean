@@ -8,6 +8,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordBridge
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -30,6 +31,9 @@ request from its ciphertext table. The reduction of an adversary that queries `G
 challenge word is uniform strict PPT. In the word ROM IND-CCA game, decapsulation of the challenge
 ciphertext and a `G` request of the wrong length get the empty word and leave the random oracles
 unchanged, and an in-domain `G` request is answered and cached.
+
+The ciphertexts of the identity scheme fit its ciphertext space, and it is perfectly correct, so
+the typed bridge identifies the word game of `queryChallengeG` with a typed game.
 -/
 
 public section
@@ -174,5 +178,32 @@ example : ProbComp.eval (identityPKE.ccaWordOracle (fun _ => 0) 1 dk [false] (.G
       {}) = PMF.pure ([], { gCache := [([true], [])] }) := by
   simp [WordPKE.ccaWordOracle, WordPKE.roWordOracle, identityPKE, roHashG,
     RandomOracle.zoomStateT, memoize, BitString.sampleList, pmf_norm]
+
+/-! ### The typed bridge -/
+
+/-- The ciphertexts of the identity scheme fit its ciphertext space: a message of length `n`
+encrypts to itself. -/
+theorem identityPKE_ciphertextFits : identityPKE.CiphertextFits := by
+  intro n pk sk _ m r hm _
+  simp [identityPKE, hm]
+
+/-- The identity scheme is perfectly correct at every parameter. -/
+theorem identityPKE_deltaCorrect : identityPKE.DeltaCorrect fun _ => 0 := fun n =>
+  (identityPKE.finitePKE n).deltaCorrect_zero_of_perfect fun pk sk _ m r _ => by
+    change BitString n at m
+    simp [WordPKE.finitePKE, WordPKE.toCiphertext, identityPKE]
+
+/-- The word game of `queryChallengeG` against the identity scheme has the law of a typed game of
+the scheme at each parameter, played by an adversary with polynomially many `G` and `H`
+queries. -/
+example : ∃ (B : (n : ℕ) → RandomizedROAdversary (List Bool) (BitString n) (BitString 0)
+      (identityPKE.Ciphertext n) (BitString n)) (q : ℕ → ℕ), PolynomiallyBounded q ∧
+      ∀ n, (B n).QueryBounds (q n) (q n) ∧ ∀ b,
+        ProbComp.eval (identityPKE.romIndCcaGameWord (fun n => n) queryChallengeG b n) =
+          ProbComp.eval ((B n).play (identityPKE.finiteScheme (fun n => n) n).roIndCcaGame b) := by
+  obtain ⟨B, q, hq, hbounds, hbridge⟩ := identityPKE_isEfficient.exists_typedAdversary
+    (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
+    isOraclePPT_queryChallengeG
+  exact ⟨B, q, hq, fun n => ⟨hbounds n, (hbridge identityPKE_ciphertextFits n).1⟩⟩
 
 end CslibFrontierTests.Crypto.FujisakiOkamotoWord

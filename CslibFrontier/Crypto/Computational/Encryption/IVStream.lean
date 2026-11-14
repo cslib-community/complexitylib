@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 public import CslibFrontier.Computability.Probabilistic.Parameter
+public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -67,7 +68,6 @@ noncomputable def ivStreamEncrypt (keystream : ℕ → List Bool → List Bool �
 
 /-- Stream decryption: accept an `n`-bit initial value followed by whole blocks, and XOR the blocks
 with the keystream from that initial value. -/
-@[expose]
 def ivStreamDecrypt (keystream : ℕ → List Bool → List Bool → ℕ → List Bool) (n : ℕ)
     (k ct : List Bool) : Option (List Bool) :=
   if (decide (n ≤ ct.length) && ((ct.length - n) % n == 0)) = true then
@@ -103,9 +103,9 @@ theorem isPPTOn_ivStreamEncrypt {keystream : ℕ → List Bool → List Bool →
     (hkeystream : ComputableInPolyTime
       (fun ((n, k, iv, blocks) : ℕ × List Bool × List Bool × ℕ) => keystream n k iv blocks)
       (encPair encUnary (encPair encBits (encPair encBits encUnary))) encBits) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+    IsPPTOn (encKeyedInput encBits) encBits
       (fun ((n, k, msg) : ℕ × List Bool × List Bool) => ivStreamEncrypt keystream n k msg) := by
-  let EIn := encPair (encPair encUnary (encPair encBits encBits)) encBits
+  let EIn := encPair (encKeyedInput encBits) encBits
   have hargs : ComputableInPolyTime
       (fun p : (ℕ × List Bool × List Bool) × List Bool =>
         (p.1.1, p.1.2.1, p.2, p.1.2.2.length / p.1.1))
@@ -132,8 +132,8 @@ theorem computableInPolyTime_ivStreamDecrypt
       (encPair encUnary (encPair encBits (encPair encBits encUnary))) encBits) :
     ComputableInPolyTime
       (fun ((n, k, ct) : ℕ × List Bool × List Bool) => ivStreamDecrypt keystream n k ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
-  let EIn := encPair encUnary (encPair encBits encBits)
+      (encKeyedInput encBits) (encOption encBits) := by
+  let EIn := encKeyedInput encBits
   have hcond : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
         decide (p.1 ≤ p.2.2.length) && ((p.2.2.length - p.1) % p.1 == 0))

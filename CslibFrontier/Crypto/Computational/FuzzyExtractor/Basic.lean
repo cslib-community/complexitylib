@@ -51,6 +51,9 @@ average-case extractor security on `(W, SS(W))` directly to fuzzy-extractor secu
   reading, the games averaging them over `W` with `Cslib.Crypto.Game.withSetup`, the advantage, and
   computational security over a source family (Definition 2.2). Distinguishers are
   `Cslib.Crypto.Experiment` programs `Key → Helper → Experiment`.
+* `Cslib.Crypto.FuzzyExtractor.ComputationallySecure`: its asymptotic form for a family of fuzzy
+  extractors indexed by the security parameter, a set of source ensembles and a class of
+  distinguisher families, with negligible advantage in place of the concrete bound.
 * `Cslib.Crypto.SecureSketch`, `Cslib.Crypto.SketchHelper`,
   `Cslib.Crypto.SecureSketch.sketchAndExtract`: secure sketches (Definition 2.3) and the
   sketch-and-extract fuzzy extractor (Lemma 2.5).
@@ -68,6 +71,9 @@ average-case extractor security on `(W, SS(W))` directly to fuzzy-extractor secu
   `Cslib.Crypto.FuzzyExtractor.computationallySecureFor_zero_of_realDistribution_eq`:
   exact equality of `(R, P)` and `(U, P)` implies zero distinguishing advantage against all
   distinguishers.
+* `Cslib.Crypto.FuzzyExtractor.computationallySecure_iff`,
+  `Cslib.Crypto.FuzzyExtractor.ComputationallySecure.of_computationallySecureFor`: asymptotic
+  security as negligible advantage, and from negligible concrete bounds.
 * `Cslib.Crypto.SecureSketch.failProbability_reproduceGame_sketchAndExtract_le`,
   `Cslib.Crypto.SecureSketch.Correct.sketchAndExtract`,
   `Cslib.Crypto.SecureSketch.CorrectWithError.sketchAndExtract`,
@@ -328,6 +334,54 @@ theorem ComputationallySecureFor.mono [Fintype Key] [Nonempty Key]
     (hε : ε₁ ≤ ε₂) :
     fe.ComputationallySecureFor sources₁ Admissible₁ ε₂ :=
   fun W hW D hD => (h W (hs hW) D (ha D hD)).trans hε
+
+/-! ### Asymptotic computational security -/
+
+section Asymptotic
+
+variable {M Key Helper : ℕ → Type} [∀ κ, Fintype (Key κ)] [∀ κ, Nonempty (Key κ)]
+
+/-- Asymptotic computational security of a family of fuzzy extractors `fe κ`, indexed by the
+security parameter `κ`, for a set `sources` of source ensembles and a class `Admissible` of
+distinguisher families: for every ensemble `source ∈ sources`, the real and ideal games of
+`fe κ` on `source κ` are indistinguishable to admissible distinguishers. Equivalently, every
+admissible `D` has negligible advantage `(fe κ).securityAdvantage (source κ) (D κ)`
+(`computationallySecure_iff`). This is the asymptotic form of `ComputationallySecureFor`, with the
+concrete bound `ε` replaced by negligibility in `κ`; each construction fixes its distinguisher
+class, typically uniform strict PPT on an encoding of the key and helper. -/
+def ComputationallySecure (fe : (κ : ℕ) → FuzzyExtractor (M κ) (Key κ) (Helper κ))
+    (sources : Set ((κ : ℕ) → PMF (M κ)))
+    (Admissible : ((κ : ℕ) → Key κ → Helper κ → Experiment) → Prop) : Prop :=
+  ∀ source ∈ sources,
+    Game.Indistinguishable (fun D κ => (fe κ).realGame (source κ) (D κ))
+      (fun D κ => (fe κ).idealGame (source κ) (D κ)) Admissible
+
+/-- `ComputationallySecure` states that every admissible distinguisher family has negligible
+advantage on every source ensemble. -/
+theorem computationallySecure_iff {fe : (κ : ℕ) → FuzzyExtractor (M κ) (Key κ) (Helper κ)}
+    {sources : Set ((κ : ℕ) → PMF (M κ))}
+    {Admissible : ((κ : ℕ) → Key κ → Helper κ → Experiment) → Prop} :
+    ComputationallySecure fe sources Admissible ↔
+      ∀ source ∈ sources, ∀ D, Admissible D →
+        Negligible fun κ => (fe κ).securityAdvantage (source κ) (D κ) :=
+  Iff.rfl
+
+/-- A negligible concrete bound gives asymptotic security: if at every parameter `κ` each
+`fe κ` is `ε κ`-secure (`ComputationallySecureFor`) for the source `source κ` against the
+`κ`-th members of the admissible families, and `ε` is negligible, then the family is
+`ComputationallySecure`. -/
+theorem ComputationallySecure.of_computationallySecureFor
+    {fe : (κ : ℕ) → FuzzyExtractor (M κ) (Key κ) (Helper κ)}
+    {sources : Set ((κ : ℕ) → PMF (M κ))}
+    {Admissible : ((κ : ℕ) → Key κ → Helper κ → Experiment) → Prop} {ε : ℕ → ℝ≥0}
+    (hε : Negligible ε)
+    (h : ∀ source ∈ sources, ∀ κ, (fe κ).ComputationallySecureFor {source κ}
+      (fun D' => ∃ D, Admissible D ∧ D κ = D') (ε κ)) :
+    ComputationallySecure fe sources Admissible :=
+  fun source hsource D hD => negligible_of_le hε fun κ =>
+    h source hsource κ (source κ) rfl (D κ) ⟨D, hD, rfl⟩
+
+end Asymptotic
 
 end FuzzyExtractor
 
