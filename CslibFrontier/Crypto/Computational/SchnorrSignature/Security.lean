@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.Negligible
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Computability.Interactive.Security.Repeat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -27,7 +28,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 
 This module proves that Schnorr signatures in the random-oracle model are EUF-CMA secure under the
 discrete-logarithm assumption, for every uniform oracle-PPT native forger
-(`negligible_worldGame_schnorrEncodedROMScheme`; [BonehShoup2023], Theorem 19.7;
+(`negligible_worldGame_schnorrEncodedROMScheme`; [BonehShoup2023], Theorem 19.7 and Lemma 19.8;
 [PointchevalStern2000]; [BellareNeven2006]). The forger plays the existing shared-oracle game of
 the native scheme: actual key generation `schnorrSigKeyGen`, actual nonces `sampleExp`, adaptive
 signing queries, hash queries on arbitrary words, and final-message freshness. The only premises
@@ -75,14 +76,14 @@ group description must be computable from the security parameter.
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Sections 19.2–19.3 (Theorem 19.7).
+  Version 0.6][BonehShoup2023], Section 19.2.2 (Theorem 19.7 and Lemma 19.8).
 * [D. Pointcheval, J. Stern, *Security Arguments for Digital Signatures and Blind
   Signatures*][PointchevalStern2000].
 * [M. Bellare, G. Neven, *Multi-Signatures in the Plain Public-Key Model and a General Forking
   Lemma*][BellareNeven2006], Lemma 1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -95,7 +96,7 @@ variable (F : PrimeOrderGroupFamily)
 query `j`, the second pass on answers spliced at `j` names `j` too, and the two answers at `j`
 differ, the witness `extractNat` computed from the two challenges and responses; otherwise the
 empty word. -/
-def schnorrForkOutput (d : F.Desc) (answers answers' : List (List Bool))
+@[expose] def schnorrForkOutput (d : F.Desc) (answers answers' : List (List Bool))
     (first second : ℕ × List Bool × List Bool) : List Bool :=
   let (index, challenge, response) := first
   let (index', challenge', response') := second
@@ -105,7 +106,7 @@ def schnorrForkOutput (d : F.Desc) (answers answers' : List (List Bool))
   else []
 
 /-- **The native forking discrete-logarithm adversary** built from a native forger's guarded
-saved-coin replay ([BonehShoup2023], Theorem 19.7; [BellareNeven2006], Lemma 1). On the group
+saved-coin replay ([BonehShoup2023], Lemma 19.8; [BellareNeven2006], Lemma 1). On the group
 description `d` and an encoded public key, it samples the forger's tape, `2B` simulated
 transcripts and two banks of `B + 1` uniform `w n`-bit answers, where `B` is the saved-coin
 budget. It runs `schnorrForkPass` once, runs it again with the answers from the named index on
@@ -332,35 +333,6 @@ theorem eval_schnorrSimulatedTranscript_eq_map (n : ℕ) (d : F.Desc) (m : ℕ) 
   rw [← PMF.bind_pure_comp, PMF.bind_map]
   rfl
 
-/-- `k` independent uniform `m`-bit words are a uniform vector of bit strings, written as words. -/
-theorem eval_replicate_sampleList (k m : ℕ) :
-    ProbComp.eval (OracleComp.replicate k (BitString.sampleList m)) =
-      (PMF.uniformOfFintype (Fin k → BitString m)).map
-        fun answers => (List.ofFn answers).map List.ofFn := by
-  rw [ProbComp.eval_replicate_iid, BitString.eval_sampleList, BitString.uniformList,
-    PMF.iid_map, PMF.iid_uniformOfFintype, PMF.map_comp]
-  congr 1 with answers : 1
-  simp [List.map_ofFn, Function.comp_def]
-
-/-- Splicing word lists at `j` is splicing the vectors they list. -/
-theorem take_append_drop_map_ofFn {k m : ℕ} (answers answers' : Fin k → BitString m) (j : ℕ) :
-    ((List.ofFn answers).map List.ofFn).take j ++ ((List.ofFn answers').map List.ofFn).drop j =
-      (List.ofFn fun i => if i.val < j then answers i else answers' i).map List.ofFn := by
-  apply List.ext_getElem
-  · simp only [List.length_append, List.length_take, List.length_drop, List.length_map,
-      List.length_ofFn]
-    omega
-  · intro i h₁ h₂
-    simp only [List.length_map, List.length_ofFn] at h₂
-    by_cases hi : i < j
-    · rw [List.getElem_append_left (by simp; omega)]
-      simp [hi]
-    · have hj : j ≤ k := by omega
-      rw [List.getElem_append_right (by simp; omega)]
-      simp only [List.getElem_drop, List.getElem_map, List.getElem_ofFn, List.length_take,
-        List.length_map, List.length_ofFn, Nat.min_eq_left hj, Nat.add_sub_cancel' (not_lt.mp hi),
-        hi, ite_false]
-
 /-- `k` strict-PPT simulated transcripts are `k` typed simulated conversations, written as
 words. -/
 theorem eval_replicate_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (m k : ℕ)
@@ -404,6 +376,18 @@ private theorem forkRunWords_eq {q m : ℕ}
   obtain ⟨_, ⟨_, _⟩, _⟩ := r
   rfl
 
+/-- The second pass's answers are the two banks spliced at the index that the first pass names. -/
+private theorem take_append_drop_forkRunWords {q m : ℕ}
+    (r : Option (Fin (q + 1)) × ((Option ℕ × ForkingReduction.Outcome (List Bool) (List Bool)
+      (BitString m) (List Bool)) × List (List Bool)))
+    (answers answers' : Fin (q + 1) → BitString m) :
+    ((List.ofFn answers).map List.ofFn).take ((forkRunWords r).1 - 1) ++
+        ((List.ofFn answers').map List.ofFn).drop ((forkRunWords r).1 - 1) =
+      (List.ofFn (Probability.Forking.splice (r.1.getD 0) answers answers')).map List.ofFn := by
+  obtain ⟨index, _, _⟩ := r
+  rw [Probability.Forking.ofFn_splice, List.map_append, List.map_take, List.map_drop]
+  cases index <;> simp [forkRunWords, forkIndexCode]
+
 /-- **The native forking adversary realizes the typed forking reduction** with the sampled
 simulator: on a canonical public key, its output read as a scalar has exactly the law of
 `FiatShamir.reduction` for `schnorrWordROMScheme`, the decoded saved-coin forger and
@@ -420,7 +404,7 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
         (savedCoinBudget c e keyC keyD n) (savedCoinBudget c e keyC keyD n) u := by
   simp only [schnorrForkingAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, eval_replicate_schnorrSimulatedTranscript,
-    eval_replicate_sampleList, PMF.bind_map]
+    ProbComp.eval_replicate_sampleList, PMF.bind_map]
   simp only [FiatShamir.reduction, Probability.Forking.fork, FiatShamir.coins,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind,
     PMF.bind_map, PMF.pure_map, Function.comp_def]
@@ -428,7 +412,7 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
     congrArg _ (funext fun answers => congrArg _ (funext fun answers' => ?_))))
   have hlen : savedCoinBudget c e keyC keyD n ≤ (List.ofFn transcripts).length := by simp
   rw [eval_schnorrForkPass F machine c e keyC keyD n d hm u tape (List.ofFn transcripts) hlen
-    answers (Classical.arbitrary _), PMF.pure_bind, take_append_drop_map_ofFn,
+    answers (Classical.arbitrary _), PMF.pure_bind, take_append_drop_forkRunWords,
     eval_schnorrForkPass F machine c e keyC keyD n d hm u tape (List.ofFn transcripts) hlen
     _ (Classical.arbitrary _), PMF.pure_bind]
   congr 1
@@ -444,13 +428,7 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
         (F.schnorrWordSigma d hm) A) (u, tape, List.ofFn transcripts) answers).1 with _ | j
   · simp [forkIndexCode, ofBits]
   · have hc₁ := hchal answers j hidx
-    have hsplice : (fun i : Fin (savedCoinBudget c e keyC keyD n + 1) =>
-        if i.val < forkIndexCode (some j) - 1 then answers i else answers' i) =
-        Probability.Forking.splice j answers answers' := by
-      funext i
-      simp only [forkIndexCode, Nat.add_sub_cancel, Probability.Forking.splice]
-      exact if_congr Fin.lt_def.symm rfl rfl
-    rw [hsplice]
+    rw [Option.getD_some]
     have hget (a : Fin (savedCoinBudget c e keyC keyD n + 1) → BitString (width n)) :
         ((List.ofFn a).map List.ofFn).getD (forkIndexCode (some j) - 1) [] = List.ofFn (a j) := by
       simp only [forkIndexCode, Nat.add_sub_cancel, List.getD_eq_getElem?_getD,
@@ -503,17 +481,6 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
         simp [ofBits]
 
 /-! ### The statistical step -/
-
-/-- A game's success probability exceeds that of an `δ`-close game by at most `δ`. -/
-theorem succProbability_le_add_of_closeTo {game game' : Game} {δ : ℝ≥0}
-    (h : CloseTo game game' δ) :
-    (Game.succProbability game : ℝ) ≤ Game.succProbability game' + δ := by
-  have hle := h {true}
-  simp only [PMF.toOuterMeasure_apply_singleton] at hle
-  have hreal := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _,
-    ENNReal.coe_ne_top⟩) hle
-  rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) ENNReal.coe_ne_top, ENNReal.coe_toReal] at hreal
-  simpa only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal] using hreal
 
 /-- The strict-PPT simulator's conversations are within `2⁻ⁿ` of the perfect simulator's. -/
 theorem closeTo_simulateConversation_schnorrSampledSimulate (n : ℕ) (d : F.Desc) {m : ℕ}
@@ -571,7 +538,8 @@ theorem succProbability_oneWayGame_schnorrWordROMSchemeReduction_le (n : ℕ) (d
     refine CloseTo.bind_right _ fun key _ => CloseTo.bind_left ?_ _
     have := closeTo_schnorrWordROMSchemeReduction n d hm A Qs Qro key.2
     simpa only [ENNReal.coe_mul, ENNReal.coe_natCast] using this
-  have hle := succProbability_le_add_of_closeTo h
+  have hle := Game.coe_succProbability_le_add_of_advantage_le
+    (NNReal.coe_le_coe.mpr (Game.closeTo_iff_advantage_le.mp h))
   have hδ : ((((Qs + Qro : ℕ) : ℝ≥0) * (1 / 2 ^ n : ℝ≥0) : ℝ≥0) : ℝ) = (Qs + Qro) / 2 ^ n := by
     push_cast
     ring
@@ -605,14 +573,14 @@ end Law
 
 open OracleComp in
 /-- **Schnorr signatures are EUF-CMA secure in the random-oracle model under the
-discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7; [PointchevalStern2000];
-[BellareNeven2006]). Fix a deterministic group family `description` computable in polynomial time
-and a challenge width `w` computable in polynomial time with `2 ^ w n ≤ q` and negligible
-`1 / 2 ^ w n`. If discrete logarithms are hard for the setup `fun n => PMF.pure (description n)`,
-then every native word forger with `IsOraclePPT` wins the existing shared-oracle EUF-CMA game of
-the native Schnorr scheme with negligible probability. The game uses the actual key generator
-`schnorrSigKeyGen` and the actual nonce sampler `sampleExp`, adaptive signing queries, hash queries
-on arbitrary words, and final-message freshness.
+discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7 and Lemma 19.8;
+[PointchevalStern2000]; [BellareNeven2006]). Fix a deterministic group family `description`
+computable in polynomial time and a challenge width `w` computable in polynomial time with
+`2 ^ w n ≤ q` and negligible `1 / 2 ^ w n`. If discrete logarithms are hard for the setup
+`fun n => PMF.pure (description n)`, then every native word forger with `IsOraclePPT` wins the
+existing shared-oracle EUF-CMA game of the native Schnorr scheme with negligible probability. The
+game uses the actual key generator `schnorrSigKeyGen` and the actual nonce sampler `sampleExp`,
+adaptive signing queries, hash queries on arbitrary words, and final-message freshness.
 
 The only premises are the discrete-logarithm assumption, the forger's certificate and the
 parameter side conditions. The proof applies `F.DiscreteLog` to the explicit two-pass adversary
@@ -656,7 +624,8 @@ theorem negligible_worldGame_schnorrEncodedROMScheme (description : ℕ → F.De
         (savedCoinBudget c e keyC keyD n + 1) / 2 ^ n := by
     intro n
     obtain ⟨hcall, hclose⟩ := hgame n
-    have hworld := succProbability_le_add_of_closeTo hclose
+    have hworld := Game.coe_succProbability_le_add_of_advantage_le
+      (NNReal.coe_le_coe.mpr (Game.closeTo_iff_advantage_le.mp hclose))
     have hforgery := F.succProbability_eufCmaGame_schnorrWordROMScheme_le (description n) (hwq n)
       _ (F.callBounded_schnorrDecodedForger (description n) hcall)
     have hstat := succProbability_oneWayGame_schnorrWordROMSchemeReduction_le n (description n)

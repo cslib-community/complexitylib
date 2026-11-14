@@ -304,8 +304,8 @@ response and challenge words; no group-membership decoder is assumed. This rejec
 `32` in place of residue `9` in the group modulo `23`, which the previous arithmetic comparison
 normalized. The encoded verification equation, honest completeness and native runtime certificates
 are preserved. Malformed public keys have no encoding-range guarantee. The transport from the
-actual key and nonce samplers to the typed game is given by `StatisticalROM.lean`, described below;
-efficient forking remains [#2568](https://github.com/cslib-community/cslib-frontier/issues/2568).
+actual key and nonce samplers to the typed game is given by `StatisticalROM.lean`, and the
+efficient forking reduction and discrete-log security by `Security.lean`, both described below.
 
 The existing `fiatShamir` and its finite security theorem accept an injective
 `hashPoint : (M × T) ↪ Query`. Signing and final verification query `hashPoint (m, t)`, while
@@ -337,7 +337,7 @@ challenges when `2 ^ m ≤ F.order d`, retaining all other hash words in the sam
 bound is `Qs*(Qs+Qro)/F.order d + (Qro+1)/2^m + sqrt((Qro+1)*ε')`, where `ε'` is the displayed
 forking reduction's discrete-log success. Key and signing scalars use ideal uniform laws. This
 completes the representation milestone [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696).
-The transport from the actual samplers is described below; efficient forking remains open. No
+The transport from the actual samplers and the efficient forking reduction are described below. No
 guarantee is asserted for malformed public keys, and no group decoder is assumed. Concrete
 scalar-alias extraction, rejected commitments, and distinct/repeated junk hash queries are checked
 in
@@ -358,8 +358,8 @@ full-input replay and retains external state.
 also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
 full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
 hash payloads stay distinct. `exists_closeTo_worldGame_schnorrEncodedROMScheme` (below) applies
-it to Schnorr's encoded scheme; certifying the forking reduction remains
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). See the
+it to Schnorr's encoded scheme, and `SchnorrSignature/Security.lean` (below) certifies the
+forking reduction built on it. See the
 checked algorithms and typed-ROM examples in
 [`CslibFrontierTests/Crypto/SchnorrSignature.lean`](../../CslibFrontierTests/Crypto/SchnorrSignature.lean).
 
@@ -414,8 +414,8 @@ For a native oracle-PPT forger and a polynomial-time deterministic description f
 `exists_closeTo_worldGame_schnorrEncodedROMScheme` takes the replay machine and the polynomial
 budget `savedCoinBudget` from the saved-coin adapter, so no query cap is assumed
 ([#2764](https://github.com/cslib-community/cslib-frontier/issues/2764)). These are statistical
-hops only; the efficient forking reduction and the discrete-log theorem remain
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). The checks in
+hops only; `SchnorrSignature/Security.lean` (below) adds the efficient forking reduction and
+the discrete-log theorem. The checks in
 [`Crypto/SchnorrStatisticalROM.lean`](../../CslibFrontierTests/Crypto/SchnorrStatisticalROM.lean)
 cover hash-only zero cost, an adaptive full-state bound `1/8` over a populated cache, the
 actual-game error `3/16`, and a native bounded-reply forger.
@@ -433,9 +433,9 @@ point after the answers run out is a no-op, which bounds the state growth.
 challenge and response that `forkingAlgorithm` reads from the existing `FiatShamir.forkingProgram`
 for `schnorrWordROMScheme` and the decoded saved-coin forger `schnorrDecodedForger` of the
 encoded scheme above. Running out of transcripts or answers is ruled out by the budget, not
-assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)). Sampling the
-banks, the second pass and the discrete-log theorem remain
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). Checks in
+assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)).
+`SchnorrSignature/Security.lean` (below) samples the banks, runs the second pass and proves the
+discrete-log theorem. Checks in
 [`Crypto/SchnorrForkPass.lean`](../../CslibFrontierTests/Crypto/SchnorrForkPass.lean) cover
 signing points (including a repeated signing request), repeated and junk hash points, answer
 exhaustion, fresh, signed and programmed forgeries, and a malformed outer signature word that the
@@ -458,7 +458,10 @@ strict-PPT simulator (`succProbability_oneWayGame_schnorrWordROMSchemeReduction_
 identification `discreteLogGame_schnorrForkingAdversary` of the native adversary's discrete-log game
 with the typed one-way game. Random group setups are not covered, because the existing game gives
 the forger only the public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
-[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
+[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The `module` client
+[`Crypto/SchnorrSecurity.lean`](../../CslibFrontierTests/Crypto/SchnorrSecurity.lean) applies the
+theorem to an adaptive native forger over Schnorr groups with `n`-bit challenges, and checks the
+extraction step on the group modulo 23.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
