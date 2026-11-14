@@ -57,9 +57,12 @@ uniform digital signature schemes (`SignatureScheme`):
 
 Together with `SignatureScheme.EUFCMA.oneTimeEUFCMA`, this establishes the necessity half of
 Rompel's theorem (`(∃ S, S.EUFCMA) → ∃ f, OneWay f`) and the one-time sufficiency half
-(`(∃ f, OneWay f) ↔ (∃ S, S.OneTimeEUFCMA)`). Upgrading one-time signatures to stateless many-time
-EUF-CMA signatures from arbitrary one-way functions requires Rompel's construction of universal
-one-way hash functions and GMR/Merkle authentication trees.
+(`(∃ f, OneWay f) ↔ (∃ S, S.OneTimeEUFCMA)`). The many-time sufficiency half is proved in
+`CslibFrontier.Crypto.Computational.Rompel` from universal one-way hash families and authentication
+trees: every uniform `OneWay` function yields a stateless many-time `SignatureScheme` satisfying
+`EUFCMA` on `n`-bit messages (`OneWay.exists_eufCMA`) and a `WordSignatureScheme` satisfying
+`EUFCMA` on arbitrary-length messages (`OneWay.exists_wordEUFCMA`), and
+`exists_oneWay_iff_exists_signature` states Rompel's equivalence.
 
 ## Main definitions
 
