@@ -271,6 +271,16 @@ The rule shares description decoding, framed-word symbol conversion, universal e
 verdict extraction and output negation. Both hierarchy clients retain their original clocks
 and specialize the resulting fourth-power input factor times the squared clock.
 
+`Diagonal.exists_computableInO_lazyBrute` constructs exhaustive acceptance search from a
+polynomial-time acceptance certificate, a polynomial-time selector for the description and
+input, and a polynomial-time unary certificate length. Its time and space bounds are
+`2 ^ (K * (encoded parameter length + certificate length))`. For polynomial certificate
+lengths, use the original description/input pair as the parameter. For exponential lengths,
+first search with the length supplied as a unary parameter, then compose with the separate
+length-construction certificate and bound that composition. This keeps the cost of producing
+an exponentially long unary word explicit. The two hierarchy clients separately prove that
+their distinct acceptance bounds are polynomial before using the same search construction.
+
 `Diagonal.exists_computableInO_sizeLength_le` constructs either horizon comparison from
 a unary clock certificate and a certificate for the tested word. Bound the tested word by
 the input length plus one, its computation by twice the encoded input length, and the

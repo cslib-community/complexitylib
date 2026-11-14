@@ -229,41 +229,25 @@ private theorem exists_computableInO_brute (k : ℕ) : ∃ K, ComputableInO
     (fun q => 2 ^ (K * ((encPair encBits encBits q).length + certLen k q.2.length)))
     (fun q => 2 ^ (K * ((encPair encBits encBits q).length + certLen k q.2.length))) := by
   obtain ⟨D, hacc⟩ := exists_computableInO_accepts
-  set encQ := encPair encBits encBits with hencQ
-  set encB := encPair encQ encUnary with hencB
-  set enc := encPair encB encBits with henc
-  -- the search, with the certificate length given in unary
-  have hB := ComputableInO.fst encB encBits
-  have hre := (hB.fst'.fst').prod (hB.fst'.snd'.prod (ComputableInO.snd encB encBits))
-  have hf := hacc.comp hre
-  have hlen (r : ((List Bool × List Bool) × ℕ) × List Bool) :
-      r.1.1.1.length ≤ (enc r).length ∧ r.1.1.2.length ≤ (enc r).length ∧
-        r.2.length ≤ (enc r).length ∧ (encB r.1).length ≤ (enc r).length := by
-    have e₁ : (enc r).length = 2 * (encB r.1).length + 1 + r.2.length := by
-      rw [henc, length_encPair, encBits_apply]
-    have e₂ : (encB r.1).length = 2 * (encQ r.1.1).length + 1 + r.1.2 := by
-      rw [hencB, length_encPair, encUnary_apply, List.length_replicate]
-    have e₃ : (encQ r.1.1).length = 2 * r.1.1.1.length + 1 + r.1.1.2.length := by
-      rw [hencQ, length_encPair, encBits_apply, encBits_apply]
-    omega
-  have hf' : ComputableInO (fun r : ((List Bool × List Bool) × ℕ) × List Bool =>
-      accepts r.1.1.1 r.1.1.2 r.2) enc encBool
-      (fun r => 6 * (enc r).length + accBound D (r.1.1.1, r.1.1.2, r.2))
-      (fun r => 6 * (enc r).length + accBound D (r.1.1.1, r.1.1.2, r.2)) := by
-    refine hf.mono_le (fun r => ?_) (fun r => ?_) <;>
-    · rw [← henc]
-      omega
-  have hpoly : PolyBounded (fun r => (enc r).length) fun r =>
-      6 * (enc r).length + accBound D (r.1.1.1, r.1.1.2, r.2) :=
-    (PolyBounded.of_polynomiallyBounded (fun r => (enc r).length)
-      (bound := fun n => 6 * n + ((n + 1) ^ D + n + n + 1) ^ 4 * (2 * n + 1 + n + 1) ^ 4)
-      (by fun_prop)).mono fun r => by
-        obtain ⟨h₁, h₂, h₃, -⟩ := hlen r
+  have hpoly : PolyBounded
+      (fun q : List Bool × List Bool × List Bool =>
+        (encPair encBits (encPair encBits encBits) q).length) (accBound D) :=
+    (PolyBounded.of_polynomiallyBounded _
+      (bound := fun n => ((n + 1) ^ D + n + n + 1) ^ 4 * (2 * n + 1 + n + 1) ^ 4)
+      (by fun_prop)).mono fun q => by
+        have hsize : q.1.length ≤ (encPair encBits (encPair encBits encBits) q).length ∧
+            q.2.1.length ≤ (encPair encBits (encPair encBits encBits) q).length ∧
+            q.2.2.length ≤ (encPair encBits (encPair encBits encBits) q).length := by enc_len
+        obtain ⟨h₁, h₂, h₃⟩ := hsize
         simp only [accBound, List.length_append, length_frame]
         gcongr
-  have hℓ : ComputableInPolyTime (fun b : (List Bool × List Bool) × ℕ => b.2) encB encUnary := by
-    fun_prop
-  obtain ⟨K₀, hsearch⟩ := exists_computableInO_any_enumList hf' hpoly hpoly hℓ
+  have hpacc := hacc.computableInPolyTime hpoly hpoly
+  set encQ := encPair encBits encBits with hencQ
+  set encB := encPair encQ encUnary with hencB
+  have hℓ : ComputableInPolyTime (fun b : (List Bool × List Bool) × ℕ => b.2)
+      encB encUnary := ComputableInPolyTime.snd encQ encUnary
+  obtain ⟨K₀, hsearch⟩ := Diagonal.exists_computableInO_lazyBrute hpacc
+    (ComputableInPolyTime.fst encQ encUnary) hℓ
   -- the certificate length in unary
   have hL : ComputableInPolyTime (fun q : List Bool × List Bool => (k + 1) * (q.2.length + 1))
       encQ encUnary := by

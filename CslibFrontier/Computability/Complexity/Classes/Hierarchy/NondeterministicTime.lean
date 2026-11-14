@@ -188,29 +188,24 @@ private theorem exists_computableInO_brute (d : ℕ) : ∃ K, ComputableInO
     (fun q => 2 ^ (K * ((encPair encBits encBits q).length + certLen d q.2.length)))
     (fun q => 2 ^ (K * ((encPair encBits encBits q).length + certLen d q.2.length))) := by
   obtain ⟨D, hacc⟩ := exists_computableInO_accepts d
-  set enc := encPair (encPair encBits encBits) encBits
-  have hre := ((ComputableInO.fst (encPair encBits encBits) encBits).fst').prod
-    (((ComputableInO.fst (encPair encBits encBits) encBits).snd').prod
-      (ComputableInO.snd (encPair encBits encBits) encBits))
-  have hf := hacc.comp hre
-  have hsize (q : (List Bool × List Bool) × List Bool) :
-      q.1.1.length ≤ (enc q).length ∧ q.1.2.length ≤ (enc q).length ∧
-        q.2.length ≤ (enc q).length := by enc_len [enc]
-  have hpoly : PolyBounded (fun q => (enc q).length) fun q =>
-      (enc q).length + ((enc q).length + (enc q).length) +
-        accBound d D (q.1.1, q.1.2, q.2) :=
-    ((PolyBounded.self.add (PolyBounded.self.add .self)).add
-      ((PolyBounded.of_polynomiallyBounded (fun q => (enc q).length)
-        (bound := fun n => ((n + 1) ^ D + n + n + 1) ^ 4 * (n + 1) ^ (2 * d + 6))
-        (by fun_prop)).mono fun q => by
-          obtain ⟨h₁, h₂, h₃⟩ := hsize q
-          simp only [accBound]
-          gcongr))
+  have hpoly : PolyBounded
+      (fun q : List Bool × List Bool × List Bool =>
+        (encPair encBits (encPair encBits encBits) q).length) (accBound d D) :=
+    (PolyBounded.of_polynomiallyBounded _
+      (bound := fun n => ((n + 1) ^ D + n + n + 1) ^ 4 * (n + 1) ^ (2 * d + 6))
+      (by fun_prop)).mono fun q => by
+        have hsize : q.1.length ≤ (encPair encBits (encPair encBits encBits) q).length ∧
+            q.2.1.length ≤ (encPair encBits (encPair encBits encBits) q).length ∧
+            q.2.2.length ≤ (encPair encBits (encPair encBits encBits) q).length := by enc_len
+        obtain ⟨h₁, h₂, h₃⟩ := hsize
+        simp only [accBound]
+        gcongr
+  have hpacc := hacc.computableInPolyTime hpoly hpoly
   have hℓ : ComputableInPolyTime (fun q : List Bool × List Bool => certLen d q.2.length)
       (encPair encBits encBits) encUnary := by
     unfold certLen
     fun_prop
-  exact exists_computableInO_any_enumList hf hpoly hpoly hℓ
+  exact Diagonal.exists_computableInO_lazyBrute hpacc ComputableInPolyTime.id' hℓ
 
 /-- The cost of the tests of the verifier: quadratic in the encoded input, times a power of the
 length of the input that pays for the clock in unary. -/

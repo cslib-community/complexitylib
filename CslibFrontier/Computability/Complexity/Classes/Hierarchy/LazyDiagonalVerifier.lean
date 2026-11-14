@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Con
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
+import CslibFrontier.Computability.Complexity.Classes.Time.BoundedExists
 import Mathlib.Tactic.Ring
 
 /-!
@@ -27,6 +28,8 @@ charges only the branch taken; the space witness is independent of that time bou
 ## Main results
 
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyAccepts`: construct acceptance from a binary clock.
+* `Cslib.Complexity.Diagonal.exists_computableInO_lazyBrute`: search with polynomial-time
+  acceptance and parameter selection, including a separately supplied unary length.
 * `Cslib.Complexity.Diagonal.exists_computableInO_sizeLength_le`: construct a horizon comparison
   from an independently bounded unary clock.
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyVerifier`: assemble a verifier from
@@ -39,23 +42,28 @@ namespace Cslib.Complexity.Diagonal
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
+/-- Description, input and certificate encoding for lazy acceptance simulation.
+The word is `frame description ++ frame input ++ certificate`. -/
+abbrev encLazyAcceptsInput : (List Bool × List Bool × List Bool) ↪ List Bool :=
+  encPair encBits (encPair encBits encBits)
+
 /-- Construct the acceptance simulation with an arbitrary binary clock. Its time and space
 budgets include input access; positivity and a linear binary-length bound suffice for the
 shared universal-simulation estimate. The clock may depend on both input and certificate. -/
 theorem exists_computableInO_lazyAccepts
     (β : List Bool → List Bool → ℕ) (a : ℕ)
     (hclock : ComputableInO (fun q : List Bool × List Bool × List Bool => β q.2.1 q.2.2)
-      (encPair encBits (encPair encBits encBits)) encNat
-      (fun q => (encPair encBits (encPair encBits encBits) q).length + β q.2.1 q.2.2)
-      (fun q => (encPair encBits (encPair encBits encBits) q).length + β q.2.1 q.2.2))
+      (encLazyAcceptsInput) encNat
+      (fun q => (encLazyAcceptsInput q).length + β q.2.1 q.2.2)
+      (fun q => (encLazyAcceptsInput q).length + β q.2.1 q.2.2))
     (hlen : ∀ y v, (encNat (β y v)).length ≤ (a + 4) * (y.length + v.length + 1))
     (hpos : ∀ y v, 1 ≤ β y v) :
     ∃ D, ComputableInO (fun q : List Bool × List Bool × List Bool => lazyAccepts β q.1 q.2.1 q.2.2)
-      (encPair encBits (encPair encBits encBits)) encBool
+      (encLazyAcceptsInput) encBool
       (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2)
       (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2) := by
   obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
-  set enc := encPair encBits (encPair encBits encBits)
+  set enc := encLazyAcceptsInput
   have hdesc := hdec.inO.comp (ComputableInO.fst encBits (encPair encBits encBits))
   have hword : ComputableInO (fun q : List Bool × List Bool × List Bool => frame q.2.1 ++ q.2.2)
       enc encBits (fun q => (enc q).length) (fun q => (enc q).length) :=
@@ -90,6 +98,26 @@ theorem exists_computableInO_lazyAccepts
     simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
       length_frame, hb] at h₁ h₂ ⊢
     omega
+
+/-- Exhaustive acceptance search after polynomial-time parameter selection. The parameter
+may include a unary certificate length, so the same construction covers both directly
+constructible lengths and lengths supplied by a separate, more expensive preprocessing step.
+The bound charges the entire encoded parameter, preserving that preprocessing interface. -/
+theorem exists_computableInO_lazyBrute
+    {α : Type} {encA : α ↪ List Bool} {β : List Bool → List Bool → ℕ}
+    {param : α → List Bool × List Bool} {ℓ : α → ℕ}
+    (hacc : ComputableInPolyTime (fun q : List Bool × List Bool × List Bool =>
+      lazyAccepts β q.1 q.2.1 q.2.2) (encLazyAcceptsInput) encBool)
+    (hparam : ComputableInPolyTime param encA (encPair encBits encBits))
+    (hℓ : ComputableInPolyTime ℓ encA encUnary) :
+    ∃ K, ComputableInO (fun x => (Cslib.BitString.enumList (ℓ x)).any
+      (lazyAccepts β (param x).1 (param x).2)) encA encBool
+      (fun x => 2 ^ (K * ((encA x).length + ℓ x)))
+      (fun x => 2 ^ (K * ((encA x).length + ℓ x))) := by
+  have hp := hparam.comp (ComputableInPolyTime.fst encA encBits)
+  have hre := hp.fst'.prod (hp.snd'.prod (ComputableInPolyTime.snd encA encBits))
+  obtain ⟨T, S, hT, hS, hf⟩ := (hacc.comp hre).exists_computableInO
+  exact exists_computableInO_any_enumList hf hT hS hℓ
 
 /-- Construct a horizon comparison from a unary clock certificate. The tested word may
 be the input or its one-bit extension. Only its time and length bounds are needed; its
@@ -146,7 +174,7 @@ theorem exists_computableInO_lazyVerifier
     {B SB : List Bool × List Bool × List Bool → ℕ}
     {R SR : List Bool × List Bool → ℕ}
     (hacc : ComputableInO (fun q : List Bool × List Bool × List Bool =>
-      lazyAccepts β q.1 q.2.1 q.2.2) (encPair encBits (encPair encBits encBits)) encBool B SB)
+      lazyAccepts β q.1 q.2.1 q.2.2) (encLazyAcceptsInput) encBool B SB)
     (hbrute : ComputableInO (fun q : List Bool × List Bool =>
       (Cslib.BitString.enumList (L q.2.length)).any (lazyAccepts β q.1 q.2))
       (encPair encBits encBits) encBool R SR)
