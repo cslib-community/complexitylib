@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Karn Seth
+Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Karn Seth, Renfei Zhou
 -/
 
 module
@@ -41,8 +41,8 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
   function to a finite subset gives the uniform distribution on that subset.
-* `Cslib.Probability.PMF.map_comp_keys_uniformOfFintype`: pulling back a uniform value table
-  along an injection gives the uniform distribution on the domain.
+* `Cslib.Probability.PMF.uniformOfFintype_pi_map_comp_embedding`: pulling back a uniform
+  dependent function along an embedding gives the uniform distribution on the domain.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_bind_adaptiveUpdate`: resampling the value at a
   point chosen from the function itself.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
@@ -154,22 +154,21 @@ theorem uniformOfFintype_pi_bind_restrict {ι : Type*} [Fintype ι] [DecidableEq
   rw [← uniformOfFintype_pi_map_restrict I, PMF.bind_map]
   rfl
 
-/-- Pulling back a uniform value table `kv : Fin U → Fin V` along any injective `keys` gives the
-uniform distribution on `Fin k → Fin V`. -/
-theorem map_comp_keys_uniformOfFintype {U V k : ℕ} (hV : 1 ≤ V) (keys : Fin k ↪ Fin U) :
-    letI : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
-    (uniformOfFintype (Fin U → Fin V)).map (fun kv i => kv (keys i)) =
-      uniformOfFintype (Fin k → Fin V) := by
-  let _ : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
-  set I : Finset (Fin U) := Finset.univ.image keys
-  let eIdx : Fin k ≃ I := Equiv.ofBijective
-    (fun i => ⟨keys i, Finset.mem_image_of_mem keys (Finset.mem_univ i)⟩) (by
-      rw [Fintype.bijective_iff_injective_and_card, Fintype.card_fin, Fintype.card_coe,
-        Finset.card_image_of_injective _ keys.injective, Finset.card_fin]
-      exact ⟨fun _ _ h => keys.injective (congrArg Subtype.val h), rfl⟩)
-  let pull : (I → Fin V) ≃ (Fin k → Fin V) := Equiv.piCongrLeft' (fun _ => Fin V) eIdx.symm
-  have hcomp : (fun (kv : Fin U → Fin V) i => kv (keys i)) = pull ∘ I.restrict := by
-    funext kv i; change kv (keys i) = pull (I.restrict kv) i; simp [pull, Finset.restrict, eIdx]
+/-- Pulling back a uniform dependent function along an embedding gives the uniform distribution
+on the domain. -/
+theorem uniformOfFintype_pi_map_comp_embedding {ι κ : Type*} [Fintype ι] [Fintype κ]
+    [DecidableEq ι] [DecidableEq κ] (e : κ ↪ ι) :
+    (uniformOfFintype (ι → α)).map (fun f i => f (e i)) =
+      uniformOfFintype (κ → α) := by
+  set I : Finset ι := Finset.univ.image e
+  let eIdx : κ ≃ I := Equiv.ofBijective
+    (fun i => ⟨e i, Finset.mem_image_of_mem e (Finset.mem_univ i)⟩) (by
+      rw [Fintype.bijective_iff_injective_and_card, Fintype.card_coe,
+        Finset.card_image_of_injective _ e.injective, Finset.card_univ]
+      exact ⟨fun _ _ h => e.injective (congrArg Subtype.val h), rfl⟩)
+  let pull : (I → α) ≃ (κ → α) := Equiv.piCongrLeft' (fun _ => α) eIdx.symm
+  have hcomp : (fun (f : ι → α) i => f (e i)) = pull ∘ I.restrict := by
+    funext f i; change f (e i) = pull (I.restrict f) i; simp [pull, Finset.restrict, eIdx]
   rw [hcomp, ← _root_.PMF.map_comp, uniformOfFintype_pi_map_restrict I,
     uniformOfFintype_map_equiv pull]
 

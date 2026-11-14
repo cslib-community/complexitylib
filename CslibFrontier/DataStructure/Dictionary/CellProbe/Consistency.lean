@@ -418,7 +418,7 @@ private theorem hardDist_eq_bind_keyVals {U V n : ℕ} (hU : 2 * n ≤ U) (hV : 
   let _ : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
   rw [hdist, ← PMF.uniformOfFintype_prod, _root_.PMF.map_bind, ← PMF.uniformOfFintype_prod,
     _root_.PMF.bind_bind]
-  congr 1 with keys; rw [← PMF.map_comp_keys_uniformOfFintype hV keys, _root_.PMF.bind_map]
+  congr 1 with keys; rw [← PMF.uniformOfFintype_pi_map_comp_embedding keys, _root_.PMF.bind_map]
   simp [_root_.PMF.map_comp, Function.comp_def]
 
 /-- Global-value representation of `insertQueryDeleteDist` ([LiLiangYuZhou2023], Section 8, p. 28 /
@@ -486,13 +486,14 @@ noncomputable instance (U V n : ℕ) : Fintype (HardKeyValSeed U V n) :=
 noncomputable def HardKeyValSeed.candidateOps {U V n : ℕ} (s : HardKeyValSeed U V n)
     (t₀ m : ℕ) (ht : t₀ + m ≤ n) (B : Finset (Fin U)) (hB : B.card = m) : List (Dynamic.Op U) :=
   candidateQueryDeleteInsertOps (segDeletedKeys s.keys s.delPerm t₀ m ht)
-    (orderSubset B hB (embSetPermEquiv U m (segInsertedKeys s.keys t₀ m ht)).2) s.kv
+    (orderSubset B hB (embSetPermEquiv (Fin U) m (segInsertedKeys s.keys t₀ m ht)).2) s.kv
 
 @[simp] theorem HardKeyValSeed.candidateOps_eq {U V n : ℕ} (s : HardKeyValSeed U V n)
     (t₀ m : ℕ) (ht : t₀ + m ≤ n) (B : Finset (Fin U)) (hB : B.card = m) :
     s.candidateOps t₀ m ht B hB = candidateQueryDeleteInsertOps
       (segDeletedKeys s.keys s.delPerm t₀ m ht)
-      (orderSubset B hB (embSetPermEquiv U m (segInsertedKeys s.keys t₀ m ht)).2) s.kv := by rfl
+      (orderSubset B hB (embSetPermEquiv (Fin U) m
+        (segInsertedKeys s.keys t₀ m ht)).2) s.kv := by rfl
 
 /-- Dictionary state reached after `n` initial insertions and `t ≤ n` meta-operations of `s.ops`. -/
 theorem HardKeyValSeed.run_take_ops_fst {U V n t : ℕ} (s : HardKeyValSeed U V n) (ht : t ≤ n) :

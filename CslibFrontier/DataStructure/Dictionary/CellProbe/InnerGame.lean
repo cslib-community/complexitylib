@@ -65,13 +65,10 @@ namespace Cslib.DataStructure.Dictionary.CellProbe
 
 open Cslib.CellProbe Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.BitString Cslib.Probability Cslib.Probability.Coding InformationTheory
-open Finset (orderSubset orderSubset_apply image_orderSubset embSetPermEquiv
-  embSetPermEquiv_symm_apply embSetPermEquiv_fst)
+open Finset (orderSubset orderSubset_apply image_orderSubset orderSubset_congr
+  orderSubset_eq_of_embSetPermEquiv_fst image_perm_trans embSetPermEquiv
+  embSetPermEquiv_symm_apply embSetPermEquiv_fst embSetPermEquiv_perm_trans)
 open scoped BigOperators ENNReal
-
-private theorem orderSubset_congr {U m : ℕ} {S₁ S₂ : Finset (Fin U)} {h₁ : S₁.card = m}
-    {h₂ : S₂.card = m} {π₁ π₂ : Equiv.Perm (Fin m)} (hS : S₁ = S₂) (hπ : π₁ = π₂) :
-    orderSubset S₁ h₁ π₁ = orderSubset S₂ h₂ π₂ := by subst hS; subst hπ; rfl
 
 private def candPrefix {U V m : ℕ} (d b : Fin m → Fin U) (kv : Fin U → Fin V) (r : ℕ) :
     List (Dynamic.Op U) :=
@@ -982,30 +979,19 @@ private theorem prob_innerPool_eq_le {U V n t₀ m g cells w : ℕ} {γ R t : �
       card_B := hBp.2, card_inter := hBm.2 }
   let cfg (ω : Ω) : InnerKeyConfig U n m g :=
     cfgOfPk ω.1.permKeyEmb ⟨ω.2.val, hFs_eq ω.1 ▸ ω.2.property⟩
-  let π (ω : Ω) : Equiv.Perm (Fin m) := (embSetPermEquiv U m (segInsertedKeys ω.1.keys t₀ m ht₀)).2
+  let π (ω : Ω) : Equiv.Perm (Fin m) :=
+    (embSetPermEquiv (Fin U) m (segInsertedKeys ω.1.keys t₀ m ht₀)).2
   let σ (ω : Ω) : Equiv.Perm (Fin m) :=
-    (embSetPermEquiv U m (segDeletedKeys ω.1.keys ω.1.delPerm t₀ m ht₀)).2
+    (embSetPermEquiv (Fin U) m (segDeletedKeys ω.1.keys ω.1.delPerm t₀ m ht₀)).2
   let pref_bef (ω : Ω) : List (Dynamic.Op U) := ω.1.ops.take (n + 3 * t₀)
   have hod_eq (ω : Ω) : orderSubset (cfg ω).D (cfg ω).card_D (σ ω) =
-      segDeletedKeys ω.1.keys ω.1.delPerm t₀ m ht₀ := by
-    have hfst : (embSetPermEquiv U m (segDeletedKeys ω.1.keys ω.1.delPerm t₀ m ht₀)).1 =
-        ⟨(cfg ω).D, (cfg ω).card_D⟩ :=
-      Subtype.ext (by rw [embSetPermEquiv_fst]; dsimp [cfg, cfgOfPk]; rw [hdel_eq])
-    calc orderSubset (cfg ω).D (cfg ω).card_D (σ ω)
-        = (embSetPermEquiv U m).symm (⟨(cfg ω).D, (cfg ω).card_D⟩, σ ω) :=
-            (embSetPermEquiv_symm_apply U m ⟨(cfg ω).D, (cfg ω).card_D⟩ (σ ω)).symm
-      _ = (embSetPermEquiv U m).symm (embSetPermEquiv U m _) := by rw [← hfst]
-      _ = _ := (embSetPermEquiv U m).symm_apply_apply _
+      segDeletedKeys ω.1.keys ω.1.delPerm t₀ m ht₀ :=
+    orderSubset_eq_of_embSetPermEquiv_fst
+      (Subtype.ext (by rw [embSetPermEquiv_fst]; dsimp [cfg, cfgOfPk]; rw [hdel_eq]))
   have hoa_eq (ω : Ω) :
-      orderSubset (cfg ω).A (cfg ω).card_A (π ω) = segInsertedKeys ω.1.keys t₀ m ht₀ := by
-    have hfst : (embSetPermEquiv U m (segInsertedKeys ω.1.keys t₀ m ht₀)).1 =
-        ⟨(cfg ω).A, (cfg ω).card_A⟩ :=
-      Subtype.ext (by rw [embSetPermEquiv_fst]; dsimp [cfg, cfgOfPk]; rw [hins_eq])
-    calc orderSubset (cfg ω).A (cfg ω).card_A (π ω)
-        = (embSetPermEquiv U m).symm (⟨(cfg ω).A, (cfg ω).card_A⟩, π ω) :=
-            (embSetPermEquiv_symm_apply U m ⟨(cfg ω).A, (cfg ω).card_A⟩ (π ω)).symm
-      _ = (embSetPermEquiv U m).symm (embSetPermEquiv U m _) := by rw [← hfst]
-      _ = _ := (embSetPermEquiv U m).symm_apply_apply _
+      orderSubset (cfg ω).A (cfg ω).card_A (π ω) = segInsertedKeys ω.1.keys t₀ m ht₀ :=
+    orderSubset_eq_of_embSetPermEquiv_fst
+      (Subtype.ext (by rw [embSetPermEquiv_fst]; dsimp [cfg, cfgOfPk]; rw [hins_eq]))
   let ObsT := Equiv.Perm (Fin m) × Equiv.Perm (Fin m)
   let TgtT := InnerTarget U V n m g
   let obs (ω : Ω) : ObsT := (π ω, σ ω)
@@ -1041,21 +1027,9 @@ private theorem prob_innerPool_eq_le {U V n t₀ m g cells w : ℕ} {γ R t : �
       have hγ_sl : IsSlotPerm t₀ m γ_sl := isSlotPerm_slotPerm t₀ m ht₀ α β
       have himg_perm (γp : Equiv.Perm (Fin m)) (f : Fin m ↪ Fin U) :
           Finset.univ.image (γp.toEmbedding.trans f) = Finset.univ.image f ∧
-            (embSetPermEquiv U m (γp.toEmbedding.trans f)).2 =
-              γp.trans (embSetPermEquiv U m f).2 := by
-        have himg : Finset.univ.image (γp.toEmbedding.trans f) = Finset.univ.image f := by
-          ext x; simp only [Finset.mem_image, Finset.mem_univ, true_and,
-            Function.Embedding.trans_apply, Equiv.coe_toEmbedding]
-          exact ⟨fun ⟨r, h⟩ => ⟨γp r, h⟩, fun ⟨r, h⟩ => ⟨γp.symm r, by simpa using h⟩⟩
-        refine ⟨himg, ?_⟩
-        set S := (embSetPermEquiv U m f).1
-        have h0 : (embSetPermEquiv U m).symm (S, (embSetPermEquiv U m f).2) = f := by
-          simpa only [S, Prod.mk.eta] using (embSetPermEquiv U m).symm_apply_apply f
-        have hgf : (embSetPermEquiv U m).symm (S, γp.trans (embSetPermEquiv U m f).2) =
-            γp.toEmbedding.trans f := by
-          apply Function.Embedding.ext; intro r
-          simpa [embSetPermEquiv_symm_apply] using congrArg (fun k : Fin m ↪ Fin U => k (γp r)) h0
-        exact (congrArg Prod.snd ((Equiv.symm_apply_eq (embSetPermEquiv U m)).mp hgf)).symm
+            (embSetPermEquiv (Fin U) m (γp.toEmbedding.trans f)).2 =
+              γp.trans (embSetPermEquiv (Fin U) m f).2 :=
+        ⟨image_perm_trans γp f, embSetPermEquiv_perm_trans γp f⟩
       let slSeed (γp : Equiv.Perm (Fin (2 * n))) (s : HardKeyValSeed U V n) :
           HardKeyValSeed U V n :=
         ⟨((liftDelPerm s.delPerm).symm.trans (γp.trans (liftDelPerm s.delPerm))).toEmbedding.trans
@@ -1137,11 +1111,12 @@ private theorem prob_innerPool_eq_le {U V n t₀ m g cells w : ℕ} {γ R t : �
           · change Finset.univ.image (pkeyInsEmb (slSeed γ_sl s).permKeyEmb t₀ m ht₀) = _
             rw [hsl_pk, hins_s, (himg_perm β _).1]
         refine Prod.ext (Prod.ext ?_ ?_) (innerTarget_mk_eq hc_eq fun _ _ => rfl)
-        · change (embSetPermEquiv U m (segInsertedKeys (slSeed γ_sl s).keys t₀ m ht₀)).2 =
-            β.trans (embSetPermEquiv U m (segInsertedKeys s.keys t₀ m ht₀)).2
+        · change (embSetPermEquiv (Fin U) m (segInsertedKeys (slSeed γ_sl s).keys t₀ m ht₀)).2 =
+            β.trans (embSetPermEquiv (Fin U) m (segInsertedKeys s.keys t₀ m ht₀)).2
           rw [hins_eq, hins_eq, hsl_pk, hins_s, (himg_perm β _).2]
-        · change (embSetPermEquiv U m (segDeletedKeys (slSeed γ_sl s).keys s.delPerm t₀ m ht₀)).2 =
-            α.trans (embSetPermEquiv U m (segDeletedKeys s.keys s.delPerm t₀ m ht₀)).2
+        · change (embSetPermEquiv (Fin U) m
+              (segDeletedKeys (slSeed γ_sl s).keys s.delPerm t₀ m ht₀)).2 =
+            α.trans (embSetPermEquiv (Fin U) m (segDeletedKeys s.keys s.delPerm t₀ m ht₀)).2
           rw [hdel_eq, hdel_eq, hsl_pk, hdel_s, (himg_perm α _).2]
       have hb : eβ₂ (o₁, tgt) = (o₂, tgt) :=
         Prod.ext (Prod.ext (by change β.trans o₁.1 = o₂.1; ext r; simp [β])
