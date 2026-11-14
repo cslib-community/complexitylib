@@ -56,7 +56,7 @@ example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (A : F.DDHOTDis
     Game.advantage
         (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n)
         (F.ddhOTIdealGame setup {1} F.ddhOTReceiverSimSampleExp A n) ≤ 6 / 2 ^ n :=
-  F.advantage_ddhOTIdealGame_le setup _ _ A n (F.advantage_bind_ddhOTReceiverSimSampleExp_le n)
+  F.advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le setup A n
 
 -- Under DDH, there are PPT simulator families for which the real and ideal games are
 -- indistinguishable.

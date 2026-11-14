@@ -80,7 +80,10 @@ probability.
   families are PPT.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_bind_ddhOTSenderSimSampleExp_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_bind_ddhOTReceiverSimSampleExp_le`: on every input,
-  they are within statistical distance `6 / 2 ^ n` of the exact-sampling simulators.
+  they are within statistical distance `6 / 2 ^ n` of the exact-sampling simulators, so the ideal
+  games differ by at most `6 / 2 ^ n`
+  (`Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhOTIdealGame_ddhOTSenderSimSampleExp_le`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le`).
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable_sampleExpSim`: under DDH,
   the real runs are indistinguishable from the ideal runs with these simulator families.
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTStandaloneSemiHonestSecure`: a step towards
@@ -341,7 +344,7 @@ theorem advantage_bind_ddhOTReceiverSimSampleExp_le (n : ℕ) (d : F.Desc)
 
 /-- Two simulator families that are within `ε` of each other on every input and against every
 test give ideal games within `ε` of each other. -/
-theorem advantage_ddhOTIdealGame_le (setup : ℕ → PMF F.Desc) {I : Finset (Fin 2)}
+private theorem advantage_ddhOTIdealGame_le (setup : ℕ → PMF F.Desc) {I : Finset (Fin 2)}
     (S S' : F.DDHOTSimulator I) (A : F.DDHOTDistinguisher I) (n : ℕ) {ε : ℝ≥0}
     (h : ∀ (d : F.Desc) xI yI (k : _ → Game),
       Game.advantage ((ProbComp.eval (S n d xI yI)).bind k)
@@ -352,7 +355,61 @@ theorem advantage_ddhOTIdealGame_le (setup : ℕ → PMF F.Desc) {I : Finset (Fi
   exact Game.advantage_bind_le_nnreal _ _ _ fun d =>
     Game.advantage_bind_le_nnreal _ _ _ fun _ => h d _ _ _
 
+/-- For every distinguisher against a corrupted sender, the ideal games with `ddhOTSenderSim`
+and with `ddhOTSenderSimSampleExp` differ by at most `6 / 2 ^ n`. -/
+theorem advantage_ddhOTIdealGame_ddhOTSenderSimSampleExp_le (setup : ℕ → PMF F.Desc)
+    (A : F.DDHOTDistinguisher {0}) (n : ℕ) :
+    Game.advantage
+        (F.ddhOTIdealGame setup {0} (fun _ d => ddhOTSenderSim (F.generator d) (F.order d)) A n)
+        (F.ddhOTIdealGame setup {0} F.ddhOTSenderSimSampleExp A n) ≤ 6 / 2 ^ n :=
+  F.advantage_ddhOTIdealGame_le setup _ _ A n (F.advantage_bind_ddhOTSenderSimSampleExp_le n)
+
+/-- For every distinguisher against a corrupted receiver, the ideal games with `ddhOTReceiverSim`
+and with `ddhOTReceiverSimSampleExp` differ by at most `6 / 2 ^ n`. -/
+theorem advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le (setup : ℕ → PMF F.Desc)
+    (A : F.DDHOTDistinguisher {1}) (n : ℕ) :
+    Game.advantage
+        (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n)
+        (F.ddhOTIdealGame setup {1} F.ddhOTReceiverSimSampleExp A n) ≤ 6 / 2 ^ n :=
+  F.advantage_ddhOTIdealGame_le setup _ _ A n (F.advantage_bind_ddhOTReceiverSimSampleExp_le n)
+
 /-! ### Efficiency of the simulator families -/
+
+/-- Six `sampleExp` draws followed by an efficiently computable function of the input and the
+draws are uniform strict PPT. -/
+private theorem isPPTOn_sampleExp_six {α β : Type} {enc : α ↪ List Bool}
+    {encOut : β ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
+    (hn : ComputableInPolyTime n enc encUnary) (hd : ComputableInPolyTime d enc F.encDesc)
+    {W : α → ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → β}
+    (hW : ∀ {γ : Type} {encγ : γ ↪ List Bool} {x : γ → α} {a₁ a₂ a₃ a₄ a₅ a₆ : γ → ℕ},
+      ComputableInPolyTime x encγ enc → ComputableInPolyTime a₁ encγ encNat →
+      ComputableInPolyTime a₂ encγ encNat → ComputableInPolyTime a₃ encγ encNat →
+      ComputableInPolyTime a₄ encγ encNat → ComputableInPolyTime a₅ encγ encNat →
+      ComputableInPolyTime a₆ encγ encNat →
+      ComputableInPolyTime (fun c => W (x c) (a₁ c) (a₂ c) (a₃ c) (a₄ c) (a₅ c) (a₆ c)) encγ
+        encOut) :
+    IsPPTOn enc encOut (fun x => do
+      let a₁ ← F.sampleExp (n x) (d x)
+      let a₂ ← F.sampleExp (n x) (d x)
+      let a₃ ← F.sampleExp (n x) (d x)
+      let a₄ ← F.sampleExp (n x) (d x)
+      let a₅ ← F.sampleExp (n x) (d x)
+      let a₆ ← F.sampleExp (n x) (d x)
+      pure (W x a₁ a₂ a₃ a₄ a₅ a₆)) := by
+  have hsample {γ : Type} {encγ : γ ↪ List Bool} {x : γ → α}
+      (hx : ComputableInPolyTime x encγ enc) :
+      IsPPTOn encγ encNat fun c => F.sampleExp (n (x c)) (d (x c)) :=
+    F.isPPTOn_sampleExp (hn.comp hx) (hd.comp hx)
+  refine IsPPTOn.bind_with (hsample .id') ?_
+  refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
+  refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
+  refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
+  refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
+  refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
+  exact (hW (γ := ((((((α × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ)) (x := fun p => p.1.1.1.1.1.1)
+    (a₁ := fun p => p.1.1.1.1.1.2) (a₂ := fun p => p.1.1.1.1.2) (a₃ := fun p => p.1.1.1.2)
+    (a₄ := fun p => p.1.1.2) (a₅ := fun p => p.1.2) (a₆ := fun p => p.2) (by fun_prop)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)).isPPTOn
 
 /-- The view words that `ddhOTSenderSimSampleExp` writes on input `x` and exponents
 `a, r₀, s₀, r₁, s₁, b`: the exponents reduced modulo `q = F.order d`, and the branch keys
@@ -373,76 +430,32 @@ private theorem natCast_sub_mod_eq_neg (d : F.Desc) (b : ℕ) :
 
 /-- `ddhOTSenderSimSampleExp` is PPT. -/
 theorem isPPTSender_ddhOTSenderSimSampleExp : (F.ddhOTSenderSimSampleExp).IsPPTSender := by
-  let E := encPair (encPair (encPair (encPair (encPair (encPair F.encDDHOTSenderSimInput encNat)
-    encNat) encNat) encNat) encNat) encNat
-  have hx : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.1.1) E
-      F.encDDHOTSenderSimInput := by fun_prop
-  have hd := F.encDDHOTSenderSimInput_groupParameters_polyTime hx
-  have hq := F.computableInPolyTime_order.comp hd
-  have hg := computableInPolyTime_encode_generator hd
-  have ha : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.1.2) E
-      encNat := by fun_prop
-  have hr₀ : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.2) E
-      encNat := by fun_prop
-  have hs₀ : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.2) E
-      encNat := by fun_prop
-  have hr₁ : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.2) E
-      encNat := by fun_prop
-  have hs₁ : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.2) E
-      encNat := by fun_prop
-  have hb : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.2) E
-      encNat := by fun_prop
-  have hwords : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTSenderSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
-        F.ddhOTSenderSimWords p.1.1.1.1.1.1 p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
-      E encDDHOTSenderViewWords :=
-    encDDHOTSenderViewWords_mk_polyTime (F.encDDHOTSenderSimInput_message₀_polyTime hx)
+  refine (F.isPPTOn_sampleExp_six (F.encDDHOTSenderSimInput_secParam_polyTime .id')
+    (F.encDDHOTSenderSimInput_groupParameters_polyTime .id') (W := F.ddhOTSenderSimWords)
+    fun hx ha hr₀ hs₀ hr₁ hs₁ hb => ?_).congr fun x => ?_
+  · have hd := F.encDDHOTSenderSimInput_groupParameters_polyTime hx
+    have hq := F.computableInPolyTime_order.comp hd
+    have hg := computableInPolyTime_encode_generator hd
+    exact encDDHOTSenderViewWords_mk_polyTime (F.encDDHOTSenderSimInput_message₀_polyTime hx)
       (F.encDDHOTSenderSimInput_message₁_polyTime hx) (ha.binary_mod' hq) (hr₀.binary_mod' hq)
       (hs₀.binary_mod' hq) (hr₁.binary_mod' hq) (hs₁.binary_mod' hq)
       (computableInPolyTime_encode_natCast_smul hd hb hg)
       (computableInPolyTime_encode_add hd (computableInPolyTime_encode_natCast_smul hd ha hg)
         (computableInPolyTime_encode_natCast_smul hd (hq.binary_sub' (hb.binary_mod' hq)) hg))
-  have hsample {α : Type} {enc : α ↪ List Bool} {x : α → F.DDHOTSenderSimInput}
-      (hx : ComputableInPolyTime x enc F.encDDHOTSenderSimInput) :
-      IsPPTOn enc encNat fun a => F.sampleExp (x a).secParam (x a).groupParameters :=
-    F.isPPTOn_sampleExp (by fun_prop) (by fun_prop)
-  have hprogram : IsPPTOn F.encDDHOTSenderSimInput encDDHOTSenderViewWords (fun x => do
-      let a ← F.sampleExp x.secParam x.groupParameters
-      let r₀ ← F.sampleExp x.secParam x.groupParameters
-      let s₀ ← F.sampleExp x.secParam x.groupParameters
-      let r₁ ← F.sampleExp x.secParam x.groupParameters
-      let s₁ ← F.sampleExp x.secParam x.groupParameters
-      let b ← F.sampleExp x.secParam x.groupParameters
-      pure (F.ddhOTSenderSimWords x a r₀ s₀ r₁ s₁ b)) := by
-    refine IsPPTOn.bind_with (hsample .id') ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    exact hwords.isPPTOn
-  refine hprogram.congr fun x => ?_
-  simp only [ddhOTSenderSimSampleExp, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.map_bind, PMF.pure_map]
-  refine congrArg (PMF.bind _) (funext fun a => congrArg (PMF.bind _) (funext fun r₀ =>
-    congrArg (PMF.bind _) (funext fun s₀ => congrArg (PMF.bind _) (funext fun r₁ =>
-      congrArg (PMF.bind _) (funext fun s₁ => congrArg (PMF.bind _) (funext fun b =>
-        congrArg PMF.pure ?_))))))
-  let q := F.order x.groupParameters
-  let g := F.generator x.groupParameters
-  change _ = F.ddhOTSenderViewWords x.groupParameters (ddhOTSenderView (x.message₀, x.message₁)
-    ((a : ZMod q), (r₀ : ZMod q), (s₀ : ZMod q), (r₁ : ZMod q), (s₁ : ZMod q))
-    ((b : ZMod q) • g, (a : ZMod q) • g - (b : ZMod q) • g))
-  simp only [ddhOTSenderSimWords, ddhOTSenderViewWords, ddhOTSenderView, natCast_sub_mod_eq_neg,
-    neg_smul, ← sub_eq_add_neg, ZMod.val_natCast]
-  rfl
+  · simp only [ddhOTSenderSimSampleExp, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+      PMF.map_bind, PMF.pure_map]
+    refine congrArg (PMF.bind _) (funext fun a => congrArg (PMF.bind _) (funext fun r₀ =>
+      congrArg (PMF.bind _) (funext fun s₀ => congrArg (PMF.bind _) (funext fun r₁ =>
+        congrArg (PMF.bind _) (funext fun s₁ => congrArg (PMF.bind _) (funext fun b =>
+          congrArg PMF.pure ?_))))))
+    let q := F.order x.groupParameters
+    let g := F.generator x.groupParameters
+    change _ = F.ddhOTSenderViewWords x.groupParameters (ddhOTSenderView (x.message₀, x.message₁)
+      ((a : ZMod q), (r₀ : ZMod q), (s₀ : ZMod q), (r₁ : ZMod q), (s₁ : ZMod q))
+      ((b : ZMod q) • g, (a : ZMod q) • g - (b : ZMod q) • g))
+    simp only [ddhOTSenderSimWords, ddhOTSenderViewWords, ddhOTSenderView, natCast_sub_mod_eq_neg,
+      neg_smul, ← sub_eq_add_neg, ZMod.val_natCast]
+    rfl
 
 /-- The view words that `ddhOTReceiverSimSampleExp` writes on input `x` and exponents
 `a, b, r, s, k, c`: the coin reduced modulo `F.order d`, the first message `a • g`, and the
@@ -465,82 +478,39 @@ private def ddhOTReceiverSimWords (x : F.DDHOTReceiverSimInput) (a b r s k c : �
 /-- `ddhOTReceiverSimSampleExp` is PPT. -/
 theorem isPPTReceiver_ddhOTReceiverSimSampleExp :
     (F.ddhOTReceiverSimSampleExp).IsPPTReceiver := by
-  let E := encPair (encPair (encPair (encPair (encPair (encPair F.encDDHOTReceiverSimInput encNat)
-    encNat) encNat) encNat) encNat) encNat
-  have hx : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.1.1) E
-      F.encDDHOTReceiverSimInput := by fun_prop
-  have hd := F.encDDHOTReceiverSimInput_groupParameters_polyTime hx
-  have hq := F.computableInPolyTime_order.comp hd
-  have hg := computableInPolyTime_encode_generator hd
-  have ha : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.1.2) E
-      encNat := by fun_prop
-  have hb : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.1.2) E
-      encNat := by fun_prop
-  have hr : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.1.2) E
-      encNat := by fun_prop
-  have hs : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.1.2) E
-      encNat := by fun_prop
-  have hk : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.1.2) E
-      encNat := by fun_prop
-  have hc : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) => p.2) E
-      encNat := by fun_prop
-  have hσ := F.encDDHOTReceiverSimInput_choiceBit_polyTime hx
-  have hu := computableInPolyTime_encode_natCast_smul hd ha hg
-  have he := computableInPolyTime_encode_add hd (computableInPolyTime_encode_natCast_smul hd hr hg)
-    (computableInPolyTime_encode_natCast_smul hd hs hu)
-  have hbody := computableInPolyTime_encode_add hd
-    (computableInPolyTime_encode_natCast_smul hd hb he)
-    (F.encDDHOTReceiverSimInput_output_polyTime hx)
-  have hk' := computableInPolyTime_encode_natCast_smul hd hk hg
-  have hc' := computableInPolyTime_encode_natCast_smul hd hc hg
-  have hwords : ComputableInPolyTime
-      (fun p : ((((((F.DDHOTReceiverSimInput × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
-        F.ddhOTReceiverSimWords p.1.1.1.1.1.1 p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
-      E encDDHOTReceiverViewWords :=
-    encDDHOTReceiverViewWords_mk_polyTime hσ (hb.binary_mod' hq) hu (hσ.ite' hk' he)
+  refine (F.isPPTOn_sampleExp_six (F.encDDHOTReceiverSimInput_secParam_polyTime .id')
+    (F.encDDHOTReceiverSimInput_groupParameters_polyTime .id') (W := F.ddhOTReceiverSimWords)
+    fun hx ha hb hr hs hk hc => ?_).congr fun x => ?_
+  · have hd := F.encDDHOTReceiverSimInput_groupParameters_polyTime hx
+    have hg := computableInPolyTime_encode_generator hd
+    have hσ := F.encDDHOTReceiverSimInput_choiceBit_polyTime hx
+    have hu := computableInPolyTime_encode_natCast_smul hd ha hg
+    have he := computableInPolyTime_encode_add hd
+      (computableInPolyTime_encode_natCast_smul hd hr hg)
+      (computableInPolyTime_encode_natCast_smul hd hs hu)
+    have hbody := computableInPolyTime_encode_add hd
+      (computableInPolyTime_encode_natCast_smul hd hb he)
+      (F.encDDHOTReceiverSimInput_output_polyTime hx)
+    have hk' := computableInPolyTime_encode_natCast_smul hd hk hg
+    have hc' := computableInPolyTime_encode_natCast_smul hd hc hg
+    exact encDDHOTReceiverViewWords_mk_polyTime hσ
+      (hb.binary_mod' (F.computableInPolyTime_order.comp hd)) hu (hσ.ite' hk' he)
       (hσ.ite' hc' hbody) (hσ.ite' he hk') (hσ.ite' hbody hc')
-  have hsample {α : Type} {enc : α ↪ List Bool} {x : α → F.DDHOTReceiverSimInput}
-      (hx : ComputableInPolyTime x enc F.encDDHOTReceiverSimInput) :
-      IsPPTOn enc encNat fun a => F.sampleExp (x a).secParam (x a).groupParameters :=
-    F.isPPTOn_sampleExp (by fun_prop) (by fun_prop)
-  have hprogram : IsPPTOn F.encDDHOTReceiverSimInput encDDHOTReceiverViewWords (fun x => do
-      let a ← F.sampleExp x.secParam x.groupParameters
-      let b ← F.sampleExp x.secParam x.groupParameters
-      let r ← F.sampleExp x.secParam x.groupParameters
-      let s ← F.sampleExp x.secParam x.groupParameters
-      let k ← F.sampleExp x.secParam x.groupParameters
-      let c ← F.sampleExp x.secParam x.groupParameters
-      pure (F.ddhOTReceiverSimWords x a b r s k c)) := by
-    refine IsPPTOn.bind_with (hsample .id') ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    refine IsPPTOn.bind_with (hsample (by fun_prop)) ?_
-    exact hwords.isPPTOn
-  refine hprogram.congr fun x => ?_
-  simp only [ddhOTReceiverSimSampleExp, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.map_bind, PMF.pure_map]
-  refine congrArg (PMF.bind _) (funext fun a => congrArg (PMF.bind _) (funext fun b =>
-    congrArg (PMF.bind _) (funext fun r => congrArg (PMF.bind _) (funext fun s =>
-      congrArg (PMF.bind _) (funext fun k => congrArg (PMF.bind _) (funext fun c =>
-        congrArg PMF.pure ?_))))))
-  obtain ⟨n, d, σ, m⟩ := x
-  let q := F.order d
-  let g := F.generator d
-  let e := (r : ZMod q) • g + (s : ZMod q) • (a : ZMod q) • g
-  change _ = F.ddhOTReceiverViewWords d (ddhOTReceiverView σ (b : ZMod q) ((a : ZMod q) • g)
-    (if σ then (((k : ZMod q) • g, (c : ZMod q) • g), (e, (b : ZMod q) • e + m))
-      else ((e, (b : ZMod q) • e + m), ((k : ZMod q) • g, (c : ZMod q) • g))))
-  cases σ <;> simp only [ddhOTReceiverSimWords, ddhOTReceiverViewWords, ddhOTReceiverView,
-    Bool.false_eq_true, ↓reduceIte, ZMod.val_natCast] <;> rfl
+  · simp only [ddhOTReceiverSimSampleExp, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+      PMF.map_bind, PMF.pure_map]
+    refine congrArg (PMF.bind _) (funext fun a => congrArg (PMF.bind _) (funext fun b =>
+      congrArg (PMF.bind _) (funext fun r => congrArg (PMF.bind _) (funext fun s =>
+        congrArg (PMF.bind _) (funext fun k => congrArg (PMF.bind _) (funext fun c =>
+          congrArg PMF.pure ?_))))))
+    obtain ⟨n, d, σ, m⟩ := x
+    let q := F.order d
+    let g := F.generator d
+    let e := (r : ZMod q) • g + (s : ZMod q) • (a : ZMod q) • g
+    change _ = F.ddhOTReceiverViewWords d (ddhOTReceiverView σ (b : ZMod q) ((a : ZMod q) • g)
+      (if σ then (((k : ZMod q) • g, (c : ZMod q) • g), (e, (b : ZMod q) • e + m))
+        else ((e, (b : ZMod q) • e + m), ((k : ZMod q) • g, (c : ZMod q) • g))))
+    cases σ <;> simp only [ddhOTReceiverSimWords, ddhOTReceiverViewWords, ddhOTReceiverView,
+      Bool.false_eq_true, ↓reduceIte, ZMod.val_natCast] <;> rfl
 
 /-! ### Security with PPT simulators -/
 
@@ -548,10 +518,10 @@ theorem isPPTReceiver_ddhOTReceiverSimSampleExp :
 stand-alone semi-honest security of `ddhOTProtocol` over the family `F` against the corruption of
 one party, with PPT simulators. There are simulator families for a corrupted sender and a
 corrupted receiver, each PPT (`DDHOTSimulator.IsPPTSender`, `DDHOTSimulator.IsPPTReceiver`), for
-which `ddhOTRealIdealIndistinguishable setup` holds. The source's notion (Definition 23.5, p. 1044)
-is stated in the restricted execution framework of Section 23.5.6 rather than stand-alone, covers
-every set of corrupted parties, and has the parties draw only random bit strings; the module
-documentation lists the differences. -/
+which `ddhOTRealIdealIndistinguishable setup` holds. The source's notion, Definition 23.5
+(p. 1044) carried over to the restricted execution framework of Section 23.5.6 (p. 1054), is not
+stand-alone, covers every set of corrupted parties, and has the parties draw only random bit
+strings; the module documentation lists the differences. -/
 @[expose] def ddhOTStandaloneSemiHonestSecure (setup : ℕ → PMF F.Desc) : Prop :=
   ∃ (S₀ : F.DDHOTSimulator {0}) (S₁ : F.DDHOTSimulator {1}),
     S₀.IsPPTSender ∧ S₁.IsPPTReceiver ∧ F.ddhOTRealIdealIndistinguishable setup S₀ S₁
@@ -573,9 +543,8 @@ theorem DDH.ddhOTRealIdealIndistinguishable_sampleExpSim {F : PrimeOrderGroupFam
           Game.advantage (F.ddhOTRealGame setup {0} A n)
             (F.ddhOTIdealGame setup {0} (fun _ d => ddhOTSenderSim (F.generator d) (F.order d))
               A n) + 6 / 2 ^ n := fun n =>
-      (Game.advantage_triangle _ _ _).trans (add_le_add le_rfl
-        (F.advantage_ddhOTIdealGame_le setup _ _ A n
-          (F.advantage_bind_ddhOTSenderSimSampleExp_le n)))
+      (Game.advantage_triangle _ _ _).trans
+        (add_le_add le_rfl (F.advantage_ddhOTIdealGame_ddhOTSenderSimSampleExp_le setup A n))
     negligible using hbound
   · have hA := hexact.2 A hA
     have hbound : ∀ n, Game.advantage (F.ddhOTRealGame setup {1} A n)
@@ -583,9 +552,8 @@ theorem DDH.ddhOTRealIdealIndistinguishable_sampleExpSim {F : PrimeOrderGroupFam
           Game.advantage (F.ddhOTRealGame setup {1} A n)
             (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
               A n) + 6 / 2 ^ n := fun n =>
-      (Game.advantage_triangle _ _ _).trans (add_le_add le_rfl
-        (F.advantage_ddhOTIdealGame_le setup _ _ A n
-          (F.advantage_bind_ddhOTReceiverSimSampleExp_le n)))
+      (Game.advantage_triangle _ _ _).trans
+        (add_le_add le_rfl (F.advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le setup A n))
     negligible using hbound
 
 /-- A step towards [BonehShoup2023], Theorem 23.7, not the cited result: `F.DDH setup` implies
