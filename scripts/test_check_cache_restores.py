@@ -7,9 +7,12 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
@@ -154,7 +157,7 @@ class MainTests(Fixture):
                  argv: list[str] | None = None) -> tuple[int, str, list[str]]:
         calls = []
 
-        def elaborate(root, rel):
+        def elaborate(root, rel, **kwargs):
             calls.append(rel)
             return subprocess.CompletedProcess([], returncode, output)
 
@@ -185,7 +188,7 @@ class MainTests(Fixture):
         self.trace("DemoTests/Client", synthetic=True, log=[])
         out = io.StringIO()
 
-        def elaborate(root, rel):
+        def elaborate(root, rel, **kwargs):
             self.assertIn(rel, out.getvalue())
             self.assertNotIn("cleanly", out.getvalue())
             return subprocess.CompletedProcess([], 0, "")
@@ -193,12 +196,37 @@ class MainTests(Fixture):
         with patch.object(c, "elaborate", side_effect=elaborate) as run, \
              patch.object(c.time, "monotonic", side_effect=[10, 10.5, 12, 17]), \
              redirect_stdout(out):
-            self.assertEqual(c.main(["--progress"], self.root), 0)
+            self.assertEqual(c.main(["--progress", "--jobs", "1"], self.root), 0)
         self.assertEqual(run.call_count, 2)
         self.assertIn("checking 2 source(s) serially", out.getvalue())
         self.assertIn("[1/2]: Demo/Base.lean (elapsed 0.5s)", out.getvalue())
         self.assertIn("[2/2]: DemoTests/Client.lean (elapsed 2.0s)", out.getvalue())
         self.assertIn("cleanly (2) in 7.0s", out.getvalue())
+
+    def test_parallel_progress_and_deterministic_failure_order(self) -> None:
+        self.write("Demo/A.lean", "def a := 1\n")
+        self.trace("Demo/A", synthetic=True, log=[])
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        second_finished = threading.Event()
+
+        def elaborate(root, rel, **kwargs):
+            if rel == "Demo/A.lean":
+                self.assertTrue(second_finished.wait(timeout=5))
+                return subprocess.CompletedProcess([], 0, "warning: first file finished second\n")
+            if rel == "Demo/Base.lean":
+                second_finished.set()
+                return subprocess.CompletedProcess([], 0, "warning: second file finished first\n")
+            return subprocess.CompletedProcess([], 0, "")
+
+        out, err = io.StringIO(), io.StringIO()
+        with patch.object(c, "elaborate", side_effect=elaborate), \
+             redirect_stdout(out), redirect_stderr(err):
+            self.assertEqual(c.main(["--progress", "--jobs", "2"], self.root), 1)
+        stdout = out.getvalue()
+        self.assertIn("checking 3 source(s) with 2 worker(s).", stdout)
+        self.assertLess(stdout.index("FAIL  Demo/A.lean"), stdout.index("FAIL  Demo/Base.lean"))
+        self.assertNotIn("FAIL  DemoTests/Client.lean", stdout)
+        self.assertIn("Re-elaborating 2 file(s)", err.getvalue())
 
     def test_ci_is_quiet_by_default_but_progress_can_be_requested(self) -> None:
         with patch.dict(os.environ, {"CI": "true"}):
@@ -221,11 +249,127 @@ class MainTests(Fixture):
         out = io.StringIO()
         with patch.object(c, "elaborate", side_effect=KeyboardInterrupt) as run, \
              redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
-            c.main(["--progress"], self.root)
+            c.main(["--progress", "--jobs", "1"], self.root)
         self.assertEqual(run.call_count, 1)
         self.assertIn("[1/2]: Demo/Base.lean", out.getvalue())
         self.assertNotIn("[2/2]", out.getvalue())
         self.assertNotIn("cleanly", out.getvalue())
+
+    def test_parallel_cancellation_terminates_active_children_and_skips_rest(self) -> None:
+        for i in range(4):
+            self.write(f"Demo/Extra{i}.lean", f"def e{i} := {i}\n")
+            self.trace(f"Demo/Extra{i}", synthetic=True, log=[])
+        both_started = threading.Barrier(2, timeout=5)
+        calls: list[str] = []
+
+        class FakePopen:
+            def __init__(self_proc, cmd, **kwargs):
+                self_proc.pid = 99999
+                self_proc.returncode = 0
+                self_proc._rel = cmd[-1].removeprefix("./")
+                self_proc._killed = threading.Event()
+
+            def __enter__(self_proc):
+                return self_proc
+
+            def __exit__(self_proc, *args):
+                return False
+
+            def communicate(self_proc):
+                calls.append(self_proc._rel)
+                both_started.wait()
+                if self_proc._rel == "Demo/Base.lean":
+                    raise KeyboardInterrupt
+                self.assertTrue(self_proc._killed.wait(timeout=5))
+                self_proc.returncode = -9
+                return "", None
+
+            def wait(self_proc):
+                return self_proc.returncode
+
+        out = io.StringIO()
+        with patch.object(c.subprocess, "Popen", side_effect=FakePopen), \
+             patch.object(c, "terminate_process", side_effect=lambda p: p._killed.set()) as term, \
+             redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
+            c.main(["--progress", "--jobs", "2"], self.root)
+        self.assertEqual(sorted(calls), ["Demo/Base.lean", "Demo/Extra0.lean"])
+        self.assertEqual(term.call_count, 2)
+        self.assertNotIn("cleanly", out.getvalue())
+
+    def test_jobs_flag_env_override_and_validation(self) -> None:
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(c.JOBS_ENV, None)
+            os.environ.pop("LEAN_NUM_THREADS", None)
+            with patch.object(c, "available_cpus", return_value=64):
+                self.assertEqual(c.resolve_jobs(None), c.DEFAULT_JOBS_CAP)
+                self.assertEqual(c.resolve_jobs(None, {"LEAN_NUM_THREADS": "2"}), 2)
+                self.assertEqual(c.resolve_jobs(None, {"LEAN_NUM_THREADS": "16"}),
+                                 c.DEFAULT_JOBS_CAP)
+            with patch.object(c, "available_cpus", return_value=3):
+                self.assertEqual(c.resolve_jobs(None), 3)
+            with patch.object(c, "available_cpus", return_value=1):
+                self.assertEqual(c.resolve_jobs(None), 1)
+        with patch.dict(os.environ, {c.JOBS_ENV: "4", "LEAN_NUM_THREADS": "2"}):
+            self.assertEqual(c.resolve_jobs(None), 4)
+            self.assertEqual(c.resolve_jobs(3), 3)
+        with patch.dict(os.environ, {c.JOBS_ENV: "  ", "LEAN_NUM_THREADS": ""}):
+            with patch.object(c, "available_cpus", return_value=5):
+                self.assertEqual(c.resolve_jobs(None), 5)
+        for bad_cli in (0, -3):
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(c.main(["--jobs", str(bad_cli)], self.root), 1)
+            self.assertIn("--jobs must be >= 1", err.getvalue())
+        for bad_env in ("0", "-1", "many"):
+            err = io.StringIO()
+            with patch.dict(os.environ, {c.JOBS_ENV: bad_env}), redirect_stderr(err):
+                self.assertEqual(c.main([], self.root), 1)
+            self.assertIn(c.JOBS_ENV, err.getvalue())
+            self.assertNotIn("--jobs must be", err.getvalue())
+
+    def test_worker_env_bounds_lean_threads_and_cleans_temp_setup_dir(self) -> None:
+        parent_tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(parent_tmp.cleanup)
+        seen: list[tuple[str | None, Path]] = []
+        seen_lock = threading.Lock()
+
+        class FakePopen:
+            def __init__(self_proc, cmd, *, cwd, env, text, stdout, stderr):
+                tmpdir = Path(env["TMPDIR"])
+                self.assertTrue(tmpdir.is_dir())
+                self.assertEqual(tmpdir.parent, Path(parent_tmp.name))
+                self.assertEqual(env["TEMP"], str(tmpdir))
+                self.assertEqual(env["TMP"], str(tmpdir))
+                (tmpdir / "tmp.setup").write_text("{}")
+                with seen_lock:
+                    seen.append((env.get("LEAN_NUM_THREADS"), tmpdir))
+                self_proc.returncode = 0
+
+            def __enter__(self_proc):
+                return self_proc
+
+            def __exit__(self_proc, *args):
+                return False
+
+            def communicate(self_proc):
+                return "", None
+
+            def wait(self_proc):
+                return 0
+
+        with patch.dict(os.environ, {"LEAN_NUM_THREADS": "8", "TMPDIR": parent_tmp.name}), \
+             patch.object(c.subprocess, "Popen", side_effect=FakePopen), \
+             redirect_stdout(io.StringIO()):
+            # Single restored file: `workers == 1`, so `LEAN_NUM_THREADS=8` is preserved.
+            self.assertEqual(c.main(["--jobs", "4", "--quiet"], self.root), 0)
+            # Two restored files with `--jobs 4`: `workers == 2`, so `LEAN_NUM_THREADS=1` is set.
+            self.trace("DemoTests/Client", synthetic=True, log=[])
+            self.assertEqual(c.main(["--jobs", "4", "--quiet"], self.root), 0)
+            # Explicit `--jobs 1` on two restored files: `workers == 1`, keeping `8`.
+            self.assertEqual(c.main(["--jobs", "1", "--quiet"], self.root), 0)
+        self.assertEqual([threads for threads, _ in seen], ["8", "1", "1", "8", "8"])
+        for _, tmpdir in seen:
+            self.assertFalse(tmpdir.exists())
 
     def test_invalid_scope_fails_instead_of_becoming_an_empty_check(self) -> None:
         for contents in ('{"files": []}', '[1]', '["missing.lean"]', 'null', 'not JSON'):
@@ -335,6 +479,152 @@ class RealLakeTests(IsolatedLakeFixture):
                     self.assertEqual(check([], self.root), 1, out.getvalue())
                 self.assertIn("deprecated", out.getvalue())
                 self.assertIn(f"FAIL  {warning_file}", out.getvalue())
+
+    def test_parallel_real_lake_elaborates_concurrently_and_orders_failures(self) -> None:
+        for index, peer in ((0, 1), (1, 0)):
+            self.write(f"Demo/P{index}.lean", f"""import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do
+  if ← (System.FilePath.mk "barrier.arm").pathExists then
+    let childTmp := (← IO.getEnv "TMPDIR").getD ""
+    IO.FS.writeFile "p{index}.ready" childTmp
+    let mut ready := false
+    for _ in [:500] do
+      if ← (System.FilePath.mk "p{peer}.ready").pathExists then
+        ready := true
+        break
+      IO.sleep 20
+    unless ready do
+      Lean.logError "concurrent elaboration barrier timed out"
+""")
+        self.write("Demo.lean", "import Demo.P0\nimport Demo.P1\n")
+        first = self.lake("build", "--wfail", "--iofail", "Demo.P0", "Demo.P1")
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        shutil.rmtree(self.root / ".lake/build")
+        restored = self.lake("build", "--wfail", "--iofail", "Demo.P0", "Demo.P1")
+        self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+        for index in (0, 1):
+            trace = self.root / f".lake/build/lib/lean/Demo/P{index}.trace"
+            if not c.restored(trace):
+                self.skipTest("this Lake rebuilt the module instead of restoring it")
+
+        # Negative control: with `--jobs 1`, `P0` cannot rendezvous with `P1`.
+        self.write("Demo/P0_short.lean", (self.root / "Demo/P0.lean").read_text().replace(
+            "[:500]", "[:15]"))
+        self.write("Demo/P1_short.lean", (self.root / "Demo/P1.lean").read_text().replace(
+            "[:500]", "[:15]"))
+        self.trace("Demo/P0_short", synthetic=True, log=[])
+        self.trace("Demo/P1_short", synthetic=True, log=[])
+        self.write("barrier.arm", "")
+        short_scope = self.root / "short.json"
+        short_scope.write_text(json.dumps(["Demo/P0_short.lean", "Demo/P1_short.lean"]))
+        serial_out = io.StringIO()
+        with redirect_stdout(serial_out), redirect_stderr(serial_out):
+            self.assertEqual(
+                c.main(["--files-from", str(short_scope), "--jobs", "1", "--quiet"], self.root), 1)
+        self.assertIn("concurrent elaboration barrier timed out", serial_out.getvalue())
+        for name in ("p0.ready", "p1.ready", "Demo/P0_short.lean", "Demo/P1_short.lean"):
+            (self.root / name).unlink(missing_ok=True)
+        for name in ("P0_short.trace", "P1_short.trace"):
+            (self.root / ".lake/build/lib/lean/Demo" / name).unlink(missing_ok=True)
+
+        # Positive parallel check: `P0` and `P1` elaborate simultaneously with no lock output
+        # and leave no temporary `--setup` files behind.
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        pair_scope = self.root / "pair.json"
+        pair_scope.write_text(json.dumps(["Demo/P0.lean", "Demo/P1.lean"]))
+        parallel_out = io.StringIO()
+        with patch.dict(os.environ, {"TMPDIR": tmpdir.name}), \
+             redirect_stdout(parallel_out), redirect_stderr(parallel_out):
+            self.assertEqual(
+                c.main(["--files-from", str(pair_scope), "--jobs", "2", "--quiet"], self.root), 0,
+                parallel_out.getvalue())
+        self.assertTrue((self.root / "p0.ready").is_file())
+        self.assertTrue((self.root / "p1.ready").is_file())
+        for index in (0, 1):
+            recorded = Path((self.root / f"p{index}.ready").read_text())
+            self.assertEqual(recorded.parent, Path(tmpdir.name))
+            self.assertFalse(recorded.exists())
+        self.assertEqual(list(Path(tmpdir.name).iterdir()), [])
+
+        # Deterministic failure ordering across concurrent real Lake elaborations.
+        self.write("Demo/WarnA.lean", """import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do IO.sleep 150
+theorem warnA : 1 = 2 := by sorry
+""")
+        self.write("Demo/WarnB.lean", "theorem warnB : 1 = 2 := by sorry\n")
+        self.trace("Demo/WarnA", synthetic=True, log=[])
+        self.trace("Demo/WarnB", synthetic=True, log=[])
+        warn_scope = self.root / "warn.json"
+        warn_scope.write_text(json.dumps(["Demo/WarnA.lean", "Demo/WarnB.lean"]))
+        warn_out = io.StringIO()
+        with redirect_stdout(warn_out), redirect_stderr(io.StringIO()):
+            self.assertEqual(
+                c.main(["--files-from", str(warn_scope), "--jobs", "2", "--quiet"], self.root), 1)
+        self.assertLess(warn_out.getvalue().index("FAIL  Demo/WarnA.lean"),
+                        warn_out.getvalue().index("FAIL  Demo/WarnB.lean"))
+
+    def _assert_interrupt_cleans_up_descendants(self, sig: signal.Signals) -> None:
+        for name in ("SlowA", "SlowB"):
+            self.write(f"Demo/{name}.lean", f"""import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do
+  let pid ← IO.Process.getPID
+  IO.FS.writeFile "{name.lower()}.pid" (toString pid)
+  IO.sleep 30000
+""")
+            self.trace(f"Demo/{name}", synthetic=True, log=[])
+        scope = self.root / "slow_scope.json"
+        scope.write_text(json.dumps(["Demo/SlowA.lean", "Demo/SlowB.lean"]))
+
+        captured_pids: list[int] = []
+
+        def trigger_interrupt() -> None:
+            deadline = time.monotonic() + 10.0
+            pid_files = [self.root / "slowa.pid", self.root / "slowb.pid"]
+            while time.monotonic() < deadline:
+                pids = []
+                for pf in pid_files:
+                    if pf.is_file():
+                        try:
+                            pids.append(int(pf.read_text().strip()))
+                        except (ValueError, OSError):
+                            pass
+                if len(pids) == 2:
+                    captured_pids.extend(pids)
+                    break
+                time.sleep(0.02)
+            os.kill(os.getpid(), sig)
+
+        watcher = threading.Thread(target=trigger_interrupt, daemon=True)
+        watcher.start()
+
+        started = time.monotonic()
+        with self.assertRaises(KeyboardInterrupt):
+            c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(len(captured_pids), 2, "both lean child processes should have recorded PIDs")
+        self.assertLess(elapsed, 6.0, f"interrupt cleanup took too long: {elapsed:.2f}s")
+
+        for child_pid in captured_pids:
+            alive = True
+            deadline = time.monotonic() + 1.0
+            while time.monotonic() < deadline:
+                try:
+                    os.kill(child_pid, 0)
+                    time.sleep(0.05)
+                except OSError:
+                    alive = False
+                    break
+            self.assertFalse(alive, f"child lean process {child_pid} was not terminated")
+
+    @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
+    def test_parallel_real_lake_sigint_cleans_up_descendant_process_tree(self) -> None:
+        self._assert_interrupt_cleans_up_descendants(signal.SIGINT)
+
+    @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
+    def test_parallel_real_lake_sigterm_cleans_up_descendant_process_tree(self) -> None:
+        self._assert_interrupt_cleans_up_descendants(signal.SIGTERM)
 
 
 if __name__ == "__main__":
