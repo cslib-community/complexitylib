@@ -1251,21 +1251,6 @@ private theorem eval_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFami
       (F.encode d u) (F.encode d v) (F.encode d w)
   · simp [hk]
 
-private theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
-    (h : Game.advantage g₁ g₂ ≤ c) :
-    g₁ true ≤ g₂ true + (c : ℝ≥0∞) ∧ g₂ true ≤ g₁ true + (c : ℝ≥0∞) := by
-  have hadv : |(g₁ true).toReal - (g₂ true).toReal| ≤ (c : ℝ) := by
-    simpa only [Game.coe_advantage, Game.coe_succProbability, Real.dist_eq] using
-      NNReal.coe_le_coe.mpr h
-  have hle {a b : Game} (hab : (a true).toReal ≤ (b true).toReal + (c : ℝ)) :
-      a true ≤ b true + (c : ℝ≥0∞) := by
-    rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top a true),
-      ← ENNReal.ofReal_toReal
-        (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top b true, ENNReal.coe_ne_top⟩),
-      ENNReal.toReal_add (PMF.apply_ne_top b true) ENNReal.coe_ne_top, ENNReal.coe_toReal]
-    exact ENNReal.ofReal_le_ofReal hab
-  exact ⟨hle (by linarith [(abs_le.mp hadv).2]), hle (by linarith [(abs_le.mp hadv).1])⟩
-
 private theorem bind_ite_comm {α β γ : Type} (μ : PMF α) (ν : PMF γ) (p : γ → Prop)
     [DecidablePred p] (f : α → γ → PMF β) (fallback : PMF β) :
     (μ.bind fun a => ν.bind fun c => if p c then f a c else fallback) =
@@ -1293,62 +1278,20 @@ private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
         if i.val < m then (setup n).bind fun d => naorReingoldWordHybridAt F d m (i.val + 1) (adv d)
         else PMF.pure false) ≤
       (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal := by
-  let cap := dyadicSize m
-  rw [← bind_ite_comm (setup n) (PMF.uniformOfFintype (Fin cap)) (fun i : Fin cap => i.val < m)]
-  let errPMF : F.Desc → Game := fun d =>
-    (PMF.uniformOfFintype (ZMod (F.order d))).bind fun x => PMF.pure (decide (x = 0))
-  have herr_true (d : F.Desc) : errPMF d true = (F.order d : ℝ≥0∞)⁻¹ := by
-    dsimp only [errPMF]
-    rw [PMF.bind_apply, tsum_fintype]
-    simp [PMF.uniformOfFintype_apply, PMF.pure_apply, ZMod.card, eq_comm (a := true)]
-  have herr_succ :
-      Game.succProbability ((setup n).bind errPMF) =
-        (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal := by
-    unfold Game.succProbability
-    rw [PMF.bind_apply]
-    simp_rw [herr_true]
-  rw [← herr_succ]
-  refine Game.advantage_bind_le_succProbability_bind (setup n) _ _ errPMF fun d => ?_
-  have hadv_d :
-      Game.advantage
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-            (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-              (PMF.uniformOfFintype (Fin cap)).bind fun i =>
-                if i.val < m then
-                  frontierLevelWithExpLaw F d m i.val (adv d)
-                    (F.encode d (α • F.generator d))
-                    (F.encode d (β • F.generator d))
-                    (F.encode d (γ • F.generator d))
-                    (PMF.uniformOfFintype (ZMod (F.order d)))
-                else PMF.pure false)
-        ((PMF.uniformOfFintype (Fin cap)).bind fun i =>
-          if i.val < m then naorReingoldWordHybridAt F d m (i.val + 1) (adv d)
-          else PMF.pure false) ≤ (F.order d : ℝ≥0)⁻¹ := by
-    simp_rw [bind_ite_comm (PMF.uniformOfFintype (ZMod (F.order d)))
-      (PMF.uniformOfFintype (Fin cap)) (fun i : Fin cap => i.val < m)]
-    refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (Fin cap)) _ _ fun i => ?_
-    by_cases hk : i.val < m
-    · simp only [hk, ↓reduceIte,
-        frontierLevelWithExpLaw_uniform_eq_multi F d i.val hk (adv d),
-        ← multiDDHRandomTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
-      refine Game.advantage_bind_le_nnreal _ _ _ fun α => ?_
-      rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-        ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
-          (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))]
-      refine Game.advantage_bind_le_nnreal _ _ _ fun β => ?_
-      simpa only [ZMod.card] using
-        Game.advantage_bind_uniformOfFintype_of_ne_le (α * β)
-          (fun γ => (F.multiDDHRerandomizeLaw d (BitString i.val)
-            (α • F.generator d) (β • F.generator d) (γ • F.generator d)).bind
-            (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
-            (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_random d (BitString i.val) hγ])
-    · simp [hk]
-  rw [herr_true, ← ENNReal.coe_natCast,
-    ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
-  exact apply_true_le_of_advantage_le hadv_d
+  rw [← bind_ite_comm (setup n) (PMF.uniformOfFintype (Fin (dyadicSize m)))
+    (fun i : Fin (dyadicSize m) => i.val < m)]
+  refine F.advantage_bind_le_expected_inv_order (setup n) _ _ fun d => ?_
+  simp_rw [bind_ite_comm (PMF.uniformOfFintype (ZMod (F.order d)))
+    (PMF.uniformOfFintype (Fin (dyadicSize m))) (fun i : Fin (dyadicSize m) => i.val < m)]
+  refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (Fin (dyadicSize m))) _ _ fun i => ?_
+  by_cases hk : i.val < m
+  · simp only [hk, ↓reduceIte,
+      frontierLevelWithExpLaw_uniform_eq_multi F d i.val hk (adv d),
+      ← multiDDHRandomTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
+    simpa only [pmf_norm, PrimeOrderGroupFamily.ddhRandomTupleLaw] using
+      F.advantage_ddhRandomTupleLaw_multiDDHRerandomizeLaw_le d (BitString i.val)
+        (naorReingoldWordLevelTest F d i.val hk (adv d))
+  · simp [hk]
 
 private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
@@ -2612,8 +2555,8 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
         (by positivity)
     · simp [show setup n d = 0 by simpa [PMF.mem_support_iff] using hd]
   have hadv_fin := Game.advantage_le_of_apply_le (by simp : ((lhlBound n : ℝ≥0) : ℝ≥0∞) ≠ ⊤)
-    (hle_apply g1 g2 fun d _ => (apply_true_le_of_advantage_le le_rfl).1)
-    (hle_apply g2 g1 fun d _ => (apply_true_le_of_advantage_le le_rfl).2)
+    (hle_apply g1 g2 fun d _ => (Game.apply_true_le_of_advantage_le le_rfl).1)
+    (hle_apply g2 g1 fun d _ => (Game.apply_true_le_of_advantage_le le_rfl).2)
   rw [ENNReal.coe_toReal] at hadv_fin
   exact NNReal.coe_le_coe.mp hadv_fin
 

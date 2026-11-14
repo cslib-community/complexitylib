@@ -111,16 +111,17 @@ an actual certified oracle-PPT program, fixes one bit per native instruction, an
 replay whose polynomial-length uniform coin tape reproduces the joint encoded-output and external
 state law for every stateful handler. Replies remain on their original channels; replay does not
 copy an unbounded reply into a configuration encoding. This completes the replay prerequisite
-[#2579](https://github.com/cslib-community/cslib-frontier/issues/2579). The Schnorr signing/hash/cache
-and freshness bridge for the full ROM forking reduction remains
-[#581](https://github.com/cslib-community/cslib-frontier/issues/581).
+[#2579](https://github.com/cslib-community/cslib-frontier/issues/2579). The full Schnorr ROM forking
+reduction built on it is in
+[`SchnorrSignature/Security.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/Security.lean).
 
 [`Oracle/ReplayParameter.lean`](../../CslibFrontier/Computability/Probabilistic/Oracle/ReplayParameter.lean)
-derives a public-key length bound `keyC * (n + 1)^keyD` from actual strict-PPT key generation.
-`IsOraclePPT.exists_savedCoins_of_keyGen` then uses one uniform tape of length
-`c * (2*n + 2 + keyC*(n + 1)^keyD)^d`, independent of the sampled key. Replay takes only the prefix
-specified by the original full-input machine clock. Equality holds for every key within the derived
+starts from a public-key length bound `keyC * (n + 1)^keyD`.
+`IsOraclePPT.exists_savedCoins_of_length_le` uses one uniform tape of length
+`c * (2*n + 2 + keyC*(n + 1)^keyD)^d`, independent of the key. Replay takes only the prefix
+specified by the original full-input machine clock. Equality holds for every key within the
 bound and retains the complete external state; the handler's own randomness stays external.
+`IsOraclePPT.exists_savedCoins_of_keyGen` derives the bound from actual strict-PPT key generation.
 [`CoinTape/QueryBounds.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape/QueryBounds.lean)
 bounds calls on every fixed tape, including tapes outside the intended sampling support.
 
@@ -129,13 +130,16 @@ transports such joint-state mixtures through the existing shared-world signature
 `eval_worldRealize_eq_bind` includes the cache and signing log before final verification, and works
 with any acceptance rule. In particular, final-message freshness permits repeated signing queries.
 These shared laws complete [#2652](https://github.com/cslib-community/cslib-frontier/issues/2652);
-the full efficient Schnorr reduction remains open.
+the full efficient Schnorr reduction is in `SchnorrSignature/Security.lean`.
 
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
 routes Boolean channel `false` to signing and `true` to hashing. All word hash payloads remain
-distinct, and digest replies use an injective encoding. `exists_eufCmaGame_savedCoinForger`
-starts from actual strict-PPT key generation and an actual `IsOraclePPT` word forger, and proves
-equality of the existing shared-world game and explicit-coin EUF-CMA game. One native machine
+distinct, and digest replies use an injective encoding. `wordEufCmaGame` is the resulting EUF-CMA
+game of a native word forger in the shared world, and `ROMSignature.EUFCMA` asks that every
+uniform oracle-PPT word forger win it with negligible probability. `exists_eufCmaGame_savedCoinForger`
+starts from key generation with a polynomial bound on supported public keys (which strict-PPT key
+generation supplies through `IsPPTOn.length_le`) and an actual `IsOraclePPT` word forger, and proves
+equality of `wordEufCmaGame` and the explicit-coin EUF-CMA game. One native machine
 and clock work uniformly for all digest types and encodings, including parameter-dependent ones.
 Its native replay
 certificate charges the whole `(n, pk, coins)` input, the key-length guard, tape truncation, and
@@ -146,8 +150,9 @@ obeys the parameter-only call bounds, including tapes outside the sampling suppo
 This completes the generic word-forger adapter
 [#2636](https://github.com/cslib-community/cslib-frontier/issues/2636). The scheme's signer, hash
 handler and final verifier still run in the existing typed shared world. Native realizations of
-those components, Schnorr's concrete query encoding, and the full efficient forking reduction are
-separate obligations. Repeated signing/hash and fresh/replayed-message examples are checked in
+those components and Schnorr's concrete query encoding are separate obligations; the full efficient
+Schnorr forking reduction is in `SchnorrSignature/Security.lean`. Repeated signing/hash and
+fresh/replayed-message examples are checked in
 [`Crypto/WordRandomOracle.lean`](../../CslibFrontierTests/Crypto/WordRandomOracle.lean).
 
 ## Exact versus approximate randomness

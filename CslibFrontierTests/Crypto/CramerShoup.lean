@@ -17,9 +17,11 @@ by `2` for algebraic and word-level Multiplicative Cramer–Shoup (`cramerShoupE
 out-of-group rejection, DH-restricted decryption (`decodeCramerShoupDH`), non-DH bad-event
 detection (`isCramerShoupBadDH`), hash-collision detection (`isCramerShoupCollision`), framing
 roundtrips (`decodeCramerShoupSK_encCramerShoupSK`), challenge admissibility (`cramerShoupValid`),
-and concrete `example` instantiations of the polynomial-time certificates, Games 3–5 transition
-theorems, and end-to-end IND-CCA2 theorems (`advantage_cramerShoupGroupCCA2Game_le`,
-`DDH.cramerShoupGroupINDCCA2`, `DDH.indcca2On_cramerShoup`, `DDH.indcca2MultiOn_cramerShoup`).
+a keyed native roundtrip showing that the hash key travels from the public key to encryption and
+from the secret key to decryption, and concrete `example` instantiations of the polynomial-time
+certificates, Games 3–5 transition theorems, and end-to-end IND-CCA2 theorems
+(`advantage_cramerShoupGroupCCA2Game_le`, `DDH.cramerShoupGroupINDCCA2`,
+`DDH.indcca2On_cramerShoup`, `DDH.indcca2MultiOn_cramerShoup`).
 -/
 
 namespace CslibFrontierTests.Crypto.CramerShoup
@@ -34,6 +36,11 @@ def d23 : schnorrGroups.Desc :=
 /-- Simple test hash `H : schnorrGroups.Desc × List Bool → List Bool` returning a 3-bit prefix of
 the payload word. -/
 def testHash (p : schnorrGroups.Desc × List Bool) : List Bool := p.2.take 3
+
+/-- Simple keyed test hash on `schnorrGroups.withKey`: a 3-bit prefix of the hash key followed by
+the payload word. -/
+def testKeyedHash : schnorrGroups.withKey.Desc × List Bool → List Bool :=
+  fun ((_, hk), x) => (hk ++ x).take 3
 
 /-- Group-membership predicate for `schnorrGroups` on encoded bit strings: `x` is the canonical
 `Nat.bits` encoding of a residue `0 < a < p` with `a ^ q % p = 1`. -/
@@ -146,6 +153,31 @@ example :
     schnorrGroups.isCramerShoupCollision (fun _ => []) d23 ct₁ [true] ct₁ [false] = true := by
   decide
 
+/-- Keyed native roundtrip on `d23` with hash key `hk = [true, false]`: the public key word
+carries `hk` (`cramerShoupPkHashKey`), decryption with the secret key word
+`encPair encBits encCramerShoupSK (hk, sk)` recovers an encryption made under `hk` (with and
+without associated data), and decryption with a secret key word carrying a different hash key
+rejects the same ciphertext, so the key reaches the hash on both sides. -/
+example :
+    let hk := [true, false]
+    let sk := ((1, 2), ((3, 4), (5, 6)))
+    let u := (4 : ℕ).bits
+    let pkWord := schnorrGroups.withKey.encodeCramerShoupPublicKey (d23, hk) u sk
+    let pk := decodeBits4 (dropFrame pkWord)
+    let m := (3 : ℕ).bits
+    let ct := schnorrGroups.withKey.encodeCramerShoupEncrypt testKeyedHash
+      (d23, cramerShoupPkHashKey pkWord) pk m [] 7
+    let adCt := schnorrGroups.withKey.encodeCramerShoupEncrypt testKeyedHash
+      (d23, cramerShoupPkHashKey pkWord) pk m [true] 7
+    cramerShoupPkHashKey pkWord = hk ∧
+    schnorrGroups.cramerShoupDecryptOpt testKeyedHash isSchnorrElem (fun _ => d23) 0
+      (encPair encBits encCramerShoupSK (hk, sk)) ct = some m ∧
+    schnorrGroups.cramerShoupADDecryptOpt testKeyedHash isSchnorrElem (fun _ => d23) 0
+      (encPair encBits encCramerShoupSK (hk, sk)) adCt [true] = some m ∧
+    schnorrGroups.cramerShoupDecryptOpt testKeyedHash isSchnorrElem (fun _ => d23) 0
+      (encPair encBits encCramerShoupSK ([false, true], sk)) ct = none := by
+  decide
+
 open scoped NNReal
 
 /-- Concrete two-sided checks for `decodeCramerShoupSK` and `cramerShoupValid` on `d23`:
@@ -169,11 +201,14 @@ example :
 `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`, `cramerShoupADDecryptOpt`,
 `cramerShoupEncryptProb`, and `cramerShoupDecryptOpt` instantiated on `schnorrGroups`. -/
 example {H : schnorrGroups.Desc × List Bool → List Bool}
+    {HK : schnorrGroups.withKey.Desc × List Bool → List Bool}
     {isElem : schnorrGroups.Desc × List Bool → Bool}
-    {d : ℕ → schnorrGroups.Desc}
+    {d : ℕ → schnorrGroups.Desc} {keyLen : ℕ → ℕ}
     (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
+    (hHK : ComputableInPolyTime HK (encPair schnorrGroups.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool)
-    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc) :
+    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
     ComputableInPolyTime
       (fun p : schnorrGroups.Desc × List Bool × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) =>
         schnorrGroups.encodeCramerShoupPublicKey p.1 p.2.1 p.2.2)
@@ -202,30 +237,30 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
       (fun p : ℕ × List Bool × List Bool × List Bool =>
         schnorrGroups.cramerShoupValid isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool ∧
-    IsPPTOn encUnary (encPair encBits encBits) (schnorrGroups.cramerShoupKeyGenProb d) ∧
+    IsPPTOn encUnary (encPair encBits encBits) (schnorrGroups.cramerShoupKeyGenProb d keyLen) ∧
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encBits))) encBits
       (fun p =>
-        schnorrGroups.cramerShoupADEncryptProb encBits H d p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
+        schnorrGroups.cramerShoupADEncryptProb encBits HK d p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × List Bool =>
-        schnorrGroups.cramerShoupADDecryptOpt H isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
+        schnorrGroups.cramerShoupADDecryptOpt HK isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) (encOption encBits) ∧
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => schnorrGroups.cramerShoupEncryptProb H d p.1 p.2.1 p.2.2) ∧
+      (fun p => schnorrGroups.cramerShoupEncryptProb HK d p.1 p.2.1 p.2.2) ∧
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
-        schnorrGroups.cramerShoupDecryptOpt H isElem d p.1 p.2.1 p.2.2)
+        schnorrGroups.cramerShoupDecryptOpt HK isElem d p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) :=
   ⟨schnorrGroups.computableInPolyTime_encodeCramerShoupPublicKey,
    schnorrGroups.computableInPolyTime_encodeCramerShoupEncrypt hH,
    schnorrGroups.computableInPolyTime_encodeCramerShoupChallenge hH,
    schnorrGroups.computableInPolyTime_decodeCramerShoup hH hisElem,
    schnorrGroups.computableInPolyTime_cramerShoupValid hisElem hd,
-   schnorrGroups.isPPTOn_cramerShoupKeyGenProb hd,
-   schnorrGroups.isPPTOn_cramerShoupADEncryptProb encBits hH hd,
-   schnorrGroups.computableInPolyTime_cramerShoupADDecryptOpt hH hisElem hd,
-   schnorrGroups.isPPTOn_cramerShoupEncryptProb hH hd,
-   schnorrGroups.computableInPolyTime_cramerShoupDecryptOpt hH hisElem hd⟩
+   schnorrGroups.isPPTOn_cramerShoupKeyGenProb hd hkeyLen,
+   schnorrGroups.isPPTOn_cramerShoupADEncryptProb encBits hHK hd,
+   schnorrGroups.computableInPolyTime_cramerShoupADDecryptOpt hHK hisElem hd,
+   schnorrGroups.isPPTOn_cramerShoupEncryptProb hHK hd,
+   schnorrGroups.computableInPolyTime_cramerShoupDecryptOpt hHK hisElem hd⟩
 
 /-- Concrete instantiation of the adaptive Lemma 12.8 (`advantage_cramerShoupGame3_game4_le`) and
 Lemma 12.6 (`advantage_cramerShoupGame4_game5_le` and `cramerShoupGame5_false_eq_true`) consumers
@@ -315,17 +350,17 @@ example :
   decide
 
 /-- Uniform strict-PPT certificates for `cramerShoupADToDDHDistinguisher`,
-`cramerShoupADToCollisionFinder`, `cramerShoupToDDHDistinguisher`,
-`cramerShoupToCollisionFinder`, `cramerShoupKeyGenProb`, `cramerShoupEncryptProb`, and
-`cramerShoupDecryptOpt` on `schnorrGroups`. -/
+`cramerShoupADToCollisionFinder`, `cramerShoupToDDHDistinguisher`, and
+`cramerShoupToCollisionFinder` on `schnorrGroups`, and for the key-sampling DDH reduction
+`ddhSampleKey`. -/
 example {H : schnorrGroups.Desc × List Bool → List Bool}
     {isElem : schnorrGroups.Desc × List Bool → Bool}
-    {d : ℕ → schnorrGroups.Desc}
     {adAdversary : Encryption.WordADCCA2Adversary (List Bool)}
     {adversary : Encryption.WordCCA2Adversary}
+    {keyLen : ℕ → ℕ} {D : schnorrGroups.withKey.DDHDistinguisher}
     (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool)
-    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) (hD : D.IsPPT)
     (hADA : adAdversary.IsPPT encBits)
     (hA : adversary.IsPPT) (bit : Bool) :
     (schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit).IsPPT ∧
@@ -335,20 +370,12 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
     (schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit).IsPPT ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p => schnorrGroups.cramerShoupToCollisionFinder H isElem adversary bit p.1 p.2) ∧
-    IsPPTOn encUnary (encPair encBits encBits) (schnorrGroups.cramerShoupKeyGenProb d) ∧
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => schnorrGroups.cramerShoupEncryptProb H d p.1 p.2.1 p.2.2) ∧
-    ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        schnorrGroups.cramerShoupDecryptOpt H isElem d p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits) :=
+    (schnorrGroups.ddhSampleKey keyLen D).IsPPT :=
   ⟨schnorrGroups.isPPT_cramerShoupADToDDHDistinguisher hH hisElem hADA bit,
    schnorrGroups.isPPTOn_cramerShoupADToCollisionFinder hH hisElem hADA bit,
    schnorrGroups.isPPT_cramerShoupToDDHDistinguisher hH hisElem hA bit,
    schnorrGroups.isPPTOn_cramerShoupToCollisionFinder hH hisElem hA bit,
-   schnorrGroups.isPPTOn_cramerShoupKeyGenProb hd,
-   schnorrGroups.isPPTOn_cramerShoupEncryptProb hH hd,
-   schnorrGroups.computableInPolyTime_cramerShoupDecryptOpt hH hisElem hd⟩
+   isPPT_ddhSampleKey hkeyLen hD⟩
 
 /-- Concrete instantiation of Theorem 12.9 / Exercise 12.27 with associated data
 (`advantage_cramerShoupADGroupCCA2Game_le`) on `schnorrGroups` at `d23` (`q = 11`). -/
@@ -435,33 +462,44 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
     testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
 
 /-- Conditional API client over a parameterized group family (both `INDCCA2ADOn` with associated
-data and `INDCCA2On` without associated data). This does not assert DDH security for the fixed
-finite fixture `d23`; the group-order lower bound must grow with the parameter. -/
+data and `INDCCA2On` without associated data). Key generation draws a uniform `keyLen n`-bit hash
+key; the hash premise is collision resistance of the keyed family under `withKeySetup`. This does
+not assert DDH security for the fixed finite fixture `d23`; the group-order lower bound must grow
+with the parameter. -/
 example {AD : Type} (encAD : AD ↪ List Bool)
-    {H : schnorrGroups.Desc × List Bool → List Bool}
+    {H : schnorrGroups.withKey.Desc × List Bool → List Bool}
     {isElem : schnorrGroups.Desc × List Bool → Bool}
-    {d : ℕ → schnorrGroups.Desc}
-    (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
+    {d : ℕ → schnorrGroups.Desc} {keyLen : ℕ → ℕ}
+    (hH : ComputableInPolyTime H (encPair schnorrGroups.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
     (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
-    (hCR : CollisionResistantFor schnorrGroups.encDesc (fun n => PMF.pure (d n))
-      (schnorrGroups.cramerShoupHashMod H))
+    (hCR : CollisionResistantFor schnorrGroups.withKey.encDesc
+      (schnorrGroups.withKeySetup (fun n => PMF.pure (d n)) keyLen)
+      (schnorrGroups.withKey.cramerShoupHashMod H))
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, m n ≤ schnorrGroups.order (d n))
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
     INDCCA2ADOn (schnorrGroups.cramerShoupValid isElem d) encBits encAD encBits
-      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupADEncryptProb encAD H d)
+      (schnorrGroups.cramerShoupKeyGenProb d keyLen)
+      (schnorrGroups.cramerShoupADEncryptProb encAD H d)
       (schnorrGroups.cramerShoupADDecryptOpt H isElem d) ∧
     INDCCA2On (schnorrGroups.cramerShoupValid isElem d) encBits encBits
-      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
+      (schnorrGroups.cramerShoupKeyGenProb d keyLen) (schnorrGroups.cramerShoupEncryptProb H d)
       (schnorrGroups.cramerShoupDecryptOpt H isElem d) ∧
     INDCCA2MultiOn (schnorrGroups.cramerShoupValid isElem d) encBits encBits
-      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
+      (schnorrGroups.cramerShoupKeyGenProb d keyLen) (schnorrGroups.cramerShoupEncryptProb H d)
       (schnorrGroups.cramerShoupDecryptOpt H isElem d) :=
-  ⟨hDDH.indcca2ADOn_cramerShoup encAD hH hisElem hd hmem hCR hm0 hm hinv,
-   hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv,
-   hDDH.indcca2MultiOn_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv⟩
+  ⟨hDDH.indcca2ADOn_cramerShoup encAD hH hisElem hd hkeyLen hmem hCR hm0 hm hinv,
+   hDDH.indcca2On_cramerShoup hH hisElem hd hkeyLen hmem hCR hm0 hm hinv,
+   hDDH.indcca2MultiOn_cramerShoup hH hisElem hd hkeyLen hmem hCR hm0 hm hinv⟩
+
+/-- DDH for a fixed group family gives DDH for the same groups with a uniform `n`-bit key
+attached (`DDH.withKey`). -/
+example {d : ℕ → schnorrGroups.Desc} (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n))) :
+    schnorrGroups.withKey.DDH (schnorrGroups.withKeySetup (fun n => PMF.pure (d n)) id) :=
+  hDDH.withKey (ComputableInPolyTime.id' (encIn := encUnary))
 
 -- A fixed nonzero inverse-order bound cannot supply the asymptotic security premise.
 example : ¬ Negligible (fun _ : ℕ => (1 / 11 : ℝ≥0)) :=

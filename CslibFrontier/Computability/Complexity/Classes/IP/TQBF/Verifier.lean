@@ -290,15 +290,8 @@ private lemma listHeadD_pt {α γ : Type} {enc : α ↪ List Bool} {encIn : γ �
     ComputableInPolyTime (fun x => (list x).headD fallback) encIn enc :=
   (headD fallback).comp hlist
 
-private lemma unary_mod'_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encUnary)
-    (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
-  unary_mod.comp (ha.prod hb)
-
 attribute [local fun_prop] ComputableInPolyTime.bool_and' listTail_pt listIsEmpty_pt listHeadD_pt
-  unary_mod'_pt computableInPolyTime_connectiveMod
-  computableInPolyTime_operatorMod
+  computableInPolyTime_connectiveMod computableInPolyTime_operatorMod
 
 private lemma xs_pt :
     ComputableInPolyTime StepData.xs encStepData (encList encNat) := by

@@ -41,13 +41,15 @@ half its votes to reject, giving the distance bound by averaging.
 * `Cslib.HomomorphismTesting.concentration`: every plurality has mass at least `1 - 2ε`.
 * `Cslib.HomomorphismTesting.plurality_add`: additivity below rejection `1/6`.
 * `Cslib.HomomorphismTesting.closeness`: disagreement at most `2ε`.
+* `Cslib.HomomorphismTesting.three_mul_distance_sub_six_sq_le_rejection`: the unconditional
+  quadratic bound `3δ - 6δ² ≤ ε` (Exercise 9.20).
 * `Cslib.HomomorphismTesting.min_le_rejection`: the unconditional source endpoint.
 
 These are finite probability statements; no running time or representation is specified.
 
 ## References
 
-* [Goldreich2007DraftR5], draft Exercise 9.21.
+* [Goldreich2007DraftR5], draft Exercises 9.20–9.21 (r5 PDF 68–70, printed 450–452).
 -/
 
 public section
@@ -221,6 +223,116 @@ theorem closeness (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
   rw [← mul_expect, ← hammingDist_div_eq_expect, ← rejection_eq_expect] at h
   linarith
 
+open Classical in
+/-- Disagreement only at the first query, among `x`, `y`, and `x + y`. -/
+@[expose] def OnlyFirstDisagreement (f : G → H) (h : G →+ H) (x y : G) : Prop :=
+  f x ≠ h x ∧ f y = h y ∧ f (x + y) = h (x + y)
+
+open Classical in
+private theorem disagreement_moments (f : G → H) (h : G →+ H) :
+    let a := fun x => if f x ≠ h x then (1 : ℝ) else 0
+    let d := (hammingDist f h : ℝ) / Fintype.card G
+    (𝔼 x : G, 𝔼 _y : G, a x) = d ∧ (𝔼 _x : G, 𝔼 y : G, a y) = d ∧
+    (𝔼 x : G, 𝔼 y : G, a (x + y)) = d ∧
+    (𝔼 x : G, 𝔼 y : G, a x * a y) = d ^ 2 ∧
+    (𝔼 x : G, 𝔼 y : G, a x * a (x + y)) = d ^ 2 ∧
+    (𝔼 x : G, 𝔼 y : G, a y * a (x + y)) = d ^ 2 := by
+  classical
+  dsimp only
+  let a := fun x => if f x ≠ h x then (1 : ℝ) else 0
+  have hd : (𝔼 x, a x) = (hammingDist f h : ℝ) / Fintype.card G :=
+    (hammingDist_div_eq_expect f h).symm
+  have hab : (𝔼 x : G, 𝔼 y : G, a x * a y) = (𝔼 x, a x) ^ 2 := by
+    simp_rw [← mul_expect, ← expect_mul]
+    ring
+  have hac : (𝔼 x : G, 𝔼 y : G, a x * a (x + y)) = (𝔼 x, a x) ^ 2 := by
+    simp_rw [← mul_expect, Fintype.expect_add_left, ← expect_mul]
+    ring
+  have hbc : (𝔼 x : G, 𝔼 y : G, a y * a (x + y)) = (𝔼 x, a x) ^ 2 := by
+    rw [expect_comm]
+    simp_rw [add_comm, ← mul_expect, Fintype.expect_add_left, ← expect_mul]
+    ring
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simpa only [Fintype.expect_const] using hd
+  · simpa only [Fintype.expect_const] using hd
+  · change (𝔼 x : G, 𝔼 y : G, a (x + y)) = _
+    simpa only [Fintype.expect_add_left, Fintype.expect_const] using hd
+  · exact hab.trans (congrArg (· ^ 2) hd)
+  · exact hac.trans (congrArg (· ^ 2) hd)
+  · exact hbc.trans (congrArg (· ^ 2) hd)
+
+open Classical in
+/-- Goldreich r5 Exercise 9.20(2), for any supplied homomorphism, not just a closest one. -/
+theorem disagreement_sub_two_sq_le_onlyFirst (f : G → H) (h : G →+ H) :
+    let d := (hammingDist f h : ℝ) / Fintype.card G
+    d - 2 * d ^ 2 ≤
+      𝔼 x : G, 𝔼 y : G, if OnlyFirstDisagreement f h x y then (1 : ℝ) else 0 := by
+  classical
+  obtain ⟨ha, _, _, hab, hac, _⟩ := disagreement_moments f h
+  have point (x y : G) :
+      (if f x ≠ h x then (1 : ℝ) else 0) -
+        (if f x ≠ h x then 1 else 0) * (if f y ≠ h y then 1 else 0) -
+        (if f x ≠ h x then 1 else 0) * (if f (x + y) ≠ h (x + y) then 1 else 0) ≤
+      if OnlyFirstDisagreement f h x y then 1 else 0 := by
+    dsimp [OnlyFirstDisagreement]
+    split_ifs <;> simp_all
+  have hp := expect_le_expect (s := univ) fun x _ =>
+    expect_le_expect (s := univ) fun y _ => point x y
+  simp only [expect_sub_distrib] at hp
+  dsimp only at ha hab hac
+  rw [ha, hab, hac] at hp
+  dsimp only
+  linarith
+
+open Classical in
+/-- Goldreich r5 Exercise 9.20(1): rejection dominates three times the first-only event.
+Nearestness is unnecessary: all three exactly-one events have the same probability, since
+individual disagreement means are `d`, pairwise means are `d²`, and the triple term is shared. -/
+theorem three_mul_onlyFirst_le_rejection (f : G → H) (h : G →+ H) :
+    3 * (𝔼 x : G, 𝔼 y : G,
+      if OnlyFirstDisagreement f h x y then (1 : ℝ) else 0) ≤ rejection f := by
+  classical
+  let a := fun x => if f x ≠ h x then (1 : ℝ) else 0
+  have point (x y : G) :
+      3 * (if OnlyFirstDisagreement f h x y then (1 : ℝ) else 0) ≤
+        (if f x + f y ≠ f (x + y) then 1 else 0) +
+        2 * a x - a y - a (x + y) - a x * a y - a x * a (x + y) +
+        2 * (a y * a (x + y)) := by
+    have hm := h.map_add x y
+    dsimp [a, OnlyFirstDisagreement]
+    by_cases hx : f x = h x <;> by_cases hy : f y = h y <;>
+      by_cases hz : f (x + y) = h (x + y) <;>
+      by_cases hr : f x + f y = f (x + y) <;>
+      simp_all only [not_true_eq_false, not_false_eq_true, ite_true, ite_false,
+        and_self, false_and, and_false,
+        add_left_cancel_iff, add_right_cancel_iff] <;> norm_num
+  have hp := expect_le_expect (s := univ) fun x _ =>
+    expect_le_expect (s := univ) fun y _ => point x y
+  obtain ⟨ha, hb, hc, hab, hac, hbc⟩ := disagreement_moments f h
+  change (𝔼 x : G, 𝔼 y : G, a x) = _ at ha
+  change (𝔼 x : G, 𝔼 y : G, a y) = _ at hb
+  change (𝔼 x : G, 𝔼 y : G, a (x + y)) = _ at hc
+  change (𝔼 x : G, 𝔼 y : G, a x * a y) = _ at hab
+  change (𝔼 x : G, 𝔼 y : G, a x * a (x + y)) = _ at hac
+  change (𝔼 x : G, 𝔼 y : G, a y * a (x + y)) = _ at hbc
+  have pull (b : G → G → ℝ) (c : ℝ) :
+      (𝔼 x, 𝔼 y, c * b x y) = c * (𝔼 x, 𝔼 y, b x y) := by
+    simp_rw [← mul_expect]
+  simp only [expect_add_distrib, expect_sub_distrib] at hp
+  rw [pull _ 3, pull _ 2, pull _ 2] at hp
+  rw [ha, hb, hc, hab, hac, hbc, ← rejection_eq_expect] at hp
+  linarith
+
+open Classical in
+/-- The quadratic rejection bound at the actual disagreement with any homomorphism. -/
+theorem three_mul_disagreement_sub_six_sq_le_rejection (f : G → H) (h : G →+ H) :
+    let d := (hammingDist f h : ℝ) / Fintype.card G
+    3 * d - 6 * d ^ 2 ≤ rejection f := by
+  have h₁ := disagreement_sub_two_sq_le_onlyFirst f h
+  have h₂ := three_mul_onlyFirst_le_rejection f h
+  dsimp only at *
+  linarith
+
 variable [Fintype H]
 
 open Classical in
@@ -262,5 +374,13 @@ theorem min_le_rejection (f : G → H) : min (1 / 6) (distance f / 2) ≤ reject
     have hd := (distance_le f (correction f hφ hε)).trans (closeness f hφ hε)
     exact (min_le_right _ _).trans (by linarith)
   · exact (min_le_left _ _).trans (le_of_not_gt hε)
+
+open Classical in
+/-- Goldreich r5 Exercise 9.20: the unconditional quadratic bound at minimum distance. -/
+theorem three_mul_distance_sub_six_sq_le_rejection (f : G → H) :
+    3 * distance f - 6 * distance f ^ 2 ≤ rejection f := by
+  obtain ⟨h, hh⟩ := distance_attained f
+  rw [hh]
+  exact three_mul_disagreement_sub_six_sq_le_rejection f h
 
 end Cslib.HomomorphismTesting

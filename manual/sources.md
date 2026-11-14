@@ -224,6 +224,11 @@ Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. At
 
 Olaf Beyersdorff, Nicola Galesi and Massimo Lauria. *A lower bound for the pigeonhole principle in tree-like Resolution by asymmetric Prover–Delayer games*. Information Processing Letters 110(23), 1074–1077, 2010. https://doi.org/10.1016/j.ipl.2010.09.007 ; author's copy https://massimolauria.net/documents/tree-like-php.pdf (6 pages). Read in the author's copy on 2026-11-08. Locators checked there: Theorem 1 on p. 3 (if `F` has a tree-like refutation of size at most `S`, Delayer gets at most `log S` points in every `(c₀, c₁)`-game with `1/c₀ + 1/c₁ = 1`); Theorem 2 on p. 4 (every tree-like refutation of `PHP^m_n` has size `2^Ω(n log n)`); the explicit `2^((n/2) log(n/2 + 1)) = (n/2 + 1)^(n/2)` for even `n` at the end of that proof on p. 5; and the closing remark on p. 5 that the bound also holds for the functional pigeonhole principle. The abstract and introduction present the result as a simpler proof of Dantchev and Riis's bound (CCC 2001). Journal pagination was taken from the Crossref record. The ECCC version (TR10-081) was not reachable from this environment and was not read.
 
+<a id="bfckkl22"></a>
+## bfckkl22
+
+Michael A. Bender, Martin Farach-Colton, John Kuszmaul, William Kuszmaul and Mingmou Liu. "On the Optimal Time/Space Tradeoff for Hash Tables." *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 1284–1297, 2022. https://doi.org/10.1145/3519935.3519969 ; open preprint `arXiv:2111.00602v2` (4 November 2021), https://arxiv.org/abs/2111.00602v2 (`BenderFarachColtonKuszmaulKuszmaulLiu2022`). Checked against `arXiv:2111.00602v2` on 2026-11-11 and 2026-11-13 UTC (unnumbered title page is PDF p. 1, so printed p. `p` is PDF p. `p + 1`): Section 2.1, printed p. 3 / PDF p. 4 (balls-to-slots probe complexity `1 + log i` and switching cost); Section 2.4, printed p. 7 / PDF p. 8 (iterated logarithm `log^(k) n`); Sections 3 and 3.1, printed pp. 8–12 / PDF pp. 9–13 (`k`-kick tree hierarchy, depth-cap distribution, greedy unsaturated-ancestor selection, priority kicks with switching cost `≤ k + 1`, Lemma 1 on printed pp. 10–11 / PDF pp. 11–12, and Theorems 2–3 on printed p. 12 / PDF p. 13); and Section 5.1, printed p. 27 / PDF p. 28 (removal-only deletion in cubbies). STOC proceedings pagination comes from `references.bib` and was not separately inspected.
+
 <a id="bfprt73"></a>
 ## bfprt73
 
@@ -476,6 +481,11 @@ Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edit
 
 Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
 
+<a id="cs03"></a>
+## cs03
+
+Ronald Cramer and Victor Shoup. “Design and Analysis of Practical Public-Key Encryption Schemes Secure against Adaptive Chosen Ciphertext Attack.” *SIAM Journal on Computing* 33(1), 167–226, 2003. https://doi.org/10.1137/S0097539702403773 . Authors' revised manuscript (August 14, 2003): https://www.shoup.net/papers/cca2.pdf (Section 5.1, target collision resistance; Section 6.1, Figure 1, the hash key `hk` drawn at key generation and published in the public key; Section 6.2, Theorem 1). Checked against that manuscript on 2026-11-14.
+
 <a id="cslib"></a>
 ## cslib
 
@@ -582,6 +592,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="falcon2020"></a>
+## falcon2020
+
+Falcon team. *Falcon: Fast-Fourier Lattice-Based Compact Signatures over NTRU*, NIST Post-Quantum Cryptography Standardization Round 3 submission, version 1.2, 2020. [Official archive](https://csrc.nist.gov/CSRC/media/Projects/post-quantum-cryptography/documents/round-3/submissions/Falcon-Round3.zip). Checked on 2026-11-13 against archive SHA-256 `fd58f0454f6bfb4713734e60b2d2d75d96fbae62d5180fceeef1039df5362f44`; the enclosed specification has SHA-256 `fec58c4c7e2f1712413c1e77994886c6f1f40f1cc7ec5fa650f132927ca07cd6`, and `KAT/falcon512-KAT.rsp` has SHA-256 `dd75c946fdedef4ec46a2bee7e10c65c9126f1a839b9ced6921fd45f7354b5cd`. `CslibFrontier.Crypto.Falcon` maps Algorithm 3, Algorithms 16 and 18 and Section 3.11.6 to its verification frontend. In `Reference_Implementation/falcon512/falcon512int/shake.c`, `i_shake256_inject`, `i_shake256_flip` and `i_shake256_extract` confirm the 136-byte rate chunks, least-significant-byte lane convention, `0x1F` domain/padding byte and final `0x80` bit; `common.c`'s `hash_to_point_vartime` consumes successive output bytes as big-endian 16-bit words. The SHAKE256 client checks `count = 0`'s exact 40-byte salt followed by its 33-byte message against the first 20 output bytes; that prefix fixture is not a full key/signature KAT verification or a claim about the still-developing FIPS 206 standard.
+
 <a id="feige1998"></a>
 ## feige1998
 
@@ -596,6 +611,11 @@ John Fearnley, Spencer Gordon, Ruta Mehta and Rahul Savani. "Unique End of Poten
 ## fiatkarplubymcgeochsleatoryoung91
 
 Amos Fiat, Richard M. Karp, Michael Luby, Lyle A. McGeoch, Daniel D. Sleator and Neal E. Young. "Competitive Paging Algorithms." *Journal of Algorithms* 12(4), 685–699, 1991. https://doi.org/10.1016/0196-6774(91)90040-6 . Checked on 2026-11-11 against the arXiv TeX source of `arXiv:cs/0205038v1` (https://arxiv.org/abs/cs/0205038 , submitted 24 May 2002): Section 3 ("The marking algorithm") and Theorem 1 (`\label{markingthm1}`, stating that the marking algorithm is a `2 H_k`-competitive algorithm for the uniform `k`-server problem on `n` vertices). `CslibFrontier/DataStructure/Paging/Marking.lean` formalizes the marking algorithm over `Paging.problem α k` via `Online.BehavioralStrategy` with three local adaptations: (1) pages range over any `[DecidableEq α]` type rather than a finite `n`-vertex uniform metric; (2) initialization covers any admissible cache `|s₀| ≤ k` (inserting without eviction while `|cache| < k`) with additive constant `0`, rather than only a full initial cache `{1, …, k}`; and (3) `cleanCount_le_two_mul_scheduleCost` proves `#clean ≤ 2 · OPT` directly against arbitrary (not necessarily lazy) valid offline schedules without invoking the Manasse–McGeoch–Sleator lazy-schedule reduction. The `H_k` randomized lower bound against an oblivious adversary (Theorem 4 and Corollary 5, Section 5), unequal-capacity bounds, and the published journal's pagination were not formalized or separately checked.
+
+<a id="fips202"></a>
+## fips202
+
+National Institute of Standards and Technology. *SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions*, Federal Information Processing Standards Publication 202, 2015. https://doi.org/10.6028/NIST.FIPS.202 . Checked on 2026-11-13 against the published August 2015 PDF (SHA-256 `1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e`): Sections 3.1.2--3.1.3 give the bit-string/state correspondence, Sections 3.2--3.3 and Algorithms 1--7 give the five round maps and round function, Section 4 and Algorithm 8 give the permutation-backed sponge construction, Section 5.1 and Algorithm 9 give `pad10*1`, and Section 6.2 defines SHAKE256 as `KECCAK[512](M || 1111, d)`. The official NIST [0-bit](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHAKE256_Msg0.pdf) and [1600-bit](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHAKE256_Msg1600.pdf) SHAKE256 examples were checked with SHA-256 hashes `d736c1a93eb6440e1e6b640402e31ea5258281b2b9237f84ea0ba4186518fc59` and `f4226f5c72914e5d2b331812c5973d8d685c8af1ccb97c2a3a2fd1c02fd173d1`. `CslibFrontier.Crypto.Primitives.Hash.Keccak` implements the byte-aligned executable function and does not claim cryptographic security, constant-time execution, FIPS validation or a future FIPS 206 definition.
 
 <a id="fips203"></a>
 ## fips203
@@ -842,7 +862,7 @@ Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: th
 <a id="hhk17"></a>
 ## hhk17
 
-Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, two-stage IND-CPA `cpaAdvantage` via `PKE.cpaExperiment` on `ExplicitCoinPKE.toPKE`, with the single-stage fixed-message `indCpaGame`/`indCpaAdvantage` kept only for K-PKE and the spread-necessity example, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
 
 <a id="hhrvw20"></a>
 ## hhrvw20
@@ -1742,6 +1762,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="uov26"></a>
+## uov26
+
+Ward Beullens, Ming-Shing Chen, Jintai Ding, Boru Gong, Matthias J. Kannwischer, Jacques Patarin, Bo-Yuan Peng, Dieter Schmidt, Cheng-Jhih Shih, Chengdong Tao, Bo-Yin Yang. *UOV: Unbalanced Oil and Vinegar, Algorithm Specifications and Supporting Documentation*, Version 3.0, August 30, 2026 (bibliography key `UOV2026`). https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/UOV_Specification_R3.pdf . Checked against that PDF on 2026-11-14 (SHA-256 `ce9044adf1b4e407467968438fa66794882bcaa6411d3509bed72ff54380181a`): Section 3.1 (printed pp. 11–13, specifically p. 12) defines `Upper(M)` as the unique upper-triangular matrix `M'` such that `M' - M` is alternating. `CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic` formalizes only this generic matrix construction (`Matrix.upperQuadratic`), its `Matrix.IsUpperTriangular` and `LinearMap.IsAlt` properties, `Matrix.toQuadraticForm'` equality, and uniqueness; UOV block keys, oil subspaces, signing/verification, restart bounds, and security reductions remain open under [#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
 <a id="valiant84"></a>
 ## valiant84

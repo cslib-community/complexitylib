@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
@@ -1264,7 +1265,7 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
   have hc0 := intBin_mul' (er_intBin_natCast (er_binary_factorial hQ))
     (er_intBin_sub (heq.ite'
       (er_intBin_natCast (er_binary_factorial (unary_sub' hR (.const 1)))) (.const 0)) hm0)
-  exact er_map (unary_range' ((of_tidy .unary_max).comp' (hR.prod (.const 1))))
+  exact er_map (unary_range' (unary_max' hR (.const 1)))
     (er_intBin_add (ite_decide (hp2.decide_eq' (.const 0)) (hc0.comp' hp1) (.const 0))
       (intBin_mul' (hm0.comp' hp1) (listGetDWithInput (hphi.comp' hp1) hp2 0)))
 

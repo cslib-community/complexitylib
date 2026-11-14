@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Tactic.EncLen
@@ -356,8 +357,7 @@ private theorem computableInPolyTime_accepts {γ : Type} {encIn : γ ↪ List Bo
       encIn encBool := by
   have hk : ComputableInPolyTime (fun a => testArity (n a) (m a)) encIn encUnary := by
     unfold testArity
-    exact unary_mul' hn ((ComputableInPolyTime.of_tidy
-      ComputableTidilyInPolyTime.unary_min).comp (hm.prod (const 1)))
+    exact unary_mul' hn (unary_min' hm (const 1))
   have henum := bitsEnumList hk hsize hbudget
   have hwidth : ComputableInPolyTime (fun a => 2 ^ testArity (n a) (m a)) encIn encUnary := by
     simpa only [Function.comp_def, BitString.length_enumList] using (length_list encBits).comp henum

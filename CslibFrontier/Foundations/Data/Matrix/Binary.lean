@@ -95,9 +95,25 @@ theorem toBinary_eq {rows cols w : ℕ} (A : Matrix (Fin rows) (Fin cols) (ZMod 
       rfl]
   rw [h, ZMod.natCast_zmod_val]
 
+/-- Reading an entry of a matrix's word recovers the entry. -/
+@[simp] theorem binaryEntry_toBinary {rows cols w : ℕ}
+    (A : Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w))) (i : Fin rows) (j : Fin cols) :
+    (binaryEntry cols w (toBinary A) i.val j.val : ZMod (2 ^ w)) = A i j := by
+  rw [← ofBinary_apply rows cols w, ofBinary_toBinary]
+
 /-- Fixed-dimensional matrices inject into their complete binary words. This fixed-type
 embedding alone makes no claim of uniform computational efficiency in the dimensions. -/
 def encBinary (rows cols w : ℕ) : Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w)) ↪ List Bool :=
   ⟨toBinary, Function.LeftInverse.injective ofBinary_toBinary⟩
 
 end Cslib.Matrix
+
+namespace Cslib.BitString
+
+/-- The `w` low-order digits of a residue modulo `2 ^ w` are those of every natural number
+representing it. -/
+theorem lowBits_val_natCast (w x : ℕ) :
+    lowBits w (x : ZMod (2 ^ w)).val = lowBits w x := by
+  rw [ZMod.val_natCast, lowBits_mod_two_pow]
+
+end Cslib.BitString

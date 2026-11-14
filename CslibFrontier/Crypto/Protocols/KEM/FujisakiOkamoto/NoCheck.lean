@@ -25,8 +25,8 @@ that the check cannot be dropped.
 For any explicit-coin PKE `P` with messages `Fin n → Bool`, `leakyPKE P` appends a tag
 `Option (Fin n)` to ciphertexts. Honest ciphertexts carry `none` and decrypt as in `P`, while
 `Dec(sk, (c, some i))` returns the constant message with value `m i`, where `m = Dec(sk, c)`. The
-encryption algorithm, and hence the IND-CPA experiment, is unchanged
-(`leakyPKE_indCpaAdvantage`), and so are `δ`-correctness and `γ`-spreadness
+encryption algorithm, and hence the two-stage IND-CPA experiment, is unchanged
+(`leakyPKE_cpaAdvantage`), and so are `δ`-correctness and `γ`-spreadness
 (`leakyPKE_deltaCorrect`, `leakyPKE_gammaSpread`). With the re-encryption check in place, a tagged
 ciphertext `(c, some i)` is never an encryption of any message (`encT_leakyPKE`), so `decT`
 rejects it and `Scheme.decapsNotBot` outputs the fallback key `H(true, dk.fallback, (c, some i))`
@@ -56,7 +56,7 @@ probability `1 / |K|`.
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_indCpaAdvantage`,
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_cpaAdvantage`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_deltaCorrect`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_gammaSpread`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.decapsNotBot_leakyPKE_some`: `leakyPKE P` preserves the
@@ -103,14 +103,14 @@ carry `none`, and `Dec(sk, (c, some i))` is the constant message with value `m i
     | none => P.dec sk c.1
     | some i => (P.dec sk c.1).map fun m _ => m i
 
-/-- `leakyPKE P` has the IND-CPA advantages of `P`: an adversary against `leakyPKE P` is an
-adversary against `P` that appends the tag `none`. -/
-theorem leakyPKE_indCpaAdvantage (P : ExplicitCoinPKE PK SK (Fin n → Bool) R CT)
-    (m₀ m₁ : Fin n → Bool) (A : PK → CT × Option (Fin n) → ProbComp Bool) :
-    (leakyPKE P).indCpaAdvantage m₀ m₁ A =
-      P.indCpaAdvantage m₀ m₁ fun pk c => A pk (c, none) := by
-  simp [ExplicitCoinPKE.indCpaAdvantage, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    leakyPKE]
+/-- `leakyPKE P` has the two-stage IND-CPA advantages of `P`: an adversary against `leakyPKE P`
+is an adversary against `P` whose second stage appends the tag `none` to the challenge. -/
+theorem leakyPKE_cpaAdvantage (P : ExplicitCoinPKE PK SK (Fin n → Bool) R CT) {σ : Type}
+    (A : TwoStage PK (MessagePair (Fin n → Bool)) (CT × Option (Fin n)) Bool σ) :
+    (leakyPKE P).cpaAdvantage A =
+      P.cpaAdvantage ⟨A.choose, fun state c => A.guess state (c, none)⟩ := by
+  simp [ExplicitCoinPKE.cpaAdvantage, PKE.cpaExperiment, lrExperiment, ExplicitCoinPKE.toPKE,
+    ExplicitCoinPKE.encrypt, leakyPKE]
 
 /-- `leakyPKE P` is `δ`-correct whenever `P` is. -/
 theorem leakyPKE_deltaCorrect (P : ExplicitCoinPKE PK SK (Fin n → Bool) R CT) {δ : ℝ}

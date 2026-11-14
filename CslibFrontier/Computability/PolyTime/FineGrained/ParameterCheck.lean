@@ -25,6 +25,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Choose
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -536,12 +537,6 @@ abbrev encTailParams : ((ℕ × ℕ) × ℕ) × ℕ ↪ List Bool :=
 private theorem clog_two_le_size (n : ℕ) : Nat.clog 2 n ≤ n.size :=
   (Nat.clog_le_iff_le_pow Nat.one_lt_two).mpr (Nat.lt_size_self n).le
 
-private theorem uMax :
-    ComputableInPolyTime (fun p : ℕ × ℕ => max p.1 p.2) (encPair encUnary encUnary) encUnary := by
-  fun_prop
-
-private theorem bSum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
-
 private theorem nu_pt :
     ComputableInPolyTime (fun n : ℕ => Nat.clog 2 (Nat.clog 2 n)) encNat encNat :=
   binary_clog_two_nat.comp binary_clog_two_nat
@@ -649,7 +644,7 @@ theorem computableInPolyTime_chooseBeta :
       (fun p : (ℕ × ℕ) × ℕ => (List.range (max p.1.2.size p.2.size + 1)).map (· + 1))
       encIn (encList encUnary) :=
     mapWithInput
-      (range.comp (unary_add.comp ((uMax.comp (hb_size.prod hw_size)).prod (const 1))))
+      (range.comp (unary_add.comp ((unary_max' hb_size hw_size).prod (const 1))))
       (unary_add.comp ((snd encIn encUnary).prod (const 1)))
   have hpred : ComputableInPolyTime
       (fun q : (((ℕ × ℕ) × ℕ) × ℕ) =>
@@ -693,7 +688,8 @@ theorem computableInPolyTime_binomTailNumerator :
     have hw_b := unary_to_binary.comp (snd encIn encUnary)
     have hA := ((fst encIn encUnary).fst').snd'; have hR := (fst encIn encUnary).snd'
     exact bool_not.comp (bool_and' (binary_le' hA hw_b) (binary_lt' hw_b (binary_add' hA hR)))
-  refine bSum.comp (mapWithInput (f := fun p w => binomTailTerm p.1.1.1 p.1.1.2 w) hfilter ?_)
+  have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
+  refine hsum.comp (mapWithInput (f := fun p w => binomTailTerm p.1.1.1 p.1.1.2 w) hfilter ?_)
   have hp := fst encIn encUnary
   exact computableInPolyTime_binomTailTerm.comp
     ((((((hp.fst').fst').fst').prod (((hp.fst').fst').snd')).prod (snd encIn encUnary)))

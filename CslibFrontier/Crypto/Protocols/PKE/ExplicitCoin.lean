@@ -7,6 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.Encryption.Scheme
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Expect
 public import CslibFrontier.Probability.PMF.Event
@@ -28,11 +29,19 @@ HHK17 permits a public-key-dependent randomness space and draws coins uniformly.
 worst-message decryption-failure probability, and `GammaSpread` likewise generalizes the source's
 uniform coin draw to `sampleCoins`.
 
-The provided IND-CPA experiment is deliberately narrower than HHK17 §2.1, Definition 2.2 / Figure
-4. `indCpaGame` takes caller-supplied messages `m₀, m₁` fixed before key generation, uses a
-single-stage adversary, and `indCpaAdvantage` is the unnormalized probability difference between
-the two fixed challenge sides. HHK17 instead lets a first stage choose key-dependent messages and
-state, samples a challenge bit, and normalizes guessing advantage as `|Pr[b' = b] - 1/2|`.
+IND-CPA security is the two-stage game of HHK17 §2.1, Definition 2.2 / Figure 4: a first stage
+receives the public key and chooses two messages and a state, and a second stage receives the state
+and an encryption of one of them. `toPKE` is the randomized scheme `(Gen, Enc, Dec)` of an
+explicit-coin scheme, and `cpaAdvantage` is its advantage in the shared chosen-plaintext experiment
+`Cslib.Crypto.PKE.cpaExperiment`, with every pair of messages admissible. The advantage is the
+two-world difference `|Pr[1 | b = 0] - Pr[1 | b = 1]|`, which is twice HHK17's hidden-bit
+advantage `|Pr[b' = b] - 1/2|`. The Fujisaki--Okamoto theorems are stated against `cpaAdvantage`.
+
+`indCpaGame` and `indCpaAdvantage` are a narrower, fixed-message experiment: the messages
+`m₀, m₁` are given before key generation and the adversary is single-stage. Security for every
+fixed pair does not give two-stage security, since a two-stage adversary may choose its messages
+after seeing the public key. The fixed-message experiment is kept for its existing clients, such as
+the K-PKE bound of `Cslib.Crypto.MLKEM.indCpaAdvantage_le`.
 
 Unlike the standard-model bit-string KEM interfaces in `Cslib.Crypto.Encryption.KEMINDCPA` and
 `Cslib.Crypto.Encryption.encryptKeyEncaps`, this interface retains encryption coins and
@@ -44,6 +53,8 @@ deterministic encryption. KEM transforms and their security reductions live in s
   encryption coins.
 * `Cslib.Crypto.Protocols.ExplicitCoinPKE.DeltaCorrect`: expected worst-message `δ`-correctness.
 * `Cslib.Crypto.Protocols.ExplicitCoinPKE.GammaSpread`: `γ`-spreadness over sampled coins.
+* `Cslib.Crypto.Protocols.ExplicitCoinPKE.toPKE`: the randomized public-key encryption scheme.
+* `Cslib.Crypto.Protocols.ExplicitCoinPKE.cpaAdvantage`: the two-stage IND-CPA advantage.
 * `Cslib.Crypto.Protocols.ExplicitCoinPKE.indCpaGame`,
   `Cslib.Crypto.Protocols.ExplicitCoinPKE.indCpaAdvantage`: the single-stage fixed-message
   distinguishing experiment and probability-difference advantage.
@@ -92,6 +103,25 @@ variable {PK SK M R CT : Type}
 def encrypt (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (m : M) : ProbComp CT := do
   let r ← P.sampleCoins
   return P.encDet pk m r
+
+/-- The randomized public-key encryption scheme `(Gen, Enc, Dec)` of `P`: key generation
+`P.keyGen`, encryption `P.encrypt` with fresh coins, and decryption `P.dec`. -/
+def toPKE (P : ExplicitCoinPKE PK SK M R CT) : PKE PK SK M CT where
+  keyGen := P.keyGen
+  encrypt := P.encrypt
+  decrypt := P.dec
+
+/-- **Two-stage IND-CPA advantage** of `A` against `P` ([HofheinzHoevelmannsKiltz2017], ePrint
+2017/604 (2 Nov 2021), §2.1, Def. 2.2 / Fig. 4), in the shared chosen-plaintext experiment
+`PKE.cpaExperiment` of `P.toPKE` with every pair of messages admissible. The first stage of `A`
+receives `pk` and chooses `(m₀, m₁)` and a state; the second stage receives the state and an
+encryption of `m_b`, and keeps `pk` only if the first stage saved it. The advantage is the
+two-world difference `|Pr[A → 1 | b = 0] - Pr[A → 1 | b = 1]|`, which is twice HHK17's hidden-bit
+advantage `|Pr[b' = b] - 1/2|`. -/
+noncomputable def cpaAdvantage {σ : Type} (P : ExplicitCoinPKE PK SK M R CT)
+    (A : TwoStage PK (MessagePair M) CT Bool σ) : ℝ≥0 :=
+  Experiment.advantage (P.toPKE.cpaExperiment (fun _ _ _ => true) A false)
+    (P.toPKE.cpaExperiment (fun _ _ _ => true) A true)
 
 /-- Per-message decryption failure probability `Pr_{r ← sampleCoins}[Dec(sk, Enc(pk, m; r)) ≠ m]`
 for a fixed key pair `(pk, sk)` and message `m` ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604
@@ -198,7 +228,7 @@ def GammaSpread (P : ExplicitCoinPKE PK SK M R CT) (γ : ℝ) : Prop :=
 challenger encrypts `m₀`, and on bit `true` it encrypts `m₁`. Unlike [HofheinzHoevelmannsKiltz2017]
 (ePrint 2017/604 (2 Nov 2021), §2.1, Def. 2.2 / Fig. 4), where a first-stage adversary receives
 `pk` and chooses `(m₀, m₁)` with state, `(m₀, m₁)` are fixed caller-supplied messages independent
-of `pk`. -/
+of `pk`. The two-stage notion is `cpaAdvantage`. -/
 def indCpaGame (P : ExplicitCoinPKE PK SK M R CT) (m₀ m₁ : M) (bit : Bool)
     (adversary : PK → CT → ProbComp Bool) : ProbComp Bool := do
   let (pk, _) ← P.keyGen
