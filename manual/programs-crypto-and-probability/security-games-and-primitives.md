@@ -211,17 +211,27 @@ uniform real triple when `w` is the Diffie–Hellman element and to a uniform tr
 efficient form, so `ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of
 fixed triple families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
 inverse-polynomial fixed-group advantage into one that decides every triple except with
-negligible error (`negligible_ddhAmplifiedDecider_error`). The
+negligible error (`negligible_ddhAmplifiedDecider_error`). Fixed-first-coordinate rerandomization, single-exponent shifting, and Multi-DDH (I) ([bs23][bs23],
+Exercises 10.8, 10.9, and 10.11) live in
+[`DiffieHellman/MultiDDH.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman/MultiDDH.lean),
+providing both the finite-index and block distributional laws (`ddhFixedURerandomizeLaw`,
+`multiDDHRerandomizeLaw`, `ddhShiftAndRerandomizeLaw`) and the `ProbComp` reductions and uniform
+strict PPT witnesses (`ddhFixedUSelfReduceDistinguisher`,
+`singleSecretMultiDDHToDDHDistinguisher`, `DDH.singleSecretMultiDDH`,
+`multiDDHToDDHDistinguisher`, `DDH.multiDDH`). The
 [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean) checks the DDH input layout,
 runs the CDH-to-DDH reduction and the rerandomization on concrete `d23` elements, and
-instantiates the amplified decider. The
+instantiates the amplified decider; the
+[Multi-DDH client](../../CslibFrontierTests/Crypto/MultiDDH.lean) checks fixed-first-coordinate
+rerandomization, single-exponent shifting, and both `DDH.singleSecretMultiDDH` and
+`DDH.multiDDH` on concrete PPT distinguishers. The
 [nonvacuity client](../../CslibFrontierTests/Crypto/AssumptionNonvacuity.lean) evaluates the real
 and random games with fixed group parameters to probabilities `1 / q` and `1 / q²` for the same
 efficient identity test, so a constant group fails the hardness assumptions. From the
-repository root, check both clients with:
+repository root, check these clients with:
 
 ```bash
-scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.AssumptionNonvacuity
+scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.MultiDDH CslibFrontierTests.Crypto.AssumptionNonvacuity
 ```
 
 Inversion and prediction are each stated once, for a fixed function and input distribution, in
@@ -1304,7 +1314,8 @@ adversary's coins. The concrete per-instance IND-CCA advantage bound is
 PKE and `(qG, qH)` random-oracle queries for every coin value (decapsulation queries unbounded) by
 `2 · cpaAdvantage (romCpaReduction A) + (2 qH + 2 (qG + qH)) / |M| + 2 (qG + qH + 1) δ`. As in
 HHK17 (§1.1.2 table, p. 6; §3.3 table, p. 22), no `γ`-spreadness is assumed. This is a concrete bound for one fixed scheme: there is
-no security parameter and no running-time certificate for the reduction yet (#5293) (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
+no security parameter and no running-time bound on the reduction; the word-level asymptotic
+theorem `WordPKE.INDCPA.romINDCCA` below consumes it (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
 `NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`),
 one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing the oracles so
 that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy realization
@@ -1354,13 +1365,17 @@ and the native decapsulation for the decapsulation oracle (`WordPKE.ccaWordOracl
 [`FujisakiOkamoto/WordBridge.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordBridge.lean)
 relates these word objects to the typed ones at each parameter. `WordPKE.finiteScheme P keyLen n` is
 the bundle over bit strings and the ciphertext space `WordPKE.Ciphertext P n`, and
-`WordPKE.DeltaCorrect` and `WordPKE.GammaSpread` are the correctness and spreadness of the family,
-stated for that bundle. `WordPKE.IsEfficient.exists_typedAdversary` turns each `IsOraclePPT`
+`WordPKE.DeltaCorrect` is the correctness of the family, stated for that bundle. `WordPKE.IsEfficient.exists_typedAdversary` turns each `IsOraclePPT`
 adversary into a typed adversary at each parameter (`WordPKE.savedCoinAdversary`, a replay of its
 saved coins) with polynomially many `G` and `H` queries; when the ciphertexts fit, the word game is
 its typed `Scheme.roIndCcaGame`, and the advantage of `romCpaReductionWord` is the typed
-`cpaAdvantage` of `Scheme.romCpaReduction`. Proving `ROMINDCCA` from IND-CPA of the family remains
-for #5293.
+`cpaAdvantage` of `Scheme.romCpaReduction`.
+[`FujisakiOkamoto/WordSecurity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordSecurity.lean)
+proves the asymptotic theorem `WordPKE.INDCPA.romINDCCA`: IND-CPA security of an efficient family
+whose ciphertexts fit, which is `δ`-correct with `δ` and `2^{-msgLen}` negligible, implies
+`ROMINDCCA`. As in HHK17, no `γ`-spreadness is assumed. Its proof applies `INDCPA` to
+`romCpaReductionWord A` through `isPPT_romCpaReductionWord` and bounds the rest with the concrete
+per-instance bound `Scheme.indCcaRomAdvantage_le`. `FO^⊥` has no word-level theorem yet.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),

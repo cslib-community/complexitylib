@@ -10,9 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Basic
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bool
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Encoding
 import CslibFrontier.Tactic.Degree
 import CslibFrontier.Tactic.EncLen
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
@@ -64,23 +62,7 @@ copied each round; this bound does not implement the buffered Hennie–Stearns s
 
 namespace Turing.MultiTapeTM.Universal
 
-/-! ### Encodings -/
-
-/-- Symbols and blanks. -/
-public abbrev eSym : Option ℕ ↪ List Bool := encOption encUnary
-
-/-- Keys of transitions, as their fields. -/
-enc_structure eKey : Key where state : encUnary, input : eSym, work : (encList eSym)
-
-/-- An action on a work tape. -/
-public abbrev TapeAct := Option (Option ℕ) × SignType
-
-/-- Actions on a work tape. -/
-public abbrev eTA : Option (Option ℕ) × SignType ↪ List Bool := encPair (encOption eSym) encSign
-
-/-- Actions, as their fields. -/
-enc_structure eAct : Act where
-  inputTape : encSign, workTapes : (encList eTA), output : eSym, state : eSym
+/-! ### Description and configuration encodings -/
 
 /-- Descriptions, as their fields. -/
 enc_structure eDesc : Desc where

@@ -222,6 +222,26 @@ and use `Cslib.HomomorphismTesting`. Here `rejection f` is the uniform independe
 that `f x + f y ≠ f (x + y)`, and `distance f` is the attained minimum normalized Hamming
 disagreement over bundled additive homomorphisms. `min_le_rejection` proves
 `min (1/6) (distance f / 2) ≤ rejection f` (Goldreich draft Exercise 9.21).
+For Exercise 9.20, `three_mul_distance_sub_six_sq_le_rejection` gives the unconditional
+bound `3 * distance f - 6 * distance f ^ 2 ≤ rejection f`, including trivial groups.
+It is increasing only up to distance `1/4`, positive between `0` and `1/2`, and
+nonpositive from `1/2` onward. Do not substitute an arbitrary lower bound on distance into
+this quadratic: it is not globally monotone. Use the attained distance or supply the
+additional range argument. Exercise 9.21's bound remains useful at larger distances.
+
+For a supplied bundled homomorphism `h`, `OnlyFirstDisagreement f h x y` means disagreement
+at `x` and agreement at both `y` and `x + y`. `three_mul_onlyFirst_le_rejection` is part (1);
+`disagreement_sub_two_sq_le_onlyFirst` is part (2), with `d` the actual normalized Hamming
+disagreement with `h`. Neither requires nearestness, a small rejection probability, or a
+small distance. `three_mul_disagreement_sub_six_sq_le_rejection` combines them, so callers
+need no event algebra. Pairwise independence of the three sampled positions gives means
+`d²` for each pair of disagreement indicators; the shared triple intersection cancels when
+comparing the three exactly-one events. Translation invariance suffices: permuting the
+three positions naively would incorrectly assume disagreement is invariant under negation.
+The checked clients below include actual distances `1/4` and `1/2` on `ZMod 4 → ZMod 3`,
+where the zero homomorphism is the only homomorphism, and a distance-one nonzero constant
+on a trivial domain. These are probability statements, without an efficiency claim.
+
 Choose any `φ` satisfying `IsPlurality f φ`, whose existence is `exists_plurality`.
 `concentration` bounds the probability that the two-read vote `f (x + y) - f y` equals `φ x`
 by at least `1 - 2 * rejection f`, for every `x`. If rejection is strictly below `1/6`,
@@ -231,6 +251,8 @@ is required. The [checked clients](../../CslibFrontierTests/HomomorphismTesting.
 perfect passage on `ZMod 3` and trivial groups and assemble the corrected homomorphism and
 distance bound. This is a finite probability API without a group encoding or runtime model.
 The Boolean Fourier guarantee above remains the sharper choice on the cube.
+
+For junta proximity from resampling and degree-one characterizations on the cube, [FourierRestriction](../../CslibFrontier/Foundations/BooleanAnalysis/FourierRestriction.lean) expresses the coordinate-set variation of a real function `f` outside `J`, `𝔼 x, 𝔼 z, (f x - f (J.piecewise x z)) ^ 2`, as `2 ∑_{S ⊈ J} f̂(S)²` (`expect_expect_sub_piecewise_sq`), and for a Boolean function read as signs `F = signVal ∘ f` gives the disagreement probability `𝔼 x, 𝔼 z, if f x = f (J.piecewise x z) then 0 else 1` as `(1/2) ∑_{S ⊈ J} F̂(S)²` (`expect_expect_piecewise_ne`, O'Donnell Exercise 3.28 and Proposition 3.31 [odonnell14]). Combining this with spectral concentration in [FriedgutJunta](../../CslibFrontier/Foundations/BooleanAnalysis/FriedgutJunta.lean) yields a Boolean `J`-junta (`DependsOn g (J : Set ι)`) at relative Hamming distance at most twice the disagreement probability (`exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne`, and in complement form `exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne` for resampling `I`, Arora–Barak 2007 draft, Chapter 19 Exercise 4). In [FourierDegree](../../CslibFrontier/Foundations/BooleanAnalysis/FourierDegree.lean), equality (or `≤`) holds in the Poincaré inequality if and only if `g ∈ lowDegree ℝ ι 1` (`totalInfluence_eq_expect_sub_expect_sq_iff_mem_lowDegree`, `totalInfluence_le_expect_sub_expect_sq_iff_mem_lowDegree`). For Boolean functions read as signs, degree at most one and Poincaré equality hold if and only if `f` is constant (`Function.const _ b`) or a literal `x ↦ b ^^ x i` (`mem_lowDegree_one_signVal_iff`, `totalInfluence_signVal_eq_expect_sub_expect_sq_iff`, O'Donnell Exercise 1.19 and Proposition 2.40 [odonnell14]); when `f` is balanced (`𝔼 x, signVal (f x) = 0`), its total influence (average sensitivity) is at most `1` (or equal to `1`) if and only if `f` is a literal `x ↦ b ^^ x i` (`totalInfluence_signVal_le_one_iff_of_expect_eq_zero`, `totalInfluence_signVal_eq_one_iff_of_expect_eq_zero`, Arora–Barak 2007 draft, Chapter 19 Exercise 5(b)). Checked examples, including a non-balanced constant counterexample to dropping the balance hypothesis, are in [KahnKalaiLinialFriedgut.lean](../../CslibFrontierTests/KahnKalaiLinialFriedgut.lean).
 
 ## Monotonicity testing
 

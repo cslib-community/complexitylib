@@ -87,6 +87,24 @@ The dotted arrows are obligations of [IsOraclePPTOn](https://github.com/cslib-co
 
 Request construction, tape-head movement and reply inspection are charged machine operations. The external handler's own computation is outside the oracle machine's cost. A reply may be arbitrarily long; the machine cannot return an arbitrarily long output for free, as the native `length_le` theorem records. Typed oracle interfaces need explicit word encodings and realization certificates before this native predicate applies.
 
+Finite first-order fair-coin oracle-machine syntax is available by importing
+[`Probabilistic/Universal/Description.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/Universal/Description.lean).
+Its `eDesc` word is a right-associated tuple encoding in field order: unary work-tape count, unary
+user-state count, unary operation count, unary initial-state tag, then the transition-table
+`encList`. The first four fields are framed in turn; the final `encList` tail has one frame per entry.
+Each entry frames its key before the branch-pair tail. Keys put ordinary state/input/work-head
+fields before answer heads, and branches are ordered `false`, then `true`. Consequently `descLen`
+is a rigorous unary model-code length, not an implementation byte size. Invalid initial, successor
+or operation tags halt locally, and an
+invalid operation tag makes no external call. `Desc.toMachine` leaves operation dispatch inside a
+finite machine (`Fin operations`), while `Desc.runWith_toMachine` identifies the full output and
+shared-state law for every stateful handler. The supplied fuel remains an external clock and the
+handler's own computation remains outside it. This layer provides syntax and denotation only: it
+does not yet provide a fixed universal interpreter, its controller/copying/marshalling resource
+map, or a PPT/QROM certificate. The complete
+[`OracleDescription.lean` client](../../CslibFrontierTests/OracleDescription.lean) separately runs
+one fixed logging handler and checks adaptive queries, zero clock and malformed-tag boundaries.
+
 For explicit concrete step and query schedules on word-oracle programs, import [Computability/Probabilistic/Oracle/Time.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Time.lean). `ComputesOracleInTimeOn input output t program` (and parameterized `ComputesOracleInTime`) requires one finite-control oracle machine that matches the joint output and external-state law under `ProbOracleComp.runWith` across all shared stateful handlers within `t a` steps and has actually halted (`final.1.tapes.state = none`) on every supported execution at step `t a`. Actual halting gives unconditional step monotonicity (`ComputesOracleInTimeOn.mono`); `ComputesOracleInTimeOn.query_bounds` shows that every `t a`-step execution makes at most `t a` external queries of payload length at most `t a`, while `ComputesOracleInTimeAndQueriesOn` and `ComputesOracleInTimeAndQueries` track a separate query budget `q` alongside `t` when `q` is much smaller than the step count. Plain deterministic computations (`ComputableInTimeAndSpace.computesOracleInTimeOn`) and closed halting programs (`ComputesInTimeOn.computesOracleInTimeOn`, `ComputesOracleInTimeOn.computesInTimeOn`) lift without step overhead, `query_take_pair` and `query_take` give explicit linear step bounds for bounded-prefix oracle calls, and buffered closed/open compositions (`bind_sample_left`, `bind_sample_right`, `preprocess`, `map`) charge `2 * t₁ a + t₂' a + 4` steps while preserving external query budgets. `isOraclePPTOn_iff_exists_polyBounded_computesOracleInTimeOn` and `isOraclePPT_iff_exists_polyBounded_computesOracleInTime` connect these explicit-time predicates back to `IsOraclePPTOn` and `IsOraclePPT`, with stateful execution and round-trip checks in [CslibFrontierTests/Crypto/ConcreteSecurity.lean](../../CslibFrontierTests/Crypto/ConcreteSecurity.lean).
 
 [CslibFrontier/Computability/Probabilistic/Oracle/Substitution.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle/Substitution.lean) closes an efficient open program under efficient stateful oracle replacement. The principal endpoint `IsOraclePPTOn.run_interpret_preprocess_open` includes an invariant and controlled growth of replies and encoded handler state. Merely saying that each call is polynomial time would permit iterated state doubling and does not imply a polynomial total run. The underlying [CslibFrontier/Computability/Probabilistic/Realization/OpenOracleSimulation.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean) supplies a machine-configuration simulation; the public theorem is supported by that realization.
