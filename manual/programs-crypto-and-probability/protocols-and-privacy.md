@@ -343,16 +343,12 @@ in
 
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
-EUF-CMA bounds account for both signing queries and random-oracle queries. **Schnorr EUF-CMA
-security under `F.DiscreteLog` is not yet proved.** The asymptotic helper
-`negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction` is not a security theorem:
-it assumes that the forking reduction built from the forger has negligible discrete-logarithm
-success, which `F.DiscreteLog` does not give because that reduction has no efficiency certificate.
-Its forgers are only call-bounded and its scheme uses ideal scalar laws. Applying the strict-PPT
-discrete-logarithm assumption requires an efficient realization of the reduction, with encoded
-adaptive signing/hash access and final-message freshness
-([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
-[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The private-coin
+EUF-CMA bounds account for both signing queries and random-oracle queries. Their forking
+reductions are distribution-level programs, so `F.DiscreteLog` does not apply to them directly; the
+security theorem under `F.DiscreteLog` is in `SchnorrSignature/Security.lean`, described below.
+The earlier asymptotic corollary, which assumed that its own forking reduction has negligible
+discrete-log success, was removed ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
+The private-coin
 prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../CslibFrontier/Computability/Probabilistic/Oracle/Replay.lean), which charges
 full-input replay and retains external state.
@@ -442,6 +438,23 @@ banks, the second pass and the discrete-log theorem remain
 signing points (including a repeated signing request), repeated and junk hash points, answer
 exhaustion, fresh, signed and programmed forgeries, and a malformed outer signature word that the
 total pair decoder accepts.
+
+[`SchnorrSignature/Security.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/Security.lean)
+proves **Schnorr EUF-CMA security under discrete log**: `negligible_worldGame_schnorrEncodedROMScheme`.
+For a deterministic polynomial-time group family `description`, a polynomial-time challenge width
+`w` with `2 ^ w n ≤ q` and negligible `2⁻ʷ`, and `F.DiscreteLog (fun n => PMF.pure (description n))`,
+every native forger with `IsOraclePPT` wins the shared-oracle game of the native scheme (actual
+`schnorrSigKeyGen` keys, actual `sampleExp` nonces, adaptive signing, arbitrary hash words,
+final-message freshness) with negligible probability. Nothing is assumed about the reduction:
+`schnorrForkingAdversary` samples the forger's tape, `2B` strict-PPT simulated transcripts and two
+answer banks, runs `schnorrForkPass` twice on spliced answers, and extracts with `extractNat`;
+`isPPTOn_schnorrForkingAdversary` certifies it from the forger's certificate. The proof chains the
+sampling transport above, the typed word bound, a `2B / 2 ^ n` step from the perfect to the
+strict-PPT simulator (`succProbability_oneWayGame_schnorrWordROMSchemeReduction_le`), and the exact
+identification `discreteLogGame_schnorrForkingAdversary` of the native adversary's discrete-log game
+with the typed one-way game. Random group setups are not covered, because the existing game gives
+the forger only the public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
+[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest

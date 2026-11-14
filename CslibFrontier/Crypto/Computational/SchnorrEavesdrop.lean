@@ -228,7 +228,10 @@ private theorem eval_schnorrSimulateWord_bits (n : ℕ) (d : F.Desc) (u : F.Carr
   congr 1 with a : 1
   simp only [Function.comp_apply, ZMod.val_natCast]
 
-private theorem eval_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d) (m : ℕ) :
+/-- The law of one strict-PPT simulated conversation on a canonical public key `encode u`: a
+uniform `m`-bit challenge `c`, a sampled scalar response `z`, and the commitment
+`encode (z • g - c • u)`. -/
+theorem eval_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d) (m : ℕ) :
     ProbComp.eval (F.schnorrSimulatedTranscript n d (F.encode d u) m) =
       (BitString.uniformList m).bind fun c =>
         ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).map
