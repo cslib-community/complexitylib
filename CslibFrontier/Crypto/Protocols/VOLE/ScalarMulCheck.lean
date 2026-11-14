@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
+public import CslibFrontier.Crypto.Protocols.VOLE.MulCheck
+import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.PolynomialAgreement
@@ -22,6 +23,11 @@ For `t` multiplication claims, the original QuickSilver arithmetic samples one p
 `[t] = {1, ..., t}`. The prover's pair is kept in source order: constant coefficient first and
 linear coefficient second. The verifier checks `W = U + V * delta`.
 
+QuickSilver types wire values over a base field `F_p` and MAC masks, tags, and the global key over
+an extension field `F_{p^r}`. This API puts `x`, `y`, `z`, every mask and tag, and `delta` in one
+field `F`. It therefore formalizes the source equation after embedding the wire values into the
+extension field; it does not formalize that embedding, its image, or subfield-membership conditions.
+
 The library's existing batched multiplication check instead samples one independent field element
 per gate and stores its reply in linear-then-constant order. This module is the convention-preserving
 bridge between those APIs. A single valid VOLE coordinate also supplies the source mask relation
@@ -33,11 +39,12 @@ noncancellation, an arbitrary reply chosen after `chi` passes for at most two va
 independent hidden key. The sequential experiment therefore has error at most `(t + 2) / |F|`.
 
 This is the multiplication-gate arithmetic and check from [YangSarkarWengWang2021], Section 3.1,
-printed pp. 6--7, and Section 4.2/Figure 5, printed pp. 12--13. The explanatory check in
-[BaumEtAl2023FAEST], Section 2.3.2, printed pp. 12--13, uses the same scalar powers. The concrete
-FAEST v2 and v3 verifiers instead use universal hashing [BaumEtAl2025FAEST]; v3 additionally uses
-degree-seven constraints and CRT masks [BaumEtAl2026FAEST]. This module does not formalize those
-hashes or masks.
+printed pp. 6--7, and Section 4.2/Figure 5, printed pp. 12--13. The soundness argument immediately
+after Figure 5, printed p. 14, gives the `2 / p^r` hidden-key term, `t / p^r` scalar-cancellation
+term, and `(t + 2) / p^r` union bound. The explanatory check in [BaumEtAl2023FAEST], Section 2.3.2,
+printed pp. 12--13, uses the same scalar powers. The concrete FAEST v2 and v3 verifiers instead use
+universal hashing [BaumEtAl2025FAEST]; v3 additionally uses degree-seven constraints and CRT masks
+[BaumEtAl2026FAEST]. This module does not formalize those hashes or masks.
 
 ## Main definitions
 
