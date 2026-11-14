@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.PH.Complete
 public import CslibFrontier.Computability.Complexity.Problems.Tautology
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
+public import CslibFrontier.Computability.Complexity.Reduction.Turing
 
 /-!
 # NP = coNP exactly when 3SAT and TAUTOLOGY reduce to each other
@@ -23,6 +24,14 @@ reductions are native polynomial-time many-one reductions. As in
 `Cslib.Complexity.NP_eq_coNP_iff_coNP_subset_NP`, `NP = coNP` is quantified over every explicit
 encoding of instances. The proof applies `Cslib.Complexity.NPComplete.NP_eq_coNP_iff_reducible` to
 `Cslib.Complexity.ThreeSAT_npComplete` and `Cslib.Complexity.TAUTOLOGY_coNPComplete`.
+
+Under polynomial-time Turing (Cook) reductions (`Cslib.Complexity.PolyTimeTuringReducible`),
+complement queries are unconditionally available (`PolyTimeTuringReducible.compl_left`), so
+`TAUTOLOGY` is `NP`-hard (`Cslib.Complexity.TAUTOLOGY_npTuringHard`), `ThreeSAT` is `coNP`-hard
+(`Cslib.Complexity.ThreeSAT_coNPTuringHard`), and `3SAT` and `TAUTOLOGY` Cook-reduce to each other
+unconditionally (`Cslib.Complexity.polyTimeTuringReducible_ThreeSAT_TAUTOLOGY`,
+`Cslib.Complexity.polyTimeTuringReducible_TAUTOLOGY_ThreeSAT`, Exercise 12, Chapter 2 of
+[AroraBarak07]).
 -/
 
 public section
@@ -36,5 +45,24 @@ theorem NP_eq_coNP_iff_ThreeSAT_reducible_TAUTOLOGY :
       PolyTimeReducible encCNF encQBF ThreeSAT TAUTOLOGY ∧
         PolyTimeReducible encQBF encCNF TAUTOLOGY ThreeSAT :=
   ThreeSAT_npComplete.NP_eq_coNP_iff_reducible TAUTOLOGY_coNPComplete
+
+/-- `TAUTOLOGY` is `NP`-hard under polynomial-time Turing (Cook) reductions. -/
+theorem TAUTOLOGY_npTuringHard : NPTuringHard encQBF TAUTOLOGY :=
+  TAUTOLOGY_coNPHard.npTuringHard
+
+/-- `ThreeSAT` is `coNP`-hard under polynomial-time Turing (Cook) reductions. -/
+theorem ThreeSAT_coNPTuringHard : coNPTuringHard encCNF ThreeSAT :=
+  ThreeSAT_npHard.coNPTuringHard
+
+/-- **Arora–Barak 2007, Chapter 2, Exercise 12:** `3SAT` is polynomial-time Turing (Cook) reducible
+to `TAUTOLOGY`. -/
+theorem polyTimeTuringReducible_ThreeSAT_TAUTOLOGY :
+    PolyTimeTuringReducible encCNF encQBF ThreeSAT TAUTOLOGY :=
+  TAUTOLOGY_npTuringHard encCNF ThreeSAT ThreeSAT.mem_NP
+
+/-- `TAUTOLOGY` is polynomial-time Turing (Cook) reducible to `3SAT`. -/
+theorem polyTimeTuringReducible_TAUTOLOGY_ThreeSAT :
+    PolyTimeTuringReducible encQBF encCNF TAUTOLOGY ThreeSAT :=
+  ThreeSAT_coNPTuringHard encQBF TAUTOLOGY TAUTOLOGY_mem_coNP
 
 end Cslib.Complexity
