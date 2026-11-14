@@ -32,15 +32,19 @@ On a conforming instance, a well-typed query, and in particular a table, supplie
 hypothesis by itself (`Query.eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf`,
 `Query.eval_join_table_eqCols_length_eq_joinSize_filterMap`).
 
-The proofs reduce the join's evaluation to a filter over the pairs of input rows once
-(`Query.eval_join_eq_ok_of_forall`) and then apply
-`Cslib.Streaming.length_filter_product_eq_joinSize_filterMap`; no counting argument is repeated.
+The count itself needs no typing hypothesis: whenever the equijoin succeeds, its rows number the
+join size of the non-null keys (`Query.length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok`),
+which applies `Cslib.Streaming.length_filter_product_eq_joinSize_filterMap` once. The typing
+hypothesis of the other forms guarantees success (`Query.eval_join_eq_ok_of_forall`); without it
+the join may fail, for instance on an integer key compared with a text key.
 
 It adapts and redesigns material from `sql_equiv` (revision `38030a6b`) by Evelyn Mitchell, whose
 joins compared name-addressed columns at run time; the connection to join sizes is new.
 
 ## Main results
 
+* `Cslib.SQL.Query.length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok`: whenever an equijoin
+  succeeds, it returns as many rows as the join size of the inputs' non-null keys.
 * `Cslib.SQL.Query.eval_join_eqCols_length_eq_joinSize_filterMap`: an equijoin on keys of one type
   succeeds and returns as many rows as the join size of the inputs' non-null keys.
 * `Cslib.SQL.Query.eval_join_eqCols_length_eq_joinSize`: the same count with `NULL` treated as a
@@ -63,23 +67,42 @@ namespace Query
 variable {S : DbSchema} {q₁ : Query S n} {q₂ : Query S m} {D : Database S} {rs : List (Row n)}
   {ss : List (Row m)}
 
+/-- **Equijoin row counts are join sizes, whenever the join succeeds.** If `q₁` and `q₂` evaluate
+to `rs` and `ss` and the equijoin `q₁ JOIN q₂ ON q₁.i = q₂.j` succeeds with `ts`, then `ts` has
+`joinSize (rs.filterMap (· i)) (ss.filterMap (· j))` rows: the join size of the non-null keys of
+both inputs. No typing hypothesis is needed, since a key comparison that fails fails the join. A
+`NULL` key matches nothing, since SQL's `=` is `unknown` on `NULL`; on non-null values `=` is
+`TRUE` exactly on equal values. -/
+theorem length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok {i : Fin n} {j : Fin m}
+    {ts : List (Row (n + m))} (h₁ : q₁.eval D = .ok rs) (h₂ : q₂.eval D = .ok ss)
+    (h : (join (Expr.eqCols i j) q₁ q₂).eval D = .ok ts) :
+    ts.length = joinSize (rs.filterMap (· i)) (ss.filterMap (· j)) := by
+  have h' := congrArg Except.toOption h
+  rw [eval_join, h₁, h₂, Except.ok_bind, Except.ok_bind, Expr.toOption_filterRows] at h'
+  split_ifs at h'
+  · rw [Except.toOption_ok, Option.some.injEq] at h'
+    rw [← h', Row.product, List.filter_map, List.length_map,
+      ← length_filter_product_eq_joinSize_filterMap]
+    refine congrArg List.length (List.filter_congr fun (r, s) _ => decide_eq_decide.mpr ?_)
+    dsimp only
+    rw [Except.toOption_eq_some_iff, Expr.evalTruth_eqCols_eq_ok_true_iff]
+  · exact absurd h' (by simp)
+
 /-- **Equijoin row counts are join sizes.** If `q₁` and `q₂` evaluate to `rs` and `ss`, and the
 key columns `i` and `j` hold `NULL` or values of one type `τ`, then the equijoin
 `q₁ JOIN q₂ ON q₁.i = q₂.j` succeeds and returns `joinSize (rs.filterMap (· i))
-(ss.filterMap (· j))` rows: the join size of the non-null keys of both inputs. A `NULL` key
-matches nothing, since SQL's `=` is `unknown` on `NULL`; on non-null values of one type it is
-`TRUE` exactly on equal values. -/
+(ss.filterMap (· j))` rows: the join size of the non-null keys of both inputs. The typing
+hypothesis gives success; `Query.length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok` gives the
+count. -/
 theorem eval_join_eqCols_length_eq_joinSize_filterMap (i : Fin n) (j : Fin m)
     (h₁ : q₁.eval D = .ok rs) (h₂ : q₂.eval D = .ok ss) {τ : SqlType}
     (hrs : ∀ r ∈ rs, (r i).HasType τ) (hss : ∀ s ∈ ss, (s j).HasType τ) :
     ∃ ts, (join (Expr.eqCols i j) q₁ q₂).eval D = .ok ts ∧
       ts.length = joinSize (rs.filterMap (· i)) (ss.filterMap (· j)) := by
-  refine ⟨_, eval_join_eq_ok_of_forall h₁ h₂ fun r hr s hs => ?_, ?_⟩
-  · rw [Expr.evalTruth_eqCols]
+  have h := eval_join_eq_ok_of_forall (θ := Expr.eqCols i j) h₁ h₂ fun r hr s hs => by
+    rw [Expr.evalTruth_eqCols]
     exact CmpOp.exists_eval_eq_ok (hrs r hr) (hss s hs)
-  · rw [List.length_map, ← length_filter_product_eq_joinSize_filterMap]
-    refine congrArg List.length (List.filter_congr fun (r, s) _ => decide_eq_decide.mpr ?_)
-    rw [Except.toOption_eq_some_iff, Expr.evalTruth_eqCols_eq_ok_true_iff]
+  exact ⟨_, h, length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok h₁ h₂ h⟩
 
 /-- **Equijoin row counts with `NULL` as a value.** Under the hypotheses of
 `Query.eval_join_eqCols_length_eq_joinSize_filterMap`, if one of the inputs has no `NULL` key,
@@ -103,9 +126,9 @@ theorem eval_join_eqCols_length_eq_joinSize (i : Fin n) (j : Fin m)
 /-- **Equijoin row counts for well-typed inputs.** On a conforming instance, if `q₁` and `q₂` are
 well-typed, their key columns `i` and `j` have the same type, and both evaluate successfully, the
 equijoin returns as many rows as the join size of their non-null keys. -/
-theorem eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf (hD : D.Conforms)
-    {Γ : Fin n → SqlType} {Δ : Fin m → SqlType} (hq₁ : q₁.typeOf = some Γ)
-    (hq₂ : q₂.typeOf = some Δ) {i : Fin n} {j : Fin m} (hτ : Γ i = Δ j)
+theorem eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf (i : Fin n) (j : Fin m)
+    (hD : D.Conforms) {Γ : Fin n → SqlType} {Δ : Fin m → SqlType} (hq₁ : q₁.typeOf = some Γ)
+    (hq₂ : q₂.typeOf = some Δ) (hτ : Γ i = Δ j)
     (h₁ : q₁.eval D = .ok rs) (h₂ : q₂.eval D = .ok ss) :
     ∃ ts, (join (Expr.eqCols i j) q₁ q₂).eval D = .ok ts ∧
       ts.length = joinSize (rs.filterMap (· i)) (ss.filterMap (· j)) :=
@@ -116,12 +139,12 @@ theorem eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf (hD : D.Conforms
 /-- **Equijoin row counts for tables.** On a conforming instance `D`, the equijoin of tables `t₁`
 and `t₂` on key columns `i` and `j` declared with the same type returns
 `joinSize ((D t₁).filterMap (· i)) ((D t₂).filterMap (· j))` rows. -/
-theorem eval_join_table_eqCols_length_eq_joinSize_filterMap (hD : D.Conforms) {t₁ t₂ : S.Table}
-    {i : Fin (S.arity t₁)} {j : Fin (S.arity t₂)} (hτ : S.ctx t₁ i = S.ctx t₂ j) :
+theorem eval_join_table_eqCols_length_eq_joinSize_filterMap {t₁ t₂ : S.Table}
+    (i : Fin (S.arity t₁)) (j : Fin (S.arity t₂)) (hD : D.Conforms) (hτ : S.ctx t₁ i = S.ctx t₂ j) :
     ∃ ts, (join (Expr.eqCols i j) (table t₁) (table t₂)).eval D = .ok ts ∧
       ts.length = joinSize ((D t₁).filterMap (· i)) ((D t₂).filterMap (· j)) :=
-  eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf hD (typeOf_table t₁) (typeOf_table t₂)
-    hτ (eval_table D t₁) (eval_table D t₂)
+  eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf i j hD (typeOf_table t₁)
+    (typeOf_table t₂) hτ (eval_table D t₁) (eval_table D t₂)
 
 end Query
 

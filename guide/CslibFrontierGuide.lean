@@ -36,8 +36,8 @@ docstring and source. Other entry points:
   to propose and review changes.
 
 The guide is new: after first steps, it has chapters on NP-completeness, unweighted graph matching,
-streaming, first-order logic with operators, and SQL query semantics. Further areas follow one at a time, and each
-chapter's friction points are fixed in the library rather than documented around.
+streaming, first-order logic with operators, and SQL query semantics. Further areas follow one at a
+time, and each chapter's friction points are fixed in the library rather than documented around.
 
 [cslib]: https://github.com/leanprover/cslib
 [api]: https://www.cslib.io/cslib-frontier/

@@ -145,7 +145,7 @@ example (D' : Database S) (h : D'.Conforms) :
     ∃ ts, empDept.eval D' = .ok ts ∧
       ts.length = Cslib.Streaming.joinSize
         ((D' Tbl.emp).filterMap (· 1)) ((D' Tbl.dept).filterMap (· 0)) :=
-  eval_join_table_eqCols_length_eq_joinSize_filterMap h rfl
+  eval_join_table_eqCols_length_eq_joinSize_filterMap 1 0 h rfl
 
 example : Cslib.Streaming.joinSize ((D Tbl.emp).filterMap (· 1))
     ((D Tbl.dept).filterMap (· 0)) = 6 := by

@@ -12,8 +12,8 @@ The layers present so far are values with `NULL`, three-valued logic, scalar ope
 three-valued `IN`, resolved expressions over rows with typing, safety and equivalence,
 bag-semantics queries over database schemas with typing, safety and three levels of equivalence,
 and the theorem that an equijoin returns as many rows as the streaming library's join size of its
-keys. The proved query transformations and the simplifier are later milestones of #5282 and will
-extend this page. The [supported fragment](#supported-fragment-and-limitations) section lists
+keys. The proved query transformations and the simplifier are other milestone-1 PRs of #5282 and
+will extend this page. The [supported fragment](#supported-fragment-and-limitations) section lists
 what is not covered, and [differences from SQLite](#differences-from-sqlite) records where a
 common engine disagrees with the semantics.
 
@@ -255,31 +255,35 @@ join size of the streaming library,
 `q₁ JOIN q₂ ON q₁.i = q₂.j` is `join (Expr.eqCols i j) q₁ q₂`, where `Expr.eqCols i j` compares
 column `Fin.castAdd m i` with column `Fin.natAdd n j` of the joined row.
 
-`Query.eval_join_eqCols_length_eq_joinSize_filterMap` is the general form. If `q₁` and `q₂`
-evaluate to `rs` and `ss`, and every key cell holds `NULL` or a value of one type `τ`, the join
-succeeds and returns `joinSize (rs.filterMap (· i)) (ss.filterMap (· j))` rows. The key domain is
-the non-null values of `τ`, on which `=` is `TRUE` exactly for equal values; a `NULL` key matches
-nothing, not even another `NULL`, so `filterMap` drops the `NULL` keys before counting. Comparing
-keys as datums, with `NULL` equal to `NULL`, counts `joinSize (rs.map (· i)) (ss.map (· j))`
-instead, which is the same number when one input has no `NULL` key
-(`Query.eval_join_eqCols_length_eq_joinSize`). Without the typing hypothesis there may be no
-count at all: comparing an integer key with a text key is a type error, and the join fails as
-soon as both inputs have a row.
+`Query.length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok` is the count: if `q₁` and `q₂`
+evaluate to `rs` and `ss` and the join succeeds, it returns
+`joinSize (rs.filterMap (· i)) (ss.filterMap (· j))` rows, with no hypothesis on the keys. A
+`NULL` key matches nothing, not even another `NULL`, so `filterMap` drops the `NULL` keys before
+counting; on non-null values `=` is `TRUE` exactly for equal values. Comparing keys as datums,
+with `NULL` equal to `NULL`, counts `joinSize (rs.map (· i)) (ss.map (· j))` instead, which is the
+same number when one input has no `NULL` key (`Query.eval_join_eqCols_length_eq_joinSize`).
+
+The join need not succeed: comparing an integer key with a text key is a type error, and the join
+fails as soon as both inputs have a row. `Query.eval_join_eqCols_length_eq_joinSize_filterMap`
+guarantees success, and so the count, when every key cell holds `NULL` or a value of one type
+`τ`; the key domain is then the non-null values of `τ`.
 
 On a conforming instance the typing hypothesis comes from the schema.
 `Query.eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf` takes well-typed inputs whose key
 columns have the same type, and `Query.eval_join_table_eqCols_length_eq_joinSize_filterMap` two
 tables whose key columns are declared with the same type; for tables, conformance and that
 declaration are the only hypotheses. `Expr.isSafePredicate_eqCols_iff` says that the equijoin
-predicate is safe exactly when the key types agree. The proofs reduce the join's evaluation to a
-filter over the pairs of input rows (`Query.eval_join_eq_ok_of_forall`) and then apply
-`Cslib.Streaming.length_filter_product_eq_joinSize_filterMap`.
+predicate is safe exactly when the key types agree. The count reduces the join's evaluation to a
+filter over the pairs of input rows and applies
+`Cslib.Streaming.length_filter_product_eq_joinSize_filterMap`; success under the typing
+hypothesis comes from `Query.eval_join_eq_ok_of_forall`.
 
 The [tests](../../CslibFrontierTests/Languages/SQL/JoinSize.lean) check each count both by
 evaluation and through the theorem: keys `1, 1, 1, 2` against `1, 1, 3` give `6` rows, an empty
 input gives none, and keys `1, NULL, NULL, 2` against `NULL, 1, 1` give `2` rows where structural
 equality would count `4`. The null-safe join `ON l.k = r.k OR (l.k IS NULL AND r.k IS NULL)`
-returns those `4`.
+returns those `4`. Keys `NULL, 1, NULL` against `1, 1` give `2` rows, and since the right input
+has no `NULL` key the structural count agrees.
 
 ## Working with the API
 
@@ -361,7 +365,7 @@ example : (lr.eval D).toOption.map List.length = some 6 := by decide
 example (D' : Database S) (hD' : D'.Conforms) :
     ∃ ts, lr.eval D' = .ok ts ∧
       ts.length = joinSize ((D' T.l).filterMap (· 0)) ((D' T.r).filterMap (· 0)) :=
-  eval_join_table_eqCols_length_eq_joinSize_filterMap hD' rfl
+  eval_join_table_eqCols_length_eq_joinSize_filterMap 0 0 hD' rfl
 ```
 
 The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM
@@ -396,10 +400,12 @@ not in the fragment. Set-semantics relational foundations and Yannakakis's algor
 
 The semantics follows standard SQL and PostgreSQL where engines differ. A differential run of 44
 queries in this fragment against SQLite 3.45.1, recorded in
-[#5335](https://github.com/cslib-community/cslib-frontier/pull/5335), agreed on 39 as bags of rows, including joins with duplicate and `NULL` keys,
-`NULL` in `WHERE`, `IN` and `NOT IN` (also with an empty list), `UNION ALL`, `DISTINCT` with `NULL`
-rows, integer division and remainder with negative operands, and text order. That run is
-evidence, not proof. The other five differ in the expected ways:
+[#5335](https://github.com/cslib-community/cslib-frontier/pull/5335), agreed on 39 as bags of
+rows, including joins with duplicate and `NULL` keys, `NULL` in `WHERE`, `IN` and `NOT IN` (also
+with an empty list), `UNION ALL`, `DISTINCT` with `NULL` rows, integer division and remainder with
+negative operands, and text order. SQLite has no boolean type, so `TRUE` and `FALSE` are the
+integers `1` and `0` there; results were compared after mapping booleans to those integers. That
+run is evidence, not proof. The other five queries differ in three expected ways:
 
 - Division and remainder by zero give `NULL` in SQLite; here they fail with `divisionByZero`, as in
   PostgreSQL.
@@ -407,8 +413,6 @@ evidence, not proof. The other five differ in the expected ways:
   such an operation is a type error, and a well-typed query never raises one
   (`Query.eval_ne_typeMismatch`).
 - SQLite reads an integer as a truth value in `WHERE`; here a predicate must be boolean.
-- SQLite has no boolean type: `TRUE` and `FALSE` are the integers `1` and `0`. Results were
-  compared after mapping booleans to those integers.
 
 SQLite also resolves a column name that occurs twice in one derived table to the first such
 column, where standard SQL and PostgreSQL report an ambiguous reference; `resolveColumn` returns

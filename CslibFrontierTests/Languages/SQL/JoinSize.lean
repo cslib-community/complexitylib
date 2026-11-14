@@ -74,8 +74,8 @@ example : (lr.eval D).toOption.map List.length = some 6 := by decide
 -- By the theorem, for this instance: the join size of the key lists.
 example : (D T.l).filterMap (· 0) = [.int 1, .int 1, .int 1, .int 2] := by decide
 example : ∃ ts, lr.eval D = .ok ts ∧ ts.length = 6 := by
-  obtain ⟨ts, h, hlen⟩ := eval_join_table_eqCols_length_eq_joinSize_filterMap hD
-    (t₁ := T.l) (t₂ := T.r) (i := (0 : Fin 2)) (j := (0 : Fin 2)) rfl
+  obtain ⟨ts, h, hlen⟩ := eval_join_table_eqCols_length_eq_joinSize_filterMap
+    (t₁ := T.l) (t₂ := T.r) 0 0 hD rfl
   exact ⟨ts, h, hlen.trans (by decide)⟩
 
 -- No key is `NULL`, so the structural count agrees.
@@ -87,7 +87,7 @@ example : ∃ ts, lr.eval D = .ok ts ∧ ts.length = joinSize ((D T.l).map (· 0
 example (D' : Database S) (hD' : D'.Conforms) :
     ∃ ts, lr.eval D' = .ok ts ∧
       ts.length = joinSize ((D' T.l).filterMap (· 0)) ((D' T.r).filterMap (· 0)) :=
-  eval_join_table_eqCols_length_eq_joinSize_filterMap hD' rfl
+  eval_join_table_eqCols_length_eq_joinSize_filterMap 0 0 hD' rfl
 
 /-! ### Empty inputs -/
 
@@ -122,13 +122,30 @@ theorem hDNull : DNull.Conforms := by decide
 example : (lr.eval DNull).toOption.map List.length = some 2 := by decide
 example : joinSize ((DNull T.l).filterMap (· 0)) ((DNull T.r).filterMap (· 0)) = 2 := by decide
 example : ∃ ts, lr.eval DNull = .ok ts ∧ ts.length = 2 := by
-  obtain ⟨ts, h, hlen⟩ := eval_join_table_eqCols_length_eq_joinSize_filterMap hDNull
-    (t₁ := T.l) (t₂ := T.r) (i := (0 : Fin 2)) (j := (0 : Fin 2)) rfl
+  obtain ⟨ts, h, hlen⟩ := eval_join_table_eqCols_length_eq_joinSize_filterMap
+    (t₁ := T.l) (t₂ := T.r) 0 0 hDNull rfl
   exact ⟨ts, h, hlen.trans (by decide)⟩
 
 -- Structural equality of datums would also pair each of the two left `NULL` keys with the right
 -- one, counting `2 + 2 = 4`.
 example : joinSize ((DNull T.l).map (· 0)) ((DNull T.r).map (· 0)) = 4 := by decide
+
+/-- `NULL` keys only on the left: keys `NULL, 1, NULL` against `1, 1`. -/
+abbrev DNullLeft : Database S
+  | T.l => [nullRow "a", row 1 "b", nullRow "c"]
+  | T.r => [row 1 "x", row 1 "y"]
+  | T.words => []
+
+theorem hDNullLeft : DNullLeft.Conforms := by decide
+
+-- The right input has no `NULL` key, so the structural count is right: the `NULL` keys meet no
+-- `NULL` on the right, and the join has `1 · 2 = 2` rows.
+example : (lr.eval DNullLeft).toOption.map List.length = some 2 := by decide
+example : ∃ ts, lr.eval DNullLeft = .ok ts ∧ ts.length = 2 := by
+  obtain ⟨ts, h, hlen⟩ := eval_join_eqCols_length_eq_joinSize 0 0 (eval_table DNullLeft T.l)
+    (eval_table DNullLeft T.r) (fun r hr => hDNullLeft T.l r hr 0)
+    (fun s hs => hDNullLeft T.r s hs 0) (.inr (by decide))
+  exact ⟨ts, h, hlen.trans (by decide)⟩
 
 /-- The null-safe predicate `l.k = r.k OR (l.k IS NULL AND r.k IS NULL)`, standard SQL's
 `l.k IS NOT DISTINCT FROM r.k`. -/
@@ -183,6 +200,7 @@ theorem es_safe : ∀ i, (es i).IsSafe (S.ctx T.l) := by decide
 /-- The derived table has the types `tag text, k1 int`. -/
 theorem es_typeOf : ∀ i, (es i).typeOf (S.ctx T.l) = some (![.text, .int] i) := by decide
 
+-- Once #5337 lands, this is an instance of its general law `Query.select_project`.
 /-- The rewrite is an ordered equivalence: on every conforming instance both queries return the
 same list of rows. -/
 theorem before_equiv_after : Equiv .ordered before after := by
