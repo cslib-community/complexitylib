@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.Consistency
 import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
 import CslibFrontier.Foundations.Data.List.Counting
+import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import CslibFrontier.Probability.Coding.PrefixFreeEntropy
 import CslibFrontier.Probability.Coding.SetSeparator
 import CslibFrontier.Probability.Conditioning
@@ -66,62 +67,6 @@ open Cslib.CellProbe Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.BitString Cslib.Probability Cslib.Probability.Coding InformationTheory
 open scoped BigOperators ENNReal
 
-private theorem prefix_append_of_length_eq {α : Type*} {u₁ u₂ v₁ v₂ : List α}
-    (hlen : u₁.length = u₂.length) (hp : u₁ ++ v₁ <+: u₂ ++ v₂) : u₁ = u₂ ∧ v₁ <+: v₂ := by
-  obtain ⟨w, hw⟩ := hp; rw [List.append_assoc] at hw
-  obtain ⟨rfl, hw'⟩ := List.append_inj hw hlen; exact ⟨rfl, ⟨w, hw'⟩⟩
-
-private theorem prefix_append_of_isPrefixFree {α : Type*} {S : Set (List α)}
-    (hpf : IsPrefixFree S) {u₁ u₂ v₁ v₂ : List α}
-    (hu₁ : u₁ ∈ S) (hu₂ : u₂ ∈ S) (hp : u₁ ++ v₁ <+: u₂ ++ v₂) : u₁ = u₂ ∧ v₁ <+: v₂ := by
-  obtain ⟨w, hw⟩ := hp
-  rw [List.append_assoc] at hw
-  obtain ⟨rfl, hw'⟩ := append_inj_of_isPrefixFree hpf hu₁ hu₂ hw
-  exact ⟨rfl, ⟨w, hw'⟩⟩
-
-private noncomputable def encodeFintype {α : Type*} [Fintype α] (x : α) : List Bool :=
-  finIdxBits (Fintype.card α) (Fintype.equivFin α x)
-
-private theorem length_encodeFintype {α : Type*} [Fintype α] (x : α) :
-    (encodeFintype x).length = Nat.clog 2 (Fintype.card α) := length_finIdxBits (Fintype.card α) _
-
-private theorem encodeFintype_injective {α : Type*} [Fintype α] :
-    Function.Injective (encodeFintype (α := α)) :=
-  (finIdxBits_injective (Fintype.card α)).comp (Fintype.equivFin α).injective
-
-open Classical in
-private noncomputable def encodeMemFinset {β : Type*} (F : Finset β) (K : ℕ) (x : β) : List Bool :=
-  if h : x ∈ F ∧ F.card ≤ K ∧ 0 < K then
-    finIdxBits K (Fin.castLE ((Fintype.card_coe F).trans_le h.2.1) (Fintype.equivFin ↥F ⟨x, h.1⟩))
-  else List.replicate (Nat.clog 2 K) false
-
-private theorem length_encodeMemFinset {β : Type*} (F : Finset β) (K : ℕ) (x : β) :
-    (encodeMemFinset F K x).length = Nat.clog 2 K := by
-  classical simp only [encodeMemFinset]; split_ifs <;> simp
-
-private theorem encodeMemFinset_inj {β : Type*} {F : Finset β} {K : ℕ} {x₁ x₂ : β}
-    (hx₁ : x₁ ∈ F) (hx₂ : x₂ ∈ F) (hcard : F.card ≤ K)
-    (heq : encodeMemFinset F K x₁ = encodeMemFinset F K x₂) : x₁ = x₂ := by
-  classical
-  have hK : 0 < K := (Finset.card_pos.mpr ⟨x₁, hx₁⟩).trans_le hcard
-  have h1 : x₁ ∈ F ∧ F.card ≤ K ∧ 0 < K := ⟨hx₁, hcard, hK⟩
-  have h2 : x₂ ∈ F ∧ F.card ≤ K ∧ 0 < K := ⟨hx₂, hcard, hK⟩
-  simp only [encodeMemFinset, h1, h2] at heq
-  exact congrArg Subtype.val ((Fintype.equivFin ↥F).injective
-    ((Fin.castLE_injective _) (finIdxBits_injective K heq)))
-
-open Classical in
-private noncomputable def encodeRestr {α β : Type*} [Fintype β] (S : Finset α) (f : α → β) :
-    List Bool := encodeFintype (fun x : ↥S => f x.val)
-
-private theorem length_encodeRestr {α β : Type*} [Fintype β] (S : Finset α) (f : α → β) :
-    (encodeRestr S f).length = Nat.clog 2 (Fintype.card β ^ S.card) := by
-  classical rw [encodeRestr, length_encodeFintype, Fintype.card_fun, Fintype.card_coe]
-
-private theorem encodeRestr_inj {α β : Type*} [Fintype β] {S₁ S₂ : Finset α} {f₁ f₂ : α → β}
-    (hS : S₁ = S₂) (heq : encodeRestr S₁ f₁ = encodeRestr S₂ f₂) : ∀ x ∈ S₁, f₁ x = f₂ x := by
-  classical subst hS; intro x hx; exact congrFun (encodeFintype_injective heq) ⟨x, hx⟩
-
 private theorem orderSubset_congr {U m : ℕ} {S₁ S₂ : Finset (Fin U)} {h₁ : S₁.card = m}
     {h₂ : S₂.card = m} {π₁ π₂ : Equiv.Perm (Fin m)} (hS : S₁ = S₂) (hπ : π₁ = π₂) :
     orderSubset S₁ h₁ π₁ = orderSubset S₂ h₂ π₂ := by subst hS; subst hπ; rfl
@@ -148,13 +93,6 @@ private def queryOutAt {U : ℕ} (outs : List (Σ o : Dynamic.Op U, Dynamic.Op.R
     Option ℕ :=
   match outs[3 * r]? with | some ⟨.query _, res⟩ => res | _ => none
 
-private theorem length_runInterval_fst {Op : Type*} {Result : Op → Type} {cells w : ℕ}
-    (D : IndexedScheme Op Result cells w) (t₀ : ℕ) (mem : Mem cells w) (ops : List Op) :
-    (D.runInterval t₀ mem ops).1.length = ops.length := by
-  induction ops generalizing t₀ mem with
-  | nil => rfl
-  | cons _ _ ih => simp [IndexedScheme.runInterval_cons, ih]
-
 private theorem queryOutAt_runInterval {U V m cells w : ℕ}
     (D : IndexedScheme (Dynamic.Op U) Dynamic.Op.Result cells w) (t_start : ℕ) (mem : Mem cells w)
     (d b : Fin m → Fin U) (kv : Fin U → Fin V) (r : Fin m) :
@@ -175,30 +113,9 @@ private theorem queryOutAt_runInterval {U V m cells w : ℕ}
   rw [hsplit, IndexedScheme.runInterval_append]
   have hlen_c := length_candPrefix d b kv r.isLt.le
   have hlen_l : (D.runInterval t_start mem (candPrefix d b kv r.val)).1.length = 3 * r.val :=
-    (length_runInterval_fst D t_start mem _).trans hlen_c
+    (D.length_runInterval_fst t_start mem _).trans hlen_c
   rw [hlen_c, queryOutAt, List.getElem?_append_right hlen_l.le]
   simp [hlen_l, IndexedScheme.runInterval_cons]
-
-private theorem step_query_eq_state_apply {U V n cells w : ℕ}
-    {D_det : IndexedScheme (Dynamic.Op U) Dynamic.Op.Result cells w}
-    (hcorr : ∀ ops ∈ validHistoriesUpTo U V n (4 * n + 1),
-      (D_det.runSeq ops).1 = ((Dynamic.spec U V n).run (Dictionary.empty U) ops).2)
-    {pref : List (Dynamic.Op U)} (hvh : (Dynamic.spec U V n).ValidHistory (Dictionary.empty U) pref)
-    (hlen : pref.length + 1 ≤ 4 * n + 1) (u : Fin U) :
-    ((D_det.step pref.length (.query u)).run (D_det.runSeq pref).2).1 =
-      ((Dynamic.spec U V n).run (Dictionary.empty U) pref).1 u := by
-  have hmem : pref ++ [Dynamic.Op.query u] ∈ validHistoriesUpTo U V n (4 * n + 1) :=
-    ⟨((Dynamic.spec U V n).validHistory_append (s := Dictionary.empty U) (xs := pref)
-      (ys := [Dynamic.Op.query u])).mpr ⟨hvh, trivial, trivial⟩,
-      by rw [List.length_append]; simpa using hlen⟩
-  have heq := congrArg List.getLast? (hcorr _ hmem)
-  rw [IndexedScheme.runSeq, IndexedScheme.runInterval_append, Nat.zero_add,
-    IndexedScheme.runInterval_cons, IndexedScheme.runInterval_nil, (Dynamic.spec U V n).run_append,
-    StateTransitionSpec.run_cons, StateTransitionSpec.run_nil] at heq
-  dsimp only [Dynamic.spec, Dictionary.empty, StateTransitionSpec.ofFn, Dynamic.step] at heq
-  simp only [List.getLast?_append_of_ne_nil _ (List.cons_ne_nil _ _),
-    List.getLast?_singleton] at heq
-  exact eq_of_heq (Sigma.mk.inj (Option.some.inj heq)).2
 
 private noncomputable def passesDeletionTest {U V m cells w : ℕ}
     (D_det : IndexedScheme (Dynamic.Op U) Dynamic.Op.Result cells w) (step₀ : ℕ)
@@ -287,8 +204,11 @@ private theorem subset_union_of_passesDeletionTest {U V n t₀ m cells w : ℕ}
         rw [IndexedScheme.runSeq, IndexedScheme.runInterval_append, Nat.zero_add, hlen_bef]; rfl
       have hsk_some : (s_k (d_c r₀)).isSome := by
         dsimp only [s_k]
-        rw [← step_query_eq_state_apply hcorr hvh_k (by rw [hlen_k]; omega) (d_c r₀), hlen_k,
-          hmem_seq, ← queryOutAt_runInterval D_det (n + 3 * t₀) C_bef d_c b_c kv r₀, hrun_eq]
+        have hdec := congrFun (decodeDict_runSeq_eq (M := 4 * n) hcorr hvh_k
+          (by rw [hlen_k]; omega)) (d_c r₀)
+        dsimp only [decodeDict] at hdec
+        rw [← hdec, hlen_k, hmem_seq,
+          ← queryOutAt_runInterval D_det (n + 3 * t₀) C_bef d_c b_c kv r₀, hrun_eq]
         exact hqs r₀
       have hd_in_sk : d_c r₀ ∈ Dictionary.dom s_k :=
         Dictionary.mem_dom_iff.mpr (Option.isSome_iff_exists.mp hsk_some)
@@ -370,8 +290,11 @@ private theorem passesDeletionTest_and_queryOutAt_eq {U V n t₀ m cells w : ℕ
     have hmem_r : (D_det.runSeq pref_r).2 =
         (D_det.runInterval (n + 3 * t₀) C_bef (candPrefix d b kv r.val)).2 := by
       rw [IndexedScheme.runSeq, IndexedScheme.runInterval_append, Nat.zero_add, hlen_bef]; rfl
+    have hdec := congrFun (decodeDict_runSeq_eq (M := 4 * n) hcorr hvh_r
+      (by have := r.isLt; rw [hlen_r]; omega)) (d r)
+    dsimp only [decodeDict] at hdec
     rw [hout_eq, queryOutAt_runInterval D_det (n + 3 * t₀) C_bef d b kv r, ← hmem_r, ← hlen_r,
-      step_query_eq_state_apply hcorr hvh_r (by have := r.isLt; rw [hlen_r]; omega) (d r)]
+      hdec]
     exact hval_r r le_rfl
   exact ⟨⟨hcells_eq ▸ hmask, fun r => by rw [hq_eq r]; rfl⟩, hq_eq⟩
 
@@ -515,16 +438,25 @@ private theorem card_cfgTag_fiber {U n m g : ℕ} (c : InnerKeyConfig U n m g)
     have hs := Finset.card_sdiff_add_card_eq_card (Finset.subset_univ (c.K ∪ (c.A ∪ c.B)))
     rw [hS, cfgFiberCard]; simp only [Finset.card_univ, Fintype.card_fin, hu] at hs; omega
   · have hS : (Finset.univ.filter fun x => cfgTag c x = (false, false, false, true)) =
-        c.B \ (c.A ∩ c.B) := by ext x; have := hBK x; have := hDK x; simp [cfgTag]; tauto
+        c.B \ (c.A ∩ c.B) := by
+      ext x; have := hBK x; have := hDK x
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, cfgTag, Prod.mk.injEq,
+        decide_eq_true_eq, decide_eq_false_iff_not, Finset.mem_sdiff, Finset.mem_inter]; tauto
     have hs := Finset.card_sdiff_add_card_eq_card
       (Finset.inter_subset_right (s₁ := c.A) (s₂ := c.B))
     rw [hS, cfgFiberCard]; rw [c.card_inter, c.card_B] at hs; omega
   · have hS : (Finset.univ.filter fun x => cfgTag c x = (false, false, true, false)) =
-        c.A \ (c.A ∩ c.B) := by ext x; have := hAK x; have := hDK x; simp [cfgTag]; tauto
+        c.A \ (c.A ∩ c.B) := by
+      ext x; have := hAK x; have := hDK x
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, cfgTag, Prod.mk.injEq,
+        decide_eq_true_eq, decide_eq_false_iff_not, Finset.mem_sdiff, Finset.mem_inter]; tauto
     have hs := Finset.card_sdiff_add_card_eq_card (Finset.inter_subset_left (s₁ := c.A) (s₂ := c.B))
     rw [hS, cfgFiberCard]; rw [c.card_inter, c.card_A] at hs; omega
   · have hS : (Finset.univ.filter fun x => cfgTag c x = (false, false, true, true)) =
-        c.A ∩ c.B := by ext x; have := hAK x; have := hDK x; simp [cfgTag]; tauto
+        c.A ∩ c.B := by
+      ext x; have := hAK x; have := hDK x
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, cfgTag, Prod.mk.injEq,
+        decide_eq_true_eq, decide_eq_false_iff_not, Finset.mem_inter]; tauto
     rw [hS, cfgFiberCard, c.card_inter]
   · exact hbad fun x h => by
       simp only [decide_eq_true_eq, decide_eq_false_iff_not] at h; exact h.1 (hDK x h.2.1)
@@ -535,7 +467,10 @@ private theorem card_cfgTag_fiber {U n m g : ℕ} (c : InnerKeyConfig U n m g)
   · exact hbad fun x h => by
       simp only [decide_eq_true_eq, decide_eq_false_iff_not] at h; exact h.1 (hDK x h.2.1)
   · have hS : (Finset.univ.filter fun x => cfgTag c x = (true, false, false, false)) =
-        c.K \ c.D := by ext x; have := hAK x; have := hBK x; simp [cfgTag]; tauto
+        c.K \ c.D := by
+      ext x; have := hAK x; have := hBK x
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, cfgTag, Prod.mk.injEq,
+        decide_eq_true_eq, decide_eq_false_iff_not, Finset.mem_sdiff]; tauto
     have hs := Finset.card_sdiff_add_card_eq_card c.D_sub
     rw [hS, cfgFiberCard]; rw [c.card_D, c.card_K] at hs; omega
   · exact hbad fun x h => by
@@ -544,7 +479,9 @@ private theorem card_cfgTag_fiber {U n m g : ℕ} (c : InnerKeyConfig U n m g)
       simp only [decide_eq_true_eq, decide_eq_false_iff_not] at h; exact hAK x h.2.2.1 h.1
   · exact hbad fun x h => by simp only [decide_eq_true_eq] at h; exact hAK x h.2.2.1 h.1
   · have hS : (Finset.univ.filter fun x => cfgTag c x = (true, true, false, false)) = c.D := by
-      ext x; have := hDK x; have := hAK x; have := hBK x; simp [cfgTag]; tauto
+      ext x; have := hDK x; have := hAK x; have := hBK x
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, cfgTag, Prod.mk.injEq,
+        decide_eq_true_eq, decide_eq_false_iff_not]; tauto
     rw [hS, cfgFiberCard, c.card_D]
   · exact hbad fun x h => by
       simp only [decide_eq_true_eq, decide_eq_false_iff_not] at h; exact hBK x h.2.2.2 h.1
@@ -969,63 +906,6 @@ private theorem log_innerPool_budget_le {U V n m g w : ℕ} {γ R t pW : ℝ}
   have hrpow := Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2) hlog_pW
   rwa [Real.rpow_logb (by norm_num) (by norm_num) hpW_pos,
     Real.rpow_logb (by norm_num) (by norm_num) (Real.rpow_pos_of_pos hU_pos _)] at hrpow
-
-open Classical in
-private theorem logb_prob_add_logb_card_le_conditionalEntropy {Ω ObsT TgtT : Type*}
-    [Finite Ω] [Fintype ObsT] [Fintype TgtT] [Nonempty ObsT] [Nonempty TgtT]
-    (μ : PMF Ω) (W : Ω → Bool) (obs : Ω → ObsT) (target : Ω → TgtT) (hW0 : (μ.map W) true ≠ 0)
-    (hmass : ∀ ot : ObsT × TgtT,
-      ((μ.map fun ω => (obs ω, target ω)) ot).toReal ≤ (Fintype.card (ObsT × TgtT) : ℝ)⁻¹) :
-    let p := PMF.conditionalSnd (μ.map fun ω => (W ω, ω)) true
-    Real.logb 2 (((μ.map W) true).toReal) + Real.logb 2 (Fintype.card TgtT) ≤
-      PMF.conditionalEntropy (p.map fun ω => (obs ω, target ω)) := by
-  let _ := Fintype.ofFinite Ω
-  dsimp only
-  have hW_mem : true ∈ ((μ.map fun ω => (W ω, ω)).map Prod.fst).support := by
-    rw [_root_.PMF.map_comp]; exact (_root_.PMF.mem_support_iff _ _).mpr hW0
-  set p : PMF Ω := PMF.conditionalSnd (μ.map fun ω => (W ω, ω)) true
-  set joint_ot : PMF (ObsT × TgtT) := p.map fun ω => (obs ω, target ω)
-  set q : PMF (ObsT × TgtT) := μ.map fun ω => (obs ω, target ω)
-  set pW_real : ℝ := ((μ.map W) true).toReal
-  have hpW_pos : 0 < pW_real := ENNReal.toReal_pos hW0 (PMF.apply_ne_top (μ.map W) true)
-  have hp_le (ω : Ω) : (p ω).toReal ≤ pW_real⁻¹ * (μ ω).toReal := by
-    have hle_enn : p ω ≤ ((μ.map W) true)⁻¹ * μ ω := by
-      rw [PMF.conditionalSnd_apply _ _ hW_mem]
-      have hmap_le : (μ.map fun ω' => (W ω', ω')) (true, ω) ≤ μ ω := by
-        rw [_root_.PMF.map_apply, tsum_fintype]
-        refine (Finset.sum_le_sum (g := fun x => if x = ω then μ x else 0) fun x _ => ?_).trans_eq
-          (by simp)
-        split_ifs with h₁ h₂
-        · rfl
-        · exact (h₂ (Prod.mk.inj h₁).2.symm).elim
-        · exact zero_le
-        · rfl
-      have hfst : (μ.map fun ω' => (W ω', ω')).map Prod.fst = μ.map W := by
-        rw [_root_.PMF.map_comp]; rfl
-      rw [hfst, div_eq_mul_inv, mul_comm]; exact mul_le_mul_right hmap_le _
-    have htop : ((μ.map W) true)⁻¹ * μ ω ≠ ⊤ :=
-      ENNReal.mul_ne_top (ENNReal.inv_ne_top.mpr hW0) (PMF.apply_ne_top μ ω)
-    exact (ENNReal.toReal_mono htop hle_enn).trans_eq
-      (by rw [ENNReal.toReal_mul, ENNReal.toReal_inv])
-  have hj_le (ot : ObsT × TgtT) : (joint_ot ot).toReal ≤ pW_real⁻¹ * (q ot).toReal := by
-    dsimp only [joint_ot, q]; rw [PMF.map_apply_toReal p, PMF.map_apply_toReal μ, Finset.mul_sum]
-    exact Finset.sum_le_sum fun ω _ => by split_ifs <;> [exact hp_le ω; simp]
-  have hcObs : (0 : ℝ) < (Fintype.card ObsT : ℝ) := Nat.cast_pos.mpr Fintype.card_pos
-  have hcTgt : (0 : ℝ) < (Fintype.card TgtT : ℝ) := Nat.cast_pos.mpr Fintype.card_pos
-  have hcard_ot : (Fintype.card ObsT : ℝ) * (Fintype.card TgtT : ℝ) =
-      (Fintype.card (ObsT × TgtT) : ℝ) := by exact_mod_cast (Fintype.card_prod ObsT TgtT).symm
-  have hmin : Real.logb 2 (pW_real * (Fintype.card ObsT : ℝ) * (Fintype.card TgtT : ℝ)) ≤
-      PMF.entropy joint_ot := by
-    refine le_trans ?_ (PMF.minEntropy_le_entropy joint_ot)
-    rw [PMF.le_minEntropy_iff joint_ot]; intro ot
-    rw [Real.rpow_neg (by norm_num), Real.rpow_logb (by norm_num) (by norm_num) (by positivity),
-      mul_assoc pW_real, hcard_ot, mul_inv]
-    exact (hj_le ot).trans (mul_le_mul_of_nonneg_left (hmass ot) (inv_nonneg.mpr hpW_pos.le))
-  have hfst_le : PMF.entropy (joint_ot.map Prod.fst) ≤ Real.logb 2 (Fintype.card ObsT) :=
-    PMF.entropy_le_log_card _
-  rw [Real.logb_mul (mul_pos hpW_pos hcObs).ne' hcTgt.ne',
-    Real.logb_mul hpW_pos.ne' hcObs.ne'] at hmin
-  rw [PMF.conditionalEntropy]; linarith
 
 open Classical in
 private theorem prob_innerPool_eq_le {U V n t₀ m g cells w : ℕ} {γ R t : ℝ}
@@ -1799,7 +1679,13 @@ private theorem prob_and_expect_innerPool_lt_half_le {U V n t₀ m cells w : ℕ
       hcard_pool]
   have hFlt_biUnion (s : HardKeyValSeed U V n) :
       F_lt s = (Finset.range (m / 2)).biUnion (fun g => Fg g s) := by
-    dsimp only [F_lt, Fg]; ext B; simp; tauto
+    dsimp only [F_lt, Fg]; ext B
+    simp only [Finset.mem_filter, Finset.mem_biUnion, Finset.mem_range]
+    constructor
+    · intro ⟨hB, hlt⟩
+      exact ⟨(s.insertedSet t₀ m ht₀ ∩ B).card, hlt, hB, rfl⟩
+    · rintro ⟨g, hg, hB, heq⟩
+      exact ⟨hB, heq ▸ hg⟩
   have hdisj_g (s : HardKeyValSeed U V n) :
       ((Finset.range (m / 2) : Set ℕ)).PairwiseDisjoint (fun g => Fg g s) :=
     fun g₁ _ g₂ _ hne_g => Finset.disjoint_left.mpr fun B h₁ h₂ =>
@@ -2093,8 +1979,9 @@ open Classical in
 (`g < m / 2`) for uniform size-`m` `B ⊆ Finset.univ \ K`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
 
 In the paper setting where `w = Θ(log U)` and `t ≤ c * log(U / n)`, hypothesis `hbudget` corresponds
-to Eq. (14) (p. 24 / PDF p. 25) with `6 * m * t + 11 * m` separator and prefix-free overhead, which
-holds for sufficiently small constant `γ > 0`. -/
+to Lemma 5.1's premise `(1/2) * γ * m * log₂ U ≥ R + 5 * m + 2 * (β + 1) * m * t` (p. 21 / PDF
+p. 22) and Eq. (14) (p. 24 / PDF p. 25) with `6 * m * t + 11 * m` separator and prefix-free
+overhead, which holds for sufficiently small constant `γ > 0`. -/
 theorem prob_isCappedConsistent_section5_le {g : ℕ} (hg : g < m / 2) (ht₀ : t₀ + m ≤ n) :
     (((section5Dist t₀ m g hU hV hm_n hg ht₀).map fun sb =>
       decide (IsSeedConsistent D_det t₀ m ht₀ γ t sb.1 sb.2)) true).toReal ≤
@@ -2115,7 +2002,9 @@ open Classical in
 PDF p. 19 and Section 5.2, p. 25 / PDF p. 26): over `B ⊆ Finset.univ \ K` conditioned on
 `|A ∩ B| < m / 2`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
 
-Under `w = Θ(log U)` and `t ≤ c * log(U / n)`, `hbudget` reflects Eq. (14) (p. 24 / PDF p. 25). -/
+Under `w = Θ(log U)` and `t ≤ c * log(U / n)`, `hbudget` reflects Lemma 5.1's premise
+`(1/2) * γ * m * log₂ U ≥ R + 5 * m + 2 * (β + 1) * m * t` (p. 21 / PDF p. 22) and Eq. (14)
+(p. 24 / PDF p. 25). -/
 theorem prob_isCappedConsistent_section5_lt_half_le (hm : 2 ≤ m) (ht₀ : t₀ + m ≤ n) :
     (((section5LtHalfDist t₀ m hU hV hm hm_n ht₀).map fun sb =>
       decide (IsSeedConsistent D_det t₀ m ht₀ γ t sb.1 sb.2)) true).toReal ≤

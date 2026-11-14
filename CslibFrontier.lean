@@ -5399,6 +5399,7 @@ public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
+public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.IntersectionTail
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
 public import CslibFrontier.Foundations.Combinatorics.InclusionExclusion

@@ -189,7 +189,7 @@ theorem ten_mul_card_filter_card_le_le (n t : ℕ) (h : 100 * (t + 1) ^ 2 ≤ n 
       omega
 
 /-- Below `n / 2`, the binomial coefficients `C(n, k)` increase with `k`. -/
-private theorem choose_le_choose_of_le_of_le_half {n k a : ℕ} (hka : k ≤ a) (ha : a ≤ n / 2) :
+theorem choose_le_choose_of_le_of_le_half {n k a : ℕ} (hka : k ≤ a) (ha : a ≤ n / 2) :
     n.choose k ≤ n.choose a := by
   induction hka using Nat.decreasingInduction with
   | self => exact le_rfl

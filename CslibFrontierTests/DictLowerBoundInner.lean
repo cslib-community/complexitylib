@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.Consistency
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.InnerGame
+import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -432,27 +433,27 @@ theorem inner_game_slotArray_family {e k : ℕ} (he : 20 ≤ e) (hk : 20 * e ≤
     (Finset.card_le_univ _).trans_eq (by simp)
   exact (Nat.cast_le.mpr hle).trans_eq (by rw [hn_eq]; dsimp [t]; push_cast; ring)
 
-theorem h4n_20_400 : 4 * 2 ^ 20 ≤ 2 ^ 400 :=
+private theorem h4n_20_400 : 4 * 2 ^ 20 ≤ 2 ^ 400 :=
   Eq.trans_le (by decide : 4 * 2 ^ 20 = 2 ^ 22)
     (pow_le_pow_right₀ (by decide : 1 ≤ 2) (by decide : 22 ≤ 400))
 
-theorem hm2_19 : 2 ≤ 2 ^ 19 :=
+private theorem hm2_19 : 2 ≤ 2 ^ 19 :=
   le_trans (by decide : 2 ≤ 2 ^ 1) (Nat.pow_le_pow_right Nat.zero_lt_two (by decide : 1 ≤ 19))
 
-theorem hm_n_19_20 : 2 * 2 ^ 19 ≤ 2 ^ 20 :=
+private theorem hm_n_19_20 : 2 * 2 ^ 19 ≤ 2 ^ 20 :=
   (pow_succ' 2 19).symm.le
 
-theorem hm_le_19_20 : 0 + 2 ^ 19 ≤ 2 ^ 20 :=
+private theorem hm_le_19_20 : 0 + 2 ^ 19 ≤ 2 ^ 20 :=
   Eq.trans_le (Nat.zero_add _) (Nat.pow_le_pow_right Nat.zero_lt_two (by decide : 19 ≤ 20))
 
-theorem hm2_pos_19 : 0 < 2 ^ 19 / 2 := by
+private theorem hm2_pos_19 : 0 < 2 ^ 19 / 2 := by
   change 0 < (2 ^ 18 * 2) / 2; rw [Nat.mul_div_cancel _ (by decide)]; positivity
 
 open Classical in
 /-- Closed ground instance at `(e = 20, k = 400)` (`U = 2 ^ 400, n = 2 ^ 20, m = 2 ^ 19`) for both
 Lemma 5.1 (`|A ∩ B| = 0`) and Lemma 4.4 (`|A ∩ B| < m / 2`), plus a `0`-probe adversarial
 non-soundness check on `validHistoriesUpTo`. -/
-theorem section5_inner_game_concrete_and_zero_probe_guard :
+private theorem section5_inner_game_concrete_and_zero_probe_guard :
     (((section5Dist (V := 1) 0 (2 ^ 19) 0 h4n_20_400 le_rfl hm_n_19_20 hm2_pos_19 hm_le_19_20).map
         fun sb => decide (IsSeedConsistent (slotArrayScheme (2 ^ 400) (2 ^ 20) 400 le_rfl).toIndexed
           0 (2 ^ 19) hm_le_19_20 (2 / (20 : ℝ)) 2 sb.1 sb.2)) true).toReal ≤
