@@ -2215,6 +2215,34 @@ duration for both retained and discarded outcomes. From a warm checkout, run:
 scripts/build.sh CslibFrontierTests.RecordedProcess CslibFrontierTests.NativeRecordedRetention
 ```
 
+For a separated one-interaction source filter, import
+`CslibFrontier.Probability.PMF.Interaction`. `queryResponse` samples the actual
+query together with policy-private state, then a complete reply together with
+source-private state from a kernel which sees only the query.
+`conditionalSnd_queryResponse` derives the product of the two conditional private
+laws after a supported query/reply observation. Its source marginal is independent
+of the policy's private query sampler. `conditionalSnd_queryResponse_update` keeps
+that product after randomized local processing which reads the query, reply and
+policy-private state. It does not grant access to source-private state.
+
+The [interaction-filter client](../../CslibFrontierTests/InteractionFilter.lean)
+first derives a persistent source bit's posterior probability of one-third from a
+noisy answer. Fair and deterministic private query choices give the same source
+posterior on their common supported second branch. A fresh private retention coin
+also preserves the full product law. The counterexample drops a readable invoice
+from the observation: the advertised coarse source filter stays fair while a query
+chosen from that invoice identifies the hidden bit. Complete replies must therefore
+include every readable resource or usage field. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.InteractionFilter
+```
+
+This is a one-step invariant. An iterated or native application still has to show
+that its actual state starts with the separated product and that each public
+history retains all information available to the policy. The theorem does not
+establish a common response kernel for arbitrary native competitors by itself.
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches
