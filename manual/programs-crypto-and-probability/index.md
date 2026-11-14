@@ -845,9 +845,22 @@ The checked [discrete retention client](../../CslibFrontierTests/StochasticOracl
 uses geometric responses with unbounded positive-probability support: zero proposes
 the positive-cost singleton cover and positive responses propose nothing. It checks
 the actual retention rule, productivity probability, finite-horizon coverage bound and
-pathwise dual certificate. This removes the finite-alphabet restriction for the
-coverage probability step; arbitrary-discrete cost and native resource assembly
-remain separate obligations.
+pathwise dual certificate.
+
+Import `CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost`
+for the same execution's finite stopped token bill. `accruedBill_eq_sum_discrete`
+is exact tower accounting for the actual `accruedBill` of response-dependent charges.
+`accruedBill_le_binomial_sum_discrete` applies it to `stoppedBill`, bounding expected
+cost by `c` times the finite binomial survival sum. For positive `p`,
+`accruedBill_le_mean_discrete` gives `c * min(n, r / p)`. Realized charges must be
+nonnegative; only reached incomplete histories need the one-turn conditional mean
+bound by finite `c`. Charges can be unbounded and correlated with progress. No
+total-cost bound or integrability is assumed: the resulting finite bound controls
+the nonnegative extended expectation. The same client uses invoice `x + 1`, proves
+its geometric conditional mean is exactly two and its realized values are unbounded,
+and checks both the survival sum and `2 * min(n, 2)` envelope.
+This removes the finite-alphabet restriction for finite-horizon coverage and stopped
+cost. Arbitrary-discrete infinite-path and native resource assembly remain separate.
 
 The [complete reachable-history client](../../CslibFrontierTests/StochasticOracleAdaptiveReachable.lean)
 uses a correlated response law with a null response that poisons subsequent kernels
@@ -938,9 +951,9 @@ certified singleton and succeeds with probability one, and the universal lower
 cost theorem still applies. This checks that the competing class includes policies
 outside the constructive retention algorithm.
 
-Theorem 5 remains incomplete at unrestricted source scope: the cost and infinite-path
-behavioral theorems still use finite response alphabets; the finite-horizon retained
-coverage probability bound above permits arbitrary discrete PMFs. The development
+Theorem 5 remains incomplete at unrestricted source scope: the infinite-path
+behavioral theorems still use finite response alphabets; finite-horizon retained
+coverage and stopped token costs above permit arbitrary discrete PMFs. The development
 does not supply a realization/representation theorem for every encoded
 selection-only PTM or general measurable alphabets. Implemented native controllers
 and their resource theorems are described below; unrestricted encoded-source
