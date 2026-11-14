@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveLowerCost
 
@@ -39,9 +40,6 @@ open Cslib.Optimization.OneConstraint AdaptiveSelection PartialCover Finset Meas
 
 variable {B R J E : Type} [Fintype B] [Fintype R] [Fintype J]
   [DecidableEq J] [DecidableEq E]
-
-/-- Full records retain the chosen batch and its response; `none` is a halt. -/
-abbrev Record (B R : Type) := Option (B × R)
 
 /-- Fixed history-dependent oracle, shared by all competing policies. -/
 structure Oracle (B R J : Type) [Fintype R] where
@@ -78,19 +76,15 @@ further oracle call or information: every later record is the same halt token. -
 
 /-- Proposal decoder for the existing revealed-set and comparison APIs. -/
 @[expose] def proposals (O : Oracle B R J) (h : List (Record B R)) :
-    Record B R → List (Finset J)
-  | none => []
-  | some (b, x) => O.proposed h b x
+    Record B R → List (Finset J) := recordProposals O.proposed h
 
 /-- Token billing stops with the actual policy, independently of retained coverage. -/
-@[expose] def bill (O : Oracle B R J) (h : List (Record B R)) : Record B R → ℝ
-  | none => 0
-  | some (b, x) => O.charge h b x
+@[expose] def bill (O : Oracle B R J) (h : List (Record B R)) : Record B R → ℝ :=
+  recordResource O.charge h
 
 /-- Physical latency of a call record; halt records take no oracle latency. -/
-@[expose] def latency (O : Oracle B R J) (h : List (Record B R)) : Record B R → ℝ
-  | none => 0
-  | some (b, x) => O.duration h b x
+@[expose] def latency (O : Oracle B R J) (h : List (Record B R)) : Record B R → ℝ :=
+  recordResource O.duration h
 
 /-- Whether a record is an issued call, rather than a halt token. -/
 @[expose] def issued (_ : List (Record B R)) (x : Record B R) : Bool := x.isSome
@@ -241,7 +235,8 @@ theorem conditional_means (O : Oracle B R J) (π : Policy B R J) (I : Instance E
         · simp [ha]
         · have hb := H.cost h hh hs a
             (lt_of_le_of_ne ((π.choose h).nonneg _) (Ne.symm ha))
-          simpa only [bill, Option.isSome_some, ite_true, mul_one, mul_comm c, Distribution.mean]
+          simpa only [bill, recordResource, Option.isSome_some, ite_true, mul_one, mul_comm c,
+            Distribution.mean]
             using mul_le_mul_of_nonneg_left hb ((π.choose h).nonneg (some a))
 
 /-- The source revealed-size cap is only needed on supported response branches. -/

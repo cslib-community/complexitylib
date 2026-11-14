@@ -26,8 +26,10 @@ open AdaptiveSelection PartialCover MeasureTheory
 open StochasticOracleAdaptiveSelectionTests (toy)
 open scoped ENNReal
 
-private def half : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by norm_num⟩
-private def law (_ : List ℕ) : PMF ℕ := (ProbabilityTheory.geometricMeasure half).toPMF
+/-- Fair productivity parameter shared with the adaptive batch client. -/
+def half : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by norm_num⟩
+/-- Unbounded geometric response fixture shared with the batch client. -/
+def law (_ : List ℕ) : PMF ℕ := (ProbabilityTheory.geometricMeasure half).toPMF
 private def proposals (_ : List ℕ) (x : ℕ) : List (Finset Unit) :=
   if x = 0 then [{()}] else []
 
@@ -47,12 +49,18 @@ private theorem productive_eq (h : List ℕ) (x : ℕ) :
   by_cases hx : x = 0 <;> by_cases hh : 0 ∈ h <;>
     simp [hx, hh, eq_comm, Instance.covered, toy]
 
-private theorem law_pos (n : ℕ) : 0 < law [] n := by
+/-- Point masses of the shared geometric fixture. -/
+theorem law_apply (h : List ℕ) (n : ℕ) :
+    law h n = ENNReal.ofReal ((1 / 2 : ℝ) ^ n * (1 / 2)) := by
   rw [law, Measure.toPMF_apply, ProbabilityTheory.geometricMeasure_singleton
     (by intro h; have he := congrArg (fun p : Set.Icc (0 : ℝ) 1 => (p : ℝ)) h
         norm_num [half] at he)]
+  norm_num [half]
+
+/-- Every natural response has positive mass under the shared fixture. -/
+theorem law_pos (n : ℕ) : 0 < law [] n := by
+  rw [law_apply]
   apply ENNReal.ofReal_pos.mpr
-  simp only [half, Subtype.coe_mk]
   positivity
 
 example (N : ℕ) : ∃ x ∈ (law []).support, N < x :=
@@ -70,10 +78,7 @@ private theorem envelope (h : List ℕ)
   have he : {x | productive toy 1 proposals 1 h x = true} = {0} := by
     ext x
     simp [productive_eq, hn]
-  rw [he, PMF.toOuterMeasure_apply_singleton, law, Measure.toPMF_apply,
-    ProbabilityTheory.geometricMeasure_singleton
-      (by intro h; have he := congrArg (fun p : Set.Icc (0 : ℝ) 1 => (p : ℝ)) h
-          norm_num [half] at he)]
+  rw [he, PMF.toOuterMeasure_apply_singleton, law_apply]
   norm_num [half]
 
 -- The source endpoint applies at every horizon despite the unbounded response law.
@@ -91,9 +96,11 @@ example (h : List ℕ) :
       ∑ e ∈ toy.covered (selected toy 1 proposals h), toy.dual e := by
   simpa only [one_mul] using selected_bound toy 1 proposals h
 
-private def charge (_ : List ℕ) (x : ℕ) : ℝ := x + 1
+/-- Unbounded response-dependent invoice, shared with the batch client. -/
+def charge (_ : List ℕ) (x : ℕ) : ℝ := x + 1
 
-private theorem charge_mean (h : List ℕ) :
+/-- Exact conditional invoice mean of the shared geometric fixture. -/
+theorem charge_mean (h : List ℕ) :
     (∑' x, law h x * ENNReal.ofReal (charge h x)) = 2 := by
   have hs1 : HasSum (fun n : ℕ => (n : ℝ) * (1 / 2 : ℝ) ^ n) 2 := by
     convert hasSum_coe_mul_geometric_of_norm_lt_one (r := (1 / 2 : ℝ)) (by norm_num) using 1
@@ -106,12 +113,8 @@ private theorem charge_mean (h : List ℕ) :
     · funext n
       ring
     · norm_num
-  have hm (n : ℕ) : law h n = ENNReal.ofReal ((1 / 2 : ℝ) ^ n * (1 / 2)) := by
-    rw [law, Measure.toPMF_apply, ProbabilityTheory.geometricMeasure_singleton
-      (by intro h; have he := congrArg (fun p : Set.Icc (0 : ℝ) 1 => (p : ℝ)) h
-          norm_num [half] at he)]
-    norm_num [half]
-  simp_rw [hm, charge, ← ENNReal.ofReal_mul (by positivity : 0 ≤ (1 / 2 : ℝ) ^ _ * (1 / 2))]
+  simp_rw [law_apply, charge,
+    ← ENNReal.ofReal_mul (by positivity : 0 ≤ (1 / 2 : ℝ) ^ _ * (1 / 2))]
   rw [← ENNReal.ofReal_tsum_of_nonneg (fun _ => by positivity) hs.summable, hs.tsum_eq]
   norm_num
 
