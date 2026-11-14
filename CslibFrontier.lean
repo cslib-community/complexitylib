@@ -6375,6 +6375,7 @@ public import CslibFrontier.Probability.PMF.BindFailure
 public import CslibFrontier.Probability.PMF.Bool
 public import CslibFrontier.Probability.PMF.Chebyshev
 public import CslibFrontier.Probability.PMF.Coin
+public import CslibFrontier.Probability.PMF.Coin.Complement
 public import CslibFrontier.Probability.PMF.Disintegration
 public import CslibFrontier.Probability.PMF.Disintegration.Support
 public import CslibFrontier.Probability.PMF.Event
@@ -6423,6 +6424,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash.ValidatedWords
 public import CslibFrontier.Probability.PeerPrediction.Quadratic
 public import CslibFrontier.Probability.Pinsker
 public import CslibFrontier.Probability.PoissonBinomial
+public import CslibFrontier.Probability.PoissonBinomial.Reflection
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
@@ -6464,6 +6466,7 @@ public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
+public import CslibFrontier.Probability.StochasticDomination.SequentialUpper
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveBinomial
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveComparison

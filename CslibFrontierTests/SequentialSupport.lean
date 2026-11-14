@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticDomination.SequentialSupport
+import CslibFrontier.Probability.StochasticDomination.SequentialUpper
+import CslibFrontier.Probability.PMF.Event
 import Mathlib.Probability.Distributions.Geometric
 import Mathlib.Tactic
 
@@ -13,7 +14,8 @@ import Mathlib.Tactic
 
 Every actual response has an authenticated tag and an independent fair success
 bit. On impossible unauthenticated prefixes the comparison event is empty, so
-the old all-prefix hypothesis is false. Geometric metadata has unbounded support;
+the old all-prefix lower hypothesis is false; its complement similarly violates
+the all-prefix upper hypothesis. Geometric metadata has unbounded support;
 no finite response alphabet is installed for this process.
 -/
 
@@ -118,5 +120,46 @@ example : bad ∉ (PMF.seqProcess step 1).support := by
   intro h
   have he := authenticated 1 bad h 0
   cases he
+
+-- Complementing the event gives an upper-envelope client: the impossible
+-- unauthenticated prefix now has probability one, contradicting the old premise.
+private theorem complement_probability (t : ℕ) (h : Fin t → Response)
+    (hh : h ∈ (PMF.seqProcess step t).support) :
+    ((step t h).toOuterMeasure (event t h)ᶜ).toReal = 1 / 2 := by
+  have ha := PMF.toOuterMeasure_toReal_add_compl (step t h) (event t h)
+  rw [probability t h hh] at ha
+  norm_num at ha ⊢
+  linarith
+
+example : PMF.StochasticallyDominates (PMF.poissonBinomial (List.replicate 3 half))
+    ((PMF.seqProcess step 3).map (PMF.seqCount (fun t h => (event t h)ᶜ) 3)) := by
+  apply PMF.poissonBinomial_replicate_stochasticallyDominates_seqCount_of_support
+  intro t _ h hh
+  rw [complement_probability t h hh]
+  norm_num [half]
+
+example :
+    (((PMF.seqProcess step 3).map (PMF.seqCount (fun t h => (event t h)ᶜ) 3)).toOuterMeasure
+      (Set.Ici 2)).toReal ≤ (ProbabilityTheory.binomial 3 half).real (Set.Ici 2) := by
+  apply PMF.seqCount_toReal_Ici_le_of_support
+  intro t _ h hh
+  rw [complement_probability t h hh]
+  norm_num [half]
+
+example : ¬ (((step 1 bad).toOuterMeasure (event 1 bad)ᶜ).toReal ≤ (half : ℝ)) := by
+  rw [bad_event, Set.compl_empty,
+    (PMF.toOuterMeasure_apply_eq_one_iff _ _).2 (Set.subset_univ _)]
+  norm_num [half]
+
+-- An unattainable threshold has probability zero even with unbounded responses.
+example : ((PMF.seqProcess step 3).map
+    (PMF.seqCount (fun t h => (event t h)ᶜ) 3)).toOuterMeasure (Set.Ici 4) = 0 := by
+  rw [PMF.toOuterMeasure_map_apply]
+  have he : (PMF.seqCount (fun t h => (event t h)ᶜ) 3) ⁻¹' Set.Ici 4 = ∅ := by
+    ext h
+    simp only [Set.mem_preimage, Set.mem_Ici, Set.mem_empty_iff_false, iff_false]
+    have := PMF.seqCount_le (fun t h => (event t h)ᶜ) 3 h
+    omega
+  rw [he, measure_empty]
 
 end CslibFrontierTests.SequentialSupport
