@@ -408,6 +408,14 @@ order. Mirroring a ternary constraint can violate that order. Nullary constraint
 ends, so this order condition is vacuous for them. See [graph rotation tests](../../CslibFrontierTests/RotationSystem.lean)
 and [constraint-order tests](../../CslibFrontierTests/CSPRotationSystem.lean).
 
+`Computability.PolyTime.Graph.RotationSystem` composes plain certificates for binary table
+lookup, unary-clocked walks, inverse-successor face tables and component face counts.
+The walk uses `ComputableInPolyTime.iterateWith_of_bounded_growth`: every successor is a table
+entry or zero, so its encoded length is bounded by the actual encoded table, even on malformed
+input. Binary lookup caps its index at the list length; huge binary names do not fund unary
+iteration. The verifier requires no permutation or validity premise for its runtime certificate.
+
+
 A rotation structure alone does not impose genus zero. The finite-certificate layer in
 `Problems.CSP.RotationSystem.Certificate` checks a supplied rotation table: one binary successor
 index for each of the graph's `2m` indexed darts. It checks exact length, declared endpoints,

@@ -52,16 +52,7 @@ theorem incidenceVertices_polyTime :
   unfold incidenceVertices encGraph
   fun_prop
 
-attribute [local fun_prop] incidenceVertices_polyTime
-
-private theorem getD_polyTime {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool}
-    {table : α → List β} {index : α → ℕ} (fallback : β)
-    (ht : ComputableInPolyTime table input (encList enc))
-    (hi : ComputableInPolyTime index input encNat) :
-    ComputableInPolyTime (fun x => (table x).getD (index x) fallback) input enc :=
-  .of_tidy (ComputableTidilyInPolyTime.listGetD_binary fallback ht.tidy hi.tidy)
-
-attribute [local fun_prop] getD_polyTime
+attribute [local fun_prop] incidenceVertices_polyTime ComputableInPolyTime.listGetD_binary
 
 /-- The table and unary iteration count are paired and framed before the binary start index. -/
 abbrev encRotationWalk := encPair (encPair (encList encNat) encUnary) encNat
@@ -71,18 +62,17 @@ for a unary number of steps, including invalid and oversized table indices. -/
 theorem computableInPolyTime_walk :
     ComputableInPolyTime (fun x : (List ℕ × ℕ) × ℕ => walk x.1.1 x.1.2 x.2)
       encRotationWalk encNat := by
-  have hpar : ComputableTidilyInPolyTime
+  have hpar : ComputableInPolyTime
       (fun x : (List ℕ × ℕ) × ℕ => x.1.1) encRotationWalk (encList encNat) := by
     unfold encRotationWalk
     fun_prop
-  apply ComputableInPolyTime.of_tidy
   unfold walk
-  refine ComputableTidilyInPolyTime.iterateWith_of_bounded_growth
+  refine ComputableInPolyTime.iterateWith_of_bounded_growth
     (count := fun x => x.1.2) (init := fun x => x.2)
     (step := fun table i => table.getD i 0) (encState := encNat) hpar
     (by unfold encRotationWalk; fun_prop) (by unfold encRotationWalk; fun_prop)
-    (ComputableTidilyInPolyTime.listGetD_binary 0
-      (ComputableTidilyInPolyTime.fst _ _) (ComputableTidilyInPolyTime.snd _ _))
+    (ComputableInPolyTime.listGetD_binary 0
+      (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _))
     hpar.polyBounded_length ?_
   intro x state
   have hb : (encNat (x.1.1.getD state 0)).length ≤ (encList encNat x.1.1).length := by
@@ -128,13 +118,9 @@ attribute [local fun_prop] orbitBool_polyTime
 /-- A unary-funded range can be enumerated with binary-encoded entries in polynomial time. -/
 theorem range_binary :
     ComputableInPolyTime List.range encUnary (encList encNat) := by
-  have h := (ComputableTidilyInPolyTime.map
-    ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range
-  have heq : (List.map (fun n : ℕ => n) ∘ List.range) = List.range := by
-    funext n
-    simp
-  rw [heq] at h
-  exact .of_tidy h
+  simpa only [Function.comp_def, List.map_id] using
+    (ComputableInPolyTime.map ComputableInPolyTime.unary_to_binary).comp
+      ComputableInPolyTime.range
 
 private theorem fiberCheck_polyTime :
     ComputableInPolyTime (fun p : (ℕ × List ℕ) × List ℕ =>
@@ -222,11 +208,10 @@ theorem faceTable_polyTime :
       encGraphRotationCertificate (encList encNat) := by
   unfold faceTable encGraphRotationCertificate encGraph
   apply ComputableInPolyTime.mapWithInput (encA := encNat) (range_binary.comp (by fun_prop))
-  apply ComputableInPolyTime.of_tidy
-  apply ComputableTidilyInPolyTime.unary_to_binary.comp
-  exact ComputableTidilyInPolyTime.idxOfWithInput
-    (computableInPolyTime_successor.tidy.comp (by fun_prop))
-    (reverseIndex_polyTime.tidy.comp (ComputableTidilyInPolyTime.snd _ _))
+  apply ComputableInPolyTime.unary_to_binary.comp
+  exact ComputableInPolyTime.idxOfWithInput
+    (computableInPolyTime_successor.comp (by fun_prop))
+    (reverseIndex_polyTime.comp (ComputableInPolyTime.snd _ _))
 
 private theorem faceRepBool_polyTime :
     ComputableInPolyTime (fun p : (ℕ × List ℕ) × ℕ => faceRepBool p.1.1 p.1.2 p.2)
@@ -282,8 +267,7 @@ private theorem faceCount_polyTime :
       (fun p : (Graph × RotationCertificate) × ℕ => 2 * p.1.1.edges.length)
       (encPair encGraphRotationCertificate encNat) encUnary := by
     exact ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-      ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.length (encPair encNat encNat))).comp
+      ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
         (encGraph_edges_polyTime hG₀))
   apply ComputableInPolyTime.countPWithInput (encA := encNat)
     (range_binary.comp hlen)
@@ -294,11 +278,11 @@ private theorem faceCount_polyTime :
       (fun p : ((Graph × RotationCertificate) × ℕ) × ℕ => 2 * p.1.1.1.edges.length)
       (encPair (encPair encGraphRotationCertificate encNat) encNat) encUnary := by
     exact ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-      ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.length (encPair encNat encNat))).comp
+      ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
         (encGraph_edges_polyTime hG))
   exact (componentBool_polyTime hG (by fun_prop)
-    (getD_polyTime 0 (incidenceVertices_polyTime.comp hG) (by fun_prop))).bool_and'
+    (ComputableInPolyTime.listGetD_binary 0
+      (incidenceVertices_polyTime.comp hG) (by fun_prop))).bool_and'
       (faceRepBool_polyTime' hn (faceTable_polyTime.comp
         (g := fun p : ((Graph × RotationCertificate) × ℕ) × ℕ => p.1.1) (by fun_prop))
         (by fun_prop))
