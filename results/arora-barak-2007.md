@@ -87,6 +87,10 @@ The original source's formula-size measure is not automatically encoded bit leng
 - Cook–Levin, TMSAT, three-SAT, independent set, and directed Hamiltonian path (with designated
   endpoints and without) have unconditional polynomial-time completeness results. They are not
   merely abstract reductions with an assumed efficient implementation.
+- Example 2.23's TAUTOLOGY (printed p. 57 / PDF p. 73) is coNP-complete, with Boolean formulas
+  taken as the quantifier-free `QBF ℕ` in the token encoding `encQBF` (`TAUTOLOGY_coNPComplete` in
+  [Tautology.lean](../CslibFrontier/Computability/Complexity/Problems/Tautology.lean)). Hardness
+  again uses a constructed native polynomial-time reduction, from `UNSAT`.
 - The zero-one integer-programming theorem does not prove the draft's general integer-programming
   NP membership. The draft's “clearly in NP” suppresses the small-solution theorem needed there.
 - [#4225](https://github.com/cslib-community/cslib-frontier/issues/4225) owns the small-formula

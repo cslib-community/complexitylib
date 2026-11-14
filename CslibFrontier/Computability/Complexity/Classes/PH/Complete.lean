@@ -18,6 +18,11 @@ A polynomial-time many-one reduction from an NP-complete language to its complem
 This is the general reduction argument behind Exercise 3 of Chapter 5 of the 2007 draft of
 [Arora and Barak][AroraBarak07]. The completeness hypothesis quantifies over all source encodings;
 only one reduction on the fixed complete language is required.
+
+Dually, `NP = coNP` at every encoding exactly when a fixed NP-complete language and a fixed
+coNP-complete language reduce to each other
+(`Cslib.Complexity.NPComplete.NP_eq_coNP_iff_reducible`).
+This is the argument of Exercise 7, Chapter 2 of the 2007 draft, for 3SAT and TAUTOLOGY.
 -/
 
 public section
@@ -45,5 +50,17 @@ theorem NPComplete.NP_eq_coNP_of_reducible_compl (hB : NPComplete encB B)
 theorem NPComplete.PH_eq_NP_of_reducible_compl (hB : NPComplete encB B)
     (h : PolyTimeReducible encB encB B Bᶜ) : PH enc = NP enc :=
   PH_eq_NP_of_coNP_subset_NP fun _ => hB.coNP_subset_NP_of_reducible_compl h
+
+/-- **`NP = coNP` through complete languages.** For an NP-complete `B` and a coNP-complete `C`,
+`NP = coNP` at every encoding exactly when `B` and `C` reduce to each other in polynomial time.
+Only `C ≤ₚ B` is needed for `NP = coNP`. -/
+theorem NPComplete.NP_eq_coNP_iff_reducible {γ : Type} {encC : γ ↪ List Bool} {C : Set γ}
+    (hB : NPComplete encB B) (hC : coNPComplete encC C) :
+    (∀ {δ : Type} (encD : δ ↪ List Bool), NP encD = coNP encD) ↔
+      PolyTimeReducible encB encC B C ∧ PolyTimeReducible encC encB C B := by
+  refine ⟨fun h => ⟨hC.2 encB B ((h encB).subset hB.1), hB.2 encC C ((h encC).superset hC.1)⟩,
+    fun ⟨_, hCB⟩ => ?_⟩
+  exact NP_eq_coNP_iff_coNP_subset_NP.mpr fun encD A hA =>
+      ((hC.2 encD A hA).trans hCB).mem_NP hB.1
 
 end Cslib.Complexity
