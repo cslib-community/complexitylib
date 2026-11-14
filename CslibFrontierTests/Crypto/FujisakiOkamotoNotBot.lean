@@ -11,15 +11,17 @@ public import CslibFrontierTests.Crypto.FujisakiOkamoto
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
-# Tests for the ROM IND-CCA theorem of `FO-notbot`
+# Tests for the concrete ROM IND-CCA advantage bound of `FO-notbot`
 
 Exercises `Scheme.indCcaRomAdvantage_le` on two concrete schemes:
-1. `notBotScheme` (`identityPKE` with uniform `Fin 4` messages, `DeltaCorrect 0`, `GammaSpread 0`)
-   against the query-bounded adversary `queryCiphertextGAdv`.
+1. `notBotScheme` (`identityPKE` with uniform `Fin 4` messages and `DeltaCorrect 0`; `identityPKE`
+   is only `0`-spread, which the theorem does not need) against the query-bounded adversary
+   `queryCiphertextGAdv`.
 2. `pairCoinScheme` (`pairCoinPKE` with uniform `Fin 16` messages and coins, uniform `Fin 2` keys,
-   `DeltaCorrect 0`, `GammaSpread 4`) against `probeZeroKeyAdv` (`qG = 0`, `qH = 1`), where the
-   two-stage IND-CPA reduction has advantage `0` and `Scheme.indCcaRomAdvantage_le` yields the
-   non-trivial bound `indCcaRomAdvantage ≤ 3 / 8`.
+   `DeltaCorrect 0`) against `probeZeroKeyAdv` (`qG = 0`, `qH = 1`), where the two-stage IND-CPA
+   reduction has advantage `0` and `Scheme.indCcaRomAdvantage_le` yields the non-trivial bound
+   `indCcaRomAdvantage ≤ 1 / 4`. The `GammaSpread 4` witness `pairCoinPKE_gammaSpread_four` serves
+   the `FO^⊥` client in `CslibFrontierTests.Crypto.FujisakiOkamotoBot`.
 -/
 
 @[expose] public section
@@ -43,22 +45,20 @@ theorem notBotScheme_sampleMsg_uniform :
     ProbComp.eval notBotScheme.sampleMsg = PMF.uniformOfFintype (Fin 4) := by
   simp [notBotScheme]
 
-/-- Instantiating `Scheme.indCcaRomAdvantage_le` with `qG = 1`, `qH = 0`, `δ = 0` and `γ = 0`:
-the IND-CCA advantage of `queryCiphertextGAdv` is at most twice the IND-CPA advantage of the one
-reduction `romCpaReduction` plus `1 / 2 + 2`. -/
+/-- Instantiating `Scheme.indCcaRomAdvantage_le` with `qG = 1`, `qH = 0` and `δ = 0` on the
+`0`-spread `identityPKE`: the IND-CCA advantage of `queryCiphertextGAdv` is at most twice the
+IND-CPA advantage of the one reduction `romCpaReduction` plus `1 / 2`. -/
 example :
     (notBotScheme.indCcaRomAdvantage (.ofDeterministic queryCiphertextGAdv) : ℝ) ≤
       2 * (notBotScheme.pke.cpaAdvantage
-        (notBotScheme.romCpaReduction (.ofDeterministic queryCiphertextGAdv)) : ℝ) +
-        (1 / 2 + 2) := by
+        (notBotScheme.romCpaReduction (.ofDeterministic queryCiphertextGAdv)) : ℝ) + 1 / 2 := by
   refine (notBotScheme.indCcaRomAdvantage_le (.ofDeterministic queryCiphertextGAdv)
     (fun _ => queryCiphertextGAdv_bounds) notBotScheme_sampleMsg_uniform
-    identityPKE_deltaCorrect_zero identityPKE_gammaSpread_zero).trans (le_of_eq ?_)
+    identityPKE_deltaCorrect_zero).trans (le_of_eq ?_)
   simp only [Fintype.card_fin]
   norm_num
-  ring
 
-/-! ### Informative `3 / 8` security-bound client with `γ = 4` and uniform keys -/
+/-! ### Informative `1 / 4` security-bound client with uniform keys -/
 
 /-- Explicit-coin PKE over `Fin 16` with uniform coins `r ← Fin 16`, `Enc(m; r) = (m, r)`, and
 `Dec((m, r)) = some m`. -/
@@ -167,14 +167,14 @@ theorem pairCoinScheme_cpaAdvantage_probeZeroKeyAdv
   rw [ExplicitCoinPKE.cpaAdvantage, Experiment.advantage, heq]
   exact nndist_self _
 
-/-- **Informative security bound (`≤ 3 / 8`)**: with `qG = 0`, `qH = 1`, `δ = 0`, `γ = 4`, and
-`|M| = 16`, `Scheme.indCcaRomAdvantage_le` and `pairCoinScheme_cpaAdvantage_probeZeroKeyAdv`
-bound the ROM IND-CCA advantage of `probeZeroKeyAdv` by `3 / 8`. -/
+/-- **Informative security bound (`≤ 1 / 4`)**: with `qG = 0`, `qH = 1`, `δ = 0` and `|M| = 16`,
+`Scheme.indCcaRomAdvantage_le` and `pairCoinScheme_cpaAdvantage_probeZeroKeyAdv` bound the ROM
+IND-CCA advantage of `probeZeroKeyAdv` by `1 / 4`. -/
 theorem pairCoinScheme_indCcaRomAdvantage_probeZeroKeyAdv_le :
-    (pairCoinScheme.indCcaRomAdvantage (.ofDeterministic probeZeroKeyAdv) : ℝ) ≤ 3 / 8 := by
+    (pairCoinScheme.indCcaRomAdvantage (.ofDeterministic probeZeroKeyAdv) : ℝ) ≤ 1 / 4 := by
   have h := pairCoinScheme.indCcaRomAdvantage_le (.ofDeterministic probeZeroKeyAdv)
     (fun _ => probeZeroKeyAdv_bounds) pairCoinScheme_sampleMsg_uniform
-    pairCoinPKE_deltaCorrect_zero pairCoinPKE_gammaSpread_four
+    pairCoinPKE_deltaCorrect_zero
   rw [Scheme.romCpaReduction, pairCoinScheme_cpaAdvantage_probeZeroKeyAdv] at h
   refine h.trans (le_of_eq ?_)
   simp only [Fintype.card_fin, NNReal.coe_zero]

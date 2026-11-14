@@ -16,8 +16,9 @@ Exercises `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot` and
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.SpreadNecessity` on concrete schemes:
 1. `pairCoinScheme` (`pairCoinPKE` with uniform `Fin 16` messages and coins, uniform `Fin 2` keys,
    `DeltaCorrect 0`, `GammaSpread 4`) against `probeZeroKeyAdv` (`qG = 0`, `qH = 1`, `qD = 0`),
-   where `Scheme.indCcaBotAdvantage_le` yields the tighter bound `indCcaBotAdvantage ≤ 1 / 4`
-   (versus `3 / 8` for `FO-notbot`, since `FO^⊥` has no `2 qH / |M|` fallback seed-guessing term).
+   where `Scheme.indCcaBotAdvantage_le` yields the bound `indCcaBotAdvantage ≤ 1 / 4` (the same
+   value as for `FO-notbot`: `FO^⊥` has no `2 qH / |M|` fallback seed-guessing term but pays
+   `2^{-γ}` terms instead).
 2. `unspreadPointPKE pairCoinPKE 0` and `unspreadScheme pairCoinPKE 0`: `0`-correct, preserves
    fixed-message IND-CPA advantages away from `0`, fails `4`-spreadness, and lets the 1-query
    decapsulation probe `probeDecapsAdv` (`qG = 0`, `qH = 0`, `qD = 1`) distinguish
