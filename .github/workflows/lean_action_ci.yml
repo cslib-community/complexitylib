@@ -228,9 +228,9 @@ jobs:
           test -d .lake/packages
           python3 -B -m unittest scripts/test_check_tidy_surface.py
           python3 -B scripts/check_tidy_surface.py
-      # Security theorems may not assume anything about objects their proofs derive from the
-      # adversary (AGENTS.md, "Security theorems"; #5293). scripts/check_security_premises.py reads
-      # the built .olean files and compares the flagged premises with
+      # Security theorems may not assume anything about objects their proofs construct, from the
+      # adversary or not (AGENTS.md, "Security theorems"; #5293). scripts/check_security_premises.py
+      # reads the built .olean files and compares the flagged premises with
       # scripts/security_premises_baseline.json. Pull requests enforce it in the modules they
       # change, or in every module when they change the checker or its baseline, and print other
       # differences as a notice; merge groups and pushes only report, so a queued pull request is
