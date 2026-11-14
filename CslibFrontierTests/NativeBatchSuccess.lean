@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontierTests.NativeBatchProgress
+import CslibFrontierTests.NativeBatchSingleton
 import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 import Mathlib.Tactic
 
@@ -23,23 +24,7 @@ open Cslib.Probability.StochasticOracle ConcurrentBatch PartialCover AdaptiveSel
 open Cslib.Probability.NativeBatch
 open scoped ENNReal NNReal
 namespace CslibFrontierTests.NativeBatchSuccess
-open CslibFrontierTests.NativeBatchProgress (coverInstance)
-
-/-- One issued turn, unit cutoff and two units of external time. -/
-def limits : Limits 1 := ⟨fun _ => 1, by intro _; norm_num, 2, 1⟩
-
-/-- The single opportunity is a nonempty batch with its empty word preformed. -/
-def batch : Batch 1 := ⟨fun _ => some [], ⟨0, by simp [active]⟩⟩
-
-/-- The oracle returns the unique original set and charges two tokens. -/
-def path : CallTrace := ⟨some (1, encodeFamily ({0} : Finset (Fin 1))),
-  fun _ => 2, by intro _ _ _; exact le_rfl⟩
-
-/-- One deterministic oracle shared across all histories. -/
-def sample : Sampler 1 Unit := fun _ _ => PMF.pure (fun _ => path, ())
-
-/-- The actual accepted source receipt, including its concrete report. -/
-def receipt : Exchange 1 := ConcurrentBatch.observe limits 2 batch (fun _ => path)
+open CslibFrontierTests.NativeBatchSingleton
 
 /-- Native code writes both request bits, issues the batch and writes a covering result. -/
 def machine : MultiTapePTM 0 Bool (Fin 4) Unit where
@@ -201,11 +186,6 @@ theorem terminal_law : NativeUnboundedExecution.terminal machine (environment li
   change (Trace.law limits sample machine 2 start).map _ = _
   rw [law_two, PMF.pure_map]
   rfl
-
-private theorem receipt_proposals : proposals 1 receipt.report = [{0}] := by
-  norm_num [proposals, receipt, ConcurrentBatch.observe, path, limits, batch,
-    CallTrace.report, CallTrace.response, CallTrace.stop, encodeFamily, decodeFamily,
-    List.ofFn_succ, Finset.mem_filter, List.filterMap_cons, List.filterMap_nil]
 
 /-- Successful-output-only admission is proved for every actual finite clock;
 it is not a representation or provenance premise for this concrete client. -/
