@@ -492,7 +492,7 @@ theorem NonCopositive.exists_check_eq_true_iff (M : SymRatMatrix) :
 private theorem computableInPolyTime_rows :
     ComputableInPolyTime SymRatMatrix.rows encSymRatMatrix encRatMatrixRows :=
   ComputableInPolyTime.of_eq (f := SymRatMatrix.rows)
-    (encIn := encSymRatMatrix) (encMid := encRatMatrixRows) fun _ => rfl
+    (encIn := encSymRatMatrix) (encOut := encRatMatrixRows) fun _ => rfl
 
 private theorem computableInPolyTime_commonDenom :
     ComputableInPolyTime SymRatMatrix.commonDenom encSymRatMatrix encIntBin := by
@@ -566,7 +566,7 @@ theorem NonCopositive.computableInPolyTime_check :
   have hlen_eq :
       ComputableInPolyTime (fun x : SymRatMatrix × List ℕ => decide (x.2.length = x.1.rows.length))
         encSymRatMatrixWitness encBool :=
-    (ComputableInPolyTime.decide_eq encUnary).comp
+    (ComputableInDegree.eq encUnary).computableInPolyTime.comp
       (ComputableInPolyTime.prod hp_len_unary hn_unary)
   have hp_int :
       ComputableInPolyTime (fun x : SymRatMatrix × List ℕ => x.2.map (Nat.cast : ℕ → ℤ))
@@ -968,12 +968,12 @@ private theorem computableInPolyTime_toRows :
   have hk0 :
       ComputableInPolyTime (fun gk : CliqueInstance => decide (gk.m = 0))
         encCliqueInstance encBool :=
-    (ComputableInPolyTime.decide_eq encNat).comp
+    (ComputableInDegree.eq encNat).computableInPolyTime.comp
       (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const 0))
   have hk1 :
       ComputableInPolyTime (fun gk : CliqueInstance => decide (gk.m = 1))
         encCliqueInstance encBool :=
-    (ComputableInPolyTime.decide_eq encNat).comp
+    (ComputableInDegree.eq encNat).computableInPolyTime.comp
       (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const 1))
   have hemp :
       ComputableInPolyTime (fun gk : CliqueInstance => gk.graph.distinctVertices.isEmpty)
@@ -987,7 +987,7 @@ private theorem computableInPolyTime_toRows :
         ComputableInPolyTime
           (fun gk : CliqueInstance => decide (gk.graph.distinctVertices.length = 0))
           encCliqueInstance encBool :=
-      (ComputableInPolyTime.decide_eq encUnary).comp
+      (ComputableInDegree.eq encUnary).computableInPolyTime.comp
         (ComputableInPolyTime.prod hlen (ComputableInPolyTime.const 0))
     exact hdec.of_enc_eq fun gk => by
       simp only [encBool_apply]
@@ -1006,7 +1006,7 @@ private theorem computableInPolyTime_toRows :
     have heq_uv :
         ComputableInPolyTime (fun x : (CliqueInstance × ℕ) × ℕ => decide (x.1.2 = x.2))
           (encPair (encPair encCliqueInstance encNat) encNat) encBool :=
-      (ComputableInPolyTime.decide_eq encNat).comp
+      (ComputableInDegree.eq encNat).computableInPolyTime.comp
         (ComputableInPolyTime.prod
           ((ComputableInPolyTime.snd encCliqueInstance encNat).comp (ComputableInPolyTime.fst _ _))
           (ComputableInPolyTime.snd _ _))
