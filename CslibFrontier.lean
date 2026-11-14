@@ -1685,6 +1685,7 @@ public import CslibFrontier.Computability.Circuit.Quantum.Classical
 public import CslibFrontier.Computability.Circuit.Quantum.Code
 public import CslibFrontier.Computability.Circuit.Quantum.Controlled
 public import CslibFrontier.Computability.Circuit.Quantum.Counter
+public import CslibFrontier.Computability.Circuit.Quantum.EncodingSize
 public import CslibFrontier.Computability.Circuit.Quantum.GateMatrix
 public import CslibFrontier.Computability.Circuit.Quantum.HadamardLayer
 public import CslibFrontier.Computability.Circuit.Quantum.Input
@@ -1716,6 +1717,8 @@ public import CslibFrontier.Computability.Circuit.Quantum.PhaseCode
 public import CslibFrontier.Computability.Circuit.Quantum.PhaseOracle
 public import CslibFrontier.Computability.Circuit.Quantum.RealEncoding
 public import CslibFrontier.Computability.Circuit.Quantum.Reversible
+public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Circuit
+public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Resources
 public import CslibFrontier.Computability.Circuit.Quantum.SuperdenseCoding
 public import CslibFrontier.Computability.Circuit.Quantum.Teleportation
 public import CslibFrontier.Computability.Circuit.Quantum.Uniform
@@ -2717,6 +2720,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Units
 public import CslibFrontier.Computability.Complexity.Problems.SATUNSAT
 public import CslibFrontier.Computability.Complexity.Problems.STCON
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
+public import CslibFrontier.Computability.Complexity.Problems.STCON.Header
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Search
 public import CslibFrontier.Computability.Complexity.Problems.SetCover
@@ -2728,6 +2732,10 @@ public import CslibFrontier.Computability.Complexity.Problems.SharpSAT
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference.PolyTime
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Completeness
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Reduction
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Search
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
 public import CslibFrontier.Computability.Complexity.Problems.TMSAT
@@ -6026,6 +6034,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.IsolatedBasis
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BlockEmbedding
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BranchingProgramDeterminant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
@@ -6355,8 +6364,13 @@ public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 public import CslibFrontier.Languages.Probabilistic.Vector
+public import CslibFrontier.Languages.SQL.Column
+public import CslibFrontier.Languages.SQL.Equiv
+public import CslibFrontier.Languages.SQL.Expr
+public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
 public import CslibFrontier.Languages.SQL.Truth
+public import CslibFrontier.Languages.SQL.Typing
 public import CslibFrontier.Languages.SQL.Value
 public import CslibFrontier.Logics.BooleanClone.Basic
 public import CslibFrontier.Logics.BooleanClone.Classification
@@ -7170,6 +7184,7 @@ public import CslibFrontier.Probability.StochasticDomination
 public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
+public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.SubGaussian
 public import CslibFrontier.Probability.TupleSampler

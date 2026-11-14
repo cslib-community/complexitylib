@@ -12,6 +12,7 @@ public import CslibFrontier.Probability.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Adapted
+public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 
 /-!
@@ -30,4 +31,6 @@ Umbrella module importing the base stochastic-domination toolkit:
   and finite-horizon sequential `PMF` processes).
 * `CslibFrontier.Probability.StochasticDomination.Stopping`: `WithTop ℕ` survival-series
   expectation identity and infinite-horizon stopping-time mean bounds `𝔼[τ] ≤ r / p`.
+* `CslibFrontier.Probability.StochasticDomination.SequentialSupport`: sequential count
+  comparisons whose probability envelopes are required only at supported prefixes.
 -/
