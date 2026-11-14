@@ -318,8 +318,9 @@ complete the concrete word Schnorr reduction and its key-generation/signing appr
 quantitative theorem holds for every such value, with no requirement that it satisfy the witness
 relation. The Schnorr reduction wrappers use zero. This removes the hidden choice of the failure
 output ([#2774](https://github.com/cslib-community/cslib-frontier/issues/2774)); it does not certify
-the reduction's native runtime or its ideal scalar sampling. Replacing the transcript and answer
-defaults in a native implementation still requires a bounded-execution nonexhaustion proof.
+the reduction's native runtime or its ideal scalar sampling. The native pass `schnorrForkPass`
+(below) never uses the transcript and answer defaults: `eval_schnorrForkPass` proves nonexhaustion
+from the forger's call budget `isQueryBounded_savedWordReplay`.
 
 [`SchnorrSignature/WordROM.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/WordROM.lean)
 instantiates that theorem with the actual native word verifier. `schnorrWordSigma` keeps statements
@@ -384,25 +385,6 @@ Checks in [`Crypto/SchnorrNativeROM.lean`](../../CslibFrontierTests/Crypto/Schno
 cover bounded reply prefixes, aliases, malformed outer signatures, a cache hit retaining junk
 entries, and preservation of external state through private nonce sampling.
 
-[`SchnorrSignature/ForkPass.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/ForkPass.lean)
-gives one native pass of the forking reduction, `schnorrForkPass`, for a native forger given by
-its guarded saved-coin replay. It runs the replay against a word-state handler: each call consumes
-one presampled transcript `(t, c, z)`, a signing call programs `(msg, t)` and logs `msg`, and a
-new hash point takes the next presampled answer. A final check decodes and verifies the forgery.
-`isPPTOn_schnorrForkPass` certifies the pass as strict PPT in its full input (the description,
-security parameter, public-key word, saved tape and both banks), for every replay machine; a new
-point after the answers run out is a no-op, which bounds the state growth.
-`eval_schnorrForkPass` proves that on a canonical public key with at least `B` transcripts and
-`B + 1` answers (`B` the saved-coin call budget), the pass returns exactly the named index,
-challenge and response that `forkingAlgorithm` reads from the existing `FiatShamir.forkingProgram`
-for `schnorrWordROMScheme`. Running out of transcripts or answers is ruled out by the budget, not
-assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)). Sampling the
-banks, the second pass and the discrete-log theorem remain
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). Checks in
-[`Crypto/SchnorrForkPass.lean`](../../CslibFrontierTests/Crypto/SchnorrForkPass.lean) cover
-signing points, repeated and junk hash points, answer exhaustion, and fresh, signed and programmed
-forgeries.
-
 [`SchnorrSignature/EncodedROM.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/EncodedROM.lean)
 exposes the same arithmetic as `schnorrEncodedROMScheme`, an instance of the existing shared-ROM
 scheme with word keys and outer signature words. Its key law and scalar-nonce law are explicit:
@@ -422,6 +404,27 @@ the identity public key in the checked order-11 example. The regressions in
 distinct junk-cache entries and distinguish fresh from signed final messages. This completes the
 representation milestone #2742; adaptive actual-sampling error composition, the key-generation
 transport and the native efficient forking reduction remain #581.
+
+[`SchnorrSignature/ForkPass.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/ForkPass.lean)
+gives one native pass of the forking reduction, `schnorrForkPass`, for a native forger given by
+its guarded saved-coin replay. It runs the replay against a word-state handler: each call consumes
+one presampled transcript `(t, c, z)`, a signing call programs `(msg, t)` and logs `msg`, and a
+new hash point takes the next presampled answer. A final check decodes and verifies the forgery.
+`isPPTOn_schnorrForkPass` certifies the pass as strict PPT in its full input (the description,
+security parameter, public-key word, saved tape and both banks), for every replay machine; a new
+point after the answers run out is a no-op, which bounds the state growth.
+`eval_schnorrForkPass` proves that on a canonical public key with at least `B` transcripts and
+`B + 1` answers (`B` the saved-coin call budget), the pass returns exactly the named index,
+challenge and response that `forkingAlgorithm` reads from the existing `FiatShamir.forkingProgram`
+for `schnorrWordROMScheme` and the decoded saved-coin forger `schnorrDecodedForger` of the
+encoded scheme above. Running out of transcripts or answers is ruled out by the budget, not
+assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)). Sampling the
+banks, the second pass and the discrete-log theorem remain
+[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). Checks in
+[`Crypto/SchnorrForkPass.lean`](../../CslibFrontierTests/Crypto/SchnorrForkPass.lean) cover
+signing points (including a repeated signing request), repeated and junk hash points, answer
+exhaustion, fresh, signed and programmed forgeries, and a malformed outer signature word that the
+total pair decoder accepts.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
