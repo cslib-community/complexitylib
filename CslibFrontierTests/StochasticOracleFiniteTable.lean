@@ -4,6 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
 import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.FiniteTable
 import Mathlib.Tactic
 
@@ -16,6 +20,10 @@ response, violating an all-history upper envelope. Exact expectation and support
 bridges let the finite client use the supported sequential comparison directly.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.StochasticOracleFiniteTable
 open Cslib.Probability Cslib.Probability.StochasticOracle
