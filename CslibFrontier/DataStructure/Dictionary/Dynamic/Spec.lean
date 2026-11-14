@@ -8,9 +8,12 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.Nat.Log
 public import CslibFrontier.DataStructure.Dictionary.Spec
 public import Mathlib.Data.Nat.Choose.Basic
 public import Mathlib.Data.Nat.Log
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # Dynamic dictionary specification with deletions and succinct space bounds
@@ -292,5 +295,39 @@ theorem one_le_logLogFactor (n : ℕ) : 1 ≤ logLogFactor n := by
 theorem logLogFactor_mono {m n : ℕ} (h : m ≤ n) : logLogFactor m ≤ logLogFactor n := by
   unfold logLogFactor
   exact Nat.clog_mono_right 2 (Nat.clog_mono_right 2 (max_le_max_right 4 h))
+
+private theorem clog_two_mul_le (x : ℕ) : Nat.clog 2 (2 * x) ≤ Nat.clog 2 x + 1 := by
+  rw [Nat.clog_le_iff_le_pow Nat.one_lt_two, pow_succ']
+  exact Nat.mul_le_mul_left 2 (Nat.le_pow_clog Nat.one_lt_two x)
+
+/-- Scaling bound for `Dynamic.logLogFactor` under 2x epoch size expansion. -/
+theorem logLogFactor_two_mul_le_add_one (n : ℕ) :
+    logLogFactor (2 * n) ≤ logLogFactor n + 1 := by
+  unfold logLogFactor
+  have hm : max (2 * n) 4 ≤ 2 * max n 4 := by omega
+  have hc1 : Nat.clog 2 (max (2 * n) 4) ≤ 2 * Nat.clog 2 (max n 4) := by
+    have hle1 := Nat.clog_mono_right 2 hm
+    have hle2 := clog_two_mul_le (max n 4)
+    have hpos : 1 ≤ Nat.clog 2 (max n 4) := by
+      have h4 := Nat.clog_mono_right 2 (le_max_right n 4)
+      have : Nat.clog 2 4 = 2 := by decide
+      omega
+    omega
+  exact (Nat.clog_mono_right 2 hc1).trans (clog_two_mul_le _)
+
+/-- Quadrupling `n` increases `logLogFactor` by at most `2`. -/
+theorem logLogFactor_four_mul_le_add_two (n : ℕ) :
+    logLogFactor (4 * n) ≤ logLogFactor n + 2 := by
+  have h4 : 4 * n = 2 * (2 * n) := by ring
+  rw [h4]
+  exact (logLogFactor_two_mul_le_add_one (2 * n)).trans
+    (Nat.add_le_add_right (logLogFactor_two_mul_le_add_one n) 1)
+
+/-- Quadrupling `n` increases `logLogFactor` by at most a factor of `4`. -/
+theorem logLogFactor_four_mul_le (n : ℕ) :
+    logLogFactor (4 * n) ≤ 4 * logLogFactor n := by
+  have h1 := logLogFactor_four_mul_le_add_two n
+  have h2 := one_le_logLogFactor n
+  omega
 
 end Cslib.DataStructure.Dictionary.Dynamic
