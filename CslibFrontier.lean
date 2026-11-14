@@ -4742,7 +4742,9 @@ public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Collision
 public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Collision.PolyTime
 public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.PolyTime
 public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Resolve
+public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Resolve.PolyTime
 public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Scan
+public import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Scan.PolyTime
 public import CslibFrontier.Crypto.Primitives.HQC.SupportDensity
 public import CslibFrontier.Crypto.Primitives.HQC.SupportProbability
 public import CslibFrontier.Crypto.Primitives.HQC.SupportSampling
