@@ -1477,7 +1477,8 @@ since it sees the `(2 n + r)`-bit message only through its `n`-bit digest, the l
 probability at most `(1 / 2) ^ n`. Composed with `OneWay.exists_eufCMA` and
 `OneWay.exists_wordEUFCMA`, this gives `HashFamily.exists_eufCMA` and `HashFamily.exists_wordEUFCMA`
 (Katz–Lindell, Theorem 14.16), so the one-way function assumed by
-`OneWay.exists_eufCMA_of_hashFamily` follows from its hash family. Through Merkle–Damgård,
+`OneWay.exists_eufCMA_of_hashFamily` follows from its hash family. Through Merkle–Damgård (the
+one-bit-per-block instance `merkleDamgard`, not the length-strengthened one),
 `CompressionFamily.exists_oneWay` and `CompressionFamily.exists_wordEUFCMA` give the same
 conclusions for `2 n → n` compression families. No converse is claimed.
 
