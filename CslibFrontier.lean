@@ -2631,6 +2631,7 @@ public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitVal
 public import CslibFrontier.Computability.Complexity.Problems.NAEThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Reduction
+public import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Signed
 public import CslibFrontier.Computability.Complexity.Problems.Partition
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.Basic
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.Matching
