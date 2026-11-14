@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 public import CslibFrontier.Computability.Complexity.Problems.Clique
 public import CslibFrontier.Computability.Complexity.Parameterized
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
@@ -485,26 +486,6 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
 
 /-! ### Polynomial-time computability of the bounded builder -/
 
-private theorem computableInPolyTime_takeClause {γ : Type} {encIn : γ ↪ List Bool}
-    {xs : γ → CNF ℕ} {n : γ → ℕ}
-    (hxs : ComputableInPolyTime xs encIn encCNF)
-    (hn : ComputableInPolyTime n encIn encUnary) :
-    ComputableInPolyTime (fun g => (xs g).take (n g)) encIn encCNF := by
-  have hxs' : ComputableTidilyInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
-    (ComputableInPolyTime.of_enc_eq hxs fun _ => rfl).tidy
-  exact ComputableInPolyTime.of_enc_eq
-    (ComputableInPolyTime.of_tidy (hxs'.listTakeWithInput hn.tidy)) fun _ => rfl
-
-private theorem computableInPolyTime_dropClause {γ : Type} {encIn : γ ↪ List Bool}
-    {xs : γ → CNF ℕ} {n : γ → ℕ}
-    (hxs : ComputableInPolyTime xs encIn encCNF)
-    (hn : ComputableInPolyTime n encIn encUnary) :
-    ComputableInPolyTime (fun g => (xs g).drop (n g)) encIn encCNF := by
-  have hxs' : ComputableTidilyInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
-    (ComputableInPolyTime.of_enc_eq hxs fun _ => rfl).tidy
-  exact ComputableInPolyTime.of_enc_eq
-    (ComputableInPolyTime.of_tidy (hxs'.listDropWithInput hn.tidy)) fun _ => rfl
-
 private theorem computableInPolyTime_blockSize {γ : Type} {encIn : γ ↪ List Bool}
     {φ : γ → CNF ℕ} {r : γ → ℕ}
     (hφ : ComputableInPolyTime φ encIn encCNF)
@@ -523,7 +504,8 @@ private theorem computableInPolyTime_block {γ : Type} {encIn : γ ↪ List Bool
     ComputableInPolyTime (fun g => GroupClique.block (φ g) (r g) (i g)) encIn encCNF := by
   have hbs := computableInPolyTime_blockSize hφ hr
   have hoff := ComputableInPolyTime.unary_mul' hi hbs
-  exact computableInPolyTime_takeClause (computableInPolyTime_dropClause hφ hoff) hbs
+  exact ComputableInPolyTime.listTakeWithInput
+    (ComputableInPolyTime.listDropWithInput hφ hoff) hbs
 
 private theorem computableInPolyTime_compat {γ : Type} {encIn : γ ↪ List Bool}
     {vs₁ vs₂ : γ → List ℕ} {a₁ a₂ : γ → ℕ}

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -93,11 +94,11 @@ theorem rowsFirst_polyTime :
   have htake : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
       G.2.vertices.take (min G.2.vertices.length G.1)) (encPair encNat (encDescribed encT))
       (encList (encPair (encList encNat) encT)) :=
-    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hvs.tidy hcap.tidy)
+    ComputableInPolyTime.listTakeWithInput hvs hcap
   have hdrop : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
       G.2.vertices.drop (min G.2.vertices.length G.1)) (encPair encNat (encDescribed encT))
       (encList (encPair (encList encNat) encT)) :=
-    .of_tidy (ComputableTidilyInPolyTime.listDropWithInput hvs.tidy hcap.tidy)
+    ComputableInPolyTime.listDropWithInput hvs hcap
   have hflat {l : ℕ × DescribedNetwork T → List (List ℕ × T)}
       (hl : ComputableInPolyTime l (encPair encNat (encDescribed encT))
         (encList (encPair (encList encNat) encT))) :
