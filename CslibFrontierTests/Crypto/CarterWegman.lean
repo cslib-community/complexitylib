@@ -376,6 +376,30 @@ example {family : List Bool → List Bool → List Bool}
   sufCmaGame_linearHashNonceMAC_toReal_le
     computableInPolyTime_id hfamily n twoQueryNonceMACForger
 
+-- Counter-stateful use: the nonce of counter `j` is the `n`-bit little-endian binary
+-- representation of `j`, so counter `0` is the fixed nonce `0ⁿ` of `prfOneTimeGame`.
+example : BitString.lowBits 3 0 = List.replicate 3 false ∧
+    BitString.lowBits 3 6 = [false, true, true] := by decide
+
+-- The counter-to-nonce reduction is oracle-PPT on a concrete forger, for any polynomial-time
+-- truncation bound.
+example {family : List Bool → List Bool → List Bool}
+    (hfamily : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) :
+    IsOraclePPT encNonceTaggedMessage
+      ((linearHashNonceMAC id family computableInPolyTime_id hfamily).counterForger
+        (fun n ℓ => n + ℓ) twoQueryNonceMACForger) :=
+  NonceMACScheme.isOraclePPT_counterForger (by polytime) isOraclePPT_twoQueryNonceMACForger
+
+-- End-to-end: under a PRF, the two-query forger has negligible success against the
+-- counter-stateful linear-hash Carter–Wegman MAC.
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    Negligible (fun n => Game.succProbability (ProbComp.eval
+      ((linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).counterSufCmaGame
+        twoQueryNonceMACForger n))) :=
+  (hprf.counterSufCma_linearHashNonceMAC computableInPolyTime_id).negligible _
+    isOraclePPT_twoQueryNonceMACForger
+
 /-- Two-query adaptive `Forger` for randomized Carter–Wegman (`MACScheme`): queries `0^n`
 (receiving encoded `(nonce₀, tag₀)` of length at most `2 * n + 2`), queries `1^n` (receiving
 encoded `(nonce₁, tag₁)`), and outputs `(0^n, raw₁)` as its candidate forgery. -/
