@@ -173,6 +173,11 @@ Bare Lake commands still lack this audit. When a local check and CI disagree abo
 trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
+For hosted cache optimizations, measure the merge queue and following `main` run together.
+Include Actions cache and handoff transfer costs, and distinguish a successful handoff from a
+fallback build; a faster publication stage alone does not establish a faster complete cycle
+([profiling](workflows/troubleshooting.md#profile-slow-cache-publication)).
+
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.
 Coordinators check both against the final change. A reasoned finding of no impact is valid;

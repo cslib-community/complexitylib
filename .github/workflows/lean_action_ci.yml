@@ -214,28 +214,9 @@ jobs:
         id: build
         run: lake build --wfail --iofail @cslib-frontier @/mk_all @/checkInitImports @mathlib/lint-style
       - name: "lake test"
-        id: test
         run: lake test --wfail --iofail
       - name: "lake lint"
-        id: lint
         run: lake lint
-      # As lean-action did: keep a successful build even when tests or linting fail. Only `main`
-      # pushes save: each save is about 2.8 GB, and PR or merge-queue copies would evict `main`'s
-      # entry from the 10 GB Actions cache. Other runs restore `main`'s entry through the
-      # restore-keys prefix and fetch anything newer from the remote cache. The default-off
-      # RETAIN_PUBLICATION_ARCHIVES experiment moves this save after publication when the variable
-      # equals true; Actions string comparisons are case-insensitive.
-      - name: Save .lake to the Actions cache
-        if: >-
-          ${{ !cancelled() && vars.RETAIN_PUBLICATION_ARCHIVES != 'true' &&
-              github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
-              steps.lake-cache.outputs.cache-hit != 'true' &&
-              (success() || steps.test.outcome == 'failure' || steps.lint.outcome == 'failure') }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ./.lake
-          key: ${{ steps.lake-cache.outputs.cache-primary-key }}
       # Source hygiene that needs the build outputs: each module's count of public statements that
       # mention tidy computability (#862) must equal its baseline; proofs may use it. See
       # scripts/check_tidy_surface.py. Its tests on a compiled module need Lean, so the Python
@@ -354,6 +335,20 @@ jobs:
       - name: Stage cache publication
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
         run: python3 scripts/cache/publish.py stage "$RUNNER_TEMP/lake-publication"
+      # Retain archives produced by staging alongside the validated build outputs. A later
+      # check or staging failure still leaves reusable outputs, but never authorizes publication.
+      # Cancellation before this point forfeits the snapshot; ordinary cache-save failures warn.
+      - name: Save .lake to the Actions cache
+        if: >-
+          ${{ !cancelled() &&
+              github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
+              steps.lake-cache.outputs.cache-hit != 'true' &&
+              steps.build.outcome == 'success' }}
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ./.lake
+          key: ${{ steps.lake-cache.outputs.cache-primary-key }}
       # Publishers consume this run's own package, never a PR/other-run artifact.
       - name: Hand off staged files to the enabled publishers
         id: upload-publication
@@ -365,20 +360,6 @@ jobs:
           compression-level: 0
           retention-days: 2
           if-no-files-found: error
-      # Default-off experiment: retain archives created by publication staging for the next run.
-      # This is mutually exclusive with the ordinary pre-publication save above. Ordinary
-      # cache-save failures are warnings, so retention is best-effort.
-      - name: Save .lake after cache publication (experiment)
-        if: >-
-          ${{ !cancelled() && vars.RETAIN_PUBLICATION_ARCHIVES == 'true' &&
-              github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
-              steps.lake-cache.outputs.cache-hit != 'true' &&
-              steps.build.outcome == 'success' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ./.lake
-          key: ${{ steps.lake-cache.outputs.cache-primary-key }}
   # Keep the existing required-check context while source-only and Lean validation overlap. The
   # Lean job may prepare an unused publication artifact when source validation fails, but no
   # publisher consumes it unless this aggregator succeeds.
