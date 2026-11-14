@@ -75,6 +75,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
@@ -5788,6 +5789,23 @@ register_result "goldreich-expander-varying-density-hitting" where
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
 
+register_result "linear-space-ne-np" where
+  title := "Book: linear space is not NP"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 3, Exercise 2",
+      locator := "2007 public draft, printed p. 73 / PDF p. 89" },
+    { paper := Book1974, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ne_NP,
+    Cslib.Complexity.DSPACE_pow_ne_of_polyTimeReducible_mem
+  ]
+  scope := "DSPACE encBits (fun n => n) ≠ NP encBits on bit words. DSPACE counts visited work \
+    cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
+    cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
+    polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
+
 register_result "finite-abelian-homomorphism-testing" where
   title := "Finite abelian homomorphism testing and plurality correction"
   topic := "property testing"
@@ -5799,6 +5817,7 @@ register_result "finite-abelian-homomorphism-testing" where
     Cslib.HomomorphismTesting.plurality_add, Cslib.HomomorphismTesting.closeness,
     Cslib.HomomorphismTesting.distance_attained, Cslib.HomomorphismTesting.min_le_rejection]
   scope := "Arbitrary finite additive commutative groups, including trivial groups. Uniform \
-    independent rejection epsilon and attained minimum normalized homomorphism disagreement delta. \
-    Every plurality has mass at least 1-2epsilon; below 1/6 it is a homomorphism with disagreement \
-    at most 2epsilon. Unconditionally epsilon >= min(1/6,delta/2). No efficiency or encoding claim."
+    independent rejection epsilon and attained minimum normalized homomorphism \
+    disagreement delta. Every plurality has mass at least 1-2epsilon; below 1/6 it is \
+    a homomorphism with disagreement at most 2epsilon. Unconditionally epsilon >= \
+    min(1/6,delta/2). No efficiency or encoding claim."
