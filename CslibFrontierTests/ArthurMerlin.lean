@@ -4,19 +4,25 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
+public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
+public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PerfectCompleteness
+public import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Collapse
-import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PH
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
 import CslibFrontier.Computability.Complexity.Classes.BPP
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
-import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 
 /-! Concrete clients for the Arthur–Merlin classes: nonempty classes, satisfiable error-exponent
 conditions and reductions. -/
+
+public section
 
 namespace CslibFrontierTests.ArthurMerlin
 
@@ -118,5 +124,17 @@ example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool �
   obtain ⟨p, q, V, hV, hAM⟩ :=
     mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
   exact ⟨p, q, V, hV, isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent.mp hAM⟩
+
+/-- Perfect soundness (`MAZero = NP`) and perfect completeness (`MA = MAOne`, `AM = AMOne`) for
+concrete problems. -/
+theorem perfectCompleteness_and_perfectSoundness_examples :
+    SAT ∈ MAZero encCNF ∧
+    {w : List Bool | w.headD false = true} ∈ MAOne encBits ∧
+    SAT ∈ AMOne encCNF ∧
+    GraphNonIsomorphism ∈ AMOne encGraphIsomorphism :=
+  ⟨MAZero_eq_NP.symm ▸ SAT.mem_NP,
+   MA_eq_MAOne ▸ head_mem_MA_direct,
+   MAOne_subset_AMOne (MA_eq_MAOne ▸ NP_subset_MA SAT.mem_NP),
+   AM_eq_AMOne ▸ GraphNonIsomorphism.mem_AM⟩
 
 end CslibFrontierTests.ArthurMerlin
