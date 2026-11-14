@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.LinearHash
 public import CslibFrontier.Crypto.Computational.MAC
+public import CslibFrontier.Crypto.Computational.MAC.Counter
 public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
@@ -101,8 +102,10 @@ This module formalizes:
    experiments inside `prfRealGame` and `prfIdealGame` at each parameter `n`, and is uniformly
    strict oracle-PPT (`IsOraclePPT encBool`) whenever the pad test is uniformly strict PPT; for a
    two-stage strict-PPT word-level forger, `wordProbPadTest` builds that test and
-   `isPPTOn_wordProbPadTest` certifies it. These are concrete bounds and certificates only; no
-   asymptotic statement is made for this one-query variant.
+   `isPPTOn_wordProbPadTest` certifies it. These are concrete bounds and certificates only. The
+   pad `F(k, 0ⁿ)` is the first pad of the counter MAC of item 7, so the asymptotic statement for
+   this one-query variant is the one-query case of
+   `PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`.
 6. **Multi-query fresh-nonce PRF-masked Carter–Wegman MAC (`counterSeqHandler`,
    `maskedCounterSlotGame`, `maskedCounterGame`, `maskedCounterStrongGame`,
    `counterPadSeqDistinguisher`, `prfPadSeqDist`, `prfCounterSlotGame`, `prfCounterGame`,
@@ -114,7 +117,9 @@ This module formalizes:
    PRF distinguishing advantage of `prfMultiPadDistinguisher Q nonce test`, for a pad-sequence test
    `test` that the caller supplies together with the equation that it realizes the forger's
    pad-sequence distinguisher (after [BonehShoup2023], Section 7.5, Theorem 7.10). These are
-   concrete bounds only; no asymptotic statement is made for the typed counter games. This models
+   concrete bounds only; no asymptotic statement is made for the typed counter games. The
+   word-level counter MAC is item 7's `PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`.
+   The typed games here model
    the nonce-based Carter–Wegman construction under two restrictions compared to Boneh–Shoup
    Attack Game 7.4: (a) the signer's counter schedule `nonce n i` fixes the nonces rather than
    letting the adversary choose distinct nonces, and (b) `checkCounterSlot` / `checkCounterEUF` /
@@ -129,16 +134,20 @@ This module formalizes:
    `eval_prfRealGame_prfNonceToPrfDistinguisher`,
    `eval_prfIdealGame_prfNonceToPrfDistinguisher_le`, `sufCmaGame_carterWegmanNonceMAC_toReal_le`,
    `PseudorandomFunction.sufCma_carterWegmanNonceMAC`,
-   `PseudorandomFunction.eufCma_carterWegmanNonceMAC`)**: models Boneh–Shoup Attack Game 7.4 and
-   Theorem 7.10 ([BonehShoup2023], Section 7.5.1, p. 274) both information-theoretically and
-   computationally (`NonceMACScheme`), where the adversary adaptively chooses distinct signing
-   nonces `x_i : N` and outputs a candidate forgery `((m', x'), t')` at any (issued or unissued)
-   nonce `x'`, achieving forgery probability at most `max ε (1 / |Y|) ≤ ε + 1 / |Y|` under a random
-   function `rf ← PMF.uniformOfFintype (N → Y)`, and at most `ε.toReal + (2 ^ n)⁻¹` plus the PRF
-   advantage of the explicit oracle-PPT reduction `prfNonceToPrfDistinguisher` for the word-level
-   scheme `carterWegmanNonceMAC`. Asymptotic `NonceMACScheme.SUFCMA` and `NonceMACScheme.EUFCMA`
-   security then follow for every oracle-PPT forger from `PseudorandomFunction family` and
-   `Negligible ε`, given efficient hash-key sampling and hash evaluation.
+   `PseudorandomFunction.eufCma_carterWegmanNonceMAC`,
+   `PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`)**: models Boneh–Shoup Attack
+   Game 7.4 and Theorem 7.10 ([BonehShoup2023], Section 7.5.1, p. 274) both
+   information-theoretically and computationally (`NonceMACScheme`), where the adversary adaptively
+   chooses distinct signing nonces `x_i : N` and outputs a candidate forgery `((m', x'), t')` at
+   any (issued or unissued) nonce `x'`, achieving forgery probability at most
+   `max ε (1 / |Y|) ≤ ε + 1 / |Y|` under a random function `rf ← PMF.uniformOfFintype (N → Y)`,
+   and at most `ε.toReal + (2 ^ n)⁻¹` plus the PRF advantage of the explicit oracle-PPT reduction
+   `prfNonceToPrfDistinguisher` for the word-level scheme `carterWegmanNonceMAC`. Asymptotic
+   `NonceMACScheme.SUFCMA` and `NonceMACScheme.EUFCMA` security then follow for every oracle-PPT
+   forger from `PseudorandomFunction family` and `Negligible ε`, given efficient hash-key sampling
+   and hash evaluation. With the nonce implemented as an `n`-bit counter by a stateful signer
+   (Section 7.5 and the remark after Theorem 7.10), `NonceMACScheme.SUFCMA.counterSufCma` gives
+   `NonceMACScheme.CounterSUFCMA`.
 8. **Randomized Carter–Wegman MAC (`RandomNonceForger`, `randomNonceFnHandler`,
    `randomNonceSimHandler`, `checkRandomNonceSUF`, `checkRandomNonceEUF`,
    `randomNonceStrongGame`, `randomNonceGame`, `randomNonceStrongGame_le`, `randomNonceGame_le`,
@@ -289,8 +298,10 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.eval_prfIdealGame_prfNonceToPrfDistinguisher_le`,
   `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_carterWegmanNonceMAC_toReal_le`,
   `Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC`,
-  `Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC`: full nonce-based Carter–Wegman
-  security (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
+  `Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC`,
+  `Cslib.Crypto.PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`: full nonce-based
+  Carter–Wegman security (Boneh–Shoup Attack Game 7.4 and Theorem 7.10), and its counter-nonce
+  stateful use.
 * `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_randomNonceFnHandler`,
 `Cslib.Crypto.Protocols.CarterWegman.probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler`
   (`ProbOracleComp` lift),
@@ -322,6 +333,7 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_linearHashNonceMAC_toReal_le`,
   `Cslib.Crypto.PseudorandomFunction.sufCma_linearHashNonceMAC`,
   `Cslib.Crypto.PseudorandomFunction.eufCma_linearHashNonceMAC`,
+  `Cslib.Crypto.PseudorandomFunction.counterSufCma_linearHashNonceMAC`,
   `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_linearHashRandomMAC_toReal_le`,
   `Cslib.Crypto.PseudorandomFunction.sufCma_linearHashRandomMAC`,
   `Cslib.Crypto.PseudorandomFunction.eufCma_linearHashRandomMAC`,
@@ -1620,7 +1632,8 @@ distinguishing advantage of `prfMultiPadDistinguisher Q nonce test` at parameter
 unissued counter indices rejected by `checkCounterSlot`). This is a concrete lemma: the caller
 supplies the pad-sequence test together with the equation `htest` that it realizes
 `counterPadSeqDistinguisher seed hash forger`, and no asymptotic statement is made for this typed
-game. -/
+game. The asymptotic counter MAC theorem is
+`PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`. -/
 theorem prfCounterSlotGame_le {n : ℕ} {seed : PMF K} {hash : K → M → BitString n} {ε : ℝ≥0∞}
     (hh : IsDeltaUniversalHash seed hash ε) (hε : ε ≠ ⊤)
     (family : List Bool → List Bool → List Bool)
@@ -3033,6 +3046,32 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC
     (hε : Negligible ε) :
     (carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hprf.polyTime).EUFCMA :=
   (hprf.sufCma_carterWegmanNonceMAC hmsgLen hseed hhash hh hε).eufCma
+
+/-- **Asymptotic counter SUF-CMA security of `carterWegmanNonceMAC`** ([BonehShoup2023],
+Section 7.5 and the remark after Theorem 7.10, p. 274): under the premises of
+`PseudorandomFunction.sufCma_carterWegmanNonceMAC`, a stateful signer that tags its `j`-th message
+under the `n`-bit counter nonce `BitString.lowBits n j`, for at most `2 ^ n` messages, is strongly
+unforgeable against every oracle-PPT forger (`NonceMACScheme.CounterSUFCMA`). The reduction is the
+explicit `NonceMACScheme.counterForger`, certified by `NonceMACScheme.isOraclePPT_counterForger`.
+The first counter nonce is `0ⁿ`, the fixed nonce of `prfOneTimeGame`, so a forgery against that
+one-time MAC is a counter forgery after one signing query. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.counterSufCma_carterWegmanNonceMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
+      (encKeyedInput encBits) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash
+      hprf.polyTime).CounterSUFCMA :=
+  (hprf.sufCma_carterWegmanNonceMAC hmsgLen hseed hhash hh hε).counterSufCma
 
 end Nonce
 
@@ -4736,6 +4775,17 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_linearHashNonceMAC
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
     (linearHashNonceMAC msgLen family hmsgLen hprf.polyTime).EUFCMA :=
   (hprf.sufCma_linearHashNonceMAC hmsgLen).eufCma
+
+/-- **Asymptotic counter SUF-CMA security of `linearHashNonceMAC`** ([BonehShoup2023],
+Section 7.5 and the remark after Theorem 7.10, p. 274): the Boolean-matrix linear hash
+instance of `PseudorandomFunction.counterSufCma_carterWegmanNonceMAC`, whose only assumption is
+that `family` is a `PseudorandomFunction`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.counterSufCma_linearHashNonceMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashNonceMAC msgLen family hmsgLen hprf.polyTime).CounterSUFCMA :=
+  (hprf.sufCma_linearHashNonceMAC hmsgLen).counterSufCma
 
 /-- **Concrete computational randomized Carter–Wegman MAC (`MACScheme`) from Boolean-matrix linear
 hashing (`BitString.LinearHash.wordHash`) and a PRF family `family`**

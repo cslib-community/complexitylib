@@ -22,18 +22,22 @@ The dense-mask theorem supplies a comparison experiment for each efficient seque
 Extraction makes that experiment statistically uniform. Its information budget is the sampler's
 seed length plus `n + 2`, independently of the test's polynomial running-time degree.
 
-The theorem retains all observations and the hash seed. `HasGapWithAdvice.extract_indexed_labels`
-instantiates
-a polynomial repetition schedule and proves its error negligible, leaving only the entropy budget
-and admissible density conditions. A valid index may be chosen arbitrarily at each parameter;
-the efficient reduction handles all indices. The generator must still combine the candidates.
+The theorem retains all observations and the hash seed.
+`HasGapWithAdvice.extract_indexed_labels_of_isPPTOn` instantiates a polynomial repetition schedule
+and proves its error negligible, leaving only the entropy budget and admissible density conditions.
+A valid index may be chosen arbitrarily at each parameter; the efficient reduction handles all
+indices. The generator must still combine the candidates.
 
 ## Main results
 
-* `HasGapWithAdvice.indexed_extracted_advantage_negligible`: dense masks give negligible
-  extraction advantage for any valid choices from a uniformly efficient indexed family.
-* `HasGapWithAdvice.extract_indexed_labels`: the fixed polynomial schedule pays the full
+* `HasGapWithAdvice.indexed_extracted_advantage_negligible_of_isPPTOn`: dense masks give
+  negligible extraction advantage for any valid choices from a uniformly efficient indexed family.
+* `HasGapWithAdvice.extract_indexed_labels_of_isPPTOn`: the fixed polynomial schedule pays the full
   statistical loss.
+
+Both are algebraic helpers, generic in the seed sampler and hash: they assume that the extracted
+test is efficient. `HasGapWithAdvice.extract_indexed_word_labels` discharges that premise with
+`isPPTOn_extractedWordTest`.
 
 ## References
 
@@ -57,8 +61,8 @@ open scoped NNReal
 /-- Label extraction is computationally uniform relative to fixed advice along any valid choices
 from an efficient polynomial-size family. The choices need not be computable: the reduction handles
 all indices uniformly, and only the proof uses the chosen index. Observations and hash seeds stay
-public. -/
-theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : SamplablePair}
+public. An algebraic helper: `htest` assumes that the extracted test is efficient. -/
+theorem HasGapWithAdvice.indexed_extracted_advantage_negligible_of_isPPTOn {pair : SamplablePair}
     {gap : ℕ → ℝ} {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (realization : pair.SeedRealization) (choose : ℕ → ℕ)
     {Seed Output : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)] [∀ n i, Fintype (Output n i)]
@@ -141,7 +145,7 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
     (hhash n (choose n)) hdense (hslack n)
     (fun output => ProbComp.eval (test (n, advice n) (choose n) output))
   rw [← coe_nndist, ← Game.advantage_eq_nndist] at hclose
-  have hcompare := extractLabels_sequence_gap (pair.sample n)
+  have hcompare := extractLabels_sequence_gap_of_extraction_le (pair.sample n)
     (maskedSample (pair.latentSample n)
       (fun value => pair.encode n value.1) Prod.snd mask)
     (count n) (seed n (choose n)) (hash n (choose n)) (test (n, advice n) (choose n)) _ hclose
@@ -171,8 +175,9 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
 /-- The explicit repetition schedule makes any valid indexed label extractor computationally
 uniform relative to fixed advice. Only the proof uses the chosen indices; the sampler, hash, and
 test form one uniformly efficient family. The entropy budget discharges the complete statistical
-error. -/
-theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
+error. An algebraic helper: `htest` assumes that the extracted test is efficient, and
+`extract_indexed_word_labels` discharges it with `isPPTOn_extractedWordTest`. -/
+theorem HasGapWithAdvice.extract_indexed_labels_of_isPPTOn {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (realization : pair.SeedRealization) (choose : ℕ → ℕ)
     {Seed : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)]
@@ -213,8 +218,8 @@ theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : �
           (realization.sampleCount inverseSlack n)
           (seed n (choose n))).bind
             (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
-  apply hpair.indexed_extracted_advantage_negligible realization choose seed hash test htest
-    hcandidates
+  apply hpair.indexed_extracted_advantage_negligible_of_isPPTOn realization choose seed hash test
+    htest hcandidates
     (realization.isPolyTime_sampleCount hslack)
     hnumerator hdensity hchoose hvalid hhash
     (slack := fun n => realization.sampleSlack inverseSlack n)

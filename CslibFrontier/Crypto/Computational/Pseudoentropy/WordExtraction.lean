@@ -169,7 +169,7 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
   let count := realization.sampleCount inverseSlack
   have hcount := realization.isPolyTime_sampleCount hslack
   have hn := (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).fst'
-  have h := hpair.extract_indexed_labels realization choose
+  have h := hpair.extract_indexed_labels_of_isPPTOn realization choose
     (inverseSlack := inverseSlack)
     (fun n i => ProbComp.uniform (BitString (outputBits n i * count n)))
     (fun n i seed bits => LinearHash.hash

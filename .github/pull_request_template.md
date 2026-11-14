@@ -13,7 +13,7 @@ follow AGENTS.md#check-the-api-through-its-callers.
 New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception.
 Computational security theorems follow AGENTS.md#security-theorems: they assume only named
 hardness assumptions, the adversary's class and properties of components the cited result takes as
-given, never anything about a reduction, simulator or extractor derived from the adversary, and
+given, never anything about a reduction, simulator or extractor that the proof constructs, and
 each reduction has an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a circuit-size bound). -->
 
 Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its

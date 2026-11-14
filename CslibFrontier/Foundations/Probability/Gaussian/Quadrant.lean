@@ -62,7 +62,10 @@ formula (d):
 * `ProbabilityTheory.abs_gaussianQuadrant_sub_le_left`,
   `ProbabilityTheory.abs_gaussianQuadrant_sub_le_right`,
   `ProbabilityTheory.abs_gaussianQuadrant_sub_le`,
-  `ProbabilityTheory.lipschitzWith_gaussianQuadrant_diag`: Exercise 11.19 (e).
+  `ProbabilityTheory.lipschitzWith_gaussianQuadrant_diag`,
+  `ProbabilityTheory.lipschitzWith_gaussianQuadrant`: Exercise 11.19 (e).
+* `ProbabilityTheory.continuous_gaussianQuadrant`, `ProbabilityTheory.measurable_gaussianQuadrant`,
+  `Measurable.gaussianQuadrant`: joint continuity and measurability.
 
 ## References
 
@@ -429,6 +432,30 @@ theorem lipschitzWith_gaussianQuadrant_diag {ρ : ℝ} (hρ : |ρ| ≤ 1) :
   refine LipschitzWith.of_dist_le_mul fun α α' => ?_
   rw [Real.dist_eq, Real.dist_eq, NNReal.coe_ofNat, two_mul]
   exact abs_gaussianQuadrant_sub_le hρ α α α' α'
+
+/-- `Λ_ρ` is `2`-Lipschitz on the plane, with the sup metric, for `|ρ| ≤ 1`. -/
+theorem lipschitzWith_gaussianQuadrant {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    LipschitzWith 2 fun q : ℝ × ℝ => gaussianQuadrant ρ q.1 q.2 := by
+  refine LipschitzWith.of_dist_le_mul fun q q' => ?_
+  rw [Real.dist_eq, Prod.dist_eq, Real.dist_eq, Real.dist_eq, NNReal.coe_ofNat, two_mul]
+  exact (abs_gaussianQuadrant_sub_le hρ _ _ _ _).trans
+    (add_le_add (le_max_left _ _) (le_max_right _ _))
+
+/-- `Λ_ρ` is jointly continuous for `|ρ| ≤ 1`. -/
+theorem continuous_gaussianQuadrant {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    Continuous fun q : ℝ × ℝ => gaussianQuadrant ρ q.1 q.2 :=
+  (lipschitzWith_gaussianQuadrant hρ).continuous
+
+/-- `Λ_ρ` is jointly measurable for `|ρ| ≤ 1`. -/
+theorem measurable_gaussianQuadrant {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    Measurable fun q : ℝ × ℝ => gaussianQuadrant ρ q.1 q.2 :=
+  (continuous_gaussianQuadrant hρ).measurable
+
+/-- `x ↦ Λ_ρ(a x, b x)` is measurable for measurable `a`, `b` and `|ρ| ≤ 1`. -/
+theorem _root_.Measurable.gaussianQuadrant {α : Type*} [MeasurableSpace α] {ρ : ℝ}
+    (hρ : |ρ| ≤ 1) {a b : α → ℝ} (ha : Measurable a) (hb : Measurable b) :
+    Measurable fun x => gaussianQuadrant ρ (a x) (b x) :=
+  (measurable_gaussianQuadrant hρ).comp (ha.prodMk hb)
 
 /-! ### Exercise 11.19 (a): halfspaces -/
 
