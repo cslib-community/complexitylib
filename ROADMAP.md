@@ -106,6 +106,8 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
   Then extend it to arbitrary message spaces, prechallenge KEM queries and multiple encapsulation challenges.
 - **Paillier encryption and composite residuosity**: Prove IND-CPA security of Paillier encryption under Decisional Composite Residuosity (Katz–Lindell Theorem 15.13) for the actual word algorithms, with approximate unit sampling and native balanced-modulus generation.
   The homomorphic property of Definition 15.14 needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
+- **Goldwasser–Micali encryption** ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)): Prove IND-CPA security of bitwise multi-bit Goldwasser–Micali encryption over Blum moduli from quadratic residuosity alone, for the actual word algorithms.
+  Do the same for the textbook key generator, which samples the public nonresidue uniformly from `QNR_N^{+1}` using the factorization, without assuming its keys indistinguishable from an ideal law.
 - **Garbled circuits and Yao's protocol** ([#3236](https://github.com/cslib-community/cslib-frontier/issues/3236)): Prove exact correctness and concrete simulation privacy of point-and-permute garbling for arbitrary-basis circuits, with privacy bounded by the sum of `n + size` PRF advantages.
   Prove semi-honest security of Yao's two-party protocol, with oblivious transfer realized by a protocol through an advantage-preserving composition theorem instead of an ideal batched OT oracle, and an asymptotic PPT statement from a word-level pseudorandom function.
   Extensions are output to both parties, and polynomial-time free-XOR and half-gates privacy.
