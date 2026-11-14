@@ -23,8 +23,9 @@ It establishes:
    `w_mul_compactedEpochWords_le_bits`): under `EpochValid U n N`, the live compacted epoch
    footprint formula is at most `Dynamic.succinctWords 1355 441 U V w n` words (`1 · OPT`,
    never `2 · OPT`). The constant `1355` decomposes algebraically as `11 + 1344`, where
-   `11 * n * logLogFactor n` bounds the quotient-bit slack from `N ≤ 4 * n` and
-   `1344 = 16 * 84` bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
+   `11 = 5 + 6` bounds the quotient-bit slack (5 from Feistel quotient/val vs `optBits` and
+   6 from `quotientBits U N ≤ quotientBits U n + 6` via `N ≤ 4 * n`), and `1344 = 16 * 84`
+   bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
    `logLogFactor N ≤ 4 * logLogFactor n` (sharpening e.g. to `≤ 680` remains open in #3167).
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
