@@ -23,11 +23,13 @@ product or representation identity is a premise.
 ## Main definitions
 
 * `Selected`: complete history, selected query, fresh policy state and unchanged source state.
+* `Selected.policyView`: retain the selected policy checkpoint while erasing source state.
 * `select`, `selectionLaw`: actual pre-response selection from a state or finite execution.
 
 ## Main results
 
 * `selectionLaw_factorization`: the actual selected law uses the fixed source history filter.
+* `selectionLaw_joint_factorization`: joint policy-view/source law from that same fixed filter.
 -/
 
 public section
@@ -46,6 +48,10 @@ structure Selected (A B C S : Type) where
   sourceState : S
 
 variable {A B C S : Type}
+
+/-- Retain the selected history, query and fresh policy storage, erasing only source state. -/
+@[expose] def Selected.policyView (selected : Selected A B C S) : Selected A B C Unit :=
+  ⟨selected.history, selected.query, selected.policyState, ()⟩
 
 /-- Run the policy's actual private choice, retaining both newly selected storage
 and the existing source state without making a source draw. -/
@@ -74,5 +80,17 @@ theorem selectionLaw_factorization (policy : Policy A B C) (source : Source A B 
   apply PMF.bind_congr_on_support
   intro c _
   exact PMF.bind_comm _ _ _
+
+/-- The actual joint selected policy view and source state is obtained by sampling
+the view, then the fixed source filter at its retained history. This supports
+further coarsening of policy-side observations without another normalization proof. -/
+theorem selectionLaw_joint_factorization
+    (policy : Policy A B C) (source : Source A B S) (n : ℕ) :
+    (selectionLaw policy source n).map
+        (fun selected => (selected.policyView, selected.sourceState)) =
+      ((selectionLaw policy source n).map Selected.policyView).bind fun view =>
+        (source.filter view.history).map (view, ·) := by
+  simp only [selectionLaw_factorization, PMF.map_bind, PMF.map_comp, Function.comp_def,
+    Selected.policyView, Function.const_def, PMF.map_const, PMF.bind_bind, PMF.pure_bind]
 
 end Cslib.Probability.InteractionProcess
