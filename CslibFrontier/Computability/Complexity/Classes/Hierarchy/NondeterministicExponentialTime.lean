@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.EXP
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalVerifier
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import CslibFrontier.Computability.Complexity.Classes.Time.BoundedExists
 import CslibFrontier.Computability.Complexity.Classes.Time.Verifier
@@ -364,7 +365,6 @@ private theorem exists_computableInO_verifier (k : ℕ) :
   have hfr : ComputableInO frame encBits encBits (fun z => z.length) (fun z => z.length) :=
     ComputableInO.of_linear (.of_frame fun _ => rfl)
   have hw := hun.comp hx
-  have hcode := hun.comp hw
   have hbase := hfr.comp hw
   have hsnoc : ComputableInO (fun p : List Bool × List Bool => p.1 ++ [false])
       (encPair encBits encBits) encBits
@@ -455,39 +455,12 @@ private theorem exists_computableInO_verifier (k : ℕ) :
       decide (Nat.size p.1.length ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
     simp only [Function.comp_apply, horizon, length_frame]
     rfl
-  have hf₁ := ComputableInO.mono_time
-      (hacc.comp (hcode.prod (hsnoc.prod (ComputableInO.snd encBits encBits))))
-      (T' := fun p => cheap k p + accBound D (unframe (unframe p.1), p.1 ++ [false], p.2)) 7
-      fun p => by
-    obtain ⟨hu, hn, h₁, -⟩ := hfacts p
-    simp only [Function.comp_apply] at ⊢
-    have e : 7 * (cheap k p + accBound D (unframe (unframe p.1), p.1 ++ [false], p.2) + 1) =
-        7 * cheap k p + 7 * accBound D (unframe (unframe p.1), p.1 ++ [false], p.2) + 7 := by
-      ring
-    omega
-  have hf₂ := ComputableInO.mono_time ((ComputableInDegree.of_finite (encIn := encBool)
-    (encMid := encBool) (fun b : Bool => !b)).inO_one.comp (hbrute.comp (hcode.prod hbase)))
-      (T' := fun p => cheap k p + 2 ^ (K * ((encPair encBits encBits (unframe (unframe p.1),
-        frame (unframe p.1))).length + certLen k (2 * (unframe p.1).length + 1)))) 7
-      fun p => by
-    obtain ⟨hu, hn, h₁, -⟩ := hfacts p
-    have hb : (encBool ((Cslib.BitString.enumList (certLen k (frame (unframe p.1)).length)).any
-        (accepts (unframe (unframe p.1)) (frame (unframe p.1))))).length = 1 := rfl
-    simp only [Function.comp_apply, hb] at ⊢
-    rw [length_frame]
-    set B := 2 ^ (K * ((encPair encBits encBits (unframe (unframe p.1),
-        frame (unframe p.1))).length + certLen k (2 * (unframe p.1).length + 1)))
-    have e : 7 * (cheap k p + B + 1) = 7 * cheap k p + 7 * B + 7 := by ring
-    omega
-  have hfalse := ComputableInO.mono_time (ComputableInO.const (encIn := encPair encBits encBits)
-    (encMid := encBool) false) (T' := cheap k) 1 fun p => by
-    obtain ⟨hu, hn, h₁, -⟩ := hfacts p; omega
-  have h := hc₀.ite (hc₁.ite hf₁ (hc₂.ite hf₂ hfalse)) hfalse
-  refine ⟨D, K, _, (h.of_enc_eq fun p => ?_).mono_le (fun p => le_of_eq ?_) fun p => le_rfl⟩
-  · congr 1
-    simp only [verifier, Diagonal.lazyVerifier, accepts, Function.comp_apply, decide_eq_true_eq,
-      length_frame]
-  · simp only [Function.comp_apply, decide_eq_true_eq]
+  obtain ⟨S, h⟩ := Diagonal.exists_computableInO_lazyVerifier
+    (β := fun y v => ((frame y ++ v).length + 1) ^ 2)
+    (L := certLen k) (H := horizon k) hacc hbrute hc₀ hc₁ hc₂
+    (fun p => (hfacts p).2.2.1)
+  refine ⟨D, K, S, ?_⟩
+  simpa only [verifier, length_frame] using h
 
 /-- `2 ^ a ≤ 2 ^ b * 2 ^ c` whenever `a ≤ c + b`. -/
 private theorem two_pow_le_two_pow_mul {a b c : ℕ} (h : a ≤ c + b) : 2 ^ a ≤ 2 ^ b * 2 ^ c := by
