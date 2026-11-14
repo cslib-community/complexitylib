@@ -4,8 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+
 import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Deadline
 import CslibFrontier.Probability.PMF.SequentialPrefix
+import CslibFrontier.Probability.PMF.Event
 import CslibFrontierTests.StochasticOracleDiscreteRetention
 import CslibFrontierTests.StochasticOracleSelectionPolicy
 import Mathlib.Tactic
@@ -21,6 +27,10 @@ three decision turns allow at most one call on a successful deadline-one run.
 No token resource is supplied to the deadline theorem.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.DiscreteDeadline
 open Cslib.Probability Cslib.Probability.StochasticOracle
