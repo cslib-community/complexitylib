@@ -281,7 +281,18 @@ not injective, and the checked client exhibits the discarded high tree word. Thi
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
 nor does it prove classical or quantum security.
 
-Falcon's current checked layer is deliberately narrower than a security theorem. Import
+FIPS 202 SHAKE256 ([fips202][fips202]) is implemented in
+[`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) on top of the existing
+generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x` order, applies the
+standard's θ/ρ/π/χ/ι maps and 24 rounds, and exposes byte-aligned `Keccak.shake256` with the
+1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/Keccak.lean) checks the official NIST
+0-bit and 1600-bit-message examples, absorption and squeezing across the 136-byte rate boundary,
+prefix consistency, and the first Falcon-512 KAT's `salt || message` prefix. This is an executable
+specification, not a collision/preimage result, constant-time implementation or FIPS validation.
+
+Falcon's current checked layer ([falcon2020][falcon2020]) is deliberately narrower than a security
+theorem. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
 the NIST-selected Falcon Round 3 submission version 1.2's algebra after hashing and signature
 decoding: `Falcon.reconstructFirst` computes the centered representative of `c - s₂h`,
@@ -296,13 +307,15 @@ finite XOF output prefix; and `Falcon.verifyNistWithXof` injects exactly `salt +
 caller-supplied prefix function before invoking the algebraic verifier. The
 [ordinary-import client](../../CslibFrontierTests/Crypto/Falcon.lean) covers canonical and
 malformed encodings, salt/message layout, rejection sampling, boundary acceptance, and compact
-decoder/hash fixtures derived from the first official Falcon-512 NIST KAT.
+decoder/hash fixtures derived from the first official Falcon-512 NIST KAT. The SHAKE client above
+now checks the concrete 20-byte prefix used by that fixture.
 
-The dependency graph does not yet provide SHAKE-256/Keccak, so the supplied-prefix boundary is not
-a hash implementation and the full KAT is not verified end to end. Public-key decoding, NTRU key
-generation, FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law,
-average-case NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the
-still-developing FIPS 206 remain separate obligations.
+The Falcon frontend deliberately retains a finite XOF-prefix boundary: the concrete SHAKE function
+can supply any requested finite prefix, but the frontend does not choose a universally sufficient
+length for rejection sampling. Full KAT verification, public-key decoding, NTRU key generation,
+FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
+NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the still-developing
+FIPS 206 remain separate obligations.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
@@ -1369,6 +1382,8 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+[falcon2020]: ../sources.md#falcon2020
+[fips202]: ../sources.md#fips202
 [fips203]: ../sources.md#fips203
 [fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
