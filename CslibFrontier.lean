@@ -4632,6 +4632,7 @@ public import CslibFrontier.Crypto.Computational.SchnorrProtocol
 public import CslibFrontier.Crypto.Computational.SchnorrSignature
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.NativeROM
+public import CslibFrontier.Crypto.Computational.SchnorrSignature.StatisticalROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.WordROM
 public import CslibFrontier.Crypto.Computational.Signature
 public import CslibFrontier.Crypto.Computational.Signature.Bridge
