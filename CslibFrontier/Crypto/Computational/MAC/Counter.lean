@@ -76,7 +76,7 @@ honest tags never exceed, so that the reduction is strict oracle PPT for every e
   Section 7.5 and Theorem 7.10.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -113,7 +113,7 @@ issued so far and the issued triples `((msg, nonce), tag)`, most recent first. W
 `j < 2 ^ M.nonceLen n`, the requested message is tagged under the nonce
 `BitString.lowBits (M.nonceLen n) j`, the reply is the word `encPair encBits encBits (nonce, tag)`,
 and the state advances. Afterwards every request receives the empty word and changes nothing. -/
-def counterSigningOracle (n : ℕ) (sk : List Bool) (request : Unit × List Bool) :
+@[expose] def counterSigningOracle (n : ℕ) (sk : List Bool) (request : Unit × List Bool) :
     StateT (ℕ × List ((List Bool × List Bool) × List Bool)) ProbComp (List Bool) := fun state =>
   if state.1 < 2 ^ M.nonceLen n then do
     let nonce := BitString.lowBits (M.nonceLen n) state.1
@@ -127,7 +127,7 @@ def counterSigningOracle (n : ℕ) (sk : List Bool) (request : Unit × List Bool
 counter signing oracle started at `(0, [])`, and accept a candidate `((msg, nonce), tag)` with a
 `M.msgLen n`-bit message and a `M.nonceLen n`-bit nonce that was never issued and that the
 nonce-based verifier accepts. -/
-def counterSufCmaGame (adversary : NonceMACForger) (n : ℕ) : ProbComp Bool := do
+@[expose] def counterSufCmaGame (adversary : NonceMACForger) (n : ℕ) : ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
     (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -139,7 +139,7 @@ def counterSufCmaGame (adversary : NonceMACForger) (n : ℕ) : ProbComp Bool := 
 /-- Strong existential unforgeability of the counter-stateful use of a nonce-based MAC under
 adaptive chosen-message attack ([BonehShoup2023], Section 7.5, with a counter as the nonce)
 against uniform strict oracle-PPT forgers. -/
-def CounterSUFCMA : Prop :=
+@[expose] def CounterSUFCMA : Prop :=
   Game.Indistinguishable
     (fun adversary n => ProbComp.eval (M.counterSufCmaGame adversary n))
     (fun _ _ => PMF.pure false)
@@ -348,13 +348,6 @@ theorem succProbability_counterSufCmaGame_le {bound : ℕ → ℕ → ℕ} {n : 
 
 /-! ### Efficiency of the reduction -/
 
-/-- The `L`-bit counter nonce of a unary counter is plain polynomial-time. -/
-private theorem computableInPolyTime_lowBits_comp {γ : Type} {encIn : γ ↪ List Bool}
-    {L j : γ → ℕ} (hL : ComputableInPolyTime L encIn encUnary)
-    (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun a => BitString.lowBits (L a) (j a)) encIn encBits :=
-  ComputableInPolyTime.bitsLow hL (ComputableInPolyTime.unary_to_binary.comp hj)
-
 /-- Comparing a unary counter with `2 ^ L` is plain polynomial-time. -/
 private theorem computableInPolyTime_lt_two_pow_comp {γ : Type} {encIn : γ ↪ List Bool}
     {L j : γ → ℕ} (hL : ComputableInPolyTime L encIn encUnary)
@@ -363,17 +356,7 @@ private theorem computableInPolyTime_lt_two_pow_comp {γ : Type} {encIn : γ ↪
   ComputableInPolyTime.binary_lt' (ComputableInPolyTime.unary_to_binary.comp hj)
     (ComputableInPolyTime.binary_two_pow.comp hL)
 
-/-- Compose a two-argument unary polynomial-time bound with two unary selectors. -/
-private theorem computableInPolyTime_bound_comp {γ : Type} {encIn : γ ↪ List Bool}
-    {bound : ℕ → ℕ → ℕ} {u v : γ → ℕ}
-    (hbound : ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2)
-      (encPair encUnary encUnary) encUnary)
-    (hu : ComputableInPolyTime u encIn encUnary)
-    (hv : ComputableInPolyTime v encIn encUnary) :
-    ComputableInPolyTime (fun x => bound (u x) (v x)) encIn encUnary :=
-  hbound.comp (hu.prod hv)
-
-attribute [local fun_prop] computableInPolyTime_lowBits_comp computableInPolyTime_lt_two_pow_comp
+attribute [local fun_prop] computableInPolyTime_lt_two_pow_comp
 
 /-- `counterHandler` is strict oracle PPT in the caller `(n, aux)`, the request and the counter,
 for every polynomial-time bound. -/
@@ -388,9 +371,7 @@ private theorem isOraclePPTOn_counterHandler {bound : ℕ → ℕ → ℕ}
   have hnonce := M.nonceLen_polyTime
   unfold counterHandler
   exact IsOraclePPTOn.ite' (by fun_prop)
-    ((IsOraclePPTOn.query_take' () (by fun_prop)
-      (computableInPolyTime_bound_comp hboundPoly (by fun_prop) (by fun_prop))).map_with'
-      (by fun_prop))
+    ((IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)).map_with' (by fun_prop))
     (ComputableInPolyTime.isOraclePPTOn (by fun_prop))
 
 /-- The counter handler's reply and counter growth are bounded by the truncation bound and the
@@ -422,10 +403,6 @@ theorem isOraclePPT_counterForger {bound : ℕ → ℕ → ℕ}
     {adversary : NonceMACForger} (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsOraclePPT encNonceTaggedMessage (M.counterForger bound adversary) := by
   have hnonce := M.nonceLen_polyTime
-  have hb := computableInPolyTime_bound_comp
-    (encIn := encPair (encPair encUnary encBits) encBits)
-    (u := fun pair => pair.1.1) (v := fun pair => pair.2.length)
-    hboundPoly (by fun_prop) (by fun_prop)
   refine ((hadversary.run_interpret_preprocess_open' (prepare := fun c => c)
       (initial := fun _ => (0 : ℕ))
       (resources := fun c w => bound c.1 w.length + 2 * M.nonceLen c.1 + 2)

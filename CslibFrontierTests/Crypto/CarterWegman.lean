@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
@@ -18,6 +20,9 @@ linear hashing over `BitString 2`, instantiates `OneTimeForger`, `CounterForger`
 the one-time, multi-query counter, nonce-based, randomized, and computational (`NonceMACScheme` and
 `MACScheme`) security bounds of `CslibFrontier.Crypto.Protocols.MAC.CarterWegman`.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.CarterWegman
 
@@ -380,6 +385,30 @@ example {family : List Bool → List Bool → List Bool}
 -- representation of `j`, so counter `0` is the fixed nonce `0ⁿ` of `prfOneTimeGame`.
 example : BitString.lowBits 3 0 = List.replicate 3 false ∧
     BitString.lowBits 3 6 = [false, true, true] := by decide
+
+-- The counter signing oracle unfolds in a client: once `2 ^ L` tags are issued, every request
+-- receives the empty word and leaves the state unchanged.
+example (M : NonceMACScheme) (n : ℕ) (sk : List Bool) (request : Unit × List Bool)
+    (issued : List ((List Bool × List Bool) × List Bool)) :
+    M.counterSigningOracle n sk request (2 ^ M.nonceLen n, issued) =
+      pure ([], 2 ^ M.nonceLen n, issued) := by
+  simp [NonceMACScheme.counterSigningOracle]
+
+-- The counter game unfolds in a client: a forger that outputs a message of the wrong length
+-- without querying never wins.
+example (M : NonceMACScheme) (n : ℕ) (msg nonce tag : List Bool) (hmsg : msg.length ≠ M.msgLen n) :
+    ProbComp.eval (M.counterSufCmaGame (fun _ _ => pure ((msg, nonce), tag)) n) =
+      PMF.pure false := by
+  have hbeq : (msg.length == M.msgLen n) = false := beq_false_of_ne hmsg
+  simp only [NonceMACScheme.counterSufCmaGame, OracleComp.interpret_pure, StateT.run_pure,
+    bind_pure_comp, map_pure, hbeq, Bool.false_and, ProbComp.eval_map]
+  exact PMF.map_const _ _
+
+-- `CounterSUFCMA` unfolds in a client to indistinguishability from the always-losing game.
+example (M : NonceMACScheme) (h : M.CounterSUFCMA) :
+    Game.Indistinguishable (fun adversary n => ProbComp.eval (M.counterSufCmaGame adversary n))
+      (fun _ _ => PMF.pure false) (IsOraclePPT encNonceTaggedMessage) :=
+  h
 
 -- The counter-to-nonce reduction is oracle-PPT on a concrete forger, for any polynomial-time
 -- truncation bound.
