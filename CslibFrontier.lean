@@ -3510,6 +3510,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Part
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMN
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.HaltsAt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.InputPrefix
@@ -4637,6 +4638,7 @@ public import CslibFrontier.Crypto.Computational.SchnorrSignature
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.ForkPass
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.NativeROM
+public import CslibFrontier.Crypto.Computational.SchnorrSignature.Security
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.StatisticalROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.WordROM
 public import CslibFrontier.Crypto.Computational.Signature
@@ -4785,6 +4787,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.Broadcast
 public import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
 public import CslibFrontier.Crypto.Protocols.MPC.Composition
 public import CslibFrontier.Crypto.Protocols.MPC.DDHOT
+public import CslibFrontier.Crypto.Protocols.MPC.DDHOT.Family
 public import CslibFrontier.Crypto.Protocols.MPC.IKNP
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender

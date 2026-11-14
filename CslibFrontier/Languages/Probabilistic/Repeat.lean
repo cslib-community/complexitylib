@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Languages.Probabilistic.Basic
+public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Languages.Probabilistic.Semantics
 public import CslibFrontier.Probability.BitString.List
 public import CslibFrontier.Probability.Product
@@ -41,6 +42,7 @@ is certified separately in `Computability.Probabilistic.Repeat`.
 * `Cslib.ProbComp.countTrue_le`: every supported success count respects the trial budget.
 * `Cslib.ProbComp.eval_replicate_of_uniform`: realize the joint law from independent finite seeds.
 * `Cslib.ProbComp.eval_replicate_of_uniformList`: collect independent draws from one flat bit list.
+* `Cslib.ProbComp.eval_replicate_sampleList`: independent fair-bit words form a uniform vector.
 * `Cslib.ProbComp.toOuterMeasure_replicate_forall`: all runs pass a test with the power of the
   one-run probability.
 
@@ -268,6 +270,15 @@ theorem eval_replicate_of_uniformList (count width : ℕ) (program : ProbComp α
   rw [eval_replicate_of_uniform count program _ hseed]
   simpa only [PMF.map_comp, Function.comp_def, List.map_ofFn] using
     (congrArg (PMF.map (List.map evaluate)) (BitString.uniformList_listRows count width)).symm
+
+/-- Independent fair-bit words of length `width` are the words of a uniform vector of bit
+strings. -/
+theorem eval_replicate_sampleList (count width : ℕ) :
+    eval (OracleComp.replicate count (BitString.sampleList width)) =
+      (PMF.uniformOfFintype (Fin count → BitString width)).map
+        fun words => (List.ofFn words).map List.ofFn := by
+  rw [eval_replicate_of_uniform count _ List.ofFn (BitString.eval_sampleList width)]
+  simp only [List.map_ofFn, Function.comp_def]
 
 /-- Every one of `n` independent runs satisfies a test with the `n`-th power of the probability
 of one run. -/

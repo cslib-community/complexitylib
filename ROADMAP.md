@@ -96,7 +96,7 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
 
 ### Public-key, lattice and symmetric constructions ([#640](https://github.com/cslib-community/cslib-frontier/issues/640))
 
-- **Sigma protocols and Fiat–Shamir** ([#581](https://github.com/cslib-community/cslib-frontier/issues/581)): Prove random-oracle EUF-CMA security of Schnorr signatures under discrete log against strict PPT forgers with encoded signing and hash access, by an efficient forking reduction for the actual key-generation and signing algorithms.
+- **Sigma protocols and Fiat–Shamir** ([#581](https://github.com/cslib-community/cslib-frontier/issues/581)): Extend random-oracle EUF-CMA security of Schnorr signatures under discrete log, proved for fixed group families of polynomial description length (one description per security parameter, given to the reduction, with no computability requirement), to random group setups, and certify the generic Fiat–Shamir forking reduction for other Sigma protocols.
   Identification and eavesdropping security do not suffice.
   Its components are [#2672](https://github.com/cslib-community/cslib-frontier/issues/2672), [#2684](https://github.com/cslib-community/cslib-frontier/issues/2684), [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696), [#2708](https://github.com/cslib-community/cslib-frontier/issues/2708), [#2724](https://github.com/cslib-community/cslib-frontier/issues/2724), [#2774](https://github.com/cslib-community/cslib-frontier/issues/2774), and forger replay in [#2579](https://github.com/cslib-community/cslib-frontier/issues/2579), [#2636](https://github.com/cslib-community/cslib-frontier/issues/2636) and [#2652](https://github.com/cslib-community/cslib-frontier/issues/2652).
 - **Lattice signatures from SIS**: Prove random-oracle EUF-CMA security of Lyubashevsky's signatures (2009, 2012) from SIS by a native reduction that receives only `A`, with an efficient secret-free simulator and a security parameter family.
@@ -141,9 +141,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 
 ### Concurrent and quantum security
 
-- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
-  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain sampling, abort, transform and failure obligations, including evolving claims.
-  Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987); machine witnesses [#5285](https://github.com/cslib-community/cslib-frontier/issues/5285)): Faithful protocols and exact concrete/asymptotic quantum reductions for ML-KEM/DSA, SLH/FN-DSA, HQC and active signatures.
+  Concrete endpoints charge constructed-program size and online time, space, randomness, queries and circuits; asymptotic reductions certify uniform polynomial composition.
+  Preserve sampling, abort, transform, failure, controller-layout/relocation and evolving-claim obligations; operational QPPT/QROM security remains open.
 - **FAEST security**: Parsing is [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); row-to-VOLE is [#5246](https://github.com/cslib-community/cslib-frontier/issues/5246). BAVC, QuickSilver, correctness and ROM/QROM security remain.
 - **HQC security** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Connect the finite Theorem 6.3 game hops to classical ([#5290](https://github.com/cslib-community/cslib-frontier/issues/5290)) and native ([#5281](https://github.com/cslib-community/cslib-frontier/issues/5281)) DQCSD assumptions with machine and circuit resource certificates.
   Then complete the sampler/seed model, numerical DFR, the published Theorem 6.4 salted Fujisaki–Okamoto/ROM and KEM endpoint ([#5279](https://github.com/cslib-community/cslib-frontier/issues/5279)), and the separate QROM upgrade ([#5280](https://github.com/cslib-community/cslib-frontier/issues/5280)).

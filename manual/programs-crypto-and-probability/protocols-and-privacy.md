@@ -304,8 +304,8 @@ response and challenge words; no group-membership decoder is assumed. This rejec
 `32` in place of residue `9` in the group modulo `23`, which the previous arithmetic comparison
 normalized. The encoded verification equation, honest completeness and native runtime certificates
 are preserved. Malformed public keys have no encoding-range guarantee. The transport from the
-actual key and nonce samplers to the typed game is given by `StatisticalROM.lean`, described below;
-efficient forking remains [#2568](https://github.com/cslib-community/cslib-frontier/issues/2568).
+actual key and nonce samplers to the typed game is given by `StatisticalROM.lean`, and the
+efficient forking reduction and discrete-log security by `Security.lean`, both described below.
 
 The existing `fiatShamir` and its finite security theorem accept an injective
 `hashPoint : (M × T) ↪ Query`. Signing and final verification query `hashPoint (m, t)`, while
@@ -337,7 +337,7 @@ challenges when `2 ^ m ≤ F.order d`, retaining all other hash words in the sam
 bound is `Qs*(Qs+Qro)/F.order d + (Qro+1)/2^m + sqrt((Qro+1)*ε')`, where `ε'` is the displayed
 forking reduction's discrete-log success. Key and signing scalars use ideal uniform laws. This
 completes the representation milestone [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696).
-The transport from the actual samplers is described below; efficient forking remains open. No
+The transport from the actual samplers and the efficient forking reduction are described below. No
 guarantee is asserted for malformed public keys, and no group decoder is assumed. Concrete
 scalar-alias extraction, rejected commitments, and distinct/repeated junk hash queries are checked
 in
@@ -345,25 +345,23 @@ in
 
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
-EUF-CMA bounds account for both signing queries and random-oracle queries. **Schnorr EUF-CMA
-security under `F.DiscreteLog` is not yet proved.** The asymptotic helper
-`negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction` is not a security theorem:
-it assumes that the forking reduction built from the forger has negligible discrete-logarithm
-success, which `F.DiscreteLog` does not give because that reduction has no efficiency certificate.
-Its forgers are only call-bounded and its scheme uses ideal scalar laws. Applying the strict-PPT
-discrete-logarithm assumption requires an efficient realization of the reduction, with encoded
-adaptive signing/hash access and final-message freshness
-([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
-[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The private-coin
+EUF-CMA bounds account for both signing queries and random-oracle queries. Their forking
+reductions are distribution-level programs, so `F.DiscreteLog` does not apply to them directly; the
+security theorem under `F.DiscreteLog` is in `SchnorrSignature/Security.lean`, described below.
+The earlier asymptotic corollary, which assumed that its own forking reduction has negligible
+discrete-log success, was removed ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
+The private-coin
 prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../CslibFrontier/Computability/Probabilistic/Oracle/Replay.lean), which charges
 full-input replay and retains external state.
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
-also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
-full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
-hash payloads stay distinct. `exists_closeTo_worldGame_schnorrEncodedROMScheme` (below) applies
-it to Schnorr's encoded scheme; certifying the forking reduction remains
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). See the
+names the EUF-CMA game of an actual Boolean-channel word forger, `ROMSignature.wordEufCmaGame`,
+and the asymptotic notion `ROMSignature.EUFCMA`: every uniform oracle-PPT word forger wins with
+negligible probability. It also gives a key-independent saved-coin adapter for such forgers, with
+full-input native replay and equality of `wordEufCmaGame` and the explicit-coin EUF-CMA game. All
+word hash payloads stay distinct. `exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme` (below)
+applies it to the native Schnorr scheme, and `SchnorrSignature/Security.lean` (below) certifies
+the forking reduction built on it. See the
 checked algorithms and typed-ROM examples in
 [`CslibFrontierTests/Crypto/SchnorrSignature.lean`](../../CslibFrontierTests/Crypto/SchnorrSignature.lean).
 
@@ -391,7 +389,9 @@ entries, and preservation of external state through private nonce sampling.
 [`SchnorrSignature/EncodedROM.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/EncodedROM.lean)
 exposes the same arithmetic as `schnorrEncodedROMScheme`, an instance of the existing shared-ROM
 scheme with word keys and outer signature words. Its key law and scalar-nonce law are explicit:
-the actual sampler choices and the ideal uniform choices are not identified. Canonical-key
+the actual sampler choices and the ideal uniform choices are not identified.
+`schnorrNativeROMScheme n d m` is the scheme as the native algorithms run it, with the actual key
+generator `schnorrSigKeyGen` and nonce sampler `sampleExp`. Canonical-key
 per-call laws reuse the native signer/verifier realization, including their complete external
 state. No public-key decoder or additional reply-cap premise is introduced.
 
@@ -412,14 +412,15 @@ moves a forger from the actual key and nonce samplers to the ideal laws in the s
 every raw secret-key word and starting cache and signing log,
 `closeTo_runWith_schnorrEncodedROMScheme` bounds the change in the joint output/cache/log law by
 `Qs / 2^n`: each signing call pays one nonce error, and hash calls pay nothing because their
-transitions are identical. `closeTo_eufCmaGame_schnorrEncodedROMScheme` adds the key-generation
-error and compares the actual game with the canonical ideal word game within `(Qs+1) / 2^n`.
-For a native oracle-PPT forger and a polynomial-time deterministic description function,
-`exists_closeTo_worldGame_schnorrEncodedROMScheme` takes the replay machine and the polynomial
+transitions are identical. `closeTo_eufCmaGame_schnorrNativeROMScheme` adds the key-generation
+error and compares the game of `schnorrNativeROMScheme` with the canonical ideal word game within
+`(Qs+1) / 2^n`. For a native oracle-PPT forger and a deterministic description function whose
+encoded descriptions have polynomial length,
+`exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme` takes the replay machine and the polynomial
 budget `savedCoinBudget` from the saved-coin adapter, so no query cap is assumed
 ([#2764](https://github.com/cslib-community/cslib-frontier/issues/2764)). These are statistical
-hops only; the efficient forking reduction and the discrete-log theorem remain
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). The checks in
+hops only; `SchnorrSignature/Security.lean` (below) adds the efficient forking reduction and
+the discrete-log theorem. The checks in
 [`Crypto/SchnorrStatisticalROM.lean`](../../CslibFrontierTests/Crypto/SchnorrStatisticalROM.lean)
 cover hash-only zero cost, an adaptive full-state bound `1/8` over a populated cache, the
 actual-game error `3/16`, and a native bounded-reply forger.
@@ -437,15 +438,55 @@ point after the answers run out is a no-op, which bounds the state growth.
 challenge and response that `forkingAlgorithm` reads from the existing `FiatShamir.forkingProgram`
 for `schnorrWordROMScheme` and the decoded saved-coin forger `schnorrDecodedForger` of the
 encoded scheme above. Running out of transcripts or answers is ruled out by the budget, not
-assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)). Sampling the
-banks, the second pass and the discrete-log theorem remain
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568). Checks in
+assumed ([#2786](https://github.com/cslib-community/cslib-frontier/issues/2786)).
+`SchnorrSignature/Security.lean` (below) samples the banks, runs the second pass and proves the
+discrete-log theorem. Checks in
 [`Crypto/SchnorrForkPass.lean`](../../CslibFrontierTests/Crypto/SchnorrForkPass.lean) cover
 signing points (including a repeated signing request), repeated and junk hash points, answer
 exhaustion, fresh, signed and programmed forgeries, and a malformed outer signature word that the
 total pair decoder accepts. As an ordinary `module` client, the same file applies
 `isPPTOn_schnorrForkPass` and `eval_schnorrForkPass` to an actual halting forger machine in the
 order-11 Schnorr group modulo 23.
+
+[`SchnorrSignature/Security.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/Security.lean)
+proves **Schnorr EUF-CMA security under discrete log**:
+
+```lean
+theorem DiscreteLog.eufCma_schnorrNativeROMScheme {description : ℕ → F.Desc}
+    (hDL : F.DiscreteLog fun n => PMF.pure (description n))
+    (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
+    {width : ℕ → ℕ} (hwidth : ComputableInPolyTime width encUnary encUnary)
+    (hwq : ∀ n, 2 ^ width n ≤ F.order (description n))
+    (hchallenge : Negligible fun n => (1 / 2 ^ width n : ℝ≥0)) :
+    ROMSignature.EUFCMA (fun n => encBitString (width n))
+      (fun n => F.schnorrNativeROMScheme n (description n) (width n))
+```
+
+That is, for a group family `description` with one description per security parameter and
+encoded descriptions of polynomial length, a polynomial-time challenge width `w` with
+`2 ^ w n ≤ q` and negligible `2⁻ʷ`, and the discrete-log assumption for that family, every native
+forger with `IsOraclePPT` wins `wordEufCmaGame` against the native scheme (actual
+`schnorrSigKeyGen` keys, actual `sampleExp` nonces, adaptive signing, arbitrary hash words,
+final-message freshness) with negligible probability. Nothing is assumed about the reduction:
+`schnorrForkingAdversary` samples the forger's tape, `2B` strict-PPT simulated transcripts and two
+answer banks, runs `schnorrForkPass` twice on spliced answers, and extracts with `extractNat`;
+`isPPTOn_schnorrForkingAdversary` certifies it from the forger's certificate. The proof chains the
+sampling transport above, the typed word bound, a `2B / 2 ^ n` step from the perfect to the
+strict-PPT simulator (`succProbability_oneWayGame_schnorrWordROMSchemeReduction_le`), and the exact
+identification `discreteLogGame_schnorrForkingAdversary` of the native adversary's discrete-log game
+with the typed one-way game. The family need not be computable, because the discrete-log game
+gives the description to the reduction; only its encoded length enters, through the saved-coin
+budget. Random group setups are not covered, because the existing game gives the forger only the
+public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
+[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The `module` client
+[`Crypto/SchnorrSecurity.lean`](../../CslibFrontierTests/Crypto/SchnorrSecurity.lean) checks by
+`rfl` that `wordEufCmaGame` and `schnorrNativeROMScheme` only name the existing shared-oracle game,
+and applies the theorem with `n`-bit challenges, over Schnorr groups (and through it to an adaptive
+native forger) and over the additive groups `ZMod p` of primes `2 ^ n < p ≤ 2 ^ (n + 1)` from
+Bertrand's postulate. For the
+latter it discharges every parameter condition unconditionally, leaving the discrete-log assumption
+as the only premise (which fails for these groups, where discrete logarithms are easy). It also
+checks the extraction step on the group modulo 23.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
@@ -835,10 +876,11 @@ The scope limits of Yao's protocol apply: the base transfers are the ideal oracl
 
 - `ddhOT_output_of_mem_support`: exact correctness (`r.2 = otOutputs x`) in every supported execution of `ddhOTProtocol g q`.
 - `idealJoint_ddhOT_sender` and `semiHonestAdvantage_ddhOT_sender`: with no further hypothesis, the simulator `ddhOTSenderSim g q` matches the corrupted sender's real joint distribution identically, giving `semiHonestAdvantage = 0` against every distinguisher `D`.
-- `semiHonestAdvantage_ddhOT_receiver_eq`: under `Fintype.card G = q` and generator surjectivity `∀ y : G, ∃ k : ZMod q, k • g = y`, the corrupted receiver's distinguishing advantage against `ddhOTReceiverSim g q` equals `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)` (defined in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean)) via the reduction `ddhOTReduction`, which receives the DDH triple as three group elements. This is a per-instance equality, not a computational privacy theorem. `real_receiver_eq_ddhRealExperiment` and `ideal_receiver_eq_ddhRandomExperiment` identify the two executions with the two DDH worlds.
+- `semiHonestAdvantage_ddhOT_receiver_eq`: under generator surjectivity `∀ y : G, ∃ k : ZMod q, k • g = y`, the corrupted receiver's distinguishing advantage against `ddhOTReceiverSim g q` equals `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)` (defined in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean)) via the reduction `ddhOTReduction`, which receives the DDH triple as three group elements and draws its coins uniformly before running `ddhOTReductionWithCoins`. This is a per-instance equality, not a computational privacy theorem. `real_receiver_eq_ddhRealExperiment` and `ideal_receiver_eq_ddhRandomExperiment` identify the two executions with the two DDH worlds. The receiver simulator samples the unchosen branch as `(k • g, c • g)` for uniform exponents `k, c`.
+- **Asymptotic indistinguishability under DDH, a step towards Theorem 23.7** ([DDHOT/Family.lean](../../CslibFrontier/Crypto/Protocols/MPC/DDHOT/Family.lean), checked as a `module` client in [CslibFrontierTests/Crypto/DDHOTFamily.lean](../../CslibFrontierTests/Crypto/DDHOTFamily.lean)): over a `PrimeOrderGroupFamily` `F` with a setup law, `DDH.ddhOTRealIdealIndistinguishable_exactSim` proves `F.DDH setup → F.ddhOTRealIdealIndistinguishable setup (fun _ d => ddhOTSenderSim …) (fun _ d => ddhOTReceiverSim …)`. A two-stage `DDHOTDistinguisher` chooses both parties' inputs (`OTChoice`) and then sees the corrupted party's view and both outputs; `ddhOTRealGame` and `ddhOTIdealGame` run the protocol and a simulator family (`DDHOTSimulator`). `ddhOTRealIdealIndistinguishable setup S₀ S₁` asks these games to be indistinguishable with the given simulator families, with no efficiency requirement on them: for every distinguisher when the sender is corrupted (with `ddhOTSenderSim`, `ddhOTRealGame_sender_eq`: the games are equal), and for every PPT distinguisher (`DDHOTDistinguisher.IsPPT`, on the encodings `encOTChoice` and `encDDHOTReceiverGuessInput`) when the receiver is corrupted. The explicit reduction `ddhOTReceiverToDDHDistinguisher` draws its coins with `sampleExp`; `advantage_ddhOTReceiverGame_le` bounds the advantage by its DDH advantage plus `6 / 2 ^ n`, and `isPPT_ddhOTReceiverToDDHDistinguisher` certifies it, so the theorem assumes only `F.DDH setup`. This is not [bs23][bs23] Theorem 23.7 itself: the theorem asks for efficient simulators, and `ddhOTSenderSim` and `ddhOTReceiverSim` sample exact uniform exponents and are not shown to be PPT. The notion is also the stand-alone (view, outputs) one rather than the restricted execution framework of Section 23.5.6, it covers only the corruption of exactly one party, and the honest parties sample exact uniform exponents rather than deriving them from random bit strings.
 - `ddhOTSenderReply_eq_unchecked_of_add`, `ddhOTSenderReply_eq_zero_of_add_ne`, `ddhOTAttackBothMessages_eq`, `succProbability_ddhOTUncheckedIdealGame_le`, and `ddhOTUnchecked_malicious_receiver_advantage`: `ddhOTUncheckedProtocol` omits the `w₀ + w₁ = u` check ([bs23][bs23], Section 23.5.7.3, Remark 23.6), and in `ddhOTUncheckedRealGame` a deviating receiver sending `ddhOTAttackMsg g b₀ b₁ = (b₀ • g, b₁ • g)` against `ddhOTSenderReplyOf (ddhOTUncheckedProtocol g q)` recovers both `(m₀, m₁)` with probability `1`, whereas in `ddhOTUncheckedIdealGame S` any simulator `S` that freely chooses one query bit `τ` and receives only `m_τ` outputs `(m₀, m₁)` on uniform `(m₀, m₁) ← G × G` with probability at most `(Fintype.card G : ℝ)⁻¹`, giving distinguishing advantage at least `1 - (Fintype.card G : ℝ)⁻¹`.
 
-Scope limits: the DDH experiment (`Cslib.Crypto.ddhRealExperiment`, `Cslib.Crypto.ddhRandomExperiment`, `Cslib.Crypto.ddhAdvantage` in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean), [bs23][bs23] Attack Game 10.6) is single-instance over a fixed finite group `(G, g, q)` rather than a security-parameter family (`PrimeOrderGroupFamily.DDH` in [DiffieHellman.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean)); simulators and reductions carry no `IsPPT` / `ComputableInPolyTime` certificates; and the unchecked-protocol separation is a standalone simultaneous-recovery game rather than a general malicious-security or UC realization. Checked `ZMod 5` instances are in [CslibFrontierTests/Crypto/DDHOT.lean](../../CslibFrontierTests/Crypto/DDHOT.lean).
+Scope limits: the DDH experiment (`Cslib.Crypto.ddhRealExperiment`, `Cslib.Crypto.ddhRandomExperiment`, `Cslib.Crypto.ddhAdvantage` in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean), [bs23][bs23] Attack Game 10.6) is single-instance over a fixed finite group `(G, g, q)`; the family-level theorem above uses `PrimeOrderGroupFamily.DDH` in [DiffieHellman.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean). Only the family-level reduction carries a PPT certificate: the simulators and the honest parties sample exact uniform exponents and carry none. The unchecked-protocol separation is a standalone simultaneous-recovery game rather than a general malicious-security or UC realization. Checked `ZMod 5` instances are in [CslibFrontierTests/Crypto/DDHOT.lean](../../CslibFrontierTests/Crypto/DDHOT.lean).
 
 ### Information-theoretic OT upper bounds from correlated randomness
 

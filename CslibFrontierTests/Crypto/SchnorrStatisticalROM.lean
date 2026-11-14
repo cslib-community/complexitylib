@@ -85,13 +85,10 @@ example (sk pk : List Bool) :
   norm_num
 
 -- The actual key pair adds 1/16 to the two signing errors; the result is below one.
-example : CloseTo
-    (eufCmaGame (schnorrGroups.schnorrEncodedROMScheme d23 3
-      (ProbComp.eval (schnorrGroups.schnorrSigKeyGen 4 d23))
-      ((ProbComp.eval (schnorrGroups.sampleExp 4 d23)).map Nat.cast)) forger)
+example : CloseTo (eufCmaGame (schnorrGroups.schnorrNativeROMScheme 4 d23 3) forger)
     (eufCmaGame (schnorrGroups.schnorrWordROMScheme d23 width_bound)
       (schnorrGroups.schnorrDecodedForger d23 forger)) (3 / 16 : ℝ≥0) := by
-  convert schnorrGroups.closeTo_eufCmaGame_schnorrEncodedROMScheme d23 4 3 width_bound
+  convert schnorrGroups.closeTo_eufCmaGame_schnorrNativeROMScheme d23 4 3 width_bound
     forger forger_bound using 1
   change (↑(3 / 16 : ℝ≥0) : ℝ≥0∞) = 3 * ↑(1 / 2 ^ 4 : ℝ≥0)
   rw [← ENNReal.coe_ofNat 3, ← ENNReal.coe_mul]
@@ -118,23 +115,19 @@ private theorem nativeForger_ppt : IsOraclePPT (encPair encBits encBits) nativeF
 -- The constant description is a finite example, not an asymptotic security assumption.
 example : ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
     (machine : MultiTapePTM k Bool Control Bool) (c e keyC keyD : ℕ),
-    IsOraclePPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
+    IsOraclePPTOn encReplayInput (encPair encBits encBits)
       (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c e keyC keyD) ∧
     ∀ n,
-      let encoding : BitString 3 ↪ List Bool := ⟨List.ofFn, List.ofFn_injective⟩
-      let A := savedCoinForger machine encoding c e keyC keyD n
+      let A := savedCoinForger machine (encBitString 3) c e keyC keyD n
       let budget := savedCoinBudget c e keyC keyD n
       A.CallBounded budget budget ∧
       CloseTo
-        (worldGame (schnorrGroups.schnorrEncodedROMScheme d23 3
-          (ProbComp.eval (schnorrGroups.schnorrSigKeyGen n d23))
-          ((ProbComp.eval (schnorrGroups.sampleExp n d23)).map Nat.cast))
-          (fun pk => routeWordProgram encoding (nativeForger n pk))
-          (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg))
+        (wordEufCmaGame (encBitString 3) (schnorrGroups.schnorrNativeROMScheme n d23 3)
+          (nativeForger n))
         (eufCmaGame (schnorrGroups.schnorrWordROMScheme d23 width_bound)
           (schnorrGroups.schnorrDecodedForger d23 A))
         ((budget + 1 : ℕ) * (1 / 2 ^ n : ℝ≥0)) :=
-  schnorrGroups.exists_closeTo_worldGame_schnorrEncodedROMScheme (fun _ => d23)
+  schnorrGroups.exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme (fun _ => d23)
     (by fun_prop) (fun _ => 3) (fun _ => width_bound) nativeForger_ppt
 
 end CslibFrontierTests.Crypto.SchnorrStatisticalROM

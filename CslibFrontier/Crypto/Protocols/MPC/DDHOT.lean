@@ -62,8 +62,8 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
   along `ddhOTSchedule G`, for an arbitrary Round 2 message.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderSim`, `Cslib.Crypto.Protocols.MPC.ddhOTReceiverSim`: the
   semi-honest simulators for a corrupted sender (`{0}`) and a corrupted receiver (`{1}`).
-* `Cslib.Crypto.Protocols.MPC.ddhOTReduction`: the DDH reduction induced by a receiver
-  distinguisher.
+* `Cslib.Crypto.Protocols.MPC.ddhOTReductionWithCoins`, `Cslib.Crypto.Protocols.MPC.ddhOTReduction`:
+  the DDH reduction induced by a receiver distinguisher, on given coins and on uniform coins.
 * `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedRealGame`,
   `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedIdealGame`: the real and ideal games for a malicious
   receiver against `ddhOTUncheckedProtocol`.
@@ -77,12 +77,15 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
   ideal joint distribution with `ddhOTSenderSim` equals the real one, so every distinguisher has
   advantage zero.
 * `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_receiver_eq`: **receiver privacy as a
-  per-instance equality** — when `g` generates `G` and `G` has `q` elements, a corrupted
-  receiver's distinguishing advantage equals
-  `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)`, the fixed-group DDH advantage of
-  `CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean`. There is no security parameter
-  and no efficiency certificate for `ddhOTReduction`, so this is not a computational privacy
-  theorem.
+  per-instance equality** — when `g` generates `G`, a corrupted receiver's distinguishing
+  advantage equals `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)`, the fixed-group DDH
+  advantage of `CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean`. There is no
+  security parameter and no efficiency certificate for `ddhOTReduction`, so this is not a
+  computational privacy theorem. `CslibFrontier/Crypto/Protocols/MPC/DDHOT/Family.lean` proves
+  an asymptotic indistinguishability theorem over a `PrimeOrderGroupFamily` from the DDH
+  assumption, with a certified reduction
+  (`Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable_exactSim`), for the
+  simulators `ddhOTSenderSim` and `ddhOTReceiverSim`, which are not shown to be PPT.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_unchecked_of_add`,
   `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_zero_of_add_ne`,
   `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
@@ -555,9 +558,32 @@ theorem semiHonestAdvantage_ddhOT_sender (g : G) (q : ℕ) [NeZero q] [Module (Z
 
 /-! ### Computational privacy against a corrupted receiver under DDH -/
 
-/-- DDH reduction for receiver privacy: given a DDH challenge `(u, u', w_ddh)`, embeds it into
-the unchosen branch ciphertext and runs `D` on the resulting receiver view and outputs. It is a
-distinguisher for `Cslib.Crypto.ddhRealExperiment` and `Cslib.Crypto.ddhRandomExperiment`. -/
+/-- The DDH reduction for receiver privacy on fixed coins: given the receiver's coin `b`, the
+chosen branch's coins `(r, s)` and a DDH challenge `(u, u', w_ddh)`, it embeds the challenge into
+the unchosen branch ciphertext as `(u', w_ddh - b • u' + m_{1-σ})`, encrypts the chosen branch as
+`(r • g + s • u, b • (r • g + s • u) + m_σ)`, and runs `D` on the resulting receiver view and
+outputs. `ddhOTReduction` draws the coins uniformly. -/
+@[expose] def ddhOTReductionWithCoins {q : ℕ} [Module (ZMod q) G] (g : G)
+    (x : (i : Fin 2) → OTIn G i)
+    (D : ((i : ({1} : Finset (Fin 2))) →
+        PartyView (OTIn G) (DDHOTCoins q) (ddhOTSchedule G) i) ×
+      ((i : Fin 2) → OTOut G i) → ProbComp Bool)
+    (b r s : ZMod q) (u u' w_ddh : G) : ProbComp Bool :=
+  let σ : Bool := x 1
+  let e_σ := r • g + s • u
+  let m_σ := if σ then (x 0).2 else (x 0).1
+  let m_other := if σ then (x 0).1 else (x 0).2
+  let c_σ := b • e_σ + m_σ
+  let c_other := w_ddh - b • u' + m_other
+  let reply := if σ then ((u', c_other), (e_σ, c_σ)) else ((e_σ, c_σ), (u', c_other))
+  D (singletonView (ddhOTReceiverView σ b u reply), otOutputs x)
+
+/-- DDH reduction for receiver privacy: given a DDH challenge `(u, u', w_ddh)`, it draws uniform
+coins `b, r, s : ZMod q` and runs `ddhOTReductionWithCoins`. It is a distinguisher for
+`Cslib.Crypto.ddhRealExperiment` and `Cslib.Crypto.ddhRandomExperiment`. Exact uniform sampling in
+`ZMod q` is not a bounded-time fair-coin program when `q` is not a power of two; the family-level
+reduction in `CslibFrontier/Crypto/Protocols/MPC/DDHOT/Family.lean` draws approximately uniform
+coins instead. -/
 @[expose] noncomputable def ddhOTReduction (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
     (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
@@ -567,14 +593,7 @@ distinguisher for `Cslib.Crypto.ddhRealExperiment` and `Cslib.Crypto.ddhRandomEx
   let b ← ProbComp.uniform (ZMod q)
   let r ← ProbComp.uniform (ZMod q)
   let s ← ProbComp.uniform (ZMod q)
-  let σ : Bool := x 1
-  let e_σ := r • g + s • u
-  let m_σ := if σ then (x 0).2 else (x 0).1
-  let m_other := if σ then (x 0).1 else (x 0).2
-  let c_σ := b • e_σ + m_σ
-  let c_other := w_ddh - b • u' + m_other
-  let reply := if σ then ((u', c_other), (e_σ, c_σ)) else ((e_σ, c_σ), (u', c_other))
-  D (singletonView (ddhOTReceiverView σ b u reply), otOutputs x)
+  ddhOTReductionWithCoins g x D b r s u u' w_ddh
 
 /-- Collapsing `(r₁, s₁)` into a single uniform exponent `k = r₁ + a * s₁` when `(r₀, s₀)` is on
 the chosen branch. -/
@@ -659,7 +678,7 @@ theorem real_receiver_eq_ddhRealExperiment (g : G) (q : ℕ) [NeZero q] [Module 
     ((ddhOTProtocol g q).realJoint noOracleWorld {1} x).bind (fun r => ProbComp.eval (D r)) =
       ProbComp.eval (ddhRealExperiment q g (ddhOTReduction g q x D)) := by
   rw [Protocol.realJoint, evalWith_ddhOT, PMF.bind_map]
-  simp only [sampleDDHOTSenderCoins, ddhRealExperiment, ddhOTReduction,
+  simp only [sampleDDHOTSenderCoins, ddhRealExperiment, ddhOTReduction, ddhOTReductionWithCoins,
     ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
     PMF.bind_bind, PMF.pure_bind, PMF.bind_map]
   refine congrArg (PMF.bind _) (funext fun a => ?_)
@@ -727,12 +746,11 @@ theorem real_receiver_eq_ddhRealExperiment (g : G) (q : ℕ) [NeZero q] [Module 
         ProbComp.eval (D (singletonView (ddhOTReceiverView true b u
           ((u', c_other), (e_σ, c_σ))), otOutputs x)))
 
-variable [Fintype G]
-
 /-- Simulator for a corrupted receiver (`{1}`): given the receiver's choice bit `σ` and ideal
-output `m_σ`, samples `a, b, r, s : ZMod q` and uniform `u', w' : G` for the unchosen branch,
-and constructs `(e_σ, b • e_σ + m_σ)` on the chosen branch and `(u', w')` on the unchosen
-branch. -/
+output `m_σ`, samples `a, b, r, s, k, c : ZMod q`, and constructs `(e_σ, b • e_σ + m_σ)` with
+`e_σ = r • g + s • (a • g)` on the chosen branch and `(k • g, c • g)` on the unchosen branch.
+When `g` generates `G`, `k • g` and `c • g` are uniform elements of `G`, as in the simulator of
+[BonehShoup2023], Section 23.5.7.2. -/
 @[expose] noncomputable def ddhOTReceiverSim (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G] :
     CoalitionSimulator (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) {1} :=
   fun xI yI => do
@@ -742,8 +760,10 @@ branch. -/
     let b ← ProbComp.uniform (ZMod q)
     let r ← ProbComp.uniform (ZMod q)
     let s ← ProbComp.uniform (ZMod q)
-    let u' ← ProbComp.uniform G
-    let w' ← ProbComp.uniform G
+    let k ← ProbComp.uniform (ZMod q)
+    let c ← ProbComp.uniform (ZMod q)
+    let u' := k • g
+    let w' := c • g
     let u := a • g
     let e_σ := r • g + s • u
     let c_σ := b • e_σ + m_σ
@@ -765,46 +785,45 @@ private theorem bind_two_three_comm {α β : Type} (p : PMF α) (f : α → α �
     PMF.bind_comm p p (fun x₁ y₃ => p.bind fun x₂ => f x₁ x₂ _ _ y₃)]
 
 omit [DecidableEq G] in
-/-- When `g` generates `G` and `G` has `q` elements, the ideal execution for a corrupted receiver
-is the random DDH world `Cslib.Crypto.ddhRandomExperiment q g` run on `ddhOTReduction`. -/
+/-- When `g` generates `G`, the ideal execution for a corrupted receiver is the random DDH world
+`Cslib.Crypto.ddhRandomExperiment q g` run on `ddhOTReduction`. -/
 theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
-    (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
+    (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
     (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
         PartyView (OTIn G) (DDHOTCoins q) (ddhOTSchedule G) i) ×
       ((i : Fin 2) → OTOut G i) → ProbComp Bool) :
     ProbComp.eval (idealJoint (otFunctionality G) {1} (ddhOTReceiverSim g q) x >>= D) =
       ProbComp.eval (ddhRandomExperiment q g (ddhOTReduction g q x D)) := by
-  have hg : Function.Bijective fun c : ZMod q => c • g :=
-    (Fintype.bijective_iff_surjective_and_card _).mpr ⟨hgen, by rw [ZMod.card, hcard]⟩
   simp only [idealJoint, otFunctionality, Functionality.ofDeterministic, ddhOTReceiverSim,
-    ddhRandomExperiment, ddhOTReduction, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
+    ddhRandomExperiment, ddhOTReduction, ddhOTReductionWithCoins, ProbComp.eval_bind,
+    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
   refine congrArg (PMF.bind _) (funext fun a => ?_)
-  rw [bind_two_three_comm]
+  conv_rhs => rw [bind_two_three_comm]
   refine congrArg (PMF.bind _) (funext fun b =>
     congrArg (PMF.bind _) (funext fun r =>
-      congrArg (PMF.bind _) (funext fun s => ?_)))
-  rw [← uniformOfFintype_bind_smul hg]
-  refine congrArg (PMF.bind _) (funext fun b_ddh => ?_)
+      congrArg (PMF.bind _) (funext fun s =>
+        congrArg (PMF.bind _) (funext fun k => ?_))))
+  have hshift : ∀ (c : ZMod q) (m : G), c • g - b • k • g + m = c • g + (m - b • k • g) :=
+    fun c m => by abel
+  simp_rw [hshift]
   let σ : Bool := x 1
-  let m_other : G := if σ then (x 0).1 else (x 0).2
-  let u' := b_ddh • g
-  let e_shift : G ≃ G :=
-    { toFun := fun w => w - b • u' + m_other
-      invFun := fun w => w - m_other + b • u'
-      left_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel]
-      right_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel] }
-  rw [← PMF.uniformOfFintype_map_equiv e_shift, PMF.bind_map, ← uniformOfFintype_bind_smul hg]
-  rfl
+  let e_σ := r • g + s • (a • g)
+  let c_σ := b • e_σ + if σ then (x 0).2 else (x 0).1
+  exact (uniformOfFintype_bind_smul_add hgen ((if σ then (x 0).1 else (x 0).2) - b • k • g)
+    fun w => ProbComp.eval (D (singletonView (ddhOTReceiverView σ b (a • g)
+      (if σ then ((k • g, w), (e_σ, c_σ)) else ((e_σ, c_σ), (k • g, w)))), otOutputs x))).symm
 
 /-- **Privacy against a corrupted receiver, as a per-instance equality**: for a fixed group, input
 and distinguisher, the distinguisher's advantage between the ideal joint distribution with
 `ddhOTReceiverSim` and the real one equals the fixed-group DDH advantage of `ddhOTReduction`, when
-`g` generates `G` and `G` has `q` elements. This is not a computational privacy theorem: there is
-no security parameter, and `ddhOTReduction` has no efficiency certificate. -/
+`g` generates `G`. This is not a computational privacy theorem: there is no security parameter,
+and `ddhOTReduction` has no efficiency certificate.
+`Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable_exactSim` in
+`CslibFrontier/Crypto/Protocols/MPC/DDHOT/Family.lean` is the asymptotic statement for these
+simulators, with a certified reduction. -/
 theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
-    (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
+    (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
     (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
         PartyView (OTIn G) (DDHOTCoins q) (ddhOTSchedule G) i) ×
@@ -812,10 +831,12 @@ theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [Modu
     semiHonestAdvantage (ddhOTProtocol g q) noOracleWorld (otFunctionality G) {1}
         (ddhOTReceiverSim g q) x D =
       ddhAdvantage q g (ddhOTReduction g q x D) := by
-  rw [semiHonestAdvantage, ideal_receiver_eq_ddhRandomExperiment g q hcard hgen,
+  rw [semiHonestAdvantage, ideal_receiver_eq_ddhRandomExperiment g q hgen,
     real_receiver_eq_ddhRealExperiment g q, Game.advantage_comm, ddhAdvantage]
 
 /-! ### Malicious-receiver attack on the unchecked variant -/
+
+variable [Fintype G]
 
 /-- Real game for a malicious receiver against `ddhOTUncheckedProtocol`. The sender holds uniform
 messages `(m₀, m₁) ← G × G` and coins drawn by the protocol's own sampler. The receiver sends
