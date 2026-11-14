@@ -6389,6 +6389,7 @@ public import CslibFrontier.Probability.PMF.ObservedProcess.Trajectory
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
+public import CslibFrontier.Probability.PMF.SequentialHistory
 public import CslibFrontier.Probability.PMF.StoppedProcess
 public import CslibFrontier.Probability.PMF.StoppedProcess.Boundary
 public import CslibFrontier.Probability.PMF.StoppedProcess.Map
@@ -6462,6 +6463,7 @@ public import CslibFrontier.Probability.StochasticDomination
 public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
+public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveBinomial
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveComparison
@@ -6469,6 +6471,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveLowerCost
 public import CslibFrontier.Probability.StochasticOracle.AdaptivePath
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveReachable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discrete
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle

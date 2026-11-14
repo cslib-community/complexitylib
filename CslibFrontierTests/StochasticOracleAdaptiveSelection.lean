@@ -258,7 +258,8 @@ end StochasticOracleAdaptiveSelectionTests
 
 -- Chronology and a genuine infinite probability law, including full-history conditioning.
 example (ω : ℕ → Bool) : responseHistory ω 2 = [ω 1, ω 0] := by
-  simp [responseHistory, List.ofFn_succ]
+  rw [responseHistory_succ, responseHistory_succ]
+  simp [responseHistory]
 
 example : MeasureTheory.IsProbabilityMeasure
     (responseMeasure (fun _ =>

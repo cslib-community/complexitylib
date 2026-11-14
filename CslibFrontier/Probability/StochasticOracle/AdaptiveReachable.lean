@@ -227,11 +227,7 @@ theorem binomial_le_completion_reachable
     p p.2.1 p.2.2 (by
       intro h hh
       by_cases hc : I.covered (selected I ρ proposal h) = I.ground
-      · have hz : residual I ρ proposal h = 0 := by simp [residual, hc]
-        have hx (x : Ω) : productive I ρ proposal a h x = true := by
-          simp only [productive, decide_eq_true_eq]
-          have := residual_mono I ρ proposal h x
-          omega
+      · have hx := productive_of_complete I ρ proposal a h hc
         simpa only [hx, ite_true, Distribution.mean_const] using p.2.2
       · exact hp h hh hc) (fun k => if r ≤ k then 1 else 0) (by
       intro i j hij

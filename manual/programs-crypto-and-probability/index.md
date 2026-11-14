@@ -829,6 +829,26 @@ recovers the response table by conditioning on a positive-mass selected batch.
 The proved tower identity and supported-batch mean bounds compose in
 `selectedBatch_totalStoppedBill`. No condition is imposed on null batches. This is
 finite discrete disintegration, not a general measurable-space disintegration theorem.
+
+For arbitrary discrete response types at a finite horizon, import
+`CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discrete`.
+`responseStep law` runs a newest-first PMF response law through `PMF.seqProcess`;
+`PMF.seqHistory` converts its chronological coordinates back to the actual transcript.
+`incompletion_le_binomial_discrete` bounds the probability that the actual `selected`
+family is incomplete by the binomial lower tail, and `binomial_le_completion_discrete`
+gives the complementary success bound. Their productivity premise applies only at
+supported, incomplete prefixes before the supplied horizon. No finite response alphabet,
+terminal coverage premise or alteration of the actual law is needed. The count bridge
+uses the deterministic `count_completes` invariant; `productive_of_complete` supplies
+the post-completion successes for both the finite and arbitrary-PMF proofs.
+The checked [discrete retention client](../../CslibFrontierTests/StochasticOracleDiscreteRetention.lean)
+uses geometric responses with unbounded positive-probability support: zero proposes
+the positive-cost singleton cover and positive responses propose nothing. It checks
+the actual retention rule, productivity probability, finite-horizon coverage bound and
+pathwise dual certificate. This removes the finite-alphabet restriction for the
+coverage probability step; arbitrary-discrete cost and native resource assembly
+remain separate obligations.
+
 The [complete reachable-history client](../../CslibFrontierTests/StochasticOracleAdaptiveReachable.lean)
 uses a correlated response law with a null response that poisons subsequent kernels
 and charges. It checks that both old all-history envelopes fail at that unreachable
@@ -918,8 +938,10 @@ certified singleton and succeeds with probability one, and the universal lower
 cost theorem still applies. This checks that the competing class includes policies
 outside the constructive retention algorithm.
 
-Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
-behavioral kernels, without a realization/representation theorem for every encoded
+Theorem 5 remains incomplete at unrestricted source scope: the cost and infinite-path
+behavioral theorems still use finite response alphabets; the finite-horizon retained
+coverage probability bound above permits arbitrary discrete PMFs. The development
+does not supply a realization/representation theorem for every encoded
 selection-only PTM or general measurable alphabets. Implemented native controllers
 and their resource theorems are described below; unrestricted encoded-source
 resource transfer remains open. The Poisson-binomial domination needed for Lemma 2 and for the
