@@ -57,6 +57,8 @@ security; we use this to solve [KatzLindell2020], Exercise 7.26.
 * `Cslib.Crypto.Sponge.badEvent_of_hash_eq`: every collision between distinct messages triggers
   one of the events E1, E2, E3 among the evaluated permutation inputs (Claim 7.8, forward
   queries).
+* `Cslib.Crypto.Sponge.take_squeeze`, `take_hashBlocks`: requesting more squeezing blocks
+  preserves every earlier block.
 * `Cslib.Crypto.Sponge.hash_eq_of_capacity_eq`: a capacity collision between equal-length
   full-block messages extends to a hash collision.
 * `Cslib.Crypto.Sponge.hash_prodCongr_collision`: a permutation that acts separately on the rate
@@ -124,6 +126,26 @@ theorem length_squeeze (P : R × C → R × C) (out : R × C → O) (k : ℕ) (y
   induction k generalizing y with
   | zero => rfl
   | succ k ih => simp [squeeze, ih]
+
+omit [AddGroup R] [Zero C] in
+/-- Squeezing more blocks preserves the entire previously requested prefix. -/
+theorem take_squeeze (P : R × C → R × C) (out : R × C → O) {m n : ℕ}
+    (h : m ≤ n) (y : R × C) :
+    (squeeze P out n y).take m = squeeze P out m y := by
+  induction n generalizing m y with
+  | zero => simp only [Nat.le_zero.mp h, squeeze, List.take_nil]
+  | succ n ih =>
+    cases m with
+    | zero => rfl
+    | succ m =>
+      simp only [squeeze, List.take_succ_cons, List.cons.injEq, true_and]
+      exact ih (Nat.le_of_succ_le_succ h) (P y)
+
+/-- Requesting more sponge output blocks preserves the entire previously requested prefix. -/
+theorem take_hashBlocks (P : R × C → R × C) (out : R × C → O) {m n : ℕ}
+    (h : m ≤ n) (ms : List R) :
+    (hashBlocks P out n ms).take m = hashBlocks P out m ms :=
+  take_squeeze P out h (absorb P ms)
 
 theorem hashBlocks_succ (P : R × C → R × C) (out : R × C → O) (k : ℕ) (ms : List R) :
     hashBlocks P out (k + 1) ms = out (absorb P ms) :: squeeze P out k (P (absorb P ms)) := rfl

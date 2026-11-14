@@ -285,11 +285,13 @@ FIPS 202 SHAKE256 ([fips202][fips202]) is implemented in
 [`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) on top of the existing
 generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x` order, applies the
 standard's θ/ρ/π/χ/ι maps and 24 rounds, and exposes byte-aligned `Keccak.shake256` with the
-1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The
+1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The byte and state views are proved
+inverse, and `take_shake256` proves prefix consistency for every pair of requested lengths. The
 [ordinary-import client](../../CslibFrontierTests/Crypto/Keccak.lean) checks the official NIST
 0-bit and 1600-bit-message examples, absorption and squeezing across the 136-byte rate boundary,
-prefix consistency, and the first Falcon-512 KAT's `salt || message` prefix. This is an executable
-specification, not a collision/preimage result, constant-time implementation or FIPS validation.
+the inverse and prefix APIs, and the first Falcon-512 KAT's `salt || message` prefix. This is an
+executable specification, not a collision/preimage result, constant-time implementation or FIPS
+validation.
 
 Falcon's current checked layer ([falcon2020][falcon2020]) is deliberately narrower than a security
 theorem. Import
