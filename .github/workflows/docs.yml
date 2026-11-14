@@ -26,7 +26,7 @@ jobs:
   docs:
     # ubuntu-latest moved to Ubuntu 26.04 on 2026-10-30, and doc-gen4 has run out of memory there
     # ("resource exhausted (error code: 12)") on every run since; upstream cslib#1191 pins the same.
-    runs-on: ubuntu-24.04
+    runs-on: cslib-ubuntu-24.04-8core
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,14 +45,6 @@ jobs:
         run: python3 scripts/check_docs.py --config-only
       # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
       - uses: ./.github/actions/install-lean
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: "false"
-          build: "false"
-          test: "false"
-          lint: "false"
-          use-mathlib-cache: "false"
-          use-github-cache: "false"
       - name: Restore Mathlib cache with retries
         continue-on-error: true
         timeout-minutes: 10

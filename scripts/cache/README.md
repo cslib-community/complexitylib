@@ -82,7 +82,7 @@ timeouts remain optional. The helpers never remove Git locks; forced termination
 leave one behind.
 
 Lean CI and API docs call this helper with `--lean-action`, preserving the Mathlib URL
-handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
+handling that lean-action had: unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
@@ -91,8 +91,8 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI
-and the guide no longer run `leanprover/lean-action`: with every feature off it only
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
+the guide and API docs no longer run `leanprover/lean-action`: with every feature off it only
 reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
 miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
@@ -100,11 +100,14 @@ cache above.
 
 ## Hosted-runner disk space
 
-Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
-Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
-runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
-Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
-if it fails.
+Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to report available disk
+space. On GitHub-hosted Linux runners it removes the unused Android and .NET SDKs only when less
+than 100 GiB is available, or the free-space measurement is unavailable. This conservative
+headroom policy retains cleanup on constrained runners while avoiding several minutes of SDK
+deletion on larger runners that already have ample space; it is not an exact build-size estimate.
+Local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python, Node
+actions, repository and caches are retained. Cleanup is optional; all validation still runs if
+it fails.
 
 ## Merge-queue handoff
 

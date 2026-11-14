@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   guide:
-    runs-on: ubuntu-latest
+    runs-on: cslib-ubuntu-24.04-8core
     steps:
       - uses: actions/checkout@v4
         with:
