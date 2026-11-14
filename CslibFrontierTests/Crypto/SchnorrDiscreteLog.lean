@@ -4,9 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
-import CslibFrontier.Crypto.Computational.SchnorrEavesdrop
-import CslibFrontier.Crypto.Computational.SchnorrIdentification
+module
+
+public import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
+public import CslibFrontier.Crypto.Computational.SchnorrEavesdrop
+public import CslibFrontier.Crypto.Computational.SchnorrIdentification
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.Tactic.NormNum.Prime
@@ -20,6 +22,8 @@ theorems apply to the Schnorr-group family with `n`-bit challenges, for any setu
 groups of order at least `2 ^ n`, and their premises are satisfiable: both a silent impersonator
 and an eavesdropper that forwards the public key and challenge are uniform strict PPT.
 -/
+
+public section
 
 namespace CslibFrontierTests.Crypto.SchnorrDiscreteLog
 
@@ -147,5 +151,64 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLo
     schnorrGroups.IsEavesdropSecure setup id :=
   PrimeOrderGroupFamily.schnorr_isEavesdropSecure_of_discreteLogHard hDL
     (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow
+
+/-- Native fair-coin Schnorr key generation (`schnorrSigKeyGen`) is uniformly strict PPT in
+`(n, d)`, and `encodeSchnorrVerify` accepts an honest conversation `(t, c, z) = (2 ^ 4 = 16, 1, 7)`
+on `d23` under public key `2 ^ 3 = 8`. -/
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc)
+    (encPair encBits encBits)
+    (fun p : ℕ × schnorrGroups.Desc => schnorrGroups.schnorrSigKeyGen p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrSigKeyGen
+
+example :
+    schnorrGroups.encodeSchnorrVerify d23 (Nat.bits 8) (Nat.bits 16) (Nat.bits 1) (Nat.bits 7) =
+      true := by
+  decide
+
+/-- Both the native direct-attack experiment and the native eavesdropping experiment are uniformly
+strict PPT on `(n, d)` for strict-PPT adversaries. -/
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc) encBool
+    (fun p : ℕ × schnorrGroups.Desc =>
+      schnorrGroups.schnorrDirectProbExperiment id silent p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrDirectProbExperiment
+    (ComputableInPolyTime.of_eq fun _ => rfl) silent_isPPT
+
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc) encBool
+    (fun p : ℕ × schnorrGroups.Desc =>
+      schnorrGroups.schnorrEavesdropProbExperiment id id forwardEavesdrop p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrEavesdropProbExperiment
+    (ComputableInPolyTime.of_eq fun _ => rfl)
+    (ComputableInPolyTime.of_eq fun _ => rfl)
+    forwardEavesdrop_isPPT
+
+/-- Quantitative native-key-gen eavesdropping bound on the constant-`d23` setup with `3`-bit
+challenges (`2 ^ 3 ≤ 11`) and `4` overheard conversations. -/
+example (n : ℕ) :
+    (Game.succProbability
+      (schnorrGroups.schnorrEavesdropProbGame (fun _ => PMF.pure (d23 : schnorrGroups.Desc))
+        (fun _ => 3) (fun _ => 4) forwardEavesdrop n) : ℝ) ≤
+      (2 * (4 : ℕ) + 1) / 2 ^ n + 1 / 2 ^ 3 +
+        √(Game.succProbability (schnorrGroups.discreteLogGame
+          (fun _ => PMF.pure (d23 : schnorrGroups.Desc))
+          ((forwardEavesdrop.toDirect (fun _ => 3) (fun _ => 4)).rewind (fun _ => 3)) n)) := by
+  refine PrimeOrderGroupFamily.succProbability_schnorrEavesdropProbGame_le
+    (fun _ => PMF.pure (d23 : schnorrGroups.Desc)) (fun _ => 3) (fun _ => 4)
+    forwardEavesdrop n ?_
+  intro d hd
+  obtain rfl : d = d23 := (PMF.mem_support_pure_iff _ _).mp hd
+  decide
+
+/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
+Schnorr identification with native fair-coin key generation (`schnorrSigKeyGen`) resists both
+direct impersonation and passive eavesdropping attacks with `n`-bit challenges. -/
+example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
+    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
+    Negligible (fun n =>
+        Game.succProbability (schnorrGroups.schnorrDirectProbGame setup id silent n)) ∧
+      schnorrGroups.IsProbEavesdropSecure setup id :=
+  ⟨PrimeOrderGroupFamily.negligible_schnorrDirectProbGame hDL
+      (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow silent_isPPT,
+    PrimeOrderGroupFamily.schnorr_isProbEavesdropSecure_of_discreteLogHard hDL
+      (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow⟩
 
 end CslibFrontierTests.Crypto.SchnorrDiscreteLog

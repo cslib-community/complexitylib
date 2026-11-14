@@ -13,7 +13,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.Repeat
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.Uniform.Translate
@@ -69,6 +71,18 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
     with negligible probability (`negligible_schnorrEavesdropGame`,
     `negligible_schnorrIdealEavesdropGame`, `schnorr_isEavesdropSecure_of_discreteLogHard`,
     `schnorr_isIdealEavesdropSecure_of_discreteLogHard`).
+* **Native fair-coin key generation and executable identification/eavesdropping experiments**:
+  * `schnorrSigKeyGen` (from `SchnorrProtocol`) samples the secret exponent via `F.sampleExp n d`
+    and outputs the encoded public key together with the binary secret key `(sk % F.order d).bits`
+    (`isPPTOn_schnorrSigKeyGen`, `advantage_bind_schnorrSigKeyGen_le`).
+  * `schnorrDirectProbGame` and `schnorrEavesdropProbGame` (together with their executable
+    `ProbComp Bool` experiments `schnorrDirectProbExperiment` and `schnorrEavesdropProbExperiment`,
+    certified `IsPPTOn` by `isPPTOn_schnorrDirectProbExperiment` and
+    `isPPTOn_schnorrEavesdropProbExperiment` using `encodeSchnorrVerify`) replace the ideal uniform
+    key draw with `schnorrSigKeyGen`, adding at most `1 / 2 ^ n` to the concrete bounds
+    (`succProbability_schnorrDirectProbGame_le`, `succProbability_schnorrEavesdropProbGame_le`) and
+    preserving asymptotic security under `F.DiscreteLog setup` (`negligible_schnorrDirectProbGame`,
+    `negligible_schnorrEavesdropProbGame`, `schnorr_isProbEavesdropSecure_of_discreteLogHard`).
 
 ## Main definitions
 
@@ -85,8 +99,14 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 * `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrEavesdropAdversary.toDirect`: reduction from an
   eavesdropping adversary to a direct impersonator by simulating `Q n` conversations.
 * `Cslib.Crypto.PrimeOrderGroupFamily.IsEavesdropSecure`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.IsIdealEavesdropSecure`: security against all uniform strict
+  `Cslib.Crypto.PrimeOrderGroupFamily.IsIdealEavesdropSecure`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.IsProbEavesdropSecure`: security against all uniform strict
   PPT eavesdropping adversaries for all polynomial-time conversation counts.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrDirectProbGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrDirectProbExperiment`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEavesdropProbGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEavesdropProbExperiment`: native-key-gen direct and
+  eavesdropping games and experiments using `schnorrSigKeyGen` and `encodeSchnorrVerify`.
 
 ## Main results
 
@@ -103,18 +123,27 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_schnorrIdealEavesdropGame_schnorrDirectGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_schnorrEavesdropGame_schnorrDirectGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrIdealEavesdropGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrEavesdropGame_le`: quantitative
+  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrEavesdropGame_le`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrDirectProbGame_le`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrEavesdropProbGame_le`: quantitative
   eavesdropping-to-direct and eavesdropping-to-DL bounds (Theorems 19.3 and 19.5).
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrRealTranscript`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrSimulatedTranscript`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_toDirect`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_rewind_toDirect`: strict-PPT certificates for
-  conversation generation, the direct-attack reduction, and the composed rewinding DL adversary.
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_rewind_toDirect`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrDirectProbExperiment`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrEavesdropProbExperiment`: strict-PPT
+  certificates for conversation generation, the direct-attack reduction, the composed rewinding DL
+  adversary, and the executable direct and eavesdropping experiments.
 * `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrIdealEavesdropGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrEavesdropGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrDirectProbGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrEavesdropProbGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isIdealEavesdropSecure_of_discreteLogHard`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isEavesdropSecure_of_discreteLogHard`: eavesdropping
-  security of Schnorr identification under the discrete-logarithm assumption.
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isEavesdropSecure_of_discreteLogHard`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isProbEavesdropSecure_of_discreteLogHard`:
+  direct and eavesdropping security of Schnorr identification under the discrete-logarithm
+  assumption.
 
 ## References
 
@@ -126,7 +155,7 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 * [C.-P. Schnorr, *Efficient Signature Generation by Smart Cards*][Schnorr1991]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -153,7 +182,7 @@ structure SchnorrEavesdropAdversary where
   respond : ℕ → List Bool × List Bool → ProbComp (List Bool)
 
 /-- Both stages of an eavesdropping adversary are uniform strict PPT in their whole inputs. -/
-def SchnorrEavesdropAdversary.IsPPT (A : F.SchnorrEavesdropAdversary) : Prop :=
+@[expose] def SchnorrEavesdropAdversary.IsPPT (A : F.SchnorrEavesdropAdversary) : Prop :=
   IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encList encTranscript))))
       (encPair encBits encBits) (fun input => A.commit input.1 input.2) ∧
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
@@ -656,5 +685,324 @@ theorem schnorr_isEavesdropSecure_of_discreteLogHard
     (hchallenge : Negligible fun n => 1 / 2 ^ k n) :
     F.IsEavesdropSecure setup k :=
   fun _ hQ _ hA => negligible_schnorrEavesdropGame hDL hk hQ hkq hchallenge hA
+
+/-! ### Native fair-coin key generation and executable identification/eavesdropping experiments -/
+
+variable (F) in
+/-- The direct impersonation attack on Schnorr identification where the key pair is sampled with
+`F.schnorrSigKeyGen n d` (`F.sampleExp n d`) instead of
+`PMF.uniformOfFintype (ZMod (F.order d))`. -/
+noncomputable def schnorrDirectProbGame (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
+    (A : F.SchnorrImpersonator) (n : ℕ) : Game := do
+  let d ← setup n
+  let (pk, sk) ← ProbComp.eval (F.schnorrSigKeyGen n d)
+  let ts ← ProbComp.eval (A.commit n (d, pk))
+  let c ← BitString.uniformList (k n)
+  let z ← ProbComp.eval (A.respond n (ts.2, c))
+  return decide (ts.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
+    (ofBits c : ZMod (F.order d)) • ((ofBits sk : ZMod (F.order d)) • F.generator d)))
+
+variable (F) in
+/-- Executable `ProbComp Bool` direct impersonation experiment at group description `d`: sample
+the key pair with `schnorrSigKeyGen n d`, run `A.commit`, sample `c ← BitString.sampleList (k n)`,
+run `A.respond`, and check acceptance with `encodeSchnorrVerify`. -/
+noncomputable def schnorrDirectProbExperiment (k : ℕ → ℕ) (A : F.SchnorrImpersonator)
+    (n : ℕ) (d : F.Desc) : ProbComp Bool := do
+  let (pk, _) ← F.schnorrSigKeyGen n d
+  let ts ← A.commit n (d, pk)
+  let c ← BitString.sampleList (k n)
+  let z ← A.respond n (ts.2, c)
+  return F.encodeSchnorrVerify d pk ts.1 c z
+
+/-- Averaging `schnorrDirectProbExperiment` over `d ← setup n` yields `schnorrDirectProbGame`. -/
+theorem bind_eval_schnorrDirectProbExperiment (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
+    (A : F.SchnorrImpersonator) (n : ℕ) :
+    ((setup n).bind fun d => ProbComp.eval (F.schnorrDirectProbExperiment k A n d)) =
+      F.schnorrDirectProbGame setup k A n := by
+  simp only [schnorrDirectProbExperiment, schnorrDirectProbGame, schnorrSigKeyGen,
+    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, F.smul_encode,
+    F.encodeSchnorrVerify_encode, ofBits_bits, ZMod.natCast_mod]
+
+/-- `schnorrDirectProbExperiment` is uniformly strict PPT in `(n, d)` whenever `k` is computable in
+polynomial time and `A` is a uniform strict PPT `SchnorrImpersonator`. -/
+theorem isPPTOn_schnorrDirectProbExperiment {k : ℕ → ℕ}
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    {A : F.SchnorrImpersonator} (hA : A.IsPPT) :
+    IsPPTOn (encPair encUnary F.encDesc) encBool
+      (fun p : ℕ × F.Desc => F.schnorrDirectProbExperiment k A p.1 p.2) := by
+  let E0 := encPair encUnary F.encDesc
+  let E1 := encPair E0 (encPair encBits encBits)
+  let E2 := encPair E1 (encPair encBits encBits)
+  let E3 := encPair E2 encBits
+  let E4 := encPair E3 encBits
+  have hk_t := hk.tidy
+  have hcommit : IsPPTOn E1 (encPair encBits encBits)
+      (fun p : (ℕ × F.Desc) × (List Bool × List Bool) => A.commit p.1.1 (p.1.2, p.2.1)) :=
+    hA.1.preprocess
+      (prepare := fun p : (ℕ × F.Desc) × (List Bool × List Bool) => (p.1.1, (p.1.2, p.2.1)))
+      (by fun_prop)
+  have hchal : IsPPTOn E2 encBits
+      (fun q : ((ℕ × F.Desc) × (List Bool × List Bool)) × (List Bool × List Bool) =>
+        BitString.sampleList (k q.1.1.1)) :=
+    ComputableInPolyTime.sampleList (by fun_prop)
+  have hresp : IsPPTOn E3 encBits
+      (fun r : (((ℕ × F.Desc) × (List Bool × List Bool)) × (List Bool × List Bool)) × List Bool =>
+        A.respond r.1.1.1.1 (r.1.2.2, r.2)) :=
+    hA.2.preprocess
+      (prepare := fun r : (((ℕ × F.Desc) × (List Bool × List Bool)) × (List Bool × List Bool)) ×
+          List Bool =>
+        (r.1.1.1.1, (r.1.2.2, r.2)))
+      (by fun_prop)
+  have hver : ComputableInPolyTime
+      (fun s : ((((ℕ × F.Desc) × (List Bool × List Bool)) × (List Bool × List Bool)) × List Bool) ×
+          List Bool =>
+        F.encodeSchnorrVerify s.1.1.1.1.2 s.1.1.1.2.1 s.1.1.2.1 s.1.2 s.2)
+      E4 encBool := by
+    fun_prop
+  unfold schnorrDirectProbExperiment
+  exact F.isPPTOn_schnorrSigKeyGen.bind_with
+    (hcommit.bind_with (hchal.bind_with (hresp.bind_with hver.isPPTOn)))
+
+/-- Replacing `schnorrSigKeyGen` with ideal uniform key generation in `schnorrDirectProbGame`
+changes the game advantage by at most `1 / 2 ^ n`. -/
+theorem advantage_schnorrDirectProbGame_schnorrDirectGame_le
+    (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) (A : F.SchnorrImpersonator) (n : ℕ) :
+    Game.advantage (F.schnorrDirectProbGame setup k A n)
+      (F.schnorrDirectGame setup k A n) ≤ 1 / 2 ^ n := by
+  simp only [schnorrDirectProbGame, schnorrDirectGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure]
+  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
+  exact F.advantage_bind_schnorrSigKeyGen_le n d fun pk α =>
+    (ProbComp.eval (A.commit n (d, pk))).bind fun ts =>
+      (BitString.uniformList (k n)).bind fun c =>
+        (ProbComp.eval (A.respond n (ts.2, c))).bind fun z =>
+          pure (decide (ts.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
+            (ofBits c : ZMod (F.order d)) • (α • F.generator d))))
+
+/-- **Schnorr identification against direct attacks with `schnorrSigKeyGen`, exact form**: at each
+security parameter where every supported group has at least `2 ^ k n` elements, an impersonator's
+success probability in `schnorrDirectProbGame` is at most `1 / 2 ^ n + 1 / 2 ^ k n + √ε'`. -/
+theorem succProbability_schnorrDirectProbGame_le (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
+    (A : F.SchnorrImpersonator) (n : ℕ) (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
+    (Game.succProbability (F.schnorrDirectProbGame setup k A n) : ℝ) ≤
+      1 / 2 ^ n + 1 / 2 ^ k n +
+        √(Game.succProbability (F.discreteLogGame setup (A.rewind k) n)) := by
+  have hhop : Game.succProbability (F.schnorrDirectProbGame setup k A n) ≤
+      Game.succProbability (F.schnorrDirectGame setup k A n) + 1 / 2 ^ n :=
+    Game.succProbability_le_add_of_advantage_le
+      (F.advantage_schnorrDirectProbGame_schnorrDirectGame_le setup k A n)
+  have hhopR : (Game.succProbability (F.schnorrDirectProbGame setup k A n) : ℝ) ≤
+      (Game.succProbability (F.schnorrDirectGame setup k A n) : ℝ) + 1 / 2 ^ n := by
+    exact_mod_cast hhop
+  have hdir := succProbability_schnorrDirectGame_le setup k A n hkq
+  linarith
+
+/-- **Schnorr identification with `schnorrSigKeyGen` is secure against direct attacks under the
+discrete-logarithm assumption**. -/
+theorem negligible_schnorrDirectProbGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
+    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
+    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
+    (hchallenge : Negligible fun n => 1 / 2 ^ k n) {A : F.SchnorrImpersonator} (hA : A.IsPPT) :
+    Negligible fun n => Game.succProbability (F.schnorrDirectProbGame setup k A n) := by
+  have hdir := negligible_schnorrDirectGame hDL hk hkq hchallenge hA
+  negligible using fun n =>
+    Game.succProbability_le_add_of_advantage_le
+      (F.advantage_schnorrDirectProbGame_schnorrDirectGame_le setup k A n)
+
+variable (F) in
+/-- The eavesdropping impersonation attack on Schnorr identification where both key generation
+(`schnorrSigKeyGen`) and the `Q n` overheard honest conversations (`schnorrRealTranscript`) use
+`F.sampleExp n d`. -/
+noncomputable def schnorrEavesdropProbGame (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ)
+    (A : F.SchnorrEavesdropAdversary) (n : ℕ) : Game := do
+  let d ← setup n
+  let (pk, sk) ← ProbComp.eval (F.schnorrSigKeyGen n d)
+  let views ← ProbComp.eval
+    (OracleComp.replicate (Q n) (F.schnorrRealTranscript n d (ofBits sk : ZMod (F.order d)) (k n)))
+  let ts ← ProbComp.eval (A.commit n (d, pk, views))
+  let c ← BitString.uniformList (k n)
+  let z ← ProbComp.eval (A.respond n (ts.2, c))
+  return decide (ts.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
+    (ofBits c : ZMod (F.order d)) • ((ofBits sk : ZMod (F.order d)) • F.generator d)))
+
+variable (F) in
+/-- Executable `ProbComp Bool` eavesdropping experiment at group description `d`: sample
+`(pk, sk) ← schnorrSigKeyGen n d`, generate `Q n` honest transcripts with `schnorrRealTranscript`,
+run `A.commit`, sample `c ← BitString.sampleList (k n)`, run `A.respond`, and verify with
+`encodeSchnorrVerify`. -/
+noncomputable def schnorrEavesdropProbExperiment (k Q : ℕ → ℕ)
+    (A : F.SchnorrEavesdropAdversary) (n : ℕ) (d : F.Desc) : ProbComp Bool := do
+  let (pk, sk) ← F.schnorrSigKeyGen n d
+  let views ← OracleComp.replicate (Q n)
+    (F.schnorrRealTranscript n d (ofBits sk : ZMod (F.order d)) (k n))
+  let ts ← A.commit n (d, pk, views)
+  let c ← BitString.sampleList (k n)
+  let z ← A.respond n (ts.2, c)
+  return F.encodeSchnorrVerify d pk ts.1 c z
+
+/-- Averaging `schnorrEavesdropProbExperiment` over `d ← setup n` yields
+`schnorrEavesdropProbGame`. -/
+theorem bind_eval_schnorrEavesdropProbExperiment (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ)
+    (A : F.SchnorrEavesdropAdversary) (n : ℕ) :
+    ((setup n).bind fun d => ProbComp.eval (F.schnorrEavesdropProbExperiment k Q A n d)) =
+      F.schnorrEavesdropProbGame setup k Q A n := by
+  simp only [schnorrEavesdropProbExperiment, schnorrEavesdropProbGame, schnorrSigKeyGen,
+    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, F.smul_encode,
+    F.encodeSchnorrVerify_encode, ofBits_bits, ZMod.natCast_mod]
+
+/-- `schnorrEavesdropProbExperiment` is uniformly strict PPT in `(n, d)` whenever `k` and `Q` are
+computable in polynomial time and `A` is a uniform strict PPT `SchnorrEavesdropAdversary`. -/
+theorem isPPTOn_schnorrEavesdropProbExperiment {k Q : ℕ → ℕ}
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hQ : ComputableInPolyTime Q encUnary encUnary)
+    {A : F.SchnorrEavesdropAdversary} (hA : A.IsPPT) :
+    IsPPTOn (encPair encUnary F.encDesc) encBool
+      (fun p : ℕ × F.Desc => F.schnorrEavesdropProbExperiment k Q A p.1 p.2) := by
+  let E0 := encPair encUnary F.encDesc
+  let E1 := encPair E0 (encPair encBits encBits)
+  let E2 := encPair E1 (encList encTranscript)
+  let E3 := encPair E2 (encPair encBits encBits)
+  let E4 := encPair E3 encBits
+  let E5 := encPair E4 encBits
+  have hk_t := hk.tidy
+  have hQ_t := hQ.tidy
+  have hsk_nat : ComputableInPolyTime
+      (fun p : (ℕ × F.Desc) × (List Bool × List Bool) => ofBits p.2.2) E1 encNat :=
+    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp
+      (by fun_prop : ComputableInPolyTime
+        (fun p : (ℕ × F.Desc) × (List Bool × List Bool) => p.2.2) E1 encBits).tidy)
+  have hviews : IsPPTOn E1 (encList encTranscript)
+      (fun p : (ℕ × F.Desc) × (List Bool × List Bool) =>
+        OracleComp.replicate (Q p.1.1)
+          (F.schnorrRealTranscript p.1.1 p.1.2 (ofBits p.2.2 : ZMod (F.order p.1.2)) (k p.1.1))) :=
+    (F.isPPTOn_schnorrRealTranscript
+      (n := fun p : (ℕ × F.Desc) × (List Bool × List Bool) => p.1.1)
+      (d := fun p : (ℕ × F.Desc) × (List Bool × List Bool) => p.1.2)
+      (α := fun p : (ℕ × F.Desc) × (List Bool × List Bool) => ofBits p.2.2)
+      (m := fun p : (ℕ × F.Desc) × (List Bool × List Bool) => k p.1.1)
+      (by fun_prop) (by fun_prop) hsk_nat (by fun_prop)).replicate (by fun_prop)
+  have hcommit : IsPPTOn E2 (encPair encBits encBits)
+      (fun q : ((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool) =>
+        A.commit q.1.1.1 (q.1.1.2, q.1.2.1, q.2)) :=
+    hA.1.preprocess
+      (prepare := fun q : ((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool) =>
+        (q.1.1.1, (q.1.1.2, q.1.2.1, q.2)))
+      (by fun_prop)
+  have hchal : IsPPTOn E3 encBits
+      (fun r : (((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool)) × (List Bool × List Bool) =>
+        BitString.sampleList (k r.1.1.1.1)) :=
+    ComputableInPolyTime.sampleList (by fun_prop)
+  have hresp : IsPPTOn E4 encBits
+      (fun s : ((((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool)) × (List Bool × List Bool)) × List Bool =>
+        A.respond s.1.1.1.1.1 (s.1.2.2, s.2)) :=
+    hA.2.preprocess
+      (prepare := fun s : ((((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool)) × (List Bool × List Bool)) × List Bool =>
+        (s.1.1.1.1.1, (s.1.2.2, s.2)))
+      (by fun_prop)
+  have hver : ComputableInPolyTime
+      (fun u : (((((ℕ × F.Desc) × (List Bool × List Bool)) ×
+          List (List Bool × List Bool × List Bool)) × (List Bool × List Bool)) × List Bool) ×
+          List Bool =>
+        F.encodeSchnorrVerify u.1.1.1.1.1.2 u.1.1.1.1.2.1 u.1.1.2.1 u.1.2 u.2)
+      E5 encBool := by
+    fun_prop
+  unfold schnorrEavesdropProbExperiment
+  exact F.isPPTOn_schnorrSigKeyGen.bind_with
+    (hviews.bind_with (hcommit.bind_with (hchal.bind_with (hresp.bind_with hver.isPPTOn))))
+
+/-- Replacing `schnorrSigKeyGen` with ideal uniform key generation in `schnorrEavesdropProbGame`
+changes the game advantage by at most `1 / 2 ^ n`. -/
+theorem advantage_schnorrEavesdropProbGame_schnorrEavesdropGame_le
+    (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ) (A : F.SchnorrEavesdropAdversary) (n : ℕ) :
+    Game.advantage (F.schnorrEavesdropProbGame setup k Q A n)
+      (F.schnorrEavesdropGame setup k Q A n) ≤ 1 / 2 ^ n := by
+  simp only [schnorrEavesdropProbGame, schnorrEavesdropGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure]
+  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
+  exact F.advantage_bind_schnorrSigKeyGen_le n d fun pk α =>
+    (ProbComp.eval (OracleComp.replicate (Q n) (F.schnorrRealTranscript n d α (k n)))).bind
+      fun views =>
+        (ProbComp.eval (A.commit n (d, pk, views))).bind fun ts =>
+          (BitString.uniformList (k n)).bind fun c =>
+            (ProbComp.eval (A.respond n (ts.2, c))).bind fun z =>
+              pure (decide (ts.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
+                (ofBits c : ZMod (F.order d)) • (α • F.generator d))))
+
+/-- Replacing both `schnorrSigKeyGen` and the `Q n` strict-PPT honest conversations in
+`schnorrEavesdropProbGame` with ideal key generation and simulated conversations in
+`schnorrDirectGame setup k (A.toDirect k Q)` changes the game advantage by at most
+`(2 * Q n + 1) / 2 ^ n`. -/
+theorem advantage_schnorrEavesdropProbGame_schnorrDirectGame_le
+    (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ) (A : F.SchnorrEavesdropAdversary) (n : ℕ) :
+    Game.advantage (F.schnorrEavesdropProbGame setup k Q A n)
+      (F.schnorrDirectGame setup k (A.toDirect k Q) n) ≤ (2 * Q n + 1) / 2 ^ n := by
+  refine (Game.advantage_triangle _ (F.schnorrEavesdropGame setup k Q A n) _).trans ?_
+  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 2 * Q n / 2 ^ n :=
+      add_le_add
+        (F.advantage_schnorrEavesdropProbGame_schnorrEavesdropGame_le setup k Q A n)
+        (F.advantage_schnorrEavesdropGame_schnorrDirectGame_le setup k Q A n)
+    _ = (2 * Q n + 1) / 2 ^ n := by ring
+
+/-- **Schnorr identification against eavesdropping with `schnorrSigKeyGen`, exact form**: at each
+security parameter where every supported group has at least `2 ^ k n` elements, an eavesdropper's
+success probability in `schnorrEavesdropProbGame` is at most
+`(2 * Q n + 1) / 2 ^ n + 1 / 2 ^ k n + √ε'`. -/
+theorem succProbability_schnorrEavesdropProbGame_le
+    (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ) (A : F.SchnorrEavesdropAdversary) (n : ℕ)
+    (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
+    (Game.succProbability (F.schnorrEavesdropProbGame setup k Q A n) : ℝ) ≤
+      (2 * Q n + 1) / 2 ^ n + 1 / 2 ^ k n +
+        √(Game.succProbability (F.discreteLogGame setup ((A.toDirect k Q).rewind k) n)) := by
+  have hhop : Game.succProbability (F.schnorrEavesdropProbGame setup k Q A n) ≤
+      Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) +
+        (2 * Q n + 1) / 2 ^ n :=
+    Game.succProbability_le_add_of_advantage_le
+      (F.advantage_schnorrEavesdropProbGame_schnorrDirectGame_le setup k Q A n)
+  have hhopR : (Game.succProbability (F.schnorrEavesdropProbGame setup k Q A n) : ℝ) ≤
+      (Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) : ℝ) +
+        (2 * Q n + 1) / 2 ^ n := by
+    exact_mod_cast hhop
+  have hdir := succProbability_schnorrDirectGame_le setup k (A.toDirect k Q) n hkq
+  linarith
+
+variable (F) in
+/-- Schnorr identification with challenge length `k` is secure against eavesdropping attacks under
+native fair-coin key generation (`schnorrEavesdropProbGame`) for every polynomial-time conversation
+count `Q` and every uniform strict PPT eavesdropping adversary `A`. -/
+def IsProbEavesdropSecure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop :=
+  ∀ (Q : ℕ → ℕ), ComputableInPolyTime Q encUnary encUnary →
+    ∀ (A : F.SchnorrEavesdropAdversary), A.IsPPT →
+      Negligible fun n => Game.succProbability (F.schnorrEavesdropProbGame setup k Q A n)
+
+/-- **Schnorr identification with `schnorrSigKeyGen` is secure against eavesdropping under the
+discrete-logarithm assumption**. -/
+theorem negligible_schnorrEavesdropProbGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
+    {k Q : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
+    (hQ : ComputableInPolyTime Q encUnary encUnary)
+    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
+    (hchallenge : Negligible fun n => 1 / 2 ^ k n)
+    {A : F.SchnorrEavesdropAdversary} (hA : A.IsPPT) :
+    Negligible fun n => Game.succProbability (F.schnorrEavesdropProbGame setup k Q A n) := by
+  have heaves := negligible_schnorrEavesdropGame hDL hk hQ hkq hchallenge hA
+  negligible using fun n =>
+    Game.succProbability_le_add_of_advantage_le
+      (F.advantage_schnorrEavesdropProbGame_schnorrEavesdropGame_le setup k Q A n)
+
+/-- **Schnorr identification satisfies `IsProbEavesdropSecure` under the discrete-logarithm
+assumption**. -/
+theorem schnorr_isProbEavesdropSecure_of_discreteLogHard
+    {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
+    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
+    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
+    (hchallenge : Negligible fun n => 1 / 2 ^ k n) :
+    F.IsProbEavesdropSecure setup k :=
+  fun _ hQ _ hA => negligible_schnorrEavesdropProbGame hDL hk hQ hkq hchallenge hA
 
 end Cslib.Crypto.PrimeOrderGroupFamily

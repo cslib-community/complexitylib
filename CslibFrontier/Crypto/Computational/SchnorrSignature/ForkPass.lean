@@ -880,7 +880,8 @@ private theorem schnorrForkFinish_nativeState (d : F.Desc) (hm : 2 ^ m ≤ F.ord
       simp only [ForkingReduction.finish, FiatShamir.check, hlookup]
     simp only [hfind, Option.map_some, Option.elim_some, nativeEntry, hrun,
       OracleComp.runWithAnswers_pure, List.append_nil]
-    simp only [ForkingReduction.verdict, FiatShamir.check, schnorrWordSigma, hcontains]
+    simp only [ForkingReduction.verdict, FiatShamir.check, schnorrWordSigma, schnorrSigVerifyBits,
+      hcontains]
     cases position with
     | none => simp [positionTag, forkIndexCode, OracleComp.validIndex]
     | some j =>
@@ -903,8 +904,8 @@ private theorem schnorrForkFinish_nativeState (d : F.Desc) (hm : 2 ^ m ≤ F.ord
       simp only [ForkingReduction.finish, FiatShamir.check, hlookup]
     simp only [hfind, Option.map_none, Option.elim_none, hrun, OracleComp.runWithAnswers_map_query,
       hnext, hget]
-    simp only [ForkingReduction.verdict, FiatShamir.check, schnorrWordSigma, hcontains,
-      List.length_map, List.length_append, List.length_singleton, ← hcount,
+    simp only [ForkingReduction.verdict, FiatShamir.check, schnorrWordSigma, schnorrSigVerifyBits,
+      hcontains, List.length_map, List.length_append, List.length_singleton, ← hcount,
       forkIndexCode_validIndex]
 
 end Agreement
