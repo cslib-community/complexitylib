@@ -301,9 +301,36 @@ applies the lemma to equality on two distinct bits, a heavy-atom case. It also a
 light-atom case to uniform inputs on `Fin 4` with `k = 2`, at the boundary mass `1/4`. Run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOutLargeRectangle` to check it.
 
-This is infrastructure, the upper-bound portion and Lemma 5.2 of submission 865. The
-minimax/majority construction, headline lower bounds and later formula/core results remain
-open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+[OneOutLowerBound](../../CslibFrontier/Computability/Communication/OneOutLowerBound.lean)
+proves the paper's Theorem 1.2 and the lower bound of Theorem 1.1, with explicit constants.
+`ecomplexity_le_oneOut` needs a total `R` on finite nonempty types with
+`|X|, |Y| ≤ 2 ^ n`. It bounds `ecomplexity R univ univ` by the maximum of the one-out
+complexity and `Nat.clog 2 (Fintype.card Z)`, plus
+`18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3`. `ecomplexityFun_le_oneOut` is the Boolean
+form with `+ 4`; together with `OneOut.ecomplexity_le` it gives both sides of Theorem 1.1.
+A `SolvableRectangle R d` packages sides `alice` and `bob` with a protocol of depth at most
+`d` solving `R` there. `exists_covering_distribution` is the minimax step: Lemma 5.2 applied
+to the two conditional distributions, then `PMF.exists_forall_toOuterMeasure_le`.
+The source's Lemma 3.7, Valiant's amplification, is `exists_forall_majTree_majTree_eq` in
+[Combinatorics/MajorityTree](../../CslibFrontier/Foundations/Combinatorics/MajorityTree.lean).
+Its error bounds for majority trees `majTree` are stated for weighted leaves, so one
+implementation serves both the counting amplification of `card_majTree_ne_le` and the
+covering distribution here. One level maps
+the missed weight `B` to at most `3 B² T - 2 B³` (`sum_majTree_succ_ne_le`). Inner trees of depth
+`3 ⌈log₂ k²⌉ + 1` raise the advantage `1/(4k²)` to an error below `1/6`. An outer tree of depth
+`⌈log₂ ⌈log₂ |X ⊕ Y|⌉⌉` is then correct at every input (`exists_forall_majTree_eq_of_sum`).
+`walk` runs the Karchmer–Wigderson walk on a majority tree whose leaves carry protocols, with
+three bits per level. `exists_solves_depth_le` nests two walks to assemble the protocol for
+a given one-out protocol `p`. The walk is direct rather than through
+`Formula.monotoneKWProtocol`, because the leaves carry protocols.
+The [lower-bound client](../../CslibFrontierTests/CommunicationOneOutLowerBound.lean) applies
+both theorems to equality of bits with `k = 2`. Run
+`scripts/build.sh CslibFrontierTests.CommunicationOneOutLowerBound` to check it.
+
+This is the communication part of submission 865: the upper bound, Lemma 5.2, Theorem 1.2 and
+Theorem 1.1. The formula-depth Corollary 1.3, Corollary 1.4, Theorem 1.5 and the
+composition/core results (Theorems 1.6–1.8) remain open in
+[#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 
