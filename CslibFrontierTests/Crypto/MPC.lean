@@ -4,15 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Crypto.Protocols.MPC.Basic
-import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
-import CslibFrontier.Crypto.Protocols.MPC.Composition
-import CslibFrontier.Crypto.Protocols.MPC.PolyTime
-import CslibFrontier.Crypto.Protocols.MPC.SharedMul
-import Cslib.Computability.Circuit.Boolean.Basic
-import Mathlib.Algebra.Ring.BooleanRing
-import Mathlib.Data.ZMod.Basic
+module
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import CslibFrontier.Crypto.Protocols.MPC.Basic
+public import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
+public import CslibFrontier.Crypto.Protocols.MPC.Composition
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
+public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
+public import Cslib.Computability.Circuit.Boolean.Basic
+public import Mathlib.Algebra.Ring.BooleanRing
+public import Mathlib.Data.ZMod.Basic
+public import CslibFrontier.Probability.PMF.Uniform
 
 /-!
 # Tests for additive secret sharing and multi-party protocol foundations
@@ -52,6 +55,8 @@ Concrete tests for `CslibFrontier.Languages.Probabilistic.Sharing` and
    failure at `I = ∅`):** `coinBroadcastFunc` outputting `(b, b)` versus `independentCoinProtocol`
    where each party outputs its own independent random coin, refuted at `I = ∅`.
 -/
+
+@[expose] public section
 
 namespace CslibFrontierTests.Crypto.MPC
 

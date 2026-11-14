@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
 import CslibFrontier.Probability.MarkovChain.RandomWalk
+import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -120,6 +121,7 @@ import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
+import CslibFrontier.Computability.Complexity.Problems.QUADEQ
 import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TMSAT
@@ -353,6 +355,21 @@ register_result "dir-ham-path-any-np-complete" where
     declared vertices are not members. Hardness reduces the designated-endpoint DirHamPath \
     (Sipser's diamond construction) by adding a fresh source and sink, not the draft's \
     direct 3SAT reduction."
+
+register_result "quadeq-np-complete" where
+  title := "QUADEQ is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 18",
+      locator := "Web draft 2007-01-08, printed p. 64; PDF p. 80" }
+  ]
+  theorems := [Cslib.Complexity.QUADEQ_npComplete]
+  scope := "Systems of quadratic equations over 𝔽₂ as lists of QuadEquation records under \
+    QUADEQ.encoding: each equation lists the monomials u_i u_j with a_ij = 1, repeated \
+    monomials cancelling in pairs, with binary natural-number variable labels and no bound on \
+    their values. Membership by a polynomial-time verifier with first-occurrence certificates; \
+    hardness by a polynomial-time reduction from SAT (the exercise's hint), composed with \
+    Cook–Levin."
 
 register_result "pcp" where
   title := "The PCP theorem"
@@ -5773,3 +5790,20 @@ register_result "random-walk-edge-hitting-time" where
     approximations. Proves E_u[tau_v] + deg v <= 2|E| for every edge {u,v}, Kac's formula \
     deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
     bound and the log-space USTCON algorithm are not included."
+
+register_result "goldreich-expander-varying-density-hitting" where
+  title := "Expander-walk varying-density product and constant-set bound"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := Goldreich2007DraftR4, theorem := "Exercise 8.43, equation (8.24)",
+      locator := "March 2007 draft, printed p. 381 / PDF p. 117" }
+  ]
+  theorems := [
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product_of_spectralExpansion_le,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_rpow_of_spectralExpansion_le
+  ]
+  scope := "Finite nonempty rotation map with nonempty incident slots; uniform initial vertex \
+    and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
+    retained, with explicit transport to lambda/d and the constant-set real half-length power. \
+    No machine uniformity, runtime or Exercise 8.44 concentration claim."
