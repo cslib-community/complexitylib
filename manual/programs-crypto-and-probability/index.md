@@ -952,8 +952,9 @@ proves that the optimum equals the minimum cover size, and the readback `queried
 keeps the oracles with positive call counts in polynomial time.
 `P_eq_NP_of_selection_approx_const` combines this with `GapSetCover_npHard`: unless
 $\mathrm{P}=\mathrm{NP}$, no polynomial-time algorithm approximates the selection
-problem within any constant factor. Hardness on this subclass also rules out
-algorithms for any broader input class that contains it.
+problem within any constant factor. Transferring this hardness to a broader input
+class additionally requires a polynomial-time embedding preserving feasibility and
+approximation guarantees.
 
 The source states the sharper bound: no $(1-\varepsilon)\ln n$-approximation for any
 constant $\varepsilon>0$ unless $\mathrm{P}=\mathrm{NP}$, citing Dinur and Steurer (2014). That bound needs
@@ -996,13 +997,13 @@ when its numerical statement is already proved. The full objective in
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
 | Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Covered in the documented native interface: arbitrary promised finite X3C inputs, original WSC labels, known role metadata, decoded raw residuals/local certificates, source batch admission, provenance, guarded native output and joint resources. The runtime-role controller removes the old least-element program's label-order restriction; the unused legacy specialization is not needed for these attainment results. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualInvoice.response_factor`, `expected_score_eq_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `native_one_lower`; `NativeResidualOptimum.one_lower_of_mean`, `two_lower_of_mean`; `NativeResidualRealCost.hasMean`, `expected_finset`, `hasMean_bind`; `NativeResidualRealAdaptive.minimum_cost_mem`; `NativeResidualRealMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio`; `NativeResidualCostChoice.native_expected_cost`, `native_optimum`; `NativeResidualRealChoice.native_cost_mem`, `native_optimum`; `NativeResidualPathCost.integrable_totalBill` | Partial at source scope: the documented native model proves the equalities for arbitrary positive real price parameters and every fixed invoice PMF with the source batch means (`HasMean`), such as `FixedMeanInvoice.law` and its mixtures with deterministic natural invoices. The PMF is drawn independently of residual index $J$ and the preceding history. Every admitted finite-control selection-only native competitor uses the same source oracle and seed, with unbounded local computation. Conditional mean accounting preserves accrued divergent prefixes; the two compiled strategies attain both minima, and the rational-table cost chooser is one optimal compiled program. No integer-price identity, integrability or target-cost premise is required. History-dependent or $J$-coupled invoice laws with the paper’s conditional means remain unproved. These are genuine source obligations, not blocked on #4336. External-machine representation remains separate. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualInvoice.response_factor`, `expected_score_eq_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `native_one_lower`; `NativeResidualOptimum.one_lower_of_mean`, `two_lower_of_mean`; `NativeResidualRealCost.hasMean`, `expected_finset`, `hasMean_bind`; `NativeResidualRealAdaptive.minimum_cost_mem`; `NativeResidualRealMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio`; `NativeResidualCostChoice.native_expected_cost`, `native_optimum`; `NativeResidualRealChoice.native_cost_mem`, `native_optimum`; `NativeResidualPathCost.integrable_totalBill` | Partial at source scope: the documented native model proves the equalities for arbitrary positive real price parameters and every fixed invoice PMF with the source batch means (`HasMean`), such as `FixedMeanInvoice.law` and its mixtures with deterministic natural invoices. The PMF is drawn independently of residual index $J$ and the preceding history. Every admitted finite-control selection-only native competitor uses the same source oracle and seed, with unbounded local computation. Conditional mean accounting preserves accrued divergent prefixes; the two compiled strategies attain both minima, and the rational-table cost chooser is one optimal compiled program. No integer-price identity, integrability or target-cost premise is required. The optional history-/response-dependent invoice generalization has native ledger and universal one/two-turn lower proofs in `NativeResidualConditionalInvoice` and `NativeResidualOptimum.one_lower_of_conditional_mean` / `two_lower_of_conditional_mean`; both strategies now attain those bounds, with exact native minima, adaptivity ratios, an optimal rational-table selector and integrable actual total-path bills. Theorem 6 itself constructs fixed-cost oracles. External-machine representation remains separate. |
 
 Not everything outside #4335/#4336 is present. The native real-price Theorem 6
 minimum/ratio and rational uniform selector are proved for every fixed invoice PMF
-with the source batch means, independently drawn from $J$ and history. Extending
-attained equalities to history-dependent or $J$-coupled conditional-mean laws
-remains a source obligation.
+with the source batch means, independently drawn from $J$ and history. The optional generalization to history-dependent and $J$-coupled conditional-mean
+laws now has attained native equalities and exact real total-path bills. The source
+construction itself uses fixed costs.
 Unrestricted source-query/cutoff and external-machine realization for Theorem 5
 remain material, not blocked on #4336. No ALL-main or unrestricted source-model
 completion is claimed.
@@ -1060,11 +1061,12 @@ one and expected bill $3/4$, and places that attained value in the same native c
 class. Neither price can be identified with a constant natural invoice.
 
 The native real-mean lower/OPT equality for this particular independent invoice law
-is proved by the accounting below; arbitrary conditional-mean invoice laws remain a gap.
+is proved by the accounting below. Conditional invoice kernels now have native
+accounting, universal lower bounds, attained equalities and real total-path costs.
 Import [NativeResidualInvoice](../../CslibFrontier/Probability/StochasticOracle/NativeResidualInvoice.lean)
 and [NativeResidualRealMinima](../../CslibFrontier/Probability/StochasticOracle/NativeResidualRealMinima.lean).
-`NativeResidualPolicies` now accepts a PMF of fresh natural invoices. A point mass
-recovers the earlier fixed-invoice oracle; `NativeResidualOptimum.one_lower` and
+`NativeResidualPolicies` accepts a conditional invoice kernel; a constant kernel
+recovers the fixed invoice-PMF model, and a constant point mass the earlier oracle; `NativeResidualOptimum.one_lower` and
 `two_lower` retain their original public statements. The generalized posterior
 construction retains arbitrary invoice-dependent local computation and hidden state,
 selected-before-response actions and divergent mass. Primitive `HasMean` concerns
@@ -1089,11 +1091,37 @@ by both concrete real-mean strategies.
 The lower accounting and the attained upper and optimum equalities hold for every
 fixed invoice PMF satisfying `HasMean`, sampled independently of $J$ and history.
 A client checks native OPT $2$ for a fair-coin mixture of the deterministic unit
-invoice with `FixedMeanInvoice.law`. History-dependent or $J$-coupled invoice
-laws with fixed conditional per-call means require further execution, posterior
-and attainment proofs. These gaps are not blocked on #4336. The general native
-path-cost construction below imposes no such invoice-independence restriction,
-but by itself does not establish the missing optimum equalities.
+invoice with `FixedMeanInvoice.law`.
+
+For an optional extension beyond the fixed-cost Theorem 6 construction, import
+[NativeResidualConditionalInvoice](../../CslibFrontier/Probability/StochasticOracle/NativeResidualConditionalInvoice.lean).
+Its `Kernel` may depend on all accepted source receipts, the already selected batch
+(including query bytes), and the newly sampled residual $J$. `HasMean` averages
+over both residual and invoice randomness, conditional on history and selection;
+it does not require a fixed expected invoice after $J$ is revealed. Merely fixing
+unconditional per-opportunity means would not suffice for adaptive selection.
+`expected_score_eq_charge` proves exact native accrued billing, including divergent
+prefixes. The same posterior-policy construction retains these correlations, and
+`NativeResidualOptimum.one_lower_of_conditional_mean` / `two_lower_of_conditional_mean`
+give universal lower bounds on the same admitted native competitor class.
+
+The [checked clients](../../CslibFrontierTests/StochasticOracleConditionalInvoice.lean)
+use deterministic unit invoices initially and shared fair zero-or-two invoices
+after a receipt, and near invoices $0,1,2$ coupled to a uniform three-way residual.
+They verify primitive means, actual history dependence, a native-query ledger
+identity, native OPT $2$ for both kernels and ratio $3/2$ for the response-coupled
+three-block instance. The same rational-table program has expected bill $2$ and
+actual real total-path expectation $2$ on that instance.
+`NativeResidualRealAdaptive.native_law_conditional` keeps residual, first invoice
+and second invoice in their dependent order, with the actual first receipt in the
+second history. `NativeResidualRealMinima.native_optimum_conditional` /
+`native_one_optimum_conditional` assemble the attained equalities; the corresponding
+ratio theorems give the adaptivity gap. `NativeResidualRealChoice.native_optimum_conditional`
+proves optimality of the single rational-table selector, and
+`NativeResidualPathCost.integrable_totalBill_conditional` derives integrability and
+exact real expectation from its actual infinite native path. The fixed-law APIs
+remain constant-kernel specializations. These results concern this discrete native
+interface; external-machine compilation and general measurable interfaces remain separate.
 
 The unrestricted source-query/cutoff interpreter and external-machine adapters
 also remain unproved. `NativeUnboundedExecution.selectionOnly_of_output_memory`

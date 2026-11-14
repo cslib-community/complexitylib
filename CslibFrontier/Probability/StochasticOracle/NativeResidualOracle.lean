@@ -128,6 +128,19 @@ def response (limits : Limits (z + 1)) (invoice : Fin (z + 1) → ℕ)
     (r : Option (Fin z)) : PMF (Trace.State (z + 1) tapes Unit Control input) :=
   Trace.respond limits (fixedSample T points candidates invoice r) machine state hit
 
+/-- A fixed-residual response dispatches the concrete unit-latency trajectories.
+This equation exposes the response law without exposing its private sampler. -/
+theorem response_eq (limits : Limits (z + 1)) (invoice : Fin (z + 1) → ℕ)
+    (machine : MultiTapePTM tapes Bool Control Unit)
+    (state : Trace.State (z + 1) tapes Unit Control input)
+    (hit : Option (Phase tapes Control Unit (ServerState (z + 1) Unit) input))
+    (r : Option (Fin z)) :
+    response T points candidates limits invoice machine state hit r =
+      Trace.respond limits (fun _ batch =>
+        PMF.pure (paths T points candidates invoice batch r, ())) machine state hit := by
+  unfold response fixedSample
+  rfl
+
 /-- At every actual native checkpoint, including silent divergence, dispatch
 factors through the source response law of the already selected call set.
 Work tapes, private random bits and raw query strings are not approximated. -/

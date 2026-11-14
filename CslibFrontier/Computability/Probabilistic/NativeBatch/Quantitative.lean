@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Trace
+import CslibFrontier.Probability.PMF.SupportTsum
 public import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Disintegration.Support
 import Mathlib.Tactic
@@ -30,6 +31,7 @@ comparisons, not the remaining source success/count/binomial/certification bound
 
 * `selection_factor`: actual complete policy law, conditioned after source-batch selection.
 * `expected_accrued`: accrued resources equal the sum of selected conditional expectations.
+* `step_mean_of_response`: average primitive score increments after native batch selection.
 * `conditional_comparison`: local supported epoch comparisons transfer to the whole policy.
 * `cost_upper_budget`: finite total expectation derived from conditional envelopes.
 * `universal_cost_lower`: one fixed oracle and seed, every admitted native competitor.
@@ -256,6 +258,36 @@ theorem step_accrued (prior : PMF (State n k Private Control input))
           mean (respond limits sample machine state hit) (newest score))
   simp only [respond_accrued, mul_add, tsum_add, ENNReal.tsum_mul_right,
     PMF.tsum_coe, one_mul]
+
+/-- A primitive conditional accrued-score increment can be averaged after actual
+source selection. The preceding trace is retained, including divergent prefixes. -/
+theorem step_mean_of_response (score : Record n → ℝ≥0∞)
+    (increment : Option (Phase k Control Unit (ServerState n Private) input) → ℝ≥0∞)
+    (H : ∀ (state : State n k Private Control input) hit,
+      (∀ phase, hit = some phase → sourceBoundary limits phase) →
+      mean (respond limits sample machine state hit) (accrued score) =
+        accrued score state + increment hit)
+    (prior : PMF (State n k Private Control input)) :
+    mean (prior.bind (step limits sample machine)) (accrued score) =
+      mean prior (accrued score) +
+        ∑' picked, select limits sample machine prior picked * increment picked.checkpoint := by
+  have hdist : prior.bind (step limits sample machine) =
+      (select limits sample machine prior).bind
+        (fun picked => respond limits sample machine picked.before picked.checkpoint) := by
+    simp only [select, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.bind_bind, PMF.pure_bind]
+    rfl
+  have hbefore : (select limits sample machine prior).map Selected.before = prior := by
+    simp [select, PMF.map_bind]
+  rw [hdist]
+  unfold mean
+  rw [PMF.tsum_bind_mul]
+  simp only [mean] at H
+  rw [PMF.tsum_mul_congr_support _ (fun picked hp =>
+    H picked.before picked.checkpoint
+      (selected_boundary limits sample machine prior picked hp))]
+  simp only [mul_add, tsum_add]
+  rw [← PMF.tsum_map_mul _ Selected.before, hbefore]
 
 /-- Complete actual trace expectation of a resource/count after the given epochs. -/
 @[expose] def expected (score : Record n → ℝ≥0∞) (turns : ℕ)

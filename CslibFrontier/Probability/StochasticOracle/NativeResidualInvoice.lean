@@ -186,17 +186,18 @@ theorem response_score (P : Parameters z) (limits : Limits (z + 1))
   rw [← ha]
   exact add_comm _ _
 
-/-- The actual response's expected accrued bill is its previous bill plus the
-primitive source batch mean. Silent divergence retains its accrued prefix. -/
-theorem response_mean_charge (P : Parameters z) (limits : Limits (z + 1))
-    (invoices : PMF (Fin (z + 1) → ℕ)) (hmean : HasMean P invoices)
+/-- Expected actual billing for an arbitrary fresh invoice law, before imposing
+any price means. This retains the prefix even when local computation diverges. -/
+theorem response_mean_charge_eq (limits : Limits (z + 1))
+    (invoices : PMF (Fin (z + 1) → ℕ))
     (machine : MultiTapePTM tapes Bool Control Unit)
     (state : Trace.State (z + 1) tapes Unit Control input)
     (hit : Option (Phase tapes Control Unit (ServerState (z + 1) Unit) input))
     (hb : ∀ phase, hit = some phase → sourceBoundary limits phase) (r : Option (Fin z)) :
     Quantitative.mean (response T points candidates limits invoices machine state hit r)
       (Trace.accrued Trace.charge) = Trace.accrued Trace.charge state +
-        ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)) := by
+        ∑' invoice, invoices invoice * (NativeResidualOracle.invoiceCost invoice
+          (NativeResidualOracle.selectedCalls limits hit) : ℝ≥0∞) := by
   unfold Quantitative.mean response
   rw [PMF.tsum_bind_mul]
   have hf (f : Fin (z + 1) → ℕ) :
@@ -210,7 +211,19 @@ theorem response_mean_charge (P : Parameters z) (limits : Limits (z + 1))
     rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   simp_rw [hf]
   simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-  rw [hmean]
+
+/-- The actual response's expected accrued bill is its previous bill plus the
+primitive source batch mean. Silent divergence retains its accrued prefix. -/
+theorem response_mean_charge (P : Parameters z) (limits : Limits (z + 1))
+    (invoices : PMF (Fin (z + 1) → ℕ)) (hmean : HasMean P invoices)
+    (machine : MultiTapePTM tapes Bool Control Unit)
+    (state : Trace.State (z + 1) tapes Unit Control input)
+    (hit : Option (Phase tapes Control Unit (ServerState (z + 1) Unit) input))
+    (hb : ∀ phase, hit = some phase → sourceBoundary limits phase) (r : Option (Fin z)) :
+    Quantitative.mean (response T points candidates limits invoices machine state hit r)
+      (Trace.accrued Trace.charge) = Trace.accrued Trace.charge state +
+        ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)) := by
+  rw [response_mean_charge_eq T points candidates limits invoices machine state hit hb r, hmean]
 
 /-- The declared-price ledger has the same conditional increment. -/
 theorem response_mean_score (P : Parameters z) (limits : Limits (z + 1))
@@ -241,41 +254,19 @@ private theorem step_mean (P : Parameters z) (limits : Limits (z + 1))
       ∑' picked, Quantitative.select limits (sample T points candidates P invoices)
         machine prior picked * ENNReal.ofReal
           (batchCost P (NativeResidualOracle.selectedCalls limits picked.checkpoint)) := by
-  let src := sample T points candidates P invoices
-  have hdist : prior.bind (Trace.step limits src machine) =
-      (Quantitative.select limits src machine prior).bind
-        (fun picked => Trace.respond limits src machine picked.before picked.checkpoint) := by
-    simp only [Quantitative.select, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.bind_bind, PMF.pure_bind]
-    rfl
-  have hbefore : (Quantitative.select limits src machine prior).map
-      Quantitative.Selected.before = prior := by
-    simp [Quantitative.select, PMF.map_bind]
-  change Quantitative.mean (prior.bind (Trace.step limits src machine)) _ = _
-  rw [hdist]
+  apply Quantitative.step_mean_of_response limits
+    (sample T points candidates P invoices) machine resource
+    (fun hit => ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)))
+  intro state hit hb
   unfold Quantitative.mean
-  rw [PMF.tsum_bind_mul]
-  rw [PMF.tsum_mul_congr_support _ (fun picked hp => show
-      (∑' next, Trace.respond limits src machine picked.before picked.checkpoint next *
-        Trace.accrued resource next) = Trace.accrued resource picked.before +
-          ENNReal.ofReal (batchCost P
-            (NativeResidualOracle.selectedCalls limits picked.checkpoint)) from by
-    rw [show Trace.respond limits src machine picked.before picked.checkpoint =
-      (reply P (NativeResidualOracle.selectedCalls limits picked.checkpoint)).toPMF.bind
-        (response T points candidates limits invoices machine picked.before picked.checkpoint)
-      from response_factor T points candidates P limits invoices machine _ _]
-    rw [PMF.tsum_bind_mul]
-    have hres (r : Option (Fin z)) :
-        (∑' next, response T points candidates limits invoices machine picked.before
-          picked.checkpoint r next * Trace.accrued resource next) =
-          Trace.accrued resource picked.before + ENNReal.ofReal
-            (batchCost P (NativeResidualOracle.selectedCalls limits picked.checkpoint)) :=
-      H picked.before picked.checkpoint
-        (Quantitative.selected_boundary limits src machine prior picked hp) r
-    simp_rw [hres]
-    rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul])]
-  simp only [mul_add, tsum_add]
-  rw [← PMF.tsum_map_mul _ Quantitative.Selected.before, hbefore]
+  rw [response_factor, PMF.tsum_bind_mul]
+  have hres (r : Option (Fin z)) :
+      (∑' next, response T points candidates limits invoices machine state hit r next *
+        Trace.accrued resource next) = Trace.accrued resource state +
+          ENNReal.ofReal (batchCost P (NativeResidualOracle.selectedCalls limits hit)) :=
+    H state hit hb r
+  simp_rw [hres]
+  rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- Expected analytic batch-price accounting equals actual accrued token billing
 at every finite native epoch horizon. Fresh fees are averaged only after selection;
