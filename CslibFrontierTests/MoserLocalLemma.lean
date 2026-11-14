@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver)
+
 import CslibFrontier.Logics.Propositional.CNF.LocalLemma
 import CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma
 
 /-! Tests for constructive `k`-SAT Moser–Tardos and Section 6 conflict-graph lopsided LLL. -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.MoserLocalLemma
 

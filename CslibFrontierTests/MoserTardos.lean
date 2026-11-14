@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver)
+
 import CslibFrontier.Probability.MoserTardos.Lopsided
 import CslibFrontier.Probability.MoserTardos.Parallel
 import CslibFrontier.Probability.LocalLemma
@@ -16,6 +19,8 @@ checked here). Also: two dependent events on three fair coins that meet the hypo
 equality; a degenerate instance with an impossible event and `x = 0`; an instance where the
 hypothesis must fail because every assignment hits some event; and a concrete valid log on a
 fixed table with its witness tree computed by `decide`. -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.MoserTardos
 
@@ -632,5 +637,54 @@ example {psel : (∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1) → List (Fi
         (fun m => allTrueSet (vblDisj m)) (fun m => measurableSet_allTrueSet (vblDisj m))
         (fun m => allTrueSet_dependsOn (vblDisj m)) hdeg (q := 1 / 4) hprob
         ⟨by norm_num, by norm_num⟩ hlll hrule
+
+-- Measurable rule-independent upper envelope (`exists_measurable_ge_parallelRounds`) and concrete
+-- depth-`1` witness from round `1` (`parallel_witness_depth`).
+example :
+    ∃ g : (∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1) → ℝ≥0∞, Measurable g ∧
+      ∫⁻ T, g T ∂table (unifCoin 4) ≤ 4 ∧
+      ∀ psel : (∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1) → List (Fin 2) → List (Fin 2),
+        IsValidParallelRule vblDisj (fun m => allTrueSet (vblDisj m)) psel →
+          ∀ T : ∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1,
+            parallelRounds (α := fun _ : Fin 4 => Bool) psel T ≤ g T := by
+  have hprob : ∀ i : Fin 2, (Measure.pi (unifCoin 4)).real (allTrueSet (vblDisj i)) ≤ 1 / 4 := by
+    intro i
+    rw [measureReal_allTrueSet]
+    have hcard : (vblDisj i).card = 2 := by fin_cases i <;> decide
+    norm_num [hcard]
+  have hPx : ∀ i : Fin 2, (Measure.pi (unifCoin 4)).real (allTrueSet (vblDisj i)) ≤
+      (1 - (1 / 4 : ℝ)) * ((1 / 3 : ℝ) * ∏ _j ∈ (∅ : Finset (Fin 2)), (1 - (1 / 3 : ℝ))) := by
+    intro i
+    refine (hprob i).trans ?_
+    simp only [Finset.prod_empty, mul_one]
+    norm_num
+  obtain ⟨g, hg, hgi, hgr⟩ :=
+    exists_measurable_ge_parallelRounds (unifCoin 4) vblDisj (fun m => allTrueSet (vblDisj m))
+      (fun m => measurableSet_allTrueSet (vblDisj m))
+      (fun m => allTrueSet_dependsOn (vblDisj m)) (fun _ => ∅)
+      (fun i j hji hnd => by exfalso; revert hji hnd; fin_cases i <;> fin_cases j <;> decide)
+      (x := fun _ => 1 / 3) (fun _ => ⟨by norm_num, by norm_num⟩) (ε := 1 / 4)
+      ⟨by norm_num, by norm_num⟩ hPx
+  refine ⟨g, hg, hgi.trans_eq ?_, hgr⟩
+  norm_num [Fin.sum_univ_two]
+
+example :
+    let psel : (∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1) → List (Fin 2) → List (Fin 2) :=
+      greedyParallelList vblDisj (List.finRange 2) fun σ i =>
+        decide (∀ v ∈ vblDisj i, σ v = true)
+    let T : ∀ p : Fin 4 × ℕ, (fun _ : Fin 4 => Bool) p.1 := fun p => decide (p.2 < 2)
+    let S := witness vblDisj 0 ([1] ++ parallelRun (α := fun _ : Fin 4 => Bool) psel T 1)
+    (∃ p ∈ S, p.2 = 1) ∧ (0, 1) ∈ S := by
+  intro psel T S
+  have hrule : IsValidParallelRule vblDisj (fun m => allTrueSet (vblDisj m)) psel :=
+    isValidParallelRule_greedyParallelList vblDisj (fun m => allTrueSet (vblDisj m))
+      (List.finRange 2) List.mem_finRange _ fun σ i => by
+        simp [allTrueSet]
+  have hsplit : psel T (parallelRun (α := fun _ : Fin 4 => Bool) psel T 1) =
+      [] ++ (0 : Fin 2) :: [1] := by
+    decide
+  refine ⟨(parallel_witness_depth vblDisj (fun m => allTrueSet (vblDisj m))
+    (fun m => allTrueSet_dependsOn (vblDisj m)) hrule T 1 hsplit).2.2.2.1, ?_⟩
+  decide
 
 end CslibFrontierTests.MoserTardos

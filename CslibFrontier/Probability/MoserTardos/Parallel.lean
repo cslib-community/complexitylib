@@ -118,7 +118,6 @@ theorem parallelRun_zero (psel : (∀ p : V × ℕ, α p.1) → List ι → List
     parallelRun psel T 0 = [] := by
   rfl
 
-@[simp]
 theorem parallelRun_succ (psel : (∀ p : V × ℕ, α p.1) → List ι → List ι)
     (T : ∀ p : V × ℕ, α p.1) (n : ℕ) :
     parallelRun psel T (n + 1) = psel T (parallelRun psel T n) ++ parallelRun psel T n := by
@@ -214,6 +213,17 @@ theorem succ_le_parallelRounds_iff (psel : (∀ p : V × ℕ, α p.1) → List �
   · intro hne
     exact le_iSup₂ (f := fun n (_ : psel T (parallelRun psel T n) ≠ []) => ((n : ℝ≥0∞) + 1)) k hne
 
+theorem exists_eq_nil_of_parallelRounds_ne_top (psel : (∀ p : V × ℕ, α p.1) → List ι → List ι)
+    {T : ∀ p : V × ℕ, α p.1} (hfin : parallelRounds psel T ≠ ⊤) :
+    ∃ n : ℕ, psel T (parallelRun psel T n) = [] := by
+  by_contra hne
+  push Not at hne
+  apply hfin
+  rw [eq_top_iff]
+  refine le_of_forall_lt fun c hc => ?_
+  obtain ⟨n, hn⟩ := ENNReal.exists_nat_gt hc.ne_top
+  exact hn.trans_le (le_self_add.trans ((succ_le_parallelRounds_iff psel T n).2 (hne n)))
+
 theorem parallelRounds_eq_tsum (psel : (∀ p : V × ℕ, α p.1) → List ι → List ι)
     (T : ∀ p : V × ℕ, α p.1) :
     parallelRounds psel T =
@@ -260,10 +270,9 @@ theorem parallelRounds_eq_tsum (psel : (∀ p : V × ℕ, α p.1) → List ι �
       exact le_antisymm hge hle
   · push Not at hterm
     have htop1 : parallelRounds psel T = ⊤ := by
-      rw [eq_top_iff]
-      refine le_of_forall_lt fun c hc => ?_
-      obtain ⟨n, hn⟩ := ENNReal.exists_nat_gt hc.ne_top
-      exact hn.trans_le (le_self_add.trans ((succ_le_parallelRounds_iff psel T n).2 (hterm n)))
+      by_contra hfin
+      obtain ⟨n, hn⟩ := exists_eq_nil_of_parallelRounds_ne_top psel hfin
+      exact hterm n hn
     have htop2 :
         (∑' k : ℕ, if psel T (parallelRun psel T k) ≠ [] then (1 : ℝ≥0∞) else 0) = ⊤ := by
       rw [eq_top_iff]
@@ -274,17 +283,6 @@ theorem parallelRounds_eq_tsum (psel : (∀ p : V × ℕ, α p.1) → List ι �
         simp [hterm]
       exact hn.trans_le (hsum.symm ▸ sum_le_tsum (Finset.range n))
     rw [htop1, htop2]
-
-theorem exists_eq_nil_of_parallelRounds_ne_top (psel : (∀ p : V × ℕ, α p.1) → List ι → List ι)
-    {T : ∀ p : V × ℕ, α p.1} (hfin : parallelRounds psel T ≠ ⊤) :
-    ∃ n : ℕ, psel T (parallelRun psel T n) = [] := by
-  by_contra hne
-  push Not at hne
-  apply hfin
-  rw [eq_top_iff]
-  refine le_of_forall_lt fun c hc => ?_
-  obtain ⟨n, hn⟩ := ENNReal.exists_nat_gt hc.ne_top
-  exact hn.trans_le (le_self_add.trans ((succ_le_parallelRounds_iff psel T n).2 (hne n)))
 
 end ParallelExecution
 
@@ -607,7 +605,7 @@ theorem parallel_witness_depth [DecidableEq V] [DecidableEq ι] [Fintype ι]
     {i : ι} {pref suff : List ι}
     (hsplit : psel T (parallelRun psel T k) = pref ++ i :: suff) :
     let S := witness vbl i (suff ++ parallelRun psel T k)
-    S ∈ shapes vbl i k ∧ Proper vbl S ∧ Check vbl A S T ∧ k + 1 ≤ #S := by
+    S ∈ shapes vbl i k ∧ Proper vbl S ∧ Check vbl A S T ∧ (∃ p ∈ S, p.2 = k) ∧ k + 1 ≤ #S := by
   intro S
   have hpw : (psel T (parallelRun psel T k)).Pairwise fun x y => ¬Adj vbl x y :=
     hrule.pairwise T (parallelRun psel T k)
@@ -636,10 +634,12 @@ theorem parallel_witness_depth [DecidableEq V] [DecidableEq ι] [Fintype ι]
     rw [hsplit]
     exact List.mem_append_right _ hx
   have hchk : Check vbl A S T := check_witness vbl A hA i _ T (by simpa using hlog_sub)
+  have hdepth_k : ∃ p ∈ S, p.2 = k := by
+    obtain ⟨p, hp, hpk, -⟩ := hdepth.2
+    exact ⟨p, hp, hpk⟩
   have hcard : k + 1 ≤ #S := by
     have hlevels : ∀ d ≤ k, ∃ p ∈ S, p.2 = d := by
       intro d hd
-      obtain ⟨p, hp, hpk, -⟩ := hdepth.2
       have hdesc : ∀ t : ℕ, (∃ q ∈ S, q.2 = t) → ∀ d ≤ t, ∃ q ∈ S, q.2 = d := by
         intro t
         induction t with
@@ -653,7 +653,7 @@ theorem parallel_witness_depth [DecidableEq V] [DecidableEq ι] [Fintype ι]
           · exact ⟨q, hqS, hqt⟩
           · obtain ⟨r, hrS, hrt, -⟩ := hroot.parent q hqS (by omega)
             exact iht ⟨r, hrS, by omega⟩ d (Nat.lt_succ_iff.1 hlt)
-      exact hdesc k ⟨p, hp, hpk⟩ d hd
+      exact hdesc k hdepth_k d hd
     have hsub : Finset.range (k + 1) ⊆ S.image Prod.snd := by
       intro d hd
       rw [mem_range, Nat.lt_succ_iff] at hd
@@ -662,7 +662,7 @@ theorem parallel_witness_depth [DecidableEq V] [DecidableEq ι] [Fintype ι]
     calc k + 1 = #(Finset.range (k + 1)) := (card_range (k + 1)).symm
       _ ≤ #(S.image Prod.snd) := card_le_card hsub
       _ ≤ #S := card_image_le
-  exact ⟨hshape, hprop, hchk, hcard⟩
+  exact ⟨hshape, hprop, hchk, hdepth_k, hcard⟩
 
 end WitnessDepth
 
@@ -697,7 +697,7 @@ private theorem mem_parallelEvent_of_psel_ne_nil [DecidableEq V] [DecidableEq ι
     T ∈ parallelEvent vbl A k := by
   obtain ⟨i, hi⟩ := List.exists_mem_of_ne_nil _ hne
   obtain ⟨pref, suff, hsplit⟩ := List.append_of_mem hi
-  obtain ⟨hshape, hprop, hchk, hcard⟩ := parallel_witness_depth vbl A hA hrule T k hsplit
+  obtain ⟨hshape, hprop, hchk, -, hcard⟩ := parallel_witness_depth vbl A hA hrule T k hsplit
   exact ⟨i, witness vbl i (suff ++ parallelRun psel T k), hshape, hprop, hcard, hchk⟩
 
 private theorem table_parallelEvent_le [Fintype V] [DecidableEq V] [DecidableEq ι] [Fintype ι]
@@ -969,7 +969,11 @@ private theorem lintegral_parallelEventSum_le [Fintype V] [DecidableEq V] [Decid
 /-- **Parallel Moser–Tardos theorem** [MoserTardos2010, Theorem 1.3]: under
 `Pr[A i] ≤ (1 - ε) * x i * ∏ j ∈ Γ i, (1 - x j)` with `ε ∈ (0, 1]`, any admissible parallel
 selection rule terminates in at most `(max 0 (Real.log (∑ i, x i / (1 - x i))) + 1) / ε`
-expected parallel rounds. -/
+expected parallel rounds.
+
+The rule is not assumed measurable, so `∫⁻` is the lower Lebesgue integral. As in the sequential
+theorem, `exists_measurable_ge_parallelRounds` dominates `parallelRounds psel` for every valid
+parallel rule by a single measurable function of the table with the same expected bound. -/
 theorem lintegral_parallelRounds_le [Fintype V] [DecidableEq V] [Fintype ι]
     (μ : ∀ v, Measure (α v)) [∀ v, IsProbabilityMeasure (μ v)]
     (vbl : ι → Finset V) (A : ι → Set (∀ v, α v))
@@ -985,6 +989,29 @@ theorem lintegral_parallelRounds_le [Fintype V] [DecidableEq V] [Fintype ι]
   classical
   exact (lintegral_mono (parallelRounds_le_parallelEventSum vbl A hA hrule)).trans
     (lintegral_parallelEventSum_le μ vbl A hAm hA Γ hΓ hx hε hP)
+
+/-- **Theorem 1.3 for the outer expectation** [MoserTardos2010]: under the slack local-lemma
+hypothesis there is a measurable function `g` of the table, with
+`∫⁻ g ≤ (max 0 (Real.log (∑ i, x i / (1 - x i))) + 1) / ε`, that bounds `parallelRounds psel`
+for every valid parallel selection rule `psel`. So the bound holds for the upper (outer)
+expectation of the number of rounds as well, whether or not the rule is measurable. -/
+theorem exists_measurable_ge_parallelRounds [Fintype V] [DecidableEq V] [Fintype ι]
+    (μ : ∀ v, Measure (α v)) [∀ v, IsProbabilityMeasure (μ v)]
+    (vbl : ι → Finset V) (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))
+    (Γ : ι → Finset ι) (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i)
+    {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
+    {ε : ℝ} (hε : ε ∈ Set.Ioc 0 1)
+    (hP : ∀ i, (Measure.pi μ).real (A i) ≤ (1 - ε) * (x i * ∏ j ∈ Γ i, (1 - x j))) :
+    ∃ g : (∀ p : V × ℕ, α p.1) → ℝ≥0∞, Measurable g ∧
+      ∫⁻ T, g T ∂table μ ≤
+        ENNReal.ofReal ((max 0 (Real.log (∑ i : ι, x i / (1 - x i))) + 1) / ε) ∧
+      ∀ psel : (∀ p : V × ℕ, α p.1) → List ι → List ι,
+        IsValidParallelRule vbl A psel → ∀ T, parallelRounds psel T ≤ g T := by
+  classical
+  exact ⟨parallelEventSum vbl A, measurable_parallelEventSum vbl A hAm,
+    lintegral_parallelEventSum_le μ vbl A hAm hA Γ hΓ hx hε hP,
+    fun _ hrule T => parallelRounds_le_parallelEventSum vbl A hA hrule T⟩
 
 /-- When `ε = 1` (so every bad event has probability zero), every valid parallel rule performs
 `0` expected rounds. -/
@@ -1103,70 +1130,6 @@ section SymmetricAndPMF
 variable {V ι : Type*} [DecidableEq V] [DecidableEq ι] [Fintype ι]
   {α : V → Type*} [∀ v, MeasurableSpace (α v)]
 
-private def symNbhd (vbl : ι → Finset V) (i : ι) : Finset ι :=
-  Finset.univ.filter fun j => j ≠ i ∧ ¬Disjoint (vbl i) (vbl j)
-
-private theorem mem_symNbhd (vbl : ι → Finset V) (i j : ι) (hji : j ≠ i)
-    (hnd : ¬Disjoint (vbl i) (vbl j)) : j ∈ symNbhd vbl i :=
-  mem_filter.2 ⟨mem_univ _, hji, hnd⟩
-
-private theorem symNbhd_card_le (vbl : ι → Finset V) {d : ℕ}
-    (hd : ∀ i, #{j : ι | j ≠ i ∧ ¬Disjoint (vbl i) (vbl j)} ≤ d) (i : ι) :
-    #(symNbhd vbl i) ≤ d := by
-  simpa [symNbhd] using hd i
-
-private theorem exists_slack_weights_of_symmetric [Fintype V] (μ : ∀ v, Measure (α v))
-    (vbl : ι → Finset V) (A : ι → Set (∀ v, α v))
-    {d : ℕ} (hd : ∀ i, #{j : ι | j ≠ i ∧ ¬Disjoint (vbl i) (vbl j)} ≤ d)
-    {q ε : ℝ} (hq : ∀ i, (Measure.pi μ).real (A i) ≤ q)
-    (hε : ε ∈ Set.Ioc 0 1)
-    (hlll : Real.exp 1 * q * (d + 1) ≤ 1 - ε) :
-    ∃ x : ι → ℝ, (∀ i, x i ∈ Set.Ico 0 1) ∧
-      (∀ i, (Measure.pi μ).real (A i) ≤ (1 - ε) * (x i * ∏ j ∈ symNbhd vbl i, (1 - x j))) ∧
-      (1 ≤ d → ∑ i : ι, x i / (1 - x i) ≤ (Fintype.card ι : ℝ) / d) ∧
-      (∑ i : ι, x i / (1 - x i) ≤ (Fintype.card ι : ℝ)) := by
-  rcases eq_or_lt_of_le hε.2 with rfl | hε_lt
-  · have hq0 : q ≤ 0 := by
-      have hexp : (0 : ℝ) < Real.exp 1 * ((d : ℝ) + 1) := by positivity
-      have hmul : q * (Real.exp 1 * ((d : ℝ) + 1)) ≤ 0 := by linarith
-      exact nonpos_of_mul_nonpos_left hmul hexp
-    refine ⟨fun _ => 0, fun _ => ⟨le_rfl, zero_lt_one⟩, fun i => ?_, fun _ => ?_, ?_⟩
-    · simpa using (hq i).trans hq0
-    · simp only [sub_zero, div_one, sum_const_zero]
-      positivity
-    · simp
-  · have hr_pos : 0 < 1 - ε := sub_pos.2 hε_lt
-    let q' := q / (1 - ε)
-    have hlll' : Real.exp 1 * q' * (d + 1) ≤ 1 := by
-      have heq : Real.exp 1 * q' * ((d : ℝ) + 1) = (Real.exp 1 * q * ((d : ℝ) + 1)) / (1 - ε) := by
-        dsimp [q']; ring
-      rw [heq]
-      exact (div_le_one hr_pos).2 hlll
-    obtain ⟨x, hx, hP', hx1, hx0⟩ := exists_weights_of_symmetric (symNbhd vbl)
-      (symNbhd_card_le vbl hd)
-      (fun _ => div_nonneg measureReal_nonneg hr_pos.le)
-      (fun i => div_le_div_of_nonneg_right (hq i) hr_pos.le)
-      hlll'
-    refine ⟨x, hx, fun i => ?_, fun hdpos => ?_, ?_⟩
-    · have := mul_le_mul_of_nonneg_left (hP' i) hr_pos.le
-      rwa [mul_div_cancel₀ _ hr_pos.ne'] at this
-    · have hsum : ∑ i : ι, x i / (1 - x i) = (Fintype.card ι : ℝ) / d := by
-        simp_rw [hx1 hdpos, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one_div]
-      exact hsum.le
-    · rcases Nat.eq_zero_or_pos d with rfl | hdpos
-      · have hle1 : ∀ i, x i / (1 - x i) ≤ 1 := fun i => by
-          have hexp : (2 : ℝ) ≤ Real.exp 1 := by
-            linarith [Real.add_one_le_exp (1 : ℝ)]
-          have hinv : 1 / (Real.exp 1 - 1) ≤ 1 := div_le_self zero_le_one (by linarith)
-          exact (hx0 rfl i).2.trans hinv
-        calc ∑ i : ι, x i / (1 - x i) ≤ ∑ _i : ι, (1 : ℝ) := Finset.sum_le_sum fun i _ => hle1 i
-          _ = (Fintype.card ι : ℝ) := by simp
-      · have hsum : ∑ i : ι, x i / (1 - x i) = (Fintype.card ι : ℝ) / d := by
-          simp_rw [hx1 hdpos, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one_div]
-        rw [hsum]
-        have hd1 : (1 : ℝ) ≤ d := by exact_mod_cast hdpos
-        exact div_le_self (by positivity) hd1
-
 private theorem ofReal_max_log_mono {a b ε : ℝ} (ha : 0 ≤ a) (hab : a ≤ b) (hε : 0 < ε) :
     ENNReal.ofReal ((max 0 (Real.log a) + 1) / ε) ≤
       ENNReal.ofReal ((max 0 (Real.log b) + 1) / ε) := by
@@ -1191,11 +1154,12 @@ theorem lintegral_parallelRounds_le_symmetric_of_pos [Fintype V]
     (hrule : IsValidParallelRule vbl A psel) :
     ∫⁻ T, parallelRounds psel T ∂table μ ≤
       ENNReal.ofReal ((max 0 (Real.log ((Fintype.card ι : ℝ) / d)) + 1) / ε) := by
-  obtain ⟨x, hx, hP, hsum, -⟩ := exists_slack_weights_of_symmetric μ vbl A hd hq hε hlll
+  obtain ⟨Γ, x, hΓ, hx, hP, hsum, -⟩ := exists_slack_weights_of_symmetric vbl hd
+    (fun _ => measureReal_nonneg) hq hε hlll
   have hM0 : 0 ≤ ∑ i : ι, x i / (1 - x i) :=
     Finset.sum_nonneg fun i _ => div_nonneg (hx i).1 (sub_pos.2 (hx i).2).le
-  exact (lintegral_parallelRounds_le μ vbl A hAm hA (symNbhd vbl) (mem_symNbhd vbl)
-      hx hε hP hrule).trans (ofReal_max_log_mono hM0 (hsum hdpos) hε.1)
+  exact (lintegral_parallelRounds_le μ vbl A hAm hA Γ hΓ hx hε hP hrule).trans
+    (ofReal_max_log_mono hM0 (hsum hdpos) hε.1)
 
 /-- Symmetric parallel Moser–Tardos theorem (all `d : ℕ`): under `e * q * (d + 1) ≤ 1 - ε`
 with `ε ∈ (0, 1]`, any admissible parallel selection rule terminates in at most
@@ -1211,11 +1175,12 @@ theorem lintegral_parallelRounds_le_symmetric [Fintype V]
     (hrule : IsValidParallelRule vbl A psel) :
     ∫⁻ T, parallelRounds psel T ∂table μ ≤
       ENNReal.ofReal ((max 0 (Real.log (Fintype.card ι : ℝ)) + 1) / ε) := by
-  obtain ⟨x, hx, hP, -, hsum⟩ := exists_slack_weights_of_symmetric μ vbl A hd hq hε hlll
+  obtain ⟨Γ, x, hΓ, hx, hP, -, hsum⟩ := exists_slack_weights_of_symmetric vbl hd
+    (fun _ => measureReal_nonneg) hq hε hlll
   have hM0 : 0 ≤ ∑ i : ι, x i / (1 - x i) :=
     Finset.sum_nonneg fun i _ => div_nonneg (hx i).1 (sub_pos.2 (hx i).2).le
-  exact (lintegral_parallelRounds_le μ vbl A hAm hA (symNbhd vbl) (mem_symNbhd vbl)
-      hx hε hP hrule).trans (ofReal_max_log_mono hM0 hsum hε.1)
+  exact (lintegral_parallelRounds_le μ vbl A hAm hA Γ hΓ hx hε hP hrule).trans
+    (ofReal_max_log_mono hM0 hsum hε.1)
 
 /-- Almost sure termination and avoidance under the symmetric slack LLL hypothesis
 `e * q * (d + 1) ≤ 1 - ε`. -/
@@ -1229,9 +1194,9 @@ theorem ae_exists_forall_notMem_parallelRun_symmetric [Fintype V]
     {psel : (∀ p : V × ℕ, α p.1) → List ι → List ι}
     (hrule : IsValidParallelRule vbl A psel) :
     ∀ᵐ T ∂table μ, ∃ n : ℕ, ∀ i, current vbl T (parallelRun psel T n) ∉ A i := by
-  obtain ⟨x, hx, hP, -, -⟩ := exists_slack_weights_of_symmetric μ vbl A hd hq hε hlll
-  exact ae_exists_forall_notMem_parallelRun μ vbl A hAm hA (symNbhd vbl) (mem_symNbhd vbl)
-    hx hε hP hrule
+  obtain ⟨Γ, x, hΓ, hx, hP, -, -⟩ := exists_slack_weights_of_symmetric vbl hd
+    (fun _ => measureReal_nonneg) hq hε hlll
+  exact ae_exists_forall_notMem_parallelRun μ vbl A hAm hA Γ hΓ hx hε hP hrule
 
 omit [DecidableEq ι] in
 /-- `PMF.pi` bridge for parallel Moser–Tardos expected rounds under the general asymmetric slack

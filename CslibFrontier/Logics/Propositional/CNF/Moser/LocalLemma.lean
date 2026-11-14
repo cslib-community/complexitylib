@@ -40,8 +40,10 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
 
 * `Cslib.Logic.PL.Moser.fairCoin`, `Cslib.Logic.PL.Moser.clauseVbl`,
   `Cslib.Logic.PL.Moser.violated`: the uniform product measure and violated-clause events.
-* `Cslib.Logic.PL.Moser.firstViolatedRule`: deterministic selection rule picking the first
-  violated clause.
+* `Cslib.Logic.PL.Moser.firstViolatedRule`: deterministic sequential selection rule picking the
+  first violated clause.
+* `Cslib.Logic.PL.Moser.greedyParallelCNF`: computable greedy maximal independent set parallel
+  selection rule for CNF clauses.
 * `Cslib.Logic.PL.Moser.Conflicts`, `Cslib.Logic.PL.Moser.conflictDegree`: clause conflicts and
   conflict-graph degree.
 
@@ -52,6 +54,12 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
   (`1 / d` per clause, `φ.length / d` total) under `e (d + 1) ≤ 2 ^ k` (`1 ≤ d`).
 * `Cslib.Logic.PL.Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le`: almost sure termination of
   `firstViolatedRule` at a satisfying assignment.
+* `Cslib.Logic.PL.Moser.isValidParallelRule_greedyParallelCNF`,
+  `Cslib.Logic.PL.Moser.lintegral_parallelRounds_le_of_exp_mul_le_of_pos`,
+  `Cslib.Logic.PL.Moser.lintegral_parallelRounds_le_of_exp_mul_le`,
+  `Cslib.Logic.PL.Moser.ae_exists_eval_parallelRun_of_exp_mul_le`,
+  `Cslib.Logic.PL.Moser.ae_exists_eval_parallelRun_greedy_of_exp_mul_le`: constructive parallel
+  `k`-SAT expected-round bounds and almost sure termination under `e (d + 1) ≤ (1 - ε) * 2 ^ k`.
 * `Cslib.Logic.PL.Moser.not_lopsidependent_of_not_conflicts`: non-conflicting clauses are not
   lopsidependent.
 * `Cslib.Logic.PL.Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,
@@ -63,7 +71,7 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
 ## References
 
 * [R. A. Moser, G. Tardos, *A constructive proof of the general Lovász Local Lemma*]
-  [MoserTardos2010, Sections 1, 6]
+  [MoserTardos2010, Sections 1, 4, 6]
 -/
 
 public section
@@ -88,7 +96,7 @@ instance (v : Fin n) : IsProbabilityMeasure (fairCoin (n := n) v) := by
   infer_instance
 
 /-- Variables occurring in clause `i` of `φ`. -/
-def clauseVbl (φ : CNF (Fin n)) (i : Fin φ.length) : Finset (Fin n) :=
+@[expose] def clauseVbl (φ : CNF (Fin n)) (i : Fin φ.length) : Finset (Fin n) :=
   (vbl φ[i]).toFinset
 
 /-- The event that clause `i` of `φ` evaluates to `false`. -/
@@ -118,7 +126,7 @@ theorem measureReal_violated {k : ℕ} {φ : CNF (Fin n)} (hφ : φ.IsExactDisti
   simp
 
 /-- Deterministic selection rule picking the first clause violated in the current assignment. -/
-def firstViolatedRule (φ : CNF (Fin n)) :
+@[expose] def firstViolatedRule (φ : CNF (Fin n)) :
     (∀ p : Fin n × ℕ, (fun _ : Fin n => Bool) p.1) → List (Fin φ.length) →
       Option (Fin φ.length) :=
   fun T w => (List.finRange φ.length).find? fun i =>

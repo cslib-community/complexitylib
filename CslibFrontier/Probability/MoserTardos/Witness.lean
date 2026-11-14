@@ -92,11 +92,11 @@ variable [DecidableEq V] (vbl : ι → Finset V)
 
 /-- The number of entries of `w` whose variable set contains `v`: how often `v` has been
 resampled by the steps of `w`. -/
-def uses (w : List ι) (v : V) : ℕ := (w.filter fun i => decide (v ∈ vbl i)).length
+@[expose] def uses (w : List ι) (v : V) : ℕ := (w.filter fun i => decide (v ∈ vbl i)).length
 
 /-- The assignment after the resamplings recorded in the log `w` (latest first): variable `v`
 holds its sample number `uses vbl w v` of the table `T`. -/
-def current (T : ∀ p : V × ℕ, α p.1) (w : List ι) : ∀ v, α v :=
+@[expose] def current (T : ∀ p : V × ℕ, α p.1) (w : List ι) : ∀ v, α v :=
   fun v => T (v, uses vbl w v)
 
 /-- `w` (latest first) is a valid log on the table `T`: every step resamples an event that occurs
@@ -153,7 +153,7 @@ end Log
 section Structure
 
 /-- Labels `i` and `j` are equal or share a variable. -/
-def Adj (vbl : ι → Finset V) (i j : ι) : Prop :=
+@[expose] def Adj (vbl : ι → Finset V) (i j : ι) : Prop :=
   i = j ∨ ¬Disjoint (vbl i) (vbl j)
 
 instance [DecidableEq ι] [DecidableEq V] (vbl : ι → Finset V) (i j : ι) :
@@ -178,19 +178,19 @@ theorem adj_iff (vbl : ι → Finset V) {i j : ι} :
 
 /-- One more than the deepest depth of a vertex of `S` related to `j` under `R`, or `0` if there
 is none. -/
-def levelRel (R : ι → ι → Prop) [DecidableRel R] (j : ι) (S : Finset (ι × ℕ)) : ℕ :=
+@[expose] def levelRel (R : ι → ι → Prop) [DecidableRel R] (j : ι) (S : Finset (ι × ℕ)) : ℕ :=
   (S.filter fun p => R p.1 j).sup fun p => p.2 + 1
 
 /-- Attach `j` one level below the deepest vertex of `S` related to `j` under `R`, if there is
 one. -/
-def pushRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (j : ι)
+@[expose] def pushRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (j : ι)
     (S : Finset (ι × ℕ)) : Finset (ι × ℕ) :=
   if levelRel R j S = 0 then S else insert (j, levelRel R j S) S
 
 /-- The witness structure of the step labelled `i` with earlier history `w` (latest first) with
 respect to dependency relation `R` [MoserTardos2010, Section 2, Section 6]. -/
-def witnessRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (i : ι) (w : List ι) :
-    Finset (ι × ℕ) :=
+@[expose] def witnessRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (i : ι)
+    (w : List ι) : Finset (ι × ℕ) :=
   w.foldl (fun S j => pushRel R j S) {(i, 0)}
 
 /-- A structure is `R`-proper if distinct vertices on one level are not `R`-related. -/
@@ -199,8 +199,8 @@ def ProperRel (R : ι → ι → Prop) (S : Finset (ι × ℕ)) : Prop :=
 
 /-- The witness structure of the step labelled `i` with earlier history `w` (latest first): the
 `(label, depth)` pairs of the witness tree of [MoserTardos2010, Section 2]. -/
-def witness [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι) (w : List ι) :
-    Finset (ι × ℕ) :=
+@[expose] def witness [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι)
+    (w : List ι) : Finset (ι × ℕ) :=
   witnessRel (Adj vbl) i w
 
 /-- A structure is proper if distinct vertices on one level are not adjacent. This is the level

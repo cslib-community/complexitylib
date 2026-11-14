@@ -116,7 +116,7 @@ rule (`MoserTardos.IsValidParallelRule`) selects at each round a maximal indepen
 occurring events, including the computable greedy MIS rule `MoserTardos.greedyParallelList` and
 its canonical `Fintype` specialization `MoserTardos.greedyParallel`. Under the slack LLL condition
 `(1 - ε) * (x i * ∏ j ∈ Γ i, (1 - x j))` with `ε ∈ (0, 1]`, `MoserTardos.parallel_witness_depth`
-shows that the witness tree at any step of round `k` has depth at least `k`, yielding the tail
+shows that the witness tree at any step of round `k` has depth `k`, yielding the tail
 bound `MoserTardos.table_succ_le_parallelRounds_le`, the expected round bound
 `MoserTardos.lintegral_parallelRounds_le` (`(max 0 (Real.log (∑ i, x i / (1 - x i))) + 1) / ε`),
 almost-sure finite termination `MoserTardos.ae_exists_forall_notMem_parallelRun`, symmetric
