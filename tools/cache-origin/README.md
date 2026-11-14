@@ -160,7 +160,7 @@ same as for full publication. A delta may include already-present identical payl
 An old server returns 415 to the probe and the new client falls back to a full package. Both
 requests use the existing PUT route, so the existing nginx auth/method rules work without a
 configuration change. Other probe failures, malformed responses, TLS/network failures and
-conflicts do not trigger that fallback. Deploying the server first avoids the redundant probe;
+conflicts do not trigger that fallback. Deploying the server first avoids the legacy full-upload fallback;
 a client-first rollout or a server rollback remains compatible. No store migration is needed.
 
 Uploads stream to private, server-created staging files, with limits of 4 GiB per request,

@@ -86,14 +86,17 @@ def main():
                     return
                 body = self.rfile.read(int(self.headers["Content-Length"]))
                 sent.append(len(body))
+                missing = [f"a0/{SCOPE}/{i:016x}.art"
+                           for i in range(args.archives - args.missing, args.archives)]
+                expected = {"application/x-tar": set(files), PROBE: {mapping},
+                            "application/vnd.cslib.cache-delta.v1+tar": {mapping, *missing}}
                 with tarfile.open(fileobj=io.BytesIO(body)) as package:
+                    assert package.getnames() == ["publication.json", *sorted(expected[self.headers["Content-Type"]])]
                     assert json.load(package.extractfile("publication.json")) == metadata
                     for name in package.getnames()[1:]:
                         assert hashlib.sha256(package.extractfile(name).read()).hexdigest() == files[name]
                 if self.headers["Content-Type"] == PROBE:
-                    response = json.dumps({"version": 1, "revision": "a" * 40, "missing": [
-                        f"a0/{SCOPE}/{i:016x}.art"
-                        for i in range(args.archives - args.missing, args.archives)]}).encode()
+                    response = json.dumps({"version": 1, "revision": "a" * 40, "missing": missing}).encode()
                     self.send_response(200)
                 else:
                     response = b"{}"
