@@ -39,7 +39,7 @@ theorem policyLaw_toPMF (O : Oracle B R J) (π : Policy B R J) (h : List (Record
   · rw [law, ite_eq_right hn, policyLaw, ite_eq_right hn, Distribution.toPMF_bind]
     congr 1
     funext b
-    cases b <;> simp [Distribution.toPMF_pure, Distribution.toPMF_map]
+    cases b <;> simp [responseRecord, Distribution.toPMF_pure, Distribution.toPMF_map]
 
 /-- The finite retaining policy's actual record law is exactly the discrete
 construction, even on unreachable prior-halt/incomplete histories. -/

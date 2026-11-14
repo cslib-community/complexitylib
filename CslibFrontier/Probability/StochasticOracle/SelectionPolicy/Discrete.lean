@@ -84,7 +84,8 @@ theorem retainingLaw_eq (I : Instance E J) (ρ : ℝ)
   by_cases hn : none ∈ h
   · simp [retainingLaw, policyLaw, hn]
   · by_cases hc : I.covered (selected I ρ (recordProposals propose) h) = I.ground <;>
-      simp [retainingLaw, policyLaw, retainingChoose, hn, hc, PMF.bind_map, Function.comp_def]
+      simp [retainingLaw, policyLaw, responseRecord, retainingChoose, hn, hc, PMF.bind_map,
+        Function.comp_def]
 
 /-- Every supported incomplete prefix is active: the actual policy has not halted. -/
 theorem retaining_active

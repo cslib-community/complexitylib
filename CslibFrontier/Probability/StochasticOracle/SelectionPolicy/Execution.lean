@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record
 public import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Event
 
 /-!
 # Actual discrete execution of arbitrary batch-selecting policies
@@ -23,6 +24,27 @@ public section
 noncomputable section
 namespace Cslib.Probability.StochasticOracle.SelectionPolicy
 
+/-- A chosen batch samples its response and retains the batch in the call record;
+a chosen halt supplies a halt record. -/
+@[expose] def responseRecord {B R : Type}
+    (respond : List (Record B R) → B → PMF R) (h : List (Record B R)) :
+    Option B → PMF (Record B R)
+  | none => PMF.pure none
+  | some b => (respond h b).map fun x => some (b, x)
+
+/-- A chosen batch issues a call with probability one; a halt issues none. -/
+theorem responseRecord_issued {B R : Type}
+    (respond : List (Record B R) → B → PMF R) (h : List (Record B R)) (q : Option B) :
+    (responseRecord respond h q).toOuterMeasure {x | issued h x = true} =
+      if q.isSome then 1 else 0 := by
+  cases q with
+  | none => simp [responseRecord, PMF.toOuterMeasure_pure_apply, issued]
+  | some q =>
+    rw [responseRecord, PMF.toOuterMeasure_map_apply]
+    apply (PMF.toOuterMeasure_apply_eq_one_iff _ _).mpr
+    intro x hx
+    rfl
+
 /-- Actual batch-then-response execution, with absorbing prior halt records. -/
 @[expose] def policyLaw {B R : Type}
     (choose : List (Record B R) → PMF (Option B))
@@ -30,9 +52,7 @@ namespace Cslib.Probability.StochasticOracle.SelectionPolicy
     (h : List (Record B R)) : PMF (Record B R) := by
   classical
   exact if none ∈ h then PMF.pure none else
-    (choose h).bind fun b => match b with
-      | none => PMF.pure none
-      | some b => (respond h b).map fun x => some (b, x)
+    (choose h).bind (responseRecord respond h)
 
 /-- An issued call record has exactly a supported chosen batch and supported
 conditional response. A previously halted history cannot issue a call. -/
@@ -49,7 +69,7 @@ theorem mem_support_policyLaw_some {B R : Type}
     constructor
     · rintro ⟨q, hq, hx⟩
       cases q with
-      | none => simp at hx
+      | none => simp [responseRecord] at hx
       | some q =>
         obtain ⟨y, hy, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
         have hz : (q, y) = (b, x) := Option.some.inj he

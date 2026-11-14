@@ -130,7 +130,8 @@ private theorem actual_success :
   simp only [List.any_nil, Bool.false_eq_true, ite_false]
   rw [PMF.bind_bind, PMF.bind_map, PMF.toOuterMeasure_bind_apply,
     tsum_fintype, Fintype.sum_bool]
-  simp only [Function.comp_apply, ite_true, Bool.false_eq_true, ite_false, PMF.pure_bind]
+  simp only [responseRecord, Function.comp_apply, ite_true, Bool.false_eq_true, ite_false,
+    PMF.pure_bind]
   rw [call_success, final_none]
   norm_num [PMF.uniformOfFintype_apply]
   rw [← pow_two, ← ENNReal.inv_pow]
@@ -143,7 +144,7 @@ private theorem halted_support :
   have hnone : none ∈ (policyLaw choose respond []).support := by
     rw [policyLaw, ite_eq_right List.not_mem_nil]
     apply (PMF.mem_support_bind_iff _ _ _).mpr
-    refine ⟨none, ?_, by simp⟩
+    refine ⟨none, ?_, by simp [responseRecord]⟩
     simp only [choose, List.any_nil, Bool.false_eq_true, ite_false]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨false, by simp, rfl⟩
   rw [PMF.seqProcess]
@@ -173,7 +174,7 @@ private theorem bill_one (fee : ℕ → ℝ) :
   rw [policyLaw, ite_eq_right List.not_mem_nil, choose]
   simp only [List.any_nil, Bool.false_eq_true, ite_false]
   rw [PMF.bind_map, PMF.tsum_bind_mul, tsum_fintype, Fintype.sum_bool]
-  simp only [Function.comp_apply, ite_true, Bool.false_eq_true, ite_false]
+  simp only [responseRecord, Function.comp_apply, ite_true, Bool.false_eq_true, ite_false]
   rw [PMF.tsum_map_mul]
   simp only [recordResource_some, charge]
   norm_num [PMF.uniformOfFintype_apply, PMF.pure_apply, ite_mul, respond]

@@ -960,7 +960,9 @@ The shared `marginal_lower_cost` aggregates the actual derived marginals directl
 aggregate expected-cost lower bound is a hypothesis.
 
 For arbitrary discrete competitors and the source's weaker successful-only provenance,
-import `CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost`.
+import `CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Competitor` for
+execution and progress, `...Discrete.LowerCost` for tokens, or `...Discrete.Deadline` for
+physical deadlines.
 The shared `policyLaw` executes an arbitrary PMF choice of batch or halt, followed by
 the fixed conditional response law. `outputLaw` then samples the returned family from
 the actual transcript; no retention algorithm is imposed on the competitor. The same
@@ -969,9 +971,11 @@ physical duration in both representations. `policyLaw_toPMF` in the optional fin
 bridge identifies the existing finite policy law with this shared execution at every
 history. The retaining upper policy is a specialization of the same dispatcher.
 
-`SelectionPolicy.Discrete.LowerBounds` constrains only supported issued batches before
-halt: revealed-progress probability, newly revealed cardinality and conditional invoice
-mean. Nonnegative realized charges may be unbounded. Its provenance field applies only
+`SelectionPolicy.Discrete.ProgressBounds` constrains revealed-progress probability and
+newly revealed cardinality only for supported issued batches before halt.
+`SelectionPolicy.Discrete.LowerBounds` extends it with nonnegative realized charges and a
+conditional invoice-mean lower bound; these charges may be unbounded. The shared provenance
+field applies only
 when an actually sampled output is counted as a certified success; failed fabricated
 masks remain allowed. `success_count` derives the required revealed-progress threshold
 from coverage and the size cap, using all actual proposals, including locally rejected
@@ -989,8 +993,28 @@ With geometric response metadata and invoice `x + 1`, actual success is `1/4`, a
 expected bill is one, and the theorem supplies the nonzero `1/2` lower bound. A second
 invoice `2^x` satisfies the same source contracts but has infinite actual expected bill.
 This extends the finite-horizon **token lower bound** to arbitrary discrete semantic
-competitors. The necessary lower-latency/binomial deadline bound for that broader class
-and native representation remain separate obligations.
+competitors.
+
+For the independent necessary deadline bound, `SelectionPolicy.Discrete.LatencyBound`
+requires each supported issued batch/response to contribute at least `ell > 0` to actual
+accounted duration. A model with cancellation must establish this bound for its recorded
+durations.
+`deadline_probability_le` combines this with `ProgressBounds` to bound actual certified
+success by `binomial (min u floor(D/ell)) p` on `Set.Ici r`. It imposes no token-cost
+hypothesis. The shared deterministic `count_eq_prefix_of_issued_bound` shows that an absorbing
+transcript with at most `v` issued calls gains no additional revealed progress after prefix
+`v`; the existing finite-table deadline proof uses the same lemma.
+[`PMF/SequentialPrefix.lean`](../../CslibFrontier/Probability/PMF/SequentialPrefix.lean)
+identifies that shorter prefix's marginal with the actual shorter process, so no path-law
+or count comparison bridge is supplied by the caller.
+
+The checked [discrete deadline client](../../CslibFrontierTests/StochasticOracleDiscreteDeadline.lean)
+queries a geometric source until receiving a buffered bundle, then halts and randomly
+extracts a singleton. Three decision turns with deadline one are bounded using the
+one-trial binomial tail with parameter one-half. A supported certified output has positive
+probability, and the response law has unbounded support. This extends the necessary
+finite-horizon deadline comparison to arbitrary discrete semantic competitors; native
+representation remains a separate obligation.
 
 `retainingPolicy` constructs an admissible upper policy from a randomized batch
 selector; `UpperBounds` contains only its supported source contracts.
