@@ -15,6 +15,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.EventBind
+import CslibFrontier.Probability.PMF.ToReal
 
 /-!
 # The coupling inequality and approximate couplings
@@ -27,7 +28,8 @@ This module also defines `Cslib.Probability.PMF.CoupledWithin μ ν ε`, stating
 distributions `μ, ν : PMF α` admit a joint coupling `ω : PMF (α × α)` whose disagreement
 probability `ω.toOuterMeasure {p | p.1 ≠ p.2}` is at most `ε`, together with composition
 combinators (`refl`, `symm`, `mono`, `zero_iff`, `map`, `map₂`, `bind_of_eq_on`) and event,
-statistical-distance (`dist_le`), and total-variation-distance (`tvDist_le`) bounds.
+statistical-distance (`dist_le`, `dist_bind_of_good`), and total-variation-distance (`tvDist_le`)
+bounds.
 
 ## Main definitions
 
@@ -37,6 +39,8 @@ statistical-distance (`dist_le`), and total-variation-distance (`tvDist_le`) bou
 ## Main results
 
 * `Cslib.Probability.PMF.dist_map_map_le`: the coupling inequality for two maps of a single sample.
+* `Cslib.Probability.PMF.dist_bind_of_good`: mixture statistical-distance bound conditioned on a
+  good event `good : Set α`.
 * `Cslib.Probability.PMF.CoupledWithin.toOuterMeasure_le`,
   `Cslib.Probability.PMF.CoupledWithin.dist_le`,
   `Cslib.Probability.PMF.CoupledWithin.tvDist_le`: event-probability, statistical-distance, and
@@ -77,6 +81,31 @@ theorem dist_map_map_le [Fintype β] (p : PMF α) (f g : α → β) :
     dist (p.map f) (p.map g) ≤ (p.toOuterMeasure {a | f a ≠ g a}).toReal := by
   have h := dist_map_map_le_of_finite (p.map fun a => (f a, g a)) Prod.fst Prod.snd
   rwa [PMF.map_comp, PMF.map_comp, PMF.toOuterMeasure_map_apply] at h
+
+/-- Bounding `dist (p.bind f) q` by splitting `p` across a good event `good : Set α` on which
+`dist (f a) q ≤ b` (`0 ≤ b`) and bounding `dist (f a) q ≤ 1` outside `good`. -/
+theorem dist_bind_of_good [Finite α] [Fintype β]
+    (p : PMF α) (f : α → PMF β) (q : PMF β) (good : Set α) {b : ℝ} (hb : 0 ≤ b)
+    (hgood : ∀ a ∈ good, dist (f a) q ≤ b) :
+    dist (p.bind f) q ≤ (p.toOuterMeasure goodᶜ).toReal + b := by
+  classical
+  have := Fintype.ofFinite α
+  calc dist (p.bind f) q
+      ≤ ∑ a : α, (p a).toReal * dist (f a) q := dist_bind_left_le _ _ _
+    _ ≤ ∑ a : α, ((if a ∈ goodᶜ then (p a).toReal else 0) + (p a).toReal * b) := by
+        refine Finset.sum_le_sum fun a _ => ?_
+        by_cases ha : a ∈ good
+        · simp only [Set.mem_compl_iff, ha, not_true_eq_false, ↓reduceIte, zero_add]
+          exact mul_le_mul_of_nonneg_left (hgood a ha) ENNReal.toReal_nonneg
+        · simp only [Set.mem_compl_iff, ha, not_false_eq_true, ↓reduceIte]
+          have hle1 := mul_le_mul_of_nonneg_left (dist_le_one (f a) q)
+            (ENNReal.toReal_nonneg (a := p a))
+          linarith [mul_nonneg (ENNReal.toReal_nonneg (a := p a)) hb]
+    _ = (p.toOuterMeasure goodᶜ).toReal + b := by
+        rw [Finset.sum_add_distrib, ← Finset.sum_mul, sum_toReal, one_mul,
+          toOuterMeasure_apply_toReal]
+        congr 1
+        exact Finset.sum_congr rfl fun a _ => by by_cases ha : a ∈ goodᶜ <;> simp [ha]
 
 /-- Two discrete distributions `μ, ν : PMF α` are *coupled within* `ε : ℝ≥0∞` if there exists a
 joint distribution `ω : PMF (α × α)` with marginals `μ` and `ν` whose disagreement probability

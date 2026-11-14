@@ -4,16 +4,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
-import CslibFrontier.Crypto.Computational.RSALeastSignificantBit
+module
+
+public import CslibFrontier.Crypto.Computational.RSALeastSignificantBit
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Probabilistic.Sampling
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
 # Tests for the least significant bit of RSA
 -/
 
+public section
+
 namespace CslibFrontierTests.Crypto.RSALeastSignificantBit
 
-open Cslib Cslib.Crypto
+open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
 /-! ### Doubling and parity -/
 
@@ -85,5 +91,81 @@ example (n : ℕ) : Game.succProbability
     rw [PMF.support_pure, Set.mem_singleton_iff] at hdesc
     subst hdesc
     exact perfectPredictor_correct n
+
+/-! ### Efficiency certificates and noiseless `RSAOneWay` consequence -/
+
+/-- Query generation is uniform polynomial-time on `RSAInput`. -/
+example : ComputableInPolyTime
+    (fun x : RSAInput => lsbQueries x.publicKey.N x.publicKey.e x.challenge x.publicKey.N.size)
+    encRSAInput (encList encNat) :=
+  computableInPolyTime_lsbQueries (by fun_prop) (by fun_prop)
+    (RSAInput.computableInPolyTime_challenge_val (by fun_prop))
+    (ComputableInPolyTime.binary_size.comp (by fun_prop))
+    (fun x => x.challenge.pos)
+
+/-- Recovery arithmetic is uniform polynomial-time on `(RSAInput, List Bool)`. -/
+example : ComputableInPolyTime
+    (fun p : RSAInput × List Bool => lsbRecover p.1.publicKey.N p.1.publicKey.N.size p.2)
+    (encPair encRSAInput (encList encBool)) encNat :=
+  computableInPolyTime_lsbRecover (by fun_prop)
+    (ComputableInPolyTime.binary_size.comp (by fun_prop)) (by fun_prop)
+
+/-- The toy trapdoor predictor `perfectPredictor` runs in uniform strict polynomial time. -/
+theorem perfectPredictor_isPPT : perfectPredictor.IsPPT := by
+  have hinv : ComputableInPolyTime
+      (fun x : RSAInput => rsaInvert 33 7 x.challenge) encRSAInput encNat :=
+    computableInPolyTime_rsaInvert (ComputableInPolyTime.const 33)
+      (ComputableInPolyTime.const 7)
+      (RSAInput.computableInPolyTime_challenge_val (by fun_prop))
+      (fun _ => by decide)
+  have hbit : ComputableInPolyTime
+      (fun x : RSAInput => (rsaInvert 33 7 x.challenge).testBit 0) encRSAInput encBool :=
+    .of_tidy (ComputableTidilyInPolyTime.binary_testBit hinv.tidy
+      (ComputableTidilyInPolyTime.const 0))
+  exact hbit.isPPTOn
+
+/-- `lsbInverter perfectPredictor` is certified uniform strict PPT via `isPPT_lsbInverter`. -/
+theorem lsbInverter_perfectPredictor_isPPT : (lsbInverter perfectPredictor).IsPPT :=
+  isPPT_lsbInverter perfectPredictor_isPPT
+
+/-- A genuinely probabilistic uniform-bit predictor also produces a uniform strict-PPT inverter. -/
+theorem lsbInverter_uniformPredictor_isPPT :
+    (lsbInverter (fun _ _ _ => ProbComp.uniform Bool)).IsPPT :=
+  isPPT_lsbInverter (isPPTOn_uniform_bool encRSAInput)
+
+/-- Because `perfectPredictor` is PPT and always correct on `desc33` (`N = 33` odd), the
+constant generator `fun _ => PMF.pure desc33` cannot be `RSAOneWay`: a non-vacuous client of
+`RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor`. -/
+theorem not_rsaOneWay_desc33 : ¬ RSAOneWay (fun _ => PMF.pure desc33) := by
+  intro hRSA
+  refine hRSA.not_frequently_alwaysCorrect_lsbPredictor
+    (Filter.Eventually.of_forall fun _ desc hdesc => ?_) perfectPredictor_isPPT ?_
+  · rw [PMF.support_pure, Set.mem_singleton_iff] at hdesc
+    subst hdesc
+    decide
+  · exact (Filter.Eventually.of_forall fun n desc hdesc => by
+      rw [PMF.support_pure, Set.mem_singleton_iff] at hdesc
+      subst hdesc
+      exact perfectPredictor_correct n).frequently
+
+/-- info: 'Cslib.Crypto.computableInPolyTime_lsbQueries' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Cslib.Crypto.computableInPolyTime_lsbQueries
+
+/-- info: 'Cslib.Crypto.computableInPolyTime_lsbRecover' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Cslib.Crypto.computableInPolyTime_lsbRecover
+
+/-- info: 'Cslib.Crypto.isPPT_lsbInverter' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Cslib.Crypto.isPPT_lsbInverter
+
+/--
+info: 'Cslib.Crypto.RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs in
+#print axioms Cslib.Crypto.RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor
 
 end CslibFrontierTests.Crypto.RSALeastSignificantBit

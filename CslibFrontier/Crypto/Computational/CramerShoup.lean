@@ -34,7 +34,8 @@ associated-data-free specialization) defined in
 over a `PrimeOrderGroupFamily`, in the standard model under:
 1. the Decisional Diffie–Hellman (`DDH`) assumption,
 2. collision resistance (`CollisionResistantFor`) of the $\mathbb{Z}_q$-valued hash family $H'$
-   (`cramerShoupHashMod`), and
+   (`cramerShoupHashMod`), keyed by a hash key drawn at key generation in the native theorems,
+   and
 3. a positive group-order lower bound $m(n) > 0$ with $m(n) \le q$ and negligible inverse order
    $1 / m(n)$,
 
@@ -148,14 +149,33 @@ Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
   bridging from `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`, and `cramerShoupEncryptProb`
   to the ideal games with an additional `8 / 2 ^ n` statistical loss per challenge bit (`16 / 2 ^ n`
   across both bits).
-* **Fixed group description family in the native theorems**: the ideal-game theorems
+* **Keyed hash and fixed group family in the native theorems**: the ideal-game theorems
   (`DDH.cramerShoupADGroupINDCCA2`, `DDH.cramerShoupGroupINDCCA2`) hold for an arbitrary setup law
-  `setup : ℕ → PMF F.Desc`. The native theorems `DDH.indcca2ADOn_cramerShoup`,
-  `DDH.indcca2On_cramerShoup`, and `DDH.indcca2MultiOn_cramerShoup` instead fix a polynomial-time
-  computable family `d : ℕ → F.Desc`: the group at parameter `n` is `d n` and is not sampled, and
-  DDH and collision resistance are assumed for the point-mass setup `fun n => PMF.pure (d n)`.
-  Their hypotheses therefore make `n ↦ F.order (d n)` a sequence of primes that is computable in
-  polynomial time from the unary parameter and has negligible inverse.
+  `setup : ℕ → PMF F.Desc`, and their collision-resistance premise is stated for that law. For a
+  point-mass law, that premise concerns a single fixed function at each security parameter.
+  [BonehShoup2023], Section 8.1, printed p. 290, observe that for a fixed hash function an
+  adversary that just outputs a collision exists, and avoid this by indexing the hash with a
+  randomly chosen system parameter. The native scheme therefore draws a hash key at key
+  generation and publishes it in
+  the public key, as [CramerShoup2003], Section 6.1, Figure 1 does (and [CramerShoup1998],
+  Section 3, which chooses the hash function from a universal one-way family at key generation).
+  It is the scheme of `CramerShoup.Reductions` over `F.withKey`, whose parameters `(d, hk)` attach
+  the hash key `hk` to the group `d`. The native theorems `DDH.indcca2ADOn_cramerShoup`,
+  `DDH.indcca2On_cramerShoup`, and `DDH.indcca2MultiOn_cramerShoup` fix a polynomial-time
+  computable group family `d : ℕ → F.Desc` and a polynomial-time key length `keyLen`: the group at
+  parameter `n` is `d n` and is not sampled, and the hash key is a uniform `keyLen n`-bit word.
+  DDH is assumed for the point-mass setup `fun n => PMF.pure (d n)`; `DDH.withKey` transfers it to
+  `F.withKey`. Collision resistance is assumed for the keyed family
+  `F.withKey.cramerShoupHashMod H` under `withKeySetup (fun n => PMF.pure (d n)) keyLen`, whose
+  collision finders receive the group and the key. The hypotheses make `n ↦ F.order (d n)` a
+  sequence of primes that is computable in polynomial time from the unary parameter and has
+  negligible inverse.
+* **Hash assumption**: following [BonehShoup2023], Theorem 12.9, the theorems assume collision
+  resistance of the keyed hash. [CramerShoup2003], Theorem 1 (Section 6.2), needs only target
+  collision resistance in the sense of its Section 5.1, where the target is a uniformly random
+  tuple of group elements, and [CramerShoup1998], Theorem 1 (Section 4), assumes a universal
+  one-way family. Both are weaker than collision resistance, so these theorems use a stronger
+  hash assumption than the original papers.
 * **Group-order growth premise**: the asymptotic theorems assume a positive lower bound `m : ℕ → ℕ`
   on the group order `F.order` with `Negligible (fun n => (1 / m n : ℝ≥0))` so that the
   information-theoretic projective-hash and non-DH-triple terms `(2 * Q₁ n + 2 * Q₂ n + 2) / m n`
@@ -1269,14 +1289,15 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
         α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut)
   · simp only [h, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
 
-private theorem cramerShoupMsgCCA2Game_pure_eq_innerSK
+private theorem cramerShoupMsgCCA2Game_eq_bind_innerSK
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (d : ℕ → F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ) :
-    F.cramerShoupMsgCCA2Game hasAD (fun p => p.2) encodeAD (fun n => PMF.pure (d n)) H isElem
-      adversary bit n =
-    F.cramerShoupCCA2UniformSK hasAD encodeAD H isElem (d n) adversary bit n true := by
+    (setup : ℕ → PMF F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ) :
+    F.cramerShoupMsgCCA2Game hasAD (fun p => p.2) encodeAD setup H isElem adversary bit n =
+    (setup n).bind fun d =>
+      F.cramerShoupCCA2UniformSK hasAD encodeAD H isElem d adversary bit n true := by
   simp only [pmf_norm, cramerShoupMsgCCA2Game, cramerShoupCCA2UniformSK]
+  refine congrArg _ (funext fun d => ?_)
   refine congrArg _ (funext fun α => congrArg _ (funext fun σ =>
     congrArg _ (funext fun τ => congrArg _ (funext fun σ₁ =>
       congrArg _ (funext fun τ₁ => congrArg _ (funext fun σ₂ =>
@@ -1339,22 +1360,39 @@ private theorem cramerShoupCCA2InnerSK_false_eq
     rw [hct, F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d sk]
   · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
 
-private theorem exists_length_encDesc_pure_le {d : ℕ → F.Desc}
-    (hd : ComputableInPolyTime d encUnary F.encDesc) :
-    ∃ c k : ℕ, ∀ n, ∀ d' ∈ (PMF.pure (d n)).support,
-      (F.encDesc d').length ≤ c * (n + 1) ^ k := by
-  obtain ⟨c, k, hck⟩ := hd.tidy.polyBounded_length.exists_le
-  refine ⟨c, k, fun n d' hd' => ?_⟩
+private theorem exists_length_encDesc_withKeySetup_le {d : ℕ → F.Desc} {keyLen : ℕ → ℕ}
+    (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
+    ∃ c k : ℕ, ∀ n, ∀ p ∈ (F.withKeySetup (fun n => PMF.pure (d n)) keyLen n).support,
+      (F.withKey.encDesc p).length ≤ c * (n + 1) ^ k := by
+  obtain ⟨c₁, k₁, h₁⟩ := hd.tidy.polyBounded_length.exists_le
+  obtain ⟨c₂, k₂, h₂⟩ := hkeyLen.tidy.polyBounded_length.exists_le
+  refine ⟨2 * c₁ + 1 + c₂, k₁ + k₂, fun n p hp => ?_⟩
+  obtain ⟨hd', hk⟩ := F.mem_support_withKeySetup (d := p.1) (k := p.2) hp
   rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
-  subst hd'
-  simpa only [encUnary_apply, List.length_replicate] using hck n
+  have e₁ : (F.encDesc (d n)).length ≤ c₁ * (n + 1) ^ k₁ := by
+    simpa only [encUnary_apply, List.length_replicate] using h₁ n
+  have e₂ : keyLen n ≤ c₂ * (n + 1) ^ k₂ := by
+    simpa only [encUnary_apply, List.length_replicate] using h₂ n
+  have p₁ : c₁ * (n + 1) ^ k₁ ≤ c₁ * (n + 1) ^ (k₁ + k₂) :=
+    Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_add_right _ _))
+  have p₂ : c₂ * (n + 1) ^ k₂ ≤ c₂ * (n + 1) ^ (k₁ + k₂) :=
+    Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_add_left _ _))
+  have p₀ : 1 ≤ (n + 1) ^ (k₁ + k₂) := Nat.one_le_pow _ _ (Nat.succ_pos n)
+  change (encPair F.encDesc encBits p).length ≤ _
+  rw [length_encPair, encBits_apply, hd', hk]
+  nlinarith
 
-private theorem order_pure_ge {d : ℕ → F.Desc} {m : ℕ → ℕ}
+private theorem order_withKeySetup_ge {d : ℕ → F.Desc} {keyLen : ℕ → ℕ} {m : ℕ → ℕ}
     (hm : ∀ n, m n ≤ F.order (d n)) :
-    ∀ n, ∀ d' ∈ (PMF.pure (d n)).support, m n ≤ F.order d' := by
-  intro n d' hd'
+    ∀ n, ∀ p ∈ (F.withKeySetup (fun n => PMF.pure (d n)) keyLen n).support,
+      m n ≤ F.withKey.order p := by
+  intro n p hp
+  obtain ⟨hd', -⟩ := F.mem_support_withKeySetup (d := p.1) (k := p.2) hp
   rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
-  exact hd' ▸ hm n
+  change m n ≤ F.order p.1
+  rw [hd']
+  exact hm n
 
 private theorem negligible_advantage_of_eight_le {g₀ g₁ h₀ h₁ : ℕ → Game}
     (hmid : Negligible fun n => Game.advantage (h₀ n) (h₁ n))
@@ -1370,184 +1408,222 @@ private theorem negligible_advantage_of_eight_le {g₀ g₁ h₀ h₁ : ℕ → 
     (add_le_add le_rfl (Game.advantage_triangle (h₀ n) (h₁ n) (g₁ n)))).trans
     (by rw [add_assoc]; exact add_le_add h0 (add_le_add le_rfl h1))
 
+/-- Binding the ideal game over `withKeySetup` for a fixed group family draws the key first. -/
+private theorem withKeySetup_pure_bind {α : Type} (d : ℕ → F.Desc) (keyLen : ℕ → ℕ) (n : ℕ)
+    (f : F.withKey.Desc → PMF α) :
+    (F.withKeySetup (fun n => PMF.pure (d n)) keyLen n).bind f =
+      (ProbComp.eval (BitString.sampleList (keyLen n))).bind fun hk => f (d n, hk) := by
+  rw [withKeySetup, PMF.pure_bind, PMF.bind_map]
+  rfl
+
 /-- The native `Encryption.cca2ADGameOn` experiment for `(cramerShoupValid, cramerShoupKeyGenProb,
-cramerShoupADEncryptProb, cramerShoupADDecryptOpt)` is within statistical distance `8 / 2 ^ n` of
-the ideal exact-uniform PMF game `cramerShoupADGroupCCA2Game encAD (fun n => PMF.pure (d n))`
-(accounting for the eight `sampleModNat` exponent draws in `cramerShoupKeyGenProb` and
-`cramerShoupADEncryptProb`). -/
+cramerShoupADEncryptProb, cramerShoupADDecryptOpt)` with a keyed hash is within statistical
+distance `8 / 2 ^ n` of the ideal exact-uniform PMF game `cramerShoupADGroupCCA2Game` over
+`F.withKey` and the setup `withKeySetup (fun n => PMF.pure (d n)) keyLen` (accounting for the eight
+`sampleModNat` exponent draws in `cramerShoupKeyGenProb` and `cramerShoupADEncryptProb`; both
+games draw the same uniform hash key). -/
 theorem advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le
     {AD : Type} (encAD : AD ↪ List Bool)
-    (H : F.Desc × List Bool → List Bool)
+    (H : F.withKey.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
-    (d : ℕ → F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ) :
+    (d : ℕ → F.Desc) (keyLen : ℕ → ℕ) (adversary : WordADCCA2Adversary AD) (bit : Bool)
+    (n : ℕ) :
     Game.advantage
       (ProbComp.eval
-        (cca2ADGameOn (F.cramerShoupValid isElem d) encAD encBits (F.cramerShoupKeyGenProb d)
-          (F.cramerShoupADEncryptProb encAD H d) (F.cramerShoupADDecryptOpt H isElem d)
-          adversary bit n))
-      (F.cramerShoupADGroupCCA2Game encAD (fun n => PMF.pure (d n)) H isElem
-        adversary bit n) ≤
+        (cca2ADGameOn (F.cramerShoupValid isElem d) encAD encBits
+          (F.cramerShoupKeyGenProb d keyLen) (F.cramerShoupADEncryptProb encAD H d)
+          (F.cramerShoupADDecryptOpt H isElem d) adversary bit n))
+      (F.withKey.cramerShoupADGroupCCA2Game encAD (F.withKeySetup (fun n => PMF.pure (d n)) keyLen)
+        H (F.isElemWithKey isElem) adversary bit n) ≤
       8 / 2 ^ n := by
   have hgame0 :
       ProbComp.eval
-        (cca2ADGameOn (F.cramerShoupValid isElem d) encAD encBits (F.cramerShoupKeyGenProb d)
-          (F.cramerShoupADEncryptProb encAD H d) (F.cramerShoupADDecryptOpt H isElem d)
-          adversary bit n) =
-      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
-        F.cramerShoupCCA2SampledSK true (fun p => encAD p.2) H isElem (d n) adversary bit n
-          (a : ZMod (F.order (d n))) := by
+        (cca2ADGameOn (F.cramerShoupValid isElem d) encAD encBits
+          (F.cramerShoupKeyGenProb d keyLen) (F.cramerShoupADEncryptProb encAD H d)
+          (F.cramerShoupADDecryptOpt H isElem d) adversary bit n) =
+      (ProbComp.eval (BitString.sampleList (keyLen n))).bind fun hk =>
+        (ProbComp.eval (F.withKey.sampleExp n (d n, hk))).bind fun a =>
+          F.withKey.cramerShoupCCA2SampledSK true (fun p => encAD p.2) H (F.isElemWithKey isElem)
+            (d n, hk) adversary bit n (a : ZMod (F.withKey.order (d n, hk))) := by
     simp only [pmf_norm, cca2ADGameOn, cramerShoupKeyGenProb, cramerShoupADEncryptProb,
       cramerShoupValid, F.smul_encode, F.cca2ADPhase1Oracle_cramerShoupADDecryptOpt,
-      F.cca2ADPhase2Oracle_cramerShoupADDecryptOpt, cramerShoupCCA2SampledSK, bind_assoc, pure_bind]
-    exact congrArg _ (funext fun a => congrArg _ (funext fun sk =>
-      F.cramerShoupCCA2InnerSK_false_eq true (fun p => encAD p.2) H isElem hmem (d n)
-        adversary bit n a sk))
-  rw [hgame0, cramerShoupADGroupCCA2Game,
-    F.cramerShoupMsgCCA2Game_pure_eq_innerSK true (fun p => encAD p.2) H isElem d adversary bit n]
-  exact F.advantage_cramerShoupCCA2InnerSK_le true (fun p => encAD p.2) H isElem (d n)
-    adversary bit n
+      F.cca2ADPhase2Oracle_cramerShoupADDecryptOpt, cramerShoupCCA2SampledSK,
+      cramerShoupPkHashKey_encodeCramerShoupPublicKey, bind_assoc, pure_bind]
+    exact congrArg _ (funext fun hk => congrArg _ (funext fun a => congrArg _ (funext fun sk =>
+      F.withKey.cramerShoupCCA2InnerSK_false_eq true (fun p => encAD p.2) H
+        (F.isElemWithKey isElem) (F.isElemWithKey_iff hmem) (d n, hk) adversary bit n a sk)))
+  rw [hgame0, cramerShoupADGroupCCA2Game, F.withKey.cramerShoupMsgCCA2Game_eq_bind_innerSK,
+    F.withKeySetup_pure_bind]
+  exact Game.advantage_bind_le_nnreal _ _ _ fun hk =>
+    F.withKey.advantage_cramerShoupCCA2InnerSK_le true (fun p => encAD p.2) H
+      (F.isElemWithKey isElem) (d n, hk) adversary bit n
 
-/-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2ADOn`**: for any associated-data
-encoding `encAD : AD ↪ List Bool`, polynomial-time group description family `d : ℕ → F.Desc`, and
-polynomial-time `H` and `isElem` such that `isElem` accepts exactly the encodings of group
-elements, the probabilistic polynomial-time Multiplicative Cramer–Shoup encryption scheme with
-associated data `(cramerShoupKeyGenProb d, cramerShoupADEncryptProb encAD H d,
-cramerShoupADDecryptOpt H isElem d)` satisfies the native `Encryption.INDCCA2ADOn` notion with
-respect to the group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and
-collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
-`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
-negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
+/-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2ADOn`, with a keyed hash**: for any
+associated-data encoding `encAD : AD ↪ List Bool`, polynomial-time group description family
+`d : ℕ → F.Desc`, polynomial-time key length `keyLen`, and polynomial-time `H` and `isElem` such
+that `isElem` accepts exactly the encodings of group elements, the probabilistic polynomial-time
+Multiplicative Cramer–Shoup encryption scheme with associated data `(cramerShoupKeyGenProb d keyLen,
+cramerShoupADEncryptProb encAD H d, cramerShoupADDecryptOpt H isElem d)` satisfies the native
+single-challenge `Encryption.INDCCA2ADOn` notion with respect to `cramerShoupValid isElem d`,
+under DDH for the point-mass setup `fun n => PMF.pure (d n)`, collision resistance of the keyed
+hash family `F.withKey.cramerShoupHashMod H` whose system parameter is the group `d n` together
+with a uniform `keyLen n`-bit key, and a positive lower bound `m n ≤ F.order (d n)` with
+`1 / m n` negligible. Key generation draws the hash key and publishes it in the public key, as in
+[CramerShoup2003], Section 6.1, Figure 1. The group at parameter `n` is the fixed description
+`d n`; it is not sampled. The hash assumption is collision resistance, as in
+[BonehShoup2023], Theorem 12.9; [CramerShoup2003], Theorem 1, assumes only target collision
+resistance of the keyed hash. -/
 theorem DDH.indcca2ADOn_cramerShoup
     {F : PrimeOrderGroupFamily}
     {AD : Type} (encAD : AD ↪ List Bool)
-    {H : F.Desc × List Bool → List Bool}
+    {H : F.withKey.Desc × List Bool → List Bool}
     {isElem : F.Desc × List Bool → Bool}
-    {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {d : ℕ → F.Desc} {keyLen : ℕ → ℕ}
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hCR : CollisionResistantFor F.encDesc (fun n => PMF.pure (d n)) (F.cramerShoupHashMod H))
+    (hCR : CollisionResistantFor F.withKey.encDesc
+      (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) (F.withKey.cramerShoupHashMod H))
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n)
     (hm : ∀ n, m n ≤ F.order (d n))
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
     INDCCA2ADOn (F.cramerShoupValid isElem d) encBits encAD encBits
-      (F.cramerShoupKeyGenProb d) (F.cramerShoupADEncryptProb encAD H d)
+      (F.cramerShoupKeyGenProb d keyLen) (F.cramerShoupADEncryptProb encAD H d)
       (F.cramerShoupADDecryptOpt H isElem d) := by
-  have hgroup : F.cramerShoupADGroupINDCCA2 encAD (fun n => PMF.pure (d n)) H isElem :=
-    hDDH.cramerShoupADGroupINDCCA2 encAD hH hisElem hmem hCR hm0 (F.order_pure_ge hm)
-      hinv (F.exists_length_encDesc_pure_le hd)
+  have hgroup : F.withKey.cramerShoupADGroupINDCCA2 encAD
+      (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) H (F.isElemWithKey isElem) :=
+    (hDDH.withKey hkeyLen).cramerShoupADGroupINDCCA2 encAD hH
+      (F.computableInPolyTime_isElemWithKey hisElem) (F.isElemWithKey_iff hmem) hCR hm0
+      (F.order_withKeySetup_ge hm) hinv (F.exists_length_encDesc_withKeySetup_le hd hkeyLen)
   intro adversary hA
   dsimp only [INDCCA2ADOn, Game.Indistinguishable]
   exact negligible_advantage_of_eight_le (hgroup adversary hA)
-    (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d adversary false)
-    (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d adversary true)
+    (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d keyLen
+      adversary false)
+    (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d keyLen
+      adversary true)
 
 /-- The native `Encryption.cca2GameOn` experiment for `(cramerShoupValid, cramerShoupKeyGenProb,
-cramerShoupEncryptProb, cramerShoupDecryptOpt)` is within statistical distance `8 / 2 ^ n` of the
-ideal exact-uniform PMF game `cramerShoupGroupCCA2Game (fun n => PMF.pure (d n))` (accounting for
-the eight `sampleModNat` exponent draws in `cramerShoupKeyGenProb` and `cramerShoupEncryptProb`). -/
+cramerShoupEncryptProb, cramerShoupDecryptOpt)` with a keyed hash is within statistical distance
+`8 / 2 ^ n` of the ideal exact-uniform PMF game `cramerShoupGroupCCA2Game` over `F.withKey` and
+the setup `withKeySetup (fun n => PMF.pure (d n)) keyLen` (accounting for the eight `sampleModNat`
+exponent draws in `cramerShoupKeyGenProb` and `cramerShoupEncryptProb`; both games draw the same
+uniform hash key). -/
 theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
-    (H : F.Desc × List Bool → List Bool)
+    (H : F.withKey.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
-    (d : ℕ → F.Desc) (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ) :
+    (d : ℕ → F.Desc) (keyLen : ℕ → ℕ) (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ) :
     Game.advantage
       (ProbComp.eval
-        (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d)
+        (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d keyLen)
           (F.cramerShoupEncryptProb H d) (F.cramerShoupDecryptOpt H isElem d) adversary bit n))
-      (F.cramerShoupGroupCCA2Game (fun n => PMF.pure (d n)) H isElem adversary bit n) ≤
+      (F.withKey.cramerShoupGroupCCA2Game (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) H
+        (F.isElemWithKey isElem) adversary bit n) ≤
       8 / 2 ^ n := by
   have hgame0 :
       ProbComp.eval
-        (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d)
+        (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d keyLen)
           (F.cramerShoupEncryptProb H d) (F.cramerShoupDecryptOpt H isElem d) adversary bit n) =
-      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
-        F.cramerShoupCCA2SampledSK false (fun _ => []) H isElem (d n) adversary.toADUnit bit n
-          (a : ZMod (F.order (d n))) := by
+      (ProbComp.eval (BitString.sampleList (keyLen n))).bind fun hk =>
+        (ProbComp.eval (F.withKey.sampleExp n (d n, hk))).bind fun a =>
+          F.withKey.cramerShoupCCA2SampledSK false (fun _ => []) H (F.isElemWithKey isElem)
+            (d n, hk) adversary.toADUnit bit n (a : ZMod (F.withKey.order (d n, hk))) := by
     simp only [pmf_norm, cca2GameOn, cramerShoupKeyGenProb, cramerShoupEncryptProb,
       cramerShoupValid, F.smul_encode, F.cca2Phase1Oracle_cramerShoupDecryptOpt,
-      F.cca2Phase2Oracle_cramerShoupDecryptOpt, cramerShoupCCA2SampledSK, bind_assoc, pure_bind]
-    refine congrArg _ (funext fun a => congrArg _ (funext fun sk => ?_))
-    rw [← F.cramerShoupCCA2InnerSK_false_eq false (fun _ => []) H isElem hmem (d n)
-      adversary.toADUnit bit n a sk]
+      F.cca2Phase2Oracle_cramerShoupDecryptOpt, cramerShoupCCA2SampledSK,
+      cramerShoupPkHashKey_encodeCramerShoupPublicKey, bind_assoc, pure_bind]
+    refine congrArg _ (funext fun hk => congrArg _ (funext fun a => congrArg _ (funext fun sk =>
+      ?_)))
+    rw [← F.withKey.cramerShoupCCA2InnerSK_false_eq false (fun _ => []) H
+      (F.isElemWithKey isElem) (F.isElemWithKey_iff hmem) (d n, hk) adversary.toADUnit bit n a sk]
     dsimp only [CCA2AdversaryOf.toADUnit]
     rw [eval_run_interpret_map_bind]
-  rw [hgame0, cramerShoupGroupCCA2Game,
-    F.cramerShoupMsgCCA2Game_pure_eq_innerSK false (fun _ => []) H isElem d adversary.toADUnit
-      bit n]
-  exact F.advantage_cramerShoupCCA2InnerSK_le false (fun _ => []) H isElem (d n)
-    adversary.toADUnit bit n
+    rfl
+  rw [hgame0, cramerShoupGroupCCA2Game, F.withKey.cramerShoupMsgCCA2Game_eq_bind_innerSK,
+    F.withKeySetup_pure_bind]
+  exact Game.advantage_bind_le_nnreal _ _ _ fun hk =>
+    F.withKey.advantage_cramerShoupCCA2InnerSK_le false (fun _ => []) H
+      (F.isElemWithKey isElem) (d n, hk) adversary.toADUnit bit n
 
-/-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2On`**: for any polynomial-time group
-description family `d : ℕ → F.Desc` and polynomial-time `H` and `isElem` such that `isElem`
-accepts exactly the encodings of group elements, the probabilistic polynomial-time Cramer–Shoup
-encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
-cramerShoupDecryptOpt H isElem d)` satisfies the native `Encryption.INDCCA2On` notion with respect
-to the group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and
-collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
-`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
-negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
+/-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2On`, with a keyed hash**: for any
+polynomial-time group description family `d : ℕ → F.Desc`, polynomial-time key length `keyLen`,
+and polynomial-time `H` and `isElem` such that `isElem` accepts exactly the encodings of group
+elements, the probabilistic polynomial-time Cramer–Shoup encryption scheme
+`(cramerShoupKeyGenProb d keyLen, cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)`
+satisfies the native single-challenge `Encryption.INDCCA2On` notion with respect to
+`cramerShoupValid isElem d`, under DDH for the point-mass setup `fun n => PMF.pure (d n)`,
+collision resistance of the keyed hash family `F.withKey.cramerShoupHashMod H` whose system
+parameter is the group `d n` together with a uniform `keyLen n`-bit key, and a positive lower
+bound `m n ≤ F.order (d n)` with `1 / m n` negligible. Key generation draws the hash key and
+publishes it in the public key, as in [CramerShoup2003], Section 6.1, Figure 1. The group at
+parameter `n` is the fixed description `d n`; it is not sampled. The hash assumption is collision
+resistance, as in [BonehShoup2023], Theorem 12.9; [CramerShoup2003], Theorem 1, assumes only
+target collision resistance of the keyed hash. -/
 theorem DDH.indcca2On_cramerShoup
     {F : PrimeOrderGroupFamily}
-    {H : F.Desc × List Bool → List Bool}
+    {H : F.withKey.Desc × List Bool → List Bool}
     {isElem : F.Desc × List Bool → Bool}
-    {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {d : ℕ → F.Desc} {keyLen : ℕ → ℕ}
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hCR : CollisionResistantFor F.encDesc (fun n => PMF.pure (d n)) (F.cramerShoupHashMod H))
+    (hCR : CollisionResistantFor F.withKey.encDesc
+      (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) (F.withKey.cramerShoupHashMod H))
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n)
     (hm : ∀ n, m n ≤ F.order (d n))
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
     INDCCA2On (F.cramerShoupValid isElem d) encBits encBits
-      (F.cramerShoupKeyGenProb d) (F.cramerShoupEncryptProb H d)
+      (F.cramerShoupKeyGenProb d keyLen) (F.cramerShoupEncryptProb H d)
       (F.cramerShoupDecryptOpt H isElem d) := by
-  have hgroup : F.cramerShoupGroupINDCCA2 (fun n => PMF.pure (d n)) H isElem :=
-    hDDH.cramerShoupGroupINDCCA2 hH hisElem hmem hCR hm0 (F.order_pure_ge hm)
-      hinv (F.exists_length_encDesc_pure_le hd)
+  have hgroup : F.withKey.cramerShoupGroupINDCCA2
+      (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) H (F.isElemWithKey isElem) :=
+    (hDDH.withKey hkeyLen).cramerShoupGroupINDCCA2 hH
+      (F.computableInPolyTime_isElemWithKey hisElem) (F.isElemWithKey_iff hmem) hCR hm0
+      (F.order_withKeySetup_ge hm) hinv (F.exists_length_encDesc_withKeySetup_le hd hkeyLen)
   intro adversary hA
   dsimp only [INDCCA2On, Game.Indistinguishable]
   exact negligible_advantage_of_eight_le (hgroup adversary hA)
-    (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d adversary false)
-    (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d adversary true)
+    (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d keyLen adversary false)
+    (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d keyLen adversary true)
 
-/-- **Batch-challenge multi-challenge CCA security of Multiplicative Cramer–Shoup
-(`Encryption.INDCCA2MultiOn`)** (batch-challenge specialization of [BonehShoup2023], Theorem 12.1,
-together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521–522): for any
-polynomial-time group description family `d : ℕ → F.Desc` and polynomial-time `H` and `isElem`
-such that `isElem` accepts exactly the encodings of group elements, the probabilistic
-polynomial-time Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d,
+/-- **Batch-challenge multi-challenge CCA security of Multiplicative Cramer–Shoup with a keyed
+hash (`Encryption.INDCCA2MultiOn`)** (batch-challenge specialization of [BonehShoup2023],
+Theorem 12.1, together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521–522):
+under the hypotheses of `DDH.indcca2On_cramerShoup`, the scheme `(cramerShoupKeyGenProb d keyLen,
 cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)` satisfies the two-phase
 batch-challenge multi-challenge `Encryption.INDCCA2MultiOn` notion with respect to
-`cramerShoupValid isElem d` under DDH and collision resistance of `cramerShoupHashMod H`, both for
-the point-mass setup `fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)`
-with `1 / m n` negligible. The group at parameter `n` is the fixed description `d n`; it is not
-sampled. -/
+`cramerShoupValid isElem d`. The hash key is drawn at key generation and published in the public
+key, and the hash assumption is collision resistance of the keyed family. -/
 theorem DDH.indcca2MultiOn_cramerShoup
     {F : PrimeOrderGroupFamily}
-    {H : F.Desc × List Bool → List Bool}
+    {H : F.withKey.Desc × List Bool → List Bool}
     {isElem : F.Desc × List Bool → Bool}
-    {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {d : ℕ → F.Desc} {keyLen : ℕ → ℕ}
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hCR : CollisionResistantFor F.encDesc (fun n => PMF.pure (d n)) (F.cramerShoupHashMod H))
+    (hCR : CollisionResistantFor F.withKey.encDesc
+      (F.withKeySetup (fun n => PMF.pure (d n)) keyLen) (F.withKey.cramerShoupHashMod H))
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n)
     (hm : ∀ n, m n ≤ F.order (d n))
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
     INDCCA2MultiOn (F.cramerShoupValid isElem d) encBits encBits
-      (F.cramerShoupKeyGenProb d) (F.cramerShoupEncryptProb H d)
+      (F.cramerShoupKeyGenProb d keyLen) (F.cramerShoupEncryptProb H d)
       (F.cramerShoupDecryptOpt H isElem d) :=
-  (hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv).indcca2MultiOn
+  (hDDH.indcca2On_cramerShoup hH hisElem hd hkeyLen hmem hCR hm0 hm hinv).indcca2MultiOn
     (F.computableInPolyTime_cramerShoupValid hisElem hd)
-    (F.isPPTOn_cramerShoupKeyGenProb hd)
+    (F.isPPTOn_cramerShoupKeyGenProb hd hkeyLen)
     (F.isPPTOn_cramerShoupEncryptProb hH hd)
     (F.computableInPolyTime_cramerShoupDecryptOpt hH hisElem hd)
 

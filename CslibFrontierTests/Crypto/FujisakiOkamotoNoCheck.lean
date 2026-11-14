@@ -15,7 +15,7 @@ Instantiates `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NoCheck` on a p
 toy PKE whose ciphertext is the message itself, with messages `Fin 2 → Bool` and keys `Fin 8`:
 
 1. `leakyPKE` decrypts honest ciphertexts as the toy PKE and tagged ciphertexts to constant
-   messages, preserves `indCpaAdvantage`, `DeltaCorrect`, and `GammaSpread`, and makes
+   messages, preserves `cpaAdvantage`, `DeltaCorrect`, and `GammaSpread`, and makes
    `Scheme.decapsNotBot` reject tagged ciphertexts `(c, some i)` while `Scheme.decapsNoCheck`
    accepts them.
 2. `leakAdv` makes no `G` queries and `3` queries to `H`.
@@ -60,11 +60,11 @@ example : (leakyPKE toyPKE).dec () (![false, true], some 1) = some fun _ => true
 
 example : (leakyPKE toyPKE).dec () (![false, true], some 0) = some fun _ => false := rfl
 
-example (m₀ m₁ : Fin 2 → Bool)
-    (A : Unit → (Fin 2 → Bool) × Option (Fin 2) → ProbComp Bool) :
-    (leakyPKE toyPKE).indCpaAdvantage m₀ m₁ A =
-      toyPKE.indCpaAdvantage m₀ m₁ fun pk c => A pk (c, none) :=
-  leakyPKE_indCpaAdvantage toyPKE m₀ m₁ A
+example {σ : Type}
+    (A : TwoStage Unit (MessagePair (Fin 2 → Bool)) ((Fin 2 → Bool) × Option (Fin 2)) Bool σ) :
+    (leakyPKE toyPKE).cpaAdvantage A =
+      toyPKE.cpaAdvantage ⟨A.choose, fun state c => A.guess state (c, none)⟩ :=
+  leakyPKE_cpaAdvantage toyPKE A
 
 example : (leakyPKE toyPKE).DeltaCorrect 0 :=
   leakyPKE_deltaCorrect toyPKE toyPKE_deltaCorrect_zero

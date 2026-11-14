@@ -38,10 +38,20 @@ eigenvectors (`Matrix.kroneckerPow_mulVec_prod`, `Matrix.kroneckerPow_mulVec_smu
 
 * `Matrix.exists_submatrix_det_ne_zero`: existence of a nonsingular `A.rank × A.rank` minor.
 * `Matrix.mulVec_map_eq_smul`: eigenvector/eigenvalue transfer along a ring homomorphism.
+* `Matrix.kronecker_mulVec_smul`, `Matrix.mul_prod_ne_zero_iff`: tensor products of eigenvectors
+  of `A` and `B` are eigenvectors of `A ⊗ₖ B` with eigenvalue `μ * ν`, and are nonzero if and only
+  if both factors are nonzero ([AroraBarak07, Chapter 16, Exercise 14]).
 * `Matrix.rank_kronecker`: `(A ⊗ₖ B).rank = A.rank * B.rank` over any field.
-* `Matrix.kroneckerPow_succ_eq_submatrix`, `Matrix.kroneckerPow_mul`,
+* `Matrix.kroneckerPow_succ_eq_submatrix`, `Matrix.kroneckerPow_mul`, `Matrix.kroneckerPow_pow`,
+  `Matrix.trace_kroneckerPow`, `Matrix.trace_kroneckerPow_pow`,
   `Matrix.kroneckerPow_mulVec_prod`, `Matrix.kroneckerPow_mulVec_smul`,
-  `Matrix.rank_kroneckerPow`: structure, action, eigenpairs, and rank of Kronecker powers.
+  `Matrix.prod_vec_ne_zero_iff`, `Matrix.rank_kroneckerPow`: structure, powers, traces, action,
+  eigenpairs, and rank of Kronecker powers.
+
+## References
+
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, draft of
+  2007-01-08][AroraBarak07]
 -/
 
 public section
@@ -103,6 +113,30 @@ theorem mulVec_map_eq_smul {m R S : Type*} [Semiring R] [Semiring S] [Fintype m]
   ext i
   rw [← f.map_mulVec A v, h]
   simp [map_mul]
+
+/-- Tensor products of eigenvectors of `A` and `B` are eigenvectors of `A ⊗ₖ B` with eigenvalue
+equal to the product of the individual eigenvalues ([AroraBarak07, Chapter 16, Exercise 14]). -/
+theorem kronecker_mulVec_smul {m n R : Type*} [CommSemiring R] [Fintype m] [Fintype n]
+    (A : Matrix m m R) (B : Matrix n n R) (u : m → R) (v : n → R) (μ ν : R)
+    (hA : A *ᵥ u = μ • u) (hB : B *ᵥ v = ν • v) :
+    (A ⊗ₖ B) *ᵥ (fun q => u q.1 * v q.2) = (μ * ν) • (fun q => u q.1 * v q.2) := by
+  rw [kronecker_mulVec_mul, hA, hB]
+  funext q
+  simp [mul_mul_mul_comm]
+
+/-- The tensor product vector `q ↦ u q.1 * v q.2` is nonzero if and only if both `u` and `v` are
+nonzero ([AroraBarak07, Chapter 16, Exercise 14]). -/
+theorem mul_prod_ne_zero_iff {m n R : Type*} [MulZeroClass R] [NoZeroDivisors R]
+    {u : m → R} {v : n → R} :
+    (fun q : m × n => u q.1 * v q.2) ≠ 0 ↔ u ≠ 0 ∧ v ≠ 0 := by
+  constructor
+  · intro h
+    obtain ⟨⟨i, j⟩, hij⟩ := Function.ne_iff.mp h
+    exact ⟨fun hu => hij (by simp [hu]), fun hv => hij (by simp [hv])⟩
+  · rintro ⟨hu, hv⟩ h
+    obtain ⟨i, hi⟩ := Function.ne_iff.mp hu
+    obtain ⟨j, hj⟩ := Function.ne_iff.mp hv
+    exact mul_ne_zero hi hj (congrFun h (i, j))
 
 end Minors
 
@@ -201,6 +235,31 @@ theorem kroneckerPow_one_matrix {m R : Type*} [CommSemiring R] [DecidableEq m] (
     rw [ite_eq_right h]
     exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp [hi])
 
+/-- `kroneckerPow` commutes with matrix powers:
+`kroneckerPow (A ^ d) k = (kroneckerPow A k) ^ d`. -/
+theorem kroneckerPow_pow {m R : Type*} [CommSemiring R] [Fintype m] [DecidableEq m]
+    (A : Matrix m m R) (d k : ℕ) :
+    kroneckerPow (A ^ d) k = (kroneckerPow A k) ^ d := by
+  induction d with
+  | zero => simp [pow_zero]
+  | succ d ih => rw [pow_succ, pow_succ, kroneckerPow_mul, ih]
+
+/-- The trace of a `k`-fold Kronecker power is the `k`-th power of the trace:
+`(kroneckerPow A k).trace = A.trace ^ k`. -/
+@[simp]
+theorem trace_kroneckerPow {m R : Type*} [CommSemiring R] [Fintype m]
+    (A : Matrix m m R) (k : ℕ) :
+    (kroneckerPow A k).trace = A.trace ^ k := by
+  simp only [trace, diag_apply, kroneckerPow_apply]
+  rw [← Fintype.prod_sum (fun (_ : Fin k) j => A j j)]
+  simp
+
+/-- The trace of the `d`-th power of a `k`-fold Kronecker power equals `(A ^ d).trace ^ k`. -/
+theorem trace_kroneckerPow_pow {m R : Type*} [CommSemiring R] [Fintype m] [DecidableEq m]
+    (A : Matrix m m R) (d k : ℕ) :
+    ((kroneckerPow A k) ^ d).trace = (A ^ d).trace ^ k := by
+  rw [← kroneckerPow_pow, trace_kroneckerPow]
+
 /-- Transpose commutes with `kroneckerPow`. -/
 @[simp]
 theorem transpose_kroneckerPow {m n R : Type*} [CommMonoid R] (A : Matrix m n R) (k : ℕ) :
@@ -233,6 +292,22 @@ theorem kroneckerPow_mulVec_smul {m R : Type*} [CommSemiring R] [Fintype m]
   rw [kroneckerPow_mulVec_prod]
   funext x
   simp only [h, Pi.smul_apply, smul_eq_mul, Finset.prod_mul_distrib]
+
+/-- The `k`-fold tensor product vector `y ↦ ∏ i, v i (y i)` is nonzero if and only if every
+factor `v i` is nonzero. -/
+theorem prod_vec_ne_zero_iff {m R : Type*} [CommMonoidWithZero R] [NoZeroDivisors R]
+    [Nontrivial R] {k : ℕ} {v : Fin k → m → R} :
+    (fun y : Fin k → m => ∏ i, v i (y i)) ≠ 0 ↔ ∀ i, v i ≠ 0 := by
+  constructor
+  · intro h i hi
+    apply h
+    funext y
+    exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp [hi])
+  · intro h
+    have hex : ∀ i, ∃ x, v i x ≠ 0 := fun i => Function.ne_iff.mp (h i)
+    choose y hy using hex
+    intro h0
+    exact Finset.prod_ne_zero_iff.mpr (fun i _ => hy i) (congrFun h0 y)
 
 /-- **Rank of a Kronecker power** over a field: `(kroneckerPow A k).rank = A.rank ^ k`. -/
 @[simp]

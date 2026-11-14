@@ -224,6 +224,11 @@ Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. At
 
 Olaf Beyersdorff, Nicola Galesi and Massimo Lauria. *A lower bound for the pigeonhole principle in tree-like Resolution by asymmetric Prover–Delayer games*. Information Processing Letters 110(23), 1074–1077, 2010. https://doi.org/10.1016/j.ipl.2010.09.007 ; author's copy https://massimolauria.net/documents/tree-like-php.pdf (6 pages). Read in the author's copy on 2026-11-08. Locators checked there: Theorem 1 on p. 3 (if `F` has a tree-like refutation of size at most `S`, Delayer gets at most `log S` points in every `(c₀, c₁)`-game with `1/c₀ + 1/c₁ = 1`); Theorem 2 on p. 4 (every tree-like refutation of `PHP^m_n` has size `2^Ω(n log n)`); the explicit `2^((n/2) log(n/2 + 1)) = (n/2 + 1)^(n/2)` for even `n` at the end of that proof on p. 5; and the closing remark on p. 5 that the bound also holds for the functional pigeonhole principle. The abstract and introduction present the result as a simpler proof of Dantchev and Riis's bound (CCC 2001). Journal pagination was taken from the Crossref record. The ECCC version (TR10-081) was not reachable from this environment and was not read.
 
+<a id="bfckkl22"></a>
+## bfckkl22
+
+Michael A. Bender, Martin Farach-Colton, John Kuszmaul, William Kuszmaul and Mingmou Liu. "On the Optimal Time/Space Tradeoff for Hash Tables." *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 1284–1297, 2022. https://doi.org/10.1145/3519935.3519969 ; open preprint `arXiv:2111.00602v2` (4 November 2021), https://arxiv.org/abs/2111.00602v2 (`BenderFarachColtonKuszmaulKuszmaulLiu2022`). Checked against `arXiv:2111.00602v2` on 2026-11-11 and 2026-11-13 UTC (unnumbered title page is PDF p. 1, so printed p. `p` is PDF p. `p + 1`): Section 2.1, printed p. 3 / PDF p. 4 (balls-to-slots probe complexity `1 + log i` and switching cost); Section 2.4, printed p. 7 / PDF p. 8 (iterated logarithm `log^(k) n`); Sections 3 and 3.1, printed pp. 8–12 / PDF pp. 9–13 (`k`-kick tree hierarchy, depth-cap distribution, greedy unsaturated-ancestor selection, priority kicks with switching cost `≤ k + 1`, Lemma 1 on printed pp. 10–11 / PDF pp. 11–12, and Theorems 2–3 on printed p. 12 / PDF p. 13); and Section 5.1, printed p. 27 / PDF p. 28 (removal-only deletion in cubbies). STOC proceedings pagination comes from `references.bib` and was not separately inspected.
+
 <a id="bfprt73"></a>
 ## bfprt73
 
@@ -475,6 +480,11 @@ José R. Correa, Andreas S. Schulz and Nicolás E. Stier-Moses. *Selfish Routing
 Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected. Also cited for Section 2.10 (Fano's inequality: Theorem 2.10.1, the corollary after it with the sharper `log(|𝒳| − 1)` form for estimators valued in `𝒳`, and the remark on guessing without side information), Section 7.1 (capacity of the binary symmetric channel), Lemma 7.9.2 and Theorem 7.9.1 (the converse to the channel coding theorem); these locators were likewise checked against secondary course material, not the printed book.
 
 Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
+
+<a id="cs03"></a>
+## cs03
+
+Ronald Cramer and Victor Shoup. “Design and Analysis of Practical Public-Key Encryption Schemes Secure against Adaptive Chosen Ciphertext Attack.” *SIAM Journal on Computing* 33(1), 167–226, 2003. https://doi.org/10.1137/S0097539702403773 . Authors' revised manuscript (August 14, 2003): https://www.shoup.net/papers/cca2.pdf (Section 5.1, target collision resistance; Section 6.1, Figure 1, the hash key `hk` drawn at key generation and published in the public key; Section 6.2, Theorem 1). Checked against that manuscript on 2026-11-14.
 
 <a id="cslib"></a>
 ## cslib
@@ -852,7 +862,7 @@ Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: th
 <a id="hhk17"></a>
 ## hhk17
 
-Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, two-stage IND-CPA `cpaAdvantage` via `PKE.cpaExperiment` on `ExplicitCoinPKE.toPKE`, with the single-stage fixed-message `indCpaGame`/`indCpaAdvantage` kept only for K-PKE and the spread-necessity example, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
 
 <a id="hhrvw20"></a>
 ## hhrvw20
@@ -1752,6 +1762,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="uov26"></a>
+## uov26
+
+Ward Beullens, Ming-Shing Chen, Jintai Ding, Boru Gong, Matthias J. Kannwischer, Jacques Patarin, Bo-Yuan Peng, Dieter Schmidt, Cheng-Jhih Shih, Chengdong Tao, Bo-Yin Yang. *UOV: Unbalanced Oil and Vinegar, Algorithm Specifications and Supporting Documentation*, Version 3.0, August 30, 2026 (bibliography key `UOV2026`). https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/UOV_Specification_R3.pdf . Checked against that PDF on 2026-11-14 (SHA-256 `ce9044adf1b4e407467968438fa66794882bcaa6411d3509bed72ff54380181a`): Section 3.1 (printed pp. 11–13, specifically p. 12) defines `Upper(M)` as the unique upper-triangular matrix `M'` such that `M' - M` is alternating. `CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic` formalizes only this generic matrix construction (`Matrix.upperQuadratic`), its `Matrix.IsUpperTriangular` and `LinearMap.IsAlt` properties, `Matrix.toQuadraticForm'` equality, and uniqueness; UOV block keys, oil subspaces, signing/verification, restart bounds, and security reductions remain open under [#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
 <a id="valiant84"></a>
 ## valiant84

@@ -20,6 +20,9 @@ Its chapters 6–7 records distinguish native circuit/randomized endpoints from 
 expected-time and expander-concentration gaps and identify literal source defects.
 Its Chapter 11 connectivity milestone records the exact total edge-query lower bound and its
 empty-graph conventions; it does not establish the other chapter endpoints.
+The native BP·NP = AM milestone identifies the bounded-error NP operator with AM for
+arbitrary instance encodings and derives NP advice. Registry admission awaits a human source check; randomized reduction to 3SAT and the
+nondeterministic circuit endpoint remain open.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
 and quantitative crypto bounds. The native `dip-eq-np` entry covers deterministic interaction in the oracle-PPT IP model;
 `perfect-soundness-ip-subset-np` covers perfect soundness with any positive completeness.
@@ -119,6 +122,16 @@ current bibliography by the Python validator, rather than frozen when a Lean mod
 Reference integrity proves neither mathematical correspondence nor completeness. A result's
 hypotheses and model limits remain authoritative. Probability bounds do not imply certified native
 runtime, and conditional results are not unconditional endpoints.
+
+An entry that cites a source theorem lists theorems that state that result
+([faithful headlines](../AGENTS.md#faithful-headlines)). The scope note describes the formal
+setting of a faithful statement; it does not excuse a gap between the listed theorem and the
+cited result. A stand-in—such as a helper that assumes a property of its own reduction, or a
+bound for parameters chosen after the adversary—never occupies the cited result's entry (if a
+step is listed at all, its own title and `theorem` field say it is a step of that result), and
+original results are not registered as proofs of a nearby source theorem. A published theorem
+enters the inventory only after a human maintainer has checked its statement against the source
+([review cycle](../AGENTS.md#review-cycle)).
 
 ## Remaining collection work
 

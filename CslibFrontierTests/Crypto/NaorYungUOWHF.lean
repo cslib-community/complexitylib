@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Crypto.Computational.NaorYung
+import CslibFrontier.Crypto.Computational.NaorYungUOWHF
 
 /-!
 # Tests for Naor–Yung universal one-way hash functions
@@ -18,7 +18,7 @@ probability at least `1 / 2` at every parameter `n` (confirming that the `OneWay
 hypothesis is essential).
 -/
 
-namespace CslibFrontierTests.Crypto.NaorYung
+namespace CslibFrontierTests.Crypto.NaorYungUOWHF
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -208,4 +208,4 @@ example {f : List Bool → List Bool} (hf : OneWayPermutation f) :
     ∃ H : KeyedHashFamily, H.TargetCollisionResistant :=
   hf.exists_targetCollisionResistant_keyedHashFamily
 
-end CslibFrontierTests.Crypto.NaorYung
+end CslibFrontierTests.Crypto.NaorYungUOWHF

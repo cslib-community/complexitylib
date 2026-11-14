@@ -673,17 +673,6 @@ private theorem eval_prfMultiIdealGame_lubyRackoffAdversary (adversary : OracleD
     exact feistelNetworkWord_joinBlock (.cons (hT 0) (.cons (hT 1) (.cons (hT 2) .nil))) _
   · rfl
 
-/-- Three independent uniform draws are the coordinates of a uniform triple. -/
-private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonempty X]
-    (F : X → X → X → PMF β) :
-    (PMF.uniformOfFintype (Fin 3 → X)).bind (fun f => F (f 0) (f 1) (f 2)) =
-      (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
-        (PMF.uniformOfFintype X).bind fun c => F a b c := by
-  rw [← Probability.PMF.iid_uniformOfFintype]
-  simp only [Probability.PMF.iid, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
-    PMF.bind_map, PMF.pure_bind, Function.comp_def]
-  rfl
-
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
 functions, a `Q`-query adversary distinguishes the adapter's three-key ideal game from a uniform
@@ -705,23 +694,11 @@ theorem advantage_lubyRackoffRandomRounds_prpIdealGame_le (adversary : OracleDis
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
     congr 1; funext π; simp only [Function.comp_apply, randomPermOracle_eq_blockOracle]
   rw [eval_prfMultiIdealGame_lubyRackoffAdversary, hperm,
-    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-      (PMF.uniformOfFintype (Fin 3 → BitString n → BitString n))
-      (fun tables p => LubyRackoff.feistel3 (tables 0) (tables 1) (tables 2) p)
-      ((pairCodec n).adapt (adversary n [])),
-    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-      (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))) (fun σ p => σ p)
-      ((pairCodec n).adapt (adversary n []))]
-  peel_binds ω
-  have h := LubyRackoff.advantage_feistel3RandomRoundsGame_idealPermGame_le
-    (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
-  rw [bind_uniformOfFintype_fin_three (fun f₁ f₂ f₃ => OracleComp.interpret
-    (fun p => PMF.pure (LubyRackoff.feistel3 f₁ f₂ f₃ p))
-    (ProbOracleComp.fixCoins ((pairCodec n).adapt (adversary n [])) ω))]
-  simpa only [LubyRackoff.feistel3RandomRoundsGame, LubyRackoff.feistel3FixedGame,
-    LubyRackoff.idealPermGame, Probability.PMF.monad_bind_eq_bind, Fintype.card_pi,
-    Fintype.card_fin, Fintype.card_bool, Finset.prod_const, Finset.card_univ, Nat.cast_pow,
-    Nat.cast_ofNat] using h
+    ← LubyRackoff.eval_multiKeyIdealExperiment_feistel3MultiKeyAdversary,
+    ← PRP.eval_idealExperiment]
+  simpa only [Fintype.card_pi, Fintype.card_fin, Fintype.card_bool, Finset.prod_const,
+    Finset.card_univ, Nat.cast_pow, Nat.cast_ofNat] using
+    LubyRackoff.advantage_feistel3RandomRounds_prpIdealExperiment_le hadaptedQ
 
 /-- **The Luby–Rackoff theorem** ([BonehShoup2023], Theorem 4.9; [LubyRackoff1988]): the
 three-round Luby–Rackoff cipher built from a pseudorandom function is a pseudorandom permutation
@@ -1031,18 +1008,6 @@ private theorem eval_prfMultiIdealGame_strongLubyRackoffAdversary
       exact feistelNetworkWordInv_joinBlock hrounds _
   · simp only [hblock, ↓reduceIte]
 
-/-- Four independent uniform draws are the coordinates of a uniform quadruple. -/
-private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonempty X]
-    (F : X → X → X → X → PMF β) :
-    (PMF.uniformOfFintype (Fin 4 → X)).bind (fun f => F (f 0) (f 1) (f 2) (f 3)) =
-      (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
-        (PMF.uniformOfFintype X).bind fun c => (PMF.uniformOfFintype X).bind fun d =>
-          F a b c d := by
-  rw [← Probability.PMF.iid_uniformOfFintype]
-  simp only [Probability.PMF.iid, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
-    PMF.bind_map, PMF.pure_bind, Function.comp_def]
-  rfl
-
 /-- **Four random Feistel rounds against a random permutation, in both directions**
 ([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent
 uniform random round functions, a `Q`-query adversary distinguishes the adapter's four-key ideal
@@ -1078,7 +1043,7 @@ theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
   peel_binds ω
   have h := LubyRackoff.advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
     (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
-  rw [bind_uniformOfFintype_fin_four (fun f₁ f₂ f₃ f₄ => OracleComp.interpret
+  rw [PMF.bind_uniformOfFintype_fin_four (fun f₁ f₂ f₃ f₄ => OracleComp.interpret
     (fun request => PMF.pure (strongTable (LubyRackoff.feistel4 f₁ f₂ f₃ f₄) request))
     (ProbOracleComp.fixCoins ((strongPairCodec n).adapt (adversary n [])) ω))]
   simpa only [LubyRackoff.feistel4StrongRandomRoundsGame, LubyRackoff.idealStrongGame,

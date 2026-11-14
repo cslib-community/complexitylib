@@ -41,9 +41,13 @@ distance from `f` the weight of `f` outside the subsets of `J`
   average over the coordinates outside a set.
 * `Cslib.BitString.expect_sub_expect_piecewise_sq`: the mean square distance of a function from
   that average is its Fourier weight outside the subsets of the set.
+* `Cslib.BitString.expect_expect_sub_piecewise_sq`,
+  `Cslib.BitString.expect_expect_piecewise_ne`: the coordinate-set variation of a real or Boolean
+  function is twice (respectively, half) its Fourier weight outside the subsets of the set.
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
@@ -163,5 +167,54 @@ theorem expect_sub_expect_piecewise_sq (f : (ι → Bool) → ℝ) (J : Finset �
   refine sum_congr rfl fun S _ => ?_
   rw [fourierCoeff_sub, fourierCoeff_expect_piecewise]
   split_ifs <;> simp
+
+/-- Averaged over both `x` and `z`, the mean square of `f (J.piecewise x z)` is the mean square of
+`f`. -/
+theorem expect_expect_piecewise_sq (f : (ι → Bool) → ℝ) (J : Finset ι) :
+    𝔼 z, 𝔼 x, f (J.piecewise x z) ^ 2 = 𝔼 x, f x ^ 2 := by
+  have h := expect_sum_fourierCoeff_piecewise_sq f J 0
+  simp only [zero_le, implies_true, filter_true_of_mem, ← expect_sq_eq_sum_fourierCoeff_sq] at h
+  exact h
+
+/-- The correlation of `f` with its average over the coordinates outside `J` is its Fourier weight
+on the subsets of `J`. -/
+theorem expect_mul_expect_piecewise (f : (ι → Bool) → ℝ) (J : Finset ι) :
+    𝔼 x, f x * 𝔼 z, f (J.piecewise x z) = ∑ S with S ⊆ J, fourierCoeff f S ^ 2 := by
+  rw [expect_mul_eq_sum_fourierCoeff_mul, sum_filter]
+  refine sum_congr rfl fun S _ => ?_
+  rw [fourierCoeff_expect_piecewise]
+  split_ifs <;> ring
+
+/-- **The coordinate-set variation of a real function**: the expected squared difference between
+`f x` and `f (J.piecewise x z)` for independent uniform `x` and `z` is twice the Fourier weight of
+`f` outside the subsets of `J` [O'Donnell, Proposition 3.31][ODonnell2014]. -/
+theorem expect_expect_sub_piecewise_sq (f : (ι → Bool) → ℝ) (J : Finset ι) :
+    𝔼 x, 𝔼 z, (f x - f (J.piecewise x z)) ^ 2 =
+      2 * ∑ S with ¬S ⊆ J, fourierCoeff f S ^ 2 := by
+  have h1 : 𝔼 x, 𝔼 z, (f x - f (J.piecewise x z)) ^ 2 =
+      (𝔼 x, f x ^ 2) - 2 * (𝔼 x, f x * 𝔼 z, f (J.piecewise x z)) +
+        𝔼 z, 𝔼 x, f (J.piecewise x z) ^ 2 := by
+    simp only [sub_sq, expect_add_distrib, expect_sub_distrib, expect_const univ_nonempty,
+      ← mul_expect, mul_assoc]
+    rw [expect_comm (s := univ) (t := univ) (f := fun x z => f (J.piecewise x z) ^ 2)]
+  rw [h1, expect_expect_piecewise_sq, expect_sq_eq_sum_fourierCoeff_sq, expect_mul_expect_piecewise,
+    ← sum_filter_add_sum_filter_not univ (· ⊆ J) (fun S => fourierCoeff f S ^ 2)]
+  ring
+
+/-- **The coordinate-set variation of a Boolean function**: the probability that resampling the
+coordinates outside `J` from a uniform `z` changes the value of `f` at a uniform `x` is half the
+Fourier weight of `signVal ∘ f` outside the subsets of `J`
+[O'Donnell, Exercise 3.28 and Proposition 3.31][ODonnell2014]
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
+theorem expect_expect_piecewise_ne (f : (ι → Bool) → Bool) (J : Finset ι) :
+    (𝔼 x, 𝔼 z, if f x = f (J.piecewise x z) then (0 : ℝ) else 1) =
+      (∑ S with ¬S ⊆ J, fourierCoeff (fun x => signVal (f x)) S ^ 2) / 2 := by
+  have h (x z : ι → Bool) :
+      (if f x = f (J.piecewise x z) then (0 : ℝ) else 1) =
+        (signVal (f x) - signVal (f (J.piecewise x z))) ^ 2 / 4 := by
+    cases f x <;> cases f (J.piecewise x z) <;> norm_num
+  simp only [h, ← expect_div]
+  rw [expect_expect_sub_piecewise_sq (fun x => signVal (f x)) J]
+  ring
 
 end Cslib.BitString

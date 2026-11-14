@@ -13,6 +13,30 @@ Classic B-trees are pure Lean data structures with `TimeM` node-visit and `FreeM
 
 The [examples](../../CslibFrontierTests/BTreeInsert.lean) include a root split at `t = 2`, bulk loading at `t = 2` and `t = 3`, and a client that builds a well-formed map by repeated insertion. The [query](../../CslibFrontierTests/BTreeQuery.lean), [erasure](../../CslibFrontierTests/BTreeErase.lean), [cost](../../CslibFrontierTests/BTreeCost.lean) and [comparison](../../CslibFrontierTests/BTreeComparisons.lean) examples check the other operations and exact visit/comparison counts. Erasure comparison bounds, binary in-node search, search comparison lower bounds, a node-access oracle model and B+-trees are not formalized.
 
+## Prime modulus collisions
+
+Import `CslibFrontier.Foundations.NumberTheory.PrimeCollisionWindow` for
+`Nat.closedPrimes lo hi`, the primes in the **closed** interval `[lo,hi]`.
+`Nat.exists_closedPrimes_collision_bound` states: for every real `δ > 0`, there
+is `C > 0` such that, for all `M ≥ 2` and natural `L ≥ C * (Nat.log2 M)^2`,
+both `[3,L]` and `[L,2L]` contain primes. For each fixed distinct `a,b ≤ M`,
+the fraction of those primes satisfying `Nat.ModEq p a b` is at most `δ`.
+The constant is independent of `M,L,a,b`; this is a pairwise guarantee.
+`Nat.exists_ceil_closedPrimes_collision_bound` supplies the natural choice
+`L = ⌈C * (Nat.log2 M)^2⌉₊`. Apply these theorems with a proof that `δ > 0`.
+
+The finite fraction is the collision probability under uniform choice **among
+primes** in the chosen window. Uniform integers in the interval have a different
+law. These results provide no efficient prime sampler or runtime guarantee.
+They give a quantified interpretation of Goldreich's April 2007 draft Exercise
+9.7 (PDF64/printed446), whose `L = poly(log M)` does not specify an error
+parameter or degree. Source inventory admission awaits a human maintainer check.
+The [checked ordinary-import clients](../../CslibFrontierTests/PrimeCollisionWindow.lean)
+include `M=2`, difference one, reversed arguments and `a=0,b=21,L=7`.
+For that last example the fractions are `2/3` on `{3,5,7}` and `1/3` on
+`{7,11,13}`; it checks the included lower endpoint `7` without asserting that
+the conservative quadratic threshold holds for this small example.
+
 ## Hash families and dictionaries
 
 For pure cuckoo tables, import `CslibFrontier.DataStructure.Dictionary.CuckooHashing.Basic`
@@ -95,6 +119,15 @@ Two explicit quantitative premises replace the source's asymptotic hypotheses: b
 
 These modules are pure mathematical specifications; the multi-level tree schedule, Word-RAM lookup-table and bit-packed evaluation, variable-length adapter trees, strong history independence, resizing, and super-polynomial universes are not formalized here.
 
+### Balls-to-slots specification and pure k-kick tree
+
+Import `CslibFrontier.DataStructure.BallsToSlots.Spec` ([Spec.lean](../../CslibFrontier/DataStructure/BallsToSlots/Spec.lean)) and `CslibFrontier.DataStructure.BallsToSlots.KickTree` ([KickTree.lean](../../CslibFrontier/DataStructure/BallsToSlots/KickTree.lean)); see [CslibFrontierTests/DataStructure/KickTree.lean](../../CslibFrontierTests/DataStructure/KickTree.lean) for a checked execution trace and `trinomialPolyHash` hypothesis-satisfiability checks. They formalize the pure balls-to-slots problem and `k`-kick tree of Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul, and Liu [bfckkl22][bfckkl22] (`arXiv:2111.00602v2`, Sections 2.1, 2.4, 3, 3.1, and 5.1) in namespace `Cslib.DataStructure.BallsToSlots`:
+
+- **Specification (`BallsToSlots.Spec`):** `SlotAssignment α M` stores present balls injectively in primary slots `Fin M` under `Op` (`insert`, `delete`, `query`), with integer floor probe cost `slotProbeComplexity = 1 + Nat.log 2 (probeIndex + 1)` (differing by `< 1` per ball from Section 2.1's real-logarithm `1 + log₂ i`), XOR probe sequence `xorProbeSeq`, `finProdFinEquiv`-based `dyadicSplitEquiv`, deterministic `switchingCost`, `StateTransitionSpec` instances `spec` / `schemeSpec`, and snapshot concentration `dens_sum_totalProbeComplexity_gt_le_of_snapshotBound` (built on general `k`-wise fiber conditioning in [Restriction.lean](../../CslibFrontier/Probability/KWiseIndependent/Restriction.lean), disjoint-restriction moment bounds in [Concentration.lean](../../CslibFrontier/Probability/KWiseIndependent/Concentration.lean), and two-stage product union tails in [TwoStage.lean](../../CslibFrontier/Foundations/Probability/TwoStage.lean)).
+- **`k`-kick tree (`BallsToSlots.KickTree`):** bridges `max (Nat.iterLog 2 n) 1` within a factor of `2` of `Dynamic.logLogFactor n` (via `Nat.max_iterLog_two_eq` in [IterLog.lean](../../CslibFrontier/Foundations/Data/Nat/IterLog.lean)), and defines `KickTree.Params`, priority-kick `insert` via `Fin.find?` (`switchingCost_insert_le`, `switchingCost_standardInsert_le : switchingCost ≤ k + 1`), kick-depth invariance (`assignedDepth_insert_of_mem`), removal-only `delete` (Section 5.1, printed p. 27 / PDF p. 28; vacating only the deleted ball's slot without moving other balls, though state still depends on insertion order), schedule inequality `depthSteps_le_binExp`, 3-wise expected probe bounds `expect_ballProbeComplexity_standardInsert_le` (Lemma 1) and `expect_totalProbeComplexity_standardRun_le` (Theorem 2), and multi-tree concentration `dens_sum_totalProbeComplexity_standardRun_gt_le` / `dens_sum_totalProbeComplexity_standardRun_gt_le_of_whp`.
+
+Explicit adaptations and quantitative thresholds: `SlotAssignment` omits Section 3's unused special slots and uses `xorProbeSeq` to enumerate each depth-`i` dyadic bin within offset `< 2 ^ binExp i`; `standardParams m₀ k` clamps depth to `0` below `m₀ = 32` (`effectiveDepth`) and rounds the paper's `s_d ≈ (log^(d) n)^6` and `Pr[depthCap < i + 1] ≈ (log^(i+1) n)^(-2)` schedule to powers of two via `capExp i = 2 * iterLog (i + 2) (2 ^ m₀)` and `binExp (i + 1) = 6 * iterLog (i + 2) (2 ^ m₀)` (the `+2` offset aligns 0-based indexing with `Nat.iterLog`, and Chebyshev's `L^4 / L^6 = 1 / L^2` ratio gives a geometric series so 3-wise independence suffices for Lemma 1 and Theorem 2; the per-ball constant `96 * max (Nat.iterLog (k + 1) (2 ^ m₀)) 1` improves on the deterministic ceiling `1 + m₀` starting at `m₀ ≥ 96` for `k ≥ 3` and for all `m₀ ≥ 288` for `k = 2`); and `dens_sum_totalProbeComplexity_standardRun_gt_le` differs from Theorem 3 in four ways — (a) the disjoint-footprint partition `R` is assumed as a hypothesis, (b) special slots are absent in this pure primary-slot model, (c) the tail bound is polynomial (`2m`-th moment Markov) rather than an exponential Chernoff bound, and (d) it assumes `max 3 (2 * m * 4 ^ m₀)`-wise independence (with nonempty tail events only for `m₀ ≥ 96`). Universal key quotienting ([QuotientPerm.lean](../../CslibFrontier/DataStructure/Dictionary/KickTree/QuotientPerm.lean)), Four-Russians bit-table specifications, mini-array sequence models with delimiter bit counting, binary prefix routing via `PrefixTrie` (`insert?` with zero silent drops), $O(1)$-depth `FreeSlotTree` allocation trees with full-tree soundness and completeness, and multi-tier cubby facilities with item count conservation via `Facility` (import `CslibFrontier.DataStructure.Dictionary.KickTree.Metadata` in [Metadata.lean](../../CslibFrontier/DataStructure/Dictionary/KickTree/Metadata.lean) and `CslibFrontier.DataStructure.Dictionary.KickTree.Facility` in [Facility.lean](../../CslibFrontier/DataStructure/Dictionary/KickTree/Facility.lean); see tests in [KickTreeMetadata.lean](../../CslibFrontierTests/DataStructure/KickTreeMetadata.lean)) are formalized in `Cslib.DataStructure.Dictionary.KickTree`. Limitations: Four-Russians and mini-arrays are abstract functional models without packed Word-RAM array layouts; `tailReplace` models tail popping into full cubbies without direct tail deletion or empty-tail elimination; and fixed-capacity Word-RAM compilation, dynamic resizing, and distribution invariants are tracked in [#5186](https://github.com/cslib-community/cslib-frontier/issues/5186).
+
 ## Approximate membership filters
 
 Import `CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter` ([CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean](../../CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean)) and construct `QuotientFilter.implOfEps` (for target error `ε ≠ 0` via `epsLog ε`) or `QuotientFilter.impl` (for dyadic error `(1 / 2) ^ k`); see [CslibFrontierTests/WordRAMQuotientFilter.lean](../../CslibFrontierTests/WordRAMQuotientFilter.lean) for a complete checked client. The self-contained formal abstract [ApproximateMembershipAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean) restated the result until the abstracts were retired.
@@ -143,6 +176,7 @@ Import `CslibFrontier.Algorithms.Lean.LubyMIS` ([CslibFrontier/Algorithms/Lean/L
 
 The source draws independent reals in `[0, 1]`. Restricted to the live vertices, a uniform ranking has the same law as the order of those reals, but this equivalence is not formalized. The source gets its high-probability bound from Lemma 7.14 by a Chernoff argument (Corollary 7.18). Here the `O(log n)` bound comes from the first moment, with explicit constants. Theorem 7.15, the expected number of phases, is not formalized. The model is a centralized simulation of the synchronous phases, not a LOCAL message-passing algorithm. Messages, the rounds inside a phase and per-vertex views are not modelled, so it is not connected to the oriented-cycle LOCAL model of [Distributed rounds in the LOCAL model](../circuits-logic-and-other-models/query-and-communication.md#distributed-rounds-in-the-local-model). Luby's original marking algorithm with pairwise independence, its NC derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound and the Kuhn–Moscibroda–Wattenhofer lower bounds remain open; see `ROADMAP.md`. The [checked examples](../../CslibFrontierTests/Algorithms/Lean/LubyMIS.lean) run the phases on the paths with three and four vertices and on the triangle. They show that a phase need not remove every edge, count the live edges left on the four-vertex path over all `24` rankings, and show that the intermediate chosen set is not maximal. They also instantiate the Las Vegas statement nonvacuously and check one instance of the high-probability bound.
 
+[bfckkl22]: ../sources.md#bfckkl22
 [clrs09]: ../sources.md#clrs09
 [fks84]: ../sources.md#fks84
 [freivalds79]: ../sources.md#freivalds79
