@@ -4,8 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Vincent Liew
 -/
 
-import CslibFrontier.Foundations.BooleanAnalysis.Majority
-import CslibFrontier.Foundations.Data.Finset.Expect
+module
+
+public import CslibFrontier.Foundations.BooleanAnalysis.Majority
+public import CslibFrontier.Foundations.Data.Finset.Expect
+import Mathlib.Algebra.BigOperators.Fin
 
 /-! # Majority and the degree-one coefficients on three bits
 
@@ -17,6 +20,8 @@ at most that of the majority. On two bits, where ties occur, both the majority, 
 towards `true`, and the strict majority, which breaks them towards `false`, are majority functions,
 so the maximizer is not unique for even `n`.
 -/
+
+public section
 
 namespace CslibFrontierTests.BooleanAnalysisMajority
 
