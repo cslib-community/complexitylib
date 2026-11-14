@@ -242,6 +242,8 @@ conditions (`Query.Equiv.select`, `Query.Equiv.project`, `Query.Equiv.join`,
 expression equivalence in the typing context of the input, which the input must have
 (`Query.Equiv.select_expr`, `Query.Equiv.project_expr` and `Query.Equiv.join_expr`, taking
 `q.typeOf = some Γ`): the input's rows then conform to `Γ`, which is where `Expr.Equiv Γ` speaks.
+Over `WHERE c`, an outer predicate can be replaced in the context of the inner input whatever the
+type of `c` (`Query.Equiv.select_select_expr`), since `c` keeps some of the input's rows.
 `DISTINCT` turns set equivalence into bag equivalence (`Query.Equiv.distinct_of_set`). The
 list-level facts behind these proofs, such as `EquivLevel.Rel.filterRows` for `WHERE` over related
 inputs, are public for proofs of further laws.

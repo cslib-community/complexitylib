@@ -324,7 +324,8 @@ open Expr (col lit binary)
 
 /-- `SELECT es FROM q`, simplified in place: the expressions are simplified in the typing context
 of `q` when `q` is well-typed, and the projection is dropped when it becomes `SELECT *`. The
-simplified list is built by `FinVec.map`, so that of a literal `![…]` list is a literal list. -/
+simplified list is built by `FinVec.map`, so that of a literal `![…]` list is a literal list. Over
+an ill-typed input, the list is returned as written. -/
 @[expose] def simpProject (es : Fin k → Expr n) (q : Query S n) : Query S k :=
   match q.typeOf with
   | some Γ =>
@@ -441,20 +442,6 @@ theorem equiv_simpJoin (θ : Expr (n + m)) (q₁ : Query S n) (q₂ : Query S m)
   next Γ Δ h₁ h₂ => exact Equiv.join_expr h₁ h₂ (Expr.equiv_simplify _ θ)
   next => rfl
 
-/-- Over `WHERE c` on a query of type `Γ`, the outer predicate can be replaced by one equivalent to
-it in `Γ`, whatever the type of `c`, since the rows that `c` keeps conform to `Γ`. -/
-private theorem select_select_expr {q : Query S n} {Γ : Fin n → SqlType} (hq : q.typeOf = some Γ)
-    {p p' : Expr n} (hp : p.Equiv Γ p') (c : Expr n) :
-    Equiv .ordered (select p (select c q)) (select p' (select c q)) := fun D hD => by
-  simp only [eval_select]
-  rcases h : q.eval D with e | rs
-  · exact .none
-  rw [Except.ok_bind]
-  rcases hc : c.filterRows rs with e | rs'
-  · exact .none
-  exact (EquivLevel.Rel.refl _ rs').filterRows fun r hr =>
-    hp.evalTruth (conforms_of_eval_eq_ok hD hq h r (Expr.mem_of_filterRows_eq_ok hc hr))
-
 theorem equiv_pushSelect (p : Expr n) (q : Query S n) :
     Equiv .ordered (select p q) (pushSelect p q) := by
   induction q with
@@ -465,7 +452,7 @@ theorem equiv_pushSelect (p : Expr n) (q : Query S n) :
     next Γ hq =>
       dsimp only
       split_ifs with hp
-      · exact (select_select_expr hq (Expr.equiv_simplify Γ p) c).trans
+      · exact (Equiv.select_select_expr hq (Expr.equiv_simplify Γ p) c).trans
           ((select_select hq hp c).trans (ih _))
       · exact equiv_simpSelect p _
     next => exact equiv_simpSelect p _

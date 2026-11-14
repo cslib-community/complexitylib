@@ -160,6 +160,9 @@ example : (project ![col 1, col 0] (project ![col 1, col 0] emp)).simplify = emp
 example :
     (project ![binary (.arith .mul) (col 0) (int 2)] (project ![col 1, col 0] emp)).simplify =
       project ![binary (.arith .mul) (col 1) (int 2)] emp := rfl
+example : (project ![binary (.arith .add) (col 1) (int 0)]
+      (project ![col 1, col 0] (project ![col 1, col 0] emp))).simplify =
+    project ![col 1] emp := rfl
 
 /-! ### Refusals at the query level -/
 
@@ -179,6 +182,18 @@ example : (select divZeroEq (select isAnn emp)).simplify = select divZeroEq (sel
 -- division.
 example : (project ![int 1] (project ![divZeroEq] emp)).simplify =
     project ![int 1] (project ![divZeroEq] emp) := rfl
+
+/-- `SELECT name + 1, dept FROM emp`, a type error. -/
+abbrev badProj : Query S 2 := project ![binary (.arith .add) (col 0) (int 1), col 1] emp
+
+-- Over an ill-typed input, a projection is neither simplified nor fused: its list stays as
+-- written, whether a literal list (`1 + 1` is not folded) or a function.
+example : badProj.typeOf = none := rfl
+example : (project ![col 1, binary (.arith .add) (int 1) (int 1)]
+      (project ![col 1, col 0] badProj)).simplify =
+    project ![col 1, binary (.arith .add) (int 1) (int 1)] (project ![col 1, col 0] badProj) := rfl
+example : (project (fun _ : Fin 1 => col 1) badProj).simplify =
+    project (fun _ => col 1) badProj := rfl
 
 /-! ### Transporting a fact across the certificate -/
 
