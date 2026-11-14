@@ -148,4 +148,39 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLo
   PrimeOrderGroupFamily.schnorr_isEavesdropSecure_of_discreteLogHard hDL
     (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow
 
+/-- Native fair-coin Schnorr key generation is uniformly strict PPT in `(n, d)`. -/
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc)
+    (encPair encBits encNat)
+    (fun p : ℕ × schnorrGroups.Desc => schnorrGroups.schnorrKeyGenProb p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrKeyGenProb
+
+/-- Both the native direct-attack experiment and the native eavesdropping experiment are uniformly
+strict PPT on `(n, d)` for strict-PPT adversaries. -/
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc) encBool
+    (fun p : ℕ × schnorrGroups.Desc =>
+      schnorrGroups.schnorrDirectProbExperiment id silent p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrDirectProbExperiment
+    (ComputableInPolyTime.of_eq fun _ => rfl) silent_isPPT
+
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc) encBool
+    (fun p : ℕ × schnorrGroups.Desc =>
+      schnorrGroups.schnorrEavesdropProbExperiment id id forwardEavesdrop p.1 p.2) :=
+  schnorrGroups.isPPTOn_schnorrEavesdropProbExperiment
+    (ComputableInPolyTime.of_eq fun _ => rfl)
+    (ComputableInPolyTime.of_eq fun _ => rfl)
+    forwardEavesdrop_isPPT
+
+/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
+Schnorr identification with native fair-coin key generation (`schnorrKeyGenProb`) resists both
+direct impersonation and active-after-eavesdropping attacks with `n`-bit challenges. -/
+example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
+    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
+    Negligible (fun n =>
+        Game.succProbability (schnorrGroups.schnorrDirectProbGame setup id silent n)) ∧
+      schnorrGroups.IsProbEavesdropSecure setup id :=
+  ⟨PrimeOrderGroupFamily.negligible_schnorrDirectProbGame hDL
+      (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow silent_isPPT,
+    PrimeOrderGroupFamily.schnorr_isProbEavesdropSecure_of_discreteLogHard hDL
+      (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow⟩
+
 end CslibFrontierTests.Crypto.SchnorrDiscreteLog

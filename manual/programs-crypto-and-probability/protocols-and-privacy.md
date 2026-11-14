@@ -493,6 +493,16 @@ For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 conversations, use `SchnorrEavesdropAdversary`, `schnorrEavesdropGame` and
 `negligible_schnorrEavesdropGame` from
 [`SchnorrEavesdrop.lean`](../../CslibFrontier/Crypto/Computational/SchnorrEavesdrop.lean).
+When key generation also uses bounded fair-coin exponent sampling (`schnorrKeyGenProb`, certified
+`IsPPTOn` by `isPPTOn_schnorrKeyGenProb` within statistical distance `1 / 2 ^ n` of uniform key
+generation via `advantage_bind_schnorrKeyGenProb_le`), `schnorrDirectProbGame` and
+`schnorrEavesdropProbGame` (realized as the strict-PPT `ProbComp Bool` experiments
+`schnorrDirectProbExperiment` and `schnorrEavesdropProbExperiment` via
+`isPPTOn_schnorrDirectProbExperiment`, `isPPTOn_schnorrEavesdropProbExperiment` and
+`encodeSchnorrVerify`) satisfy the concrete bounds `succProbability_schnorrDirectProbGame_le` and
+`succProbability_schnorrEavesdropProbGame_le` and remain secure under `F.DiscreteLog setup`
+(`negligible_schnorrDirectProbGame`, `negligible_schnorrEavesdropProbGame`,
+`schnorr_isProbEavesdropSecure_of_discreteLogHard`).
 These identification games draw a fresh verifier challenge after the adversary's commitment.
 Signature EUF-CMA instead gives adaptive signing and hash access, uses the same memoized hash
 answer at verification, and rejects a final message previously signed. Discarding a message field
