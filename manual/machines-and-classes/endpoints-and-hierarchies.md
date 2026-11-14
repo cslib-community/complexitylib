@@ -264,6 +264,29 @@ The result keeps the nested branch-sensitive time bound and supplies a separate 
 it does not charge exhaustive search on the simulation branch. All five supplied certificates
 may have independent space bounds.
 
+`Diagonal.exists_computableInO_lazyAccepts` builds the acceptance simulation from a binary
+clock on the input and certificate. Supply a positive clock, a linear bound on its binary
+length, and its time and space certificates within encoded input length plus the clock.
+The rule shares description decoding, framed-word symbol conversion, universal execution,
+verdict extraction and output negation. Both hierarchy clients retain their original clocks
+and specialize the resulting fourth-power input factor times the squared clock.
+
+`Diagonal.exists_computableInO_lazyBrute` constructs exhaustive acceptance search from a
+polynomial-time acceptance certificate, a polynomial-time selector for the description and
+input, and a polynomial-time unary certificate length. Its time and space bounds are
+`2 ^ (K * (encoded parameter length + certificate length))`. For polynomial certificate
+lengths, use the original description/input pair as the parameter. For exponential lengths,
+first search with the length supplied as a unary parameter, then compose with the separate
+length-construction certificate and bound that composition. This keeps the cost of producing
+an exponentially long unary word explicit. The two hierarchy clients separately prove that
+their distinct acceptance bounds are polynomial before using the same search construction.
+
+`Diagonal.exists_computableInO_sizeLength_le` constructs either horizon comparison from
+a unary clock certificate and a certificate for the tested word. Bound the tested word by
+the input length plus one, its computation by twice the encoded input length, and the
+comparison square and clock time by constant multiples of the common test budget.
+The clock and tested-word certificates retain their independent space bounds.
+
 The [polynomial](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicTime.lean)
 and [exponential](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicExponentialTime.lean)
 clients retain their distinct unary-clock constructions and arithmetic estimates, while this
