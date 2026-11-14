@@ -988,6 +988,18 @@ XOF. Positions use natural numbers, with checked 16-bit representability conditi
 published parameter sets; byte serialization, native runtime, decryption-failure bounds and
 HQC security remain separate obligations under the [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
+Import [`DuplicatedReedMuller.lean`](../../CslibFrontier/Foundations/Data/Code/DuplicatedReedMuller.lean)
+for HQC v5.1's actual `RM(1, 7)` inner code and deterministic Hadamard decoder. `RMMessage` puts
+the affine constant in byte bit 7 and the seven binary-column coefficients in byte bits 0–6;
+`drmEncode` repeats each 128-bit word with multiplicity 3 for HQC-1 or 5 for HQC-3/HQC-5, giving
+the source's `[384, 8, 192]` and `[640, 8, 320]` codes. `drmDecode_isNearestDecoder` proves that
+the source's strict smallest-peak scan returns a nearest codeword, and
+`drmDecode_add_eq_of_two_mul_weight_lt` recovers every message when twice the error weight is less
+than `64 * μ`. The [checked clients](../../CslibFrontierTests/Code/DuplicatedReedMuller.lean)
+exercise source bit order, both coefficient signs, equal-magnitude ties, exact distances and
+nonzero errors. The shortened Reed–Solomon outer decoder, its composition with this inner code,
+and the numerical decryption-failure calculation remain open.
+
 Import [`HQC/PKE.lean`](../../CslibFrontier/Crypto/Primitives/HQC/PKE.lean) for the ideal
 post-expansion algebra of HQC-PKE (§3.6, pp. 38–40). `PKEParams` records the ring, message and
 retained-codeword lengths, the three fixed weights and the decoder radius. `pkeKeyGen` draws
