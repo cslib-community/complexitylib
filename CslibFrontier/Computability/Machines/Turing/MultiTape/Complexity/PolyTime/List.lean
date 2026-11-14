@@ -16,7 +16,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DecoderPrimitives
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Foundations.Data.BitString.List.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
