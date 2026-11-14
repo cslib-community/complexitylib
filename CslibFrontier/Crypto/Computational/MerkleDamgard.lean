@@ -49,6 +49,9 @@ We formalize the transform and its collision-extraction reduction at two levels:
    `merkleDamgard h : List Bool → List Bool → List Bool`, which is collision-resistant on all
    arbitrary-length bit strings (`CompressionFamily.collisionResistant_merkleDamgard`,
    `CompressionFamily.hashFamily_merkleDamgard`).
+   This is not textbook length-strengthened Merkle–Damgård, which packs `n` message bits into each
+   block and ends with a length block: `merkleDamgard` spends one block, and so one compression
+   call, per message bit. A length-strengthened instance is not formalized.
 
 ## Main definitions
 
@@ -61,7 +64,8 @@ We formalize the transform and its collision-extraction reduction at two levels:
 * `Cslib.Crypto.mdEndBlock`, `Cslib.Crypto.mdDataBlock`, `Cslib.Crypto.mdBlocks`: suffix-free
   `n`-bit block encoding of arbitrary bit strings.
 * `Cslib.Crypto.merkleDamgard`, `Cslib.Crypto.extractMerkleDamgardCollision`: domain-extended
-  keyed hash family and its deterministic collision extractor.
+  keyed hash family with one message bit per block (not length-strengthened), and its
+  deterministic collision extractor.
 
 ## Main results
 
@@ -78,7 +82,8 @@ We formalize the transform and its collision-extraction reduction at two levels:
   `merkleDamgard`.
 * `Cslib.Crypto.CompressionFamily.collisionResistant_merkleDamgard`,
   `Cslib.Crypto.CompressionFamily.hashFamily_merkleDamgard`: any `2n → n` collision-resistant
-  compression family yields an unrestricted collision-resistant hash family on `List Bool`.
+  compression family yields an unrestricted collision-resistant hash family on `List Bool`, through
+  the one-bit-per-block instance `merkleDamgard`.
 
 ## References
 
@@ -530,7 +535,9 @@ def mdDataBlock (n : ℕ) (b : Bool) : List Bool :=
 /-- Encode an arbitrary bit string `msg : List Bool` as a non-empty list of `n`-bit blocks:
 the initial marker block `mdEndBlock n` followed by one `mdDataBlock n` per bit of `msg`.
 Because `mdEndBlock n` starts with `false` and every `mdDataBlock n b` starts with `true`, no
-distinct message encoding can be a suffix of another whenever `n ≥ 2`. -/
+distinct message encoding can be a suffix of another whenever `n ≥ 2`. Each block carries one
+message bit, so this is not the textbook length-strengthened padding, which packs `n` message bits
+into each block and ends with a length block. -/
 def mdBlocks (n : ℕ) (msg : List Bool) : List (List Bool) :=
   mdEndBlock n :: msg.map (mdDataBlock n)
 
@@ -630,9 +637,11 @@ theorem computableInPolyTime_mdBlocks :
       (encPair encUnary encBits) (encList encBits) :=
   computableInPolyTime_mdBlocks_comp (.fst _ _) (.snd _ _)
 
-/-- **The Merkle–Damgård hash family (`merkleDamgard`)**: hash an arbitrary-length bit string
-`msg : List Bool` under key `k : List Bool` by iterating the `2n → n` compression function `h k`
-over `mdBlocks k.length msg` from the initial vector `0^{k.length}`. -/
+/-- **A Merkle–Damgård hash family with one message bit per block (`merkleDamgard`)**: hash an
+arbitrary-length bit string `msg : List Bool` under key `k : List Bool` by iterating the `2n → n`
+compression function `h k` over `mdBlocks k.length msg` from the initial vector `0^{k.length}`.
+This is not textbook length-strengthened Merkle–Damgård: `mdBlocks` puts each message bit in its
+own block after a marker block, so hashing `msg` costs `msg.length + 1` compression calls. -/
 def merkleDamgard (h : List Bool → List Bool → List Bool) (k msg : List Bool) : List Bool :=
   merkleDamgardChain h k (List.replicate k.length false) (mdBlocks k.length msg)
 
@@ -733,7 +742,8 @@ theorem isCollision_extractMerkleDamgardCollision
 
 /-- **Security of the Merkle–Damgård transform ([BonehShoup2023], Theorem 8.3)**:
 if `h` is a `2n → n` collision-resistant compression family (`CompressionFamily h`), then
-`merkleDamgard h` is collision-resistant on all arbitrary-length bit strings (`List Bool`). -/
+`merkleDamgard h` is collision-resistant on all arbitrary-length bit strings (`List Bool`). Here
+`merkleDamgard` is the one-bit-per-block instance, not the length-strengthened one. -/
 theorem CompressionFamily.collisionResistant_merkleDamgard
     {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
     CollisionResistant (merkleDamgard h) := by

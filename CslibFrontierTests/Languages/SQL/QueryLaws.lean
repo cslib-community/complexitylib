@@ -104,11 +104,14 @@ example : ¬Equiv .set (select (divZeroEq.rename (Fin.castAdd 2))
     (join (binary (.cmp .eq) (col 1) (col 2)) (select divZeroEq emp) empty) :=
   not_equiv_of_toOption (rs := []) (by decide) (by decide)
 
--- The same for the right input: joined with the empty table on the left, the left side evaluates
--- nothing, while the pushed `WHERE` evaluates `id / 0` on every department.
+-- The same for the right input: joined with the empty table on the left by `ON x = id`, a safe
+-- predicate, the left side evaluates nothing, while the pushed `WHERE` evaluates `id / 0` on every
+-- department.
+example : (binary (.cmp .eq) (col 0) (col 2) : Expr 4).IsSafePredicate
+    (Fin.append (S.ctx T.empty) Γdept) := by decide
 example : ¬Equiv .set (select (idDivZeroEq.rename (Fin.natAdd 2))
-      (join (binary (.cmp .eq) (col 1) (col 2)) empty dept))
-    (join (binary (.cmp .eq) (col 1) (col 2)) empty (select idDivZeroEq dept)) :=
+      (join (binary (.cmp .eq) (col 0) (col 2)) empty dept))
+    (join (binary (.cmp .eq) (col 0) (col 2)) empty (select idDivZeroEq dept)) :=
   not_equiv_of_toOption (rs := []) (by decide) (by decide)
 
 -- Without safety of the join predicate: pushing `WHERE FALSE` into the left input leaves no pair

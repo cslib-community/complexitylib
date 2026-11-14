@@ -15,6 +15,7 @@ import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
+import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Tautology
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
@@ -5732,6 +5733,34 @@ register_result "three-sat-complement-ph-collapse" where
   scope := "Native polynomial-time many-one reduction with encCNF. ThreeSAT has clause width \
     at most three; its complement is inside all CNF Nat, including wider formulas. \
     The conclusion PH enc = NP enc holds for every explicit encoding enc."
+
+register_result "tautology-conp-complete" where
+  title := "TAUTOLOGY is coNP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Example 2.23",
+      locator := "2007 public draft, Section 2.6, printed p. 57 / PDF p. 73" }
+  ]
+  theorems := [Cslib.Complexity.TAUTOLOGY_coNPComplete]
+  scope := "Boolean formulas are the quantifier-free formulas of QBF Nat (variables, constants, \
+    negation, conjunction, disjunction) in the prefix token encoding encQBF; TAUTOLOGY is a \
+    total language on QBF Nat, so formulas with quantifiers are non-members. Membership in coNP \
+    uses a native polynomial-time verifier; hardness is under total native polynomial-time \
+    many-one reductions, through UNSAT by negation."
+
+register_result "np-eq-conp-iff-threesat-tautology" where
+  title := "NP = coNP iff 3SAT and TAUTOLOGY reduce to each other"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 7",
+      locator := "2007 public draft, printed p. 62 / PDF p. 78" }
+  ]
+  theorems := [Cslib.Complexity.NP_eq_coNP_iff_ThreeSAT_reducible_TAUTOLOGY]
+  scope := "NP = coNP is quantified over every explicit instance encoding. The reductions are \
+    native polynomial-time many-one reductions between ThreeSAT under encCNF (clause width at \
+    most three) and TAUTOLOGY under encQBF (quantifier-free QBF Nat). The proof instantiates \
+    NPComplete.NP_eq_coNP_iff_reducible, which holds for any NP-complete and coNP-complete \
+    pair."
 
 register_result "bounded-termination-exponential-completeness" where
   title := "Any-output bounded termination is in E but outside P and is EXP-complete"
