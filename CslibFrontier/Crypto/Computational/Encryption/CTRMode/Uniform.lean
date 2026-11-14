@@ -24,7 +24,6 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.BlockModeWord
 import CslibFrontier.Crypto.Computational.Encryption.CTRMode
 import CslibFrontier.Foundations.Data.BitString.Binary
-import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
