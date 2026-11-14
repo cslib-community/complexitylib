@@ -112,6 +112,16 @@ theorem unary_min : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => min p.1 p.
     (encPair encUnary encUnary) encUnary :=
   ComputableTidilyInDegree.unary_min.computableTidilyInPolyTime
 
+/-- Take the larger of two unary naturals. -/
+@[fun_prop]
+theorem unary_max : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => max p.1 p.2)
+    (encPair encUnary encUnary) encUnary := by
+  have h : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + (p.2 - p.1))
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  convert h using 1
+  funext p
+  omega
+
 /-- Compare unary naturals. -/
 @[fun_prop]
 theorem unary_le : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
@@ -197,16 +207,6 @@ theorem unary_add :
   encUnary :=
   .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_add
 
-/-- Take the larger of two unary naturals using addition and truncated subtraction. -/
-@[fun_prop]
-theorem unary_max : ComputableInPolyTime (fun p : ℕ × ℕ => max p.1 p.2)
-    (encPair encUnary encUnary) encUnary := by
-  have h : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + (p.2 - p.1))
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  convert h using 1
-  funext p
-  omega
-
 /-- Evaluate a fixed polynomial on unary naturals, with its result also in unary. -/
 @[fun_prop]
 theorem unary_eval (p : Polynomial ℕ) :
@@ -254,13 +254,3 @@ theorem unary_pow (d : ℕ) :
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow d)
 
 end Turing.MultiTapeTM.ComputableInPolyTime
-
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-/-- Take the larger of two unary naturals using the plain arithmetic certificate. -/
-@[fun_prop]
-theorem unary_max : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => max p.1 p.2)
-    (encPair encUnary encUnary) encUnary :=
-  ComputableInPolyTime.unary_max.tidy
-
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
