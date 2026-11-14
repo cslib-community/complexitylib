@@ -6333,8 +6333,13 @@ public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 public import CslibFrontier.Languages.Probabilistic.Vector
+public import CslibFrontier.Languages.SQL.Column
+public import CslibFrontier.Languages.SQL.Equiv
+public import CslibFrontier.Languages.SQL.Expr
+public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
 public import CslibFrontier.Languages.SQL.Truth
+public import CslibFrontier.Languages.SQL.Typing
 public import CslibFrontier.Languages.SQL.Value
 public import CslibFrontier.Logics.BooleanClone.Basic
 public import CslibFrontier.Logics.BooleanClone.Classification
