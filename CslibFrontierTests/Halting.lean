@@ -4,15 +4,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Complexity.Reduction
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+public import CslibFrontier.Computability.Complexity.Reduction
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds
 
 /-! Concrete machines that halt and loop, their descriptions inside and outside the halting and
 acceptance problems, the machines diverging on a verdict, the diagonal machine against candidate
 deciders, a nontrivial property of self-applied behavior for Rice's theorem, decidable sets and
 reductions, input prefixes built into descriptions, the recursion theorem, and Rice's theorem for
 a nontrivial property of behavior. -/
+
+public section
 
 namespace CslibFrontierTests.Halting
 
@@ -148,6 +155,33 @@ example :
    ⟨f, hf.tidy.isComputable, hself⟩⟩
 
 /-! ### Input prefixes built into descriptions -/
+
+/-- A description with no transitions, used to check generated program size. -/
+def emptyDescription : Desc := ⟨0, 0, []⟩
+
+/-- A one-transition description, used with a longer prefix to check generated program size. -/
+def oneTransitionDescription : Desc :=
+  ⟨0, 0, [(⟨0, none, []⟩, ⟨.zero, [], none, none⟩)]⟩
+
+/-- For concrete program-size accounting, `descLen` is definitionally the charged unary
+`eDesc` length. Distinct source descriptions and prefixes give distinct generated sizes, and both
+instances satisfy the general construction-derived bound. -/
+example :
+    (eDesc (hardwire emptyDescription [])).length = descLen (hardwire emptyDescription []) ∧
+    (eDesc (hardwire oneTransitionDescription [true, false])).length =
+      descLen (hardwire oneTransitionDescription [true, false]) ∧
+    descLen (hardwire emptyDescription []) <
+      descLen (hardwire oneTransitionDescription [true, false]) ∧
+    descLen (hardwire emptyDescription []) ≤
+      2500 * ((encPair eDesc encBits (emptyDescription, [])).length) ^ 2 ∧
+    descLen (hardwire oneTransitionDescription [true, false]) ≤
+      2500 * ((encPair eDesc encBits
+        (oneTransitionDescription, [true, false])).length) ^ 2 := by
+  refine ⟨rfl, rfl, ?_, Hardwire.descLen_hardwire_le _ _, ?_⟩
+  · -- The concrete comparison unfolds nested framed structure and list encodings.
+    set_option maxRecDepth 10000 in
+      decide
+  · exact Hardwire.descLen_hardwire_le _ _
 
 /-- Halt at once if the input starts with `true`, and stay in place forever otherwise. -/
 def firstBit : MultiTapeTM 0 Bool Unit :=
