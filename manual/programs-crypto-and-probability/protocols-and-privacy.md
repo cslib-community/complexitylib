@@ -410,7 +410,8 @@ every raw secret-key word and starting cache and signing log,
 `Qs / 2^n`: each signing call pays one nonce error, and hash calls pay nothing because their
 transitions are identical. `closeTo_eufCmaGame_schnorrEncodedROMScheme` adds the key-generation
 error and compares the actual game with the canonical ideal word game within `(Qs+1) / 2^n`.
-For a native oracle-PPT forger and a polynomial-time deterministic description function,
+For a native oracle-PPT forger and a deterministic description function whose encoded
+descriptions have polynomial length,
 `exists_closeTo_worldGame_schnorrEncodedROMScheme` takes the replay machine and the polynomial
 budget `savedCoinBudget` from the saved-coin adapter, so no query cap is assumed
 ([#2764](https://github.com/cslib-community/cslib-frontier/issues/2764)). These are statistical
@@ -445,8 +446,9 @@ order-11 Schnorr group modulo 23.
 
 [`SchnorrSignature/Security.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/Security.lean)
 proves **Schnorr EUF-CMA security under discrete log**: `negligible_worldGame_schnorrEncodedROMScheme`.
-For a deterministic polynomial-time group family `description`, a polynomial-time challenge width
-`w` with `2 ^ w n ≤ q` and negligible `2⁻ʷ`, and `F.DiscreteLog (fun n => PMF.pure (description n))`,
+For a group family `description` with one description per security parameter and encoded
+descriptions of polynomial length, a polynomial-time challenge width `w` with `2 ^ w n ≤ q` and
+negligible `2⁻ʷ`, and `F.DiscreteLog (fun n => PMF.pure (description n))`,
 every native forger with `IsOraclePPT` wins the shared-oracle game of the native scheme (actual
 `schnorrSigKeyGen` keys, actual `sampleExp` nonces, adaptive signing, arbitrary hash words,
 final-message freshness) with negligible probability. Nothing is assumed about the reduction:
@@ -456,12 +458,17 @@ answer banks, runs `schnorrForkPass` twice on spliced answers, and extracts with
 sampling transport above, the typed word bound, a `2B / 2 ^ n` step from the perfect to the
 strict-PPT simulator (`succProbability_oneWayGame_schnorrWordROMSchemeReduction_le`), and the exact
 identification `discreteLogGame_schnorrForkingAdversary` of the native adversary's discrete-log game
-with the typed one-way game. Random group setups are not covered, because the existing game gives
-the forger only the public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
+with the typed one-way game. The family need not be computable, because the discrete-log game
+gives the description to the reduction; only its encoded length enters, through the saved-coin
+budget. Random group setups are not covered, because the existing game gives the forger only the
+public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
 [#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The `module` client
 [`Crypto/SchnorrSecurity.lean`](../../CslibFrontierTests/Crypto/SchnorrSecurity.lean) applies the
-theorem to an adaptive native forger over Schnorr groups with `n`-bit challenges, and checks the
-extraction step on the group modulo 23.
+theorem to an adaptive native forger with `n`-bit challenges, over Schnorr groups and over the
+additive groups `ZMod p` of primes `2 ^ n < p ≤ 2 ^ (n + 1)` from Bertrand's postulate. For the
+latter it discharges every parameter condition unconditionally, leaving the discrete-log assumption
+as the only premise (which fails for these groups, where discrete logarithms are easy). It also
+checks the extraction step on the group modulo 23.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest

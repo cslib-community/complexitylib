@@ -51,8 +51,8 @@ certify their native realization or the complete forking reduction.
 * `Cslib.Crypto.Protocols.ROMSignature.isQueryBounded_savedWordReplay`,
   `Cslib.Crypto.Protocols.ROMSignature.callBounded_savedCoinForger`: every key and tape obey the
   parameter-only call budget, and the signing and hash budgets.
-* `Cslib.Crypto.Protocols.ROMSignature.exists_savedCoinForger`: actual PPT key generation and
-  an actual oracle-PPT forger give a joint-state-preserving adapter.
+* `Cslib.Crypto.Protocols.ROMSignature.exists_savedCoinForger`: a polynomial length bound on the
+  supported public keys and an actual oracle-PPT forger give a joint-state-preserving adapter.
 * `Cslib.Crypto.Protocols.ROMSignature.exists_eufCmaGame_savedCoinForger`: equality of the existing
   shared-world native-forger game and explicit-coin EUF-CMA game.
 
@@ -290,15 +290,17 @@ private theorem run_interpret_decode_mixture (digestEncoding : Digest ↪ List B
   simpa only [hmap, run_interpret_routeWordProgram] using heq
 
 /-- An actual uniform native forger has a key-independent saved-coin adapter. The key-size guard
-is derived from actual strict-PPT key generation. Equality retains the complete state of every
+is a polynomial bound `keyC * (n + 1) ^ keyD` on the supported public keys, which a strict-PPT key
+generator supplies through `IsPPTOn.length_le`. Equality retains the complete state of every
 typed signing/hash handler; in particular the handler's own randomness is not pre-sampled here. -/
 theorem exists_savedCoinForger
-    {gen : ℕ → ProbComp (List Bool × List Bool)}
-    (hgen : IsPPTOn encUnary (encPair encBits encBits) gen)
+    {gen : ℕ → ProbComp (List Bool × List Bool)} {keyC keyD : ℕ}
+    (hgen : ∀ n keys, keys ∈ (ProbComp.eval (gen n)).support →
+      keys.1.length ≤ keyC * (n + 1) ^ keyD)
     {program : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool)}
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
-      (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ),
+      (machine : MultiTapePTM k Bool Control Bool) (c d : ℕ),
       IsOraclePPTOn encReplayInput (encPair encBits encBits)
         (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) ∧
       ∀ n keys, keys ∈ (ProbComp.eval (gen n)).support →
@@ -311,13 +313,13 @@ theorem exists_savedCoinForger
             (liftOracleForger
               ((savedCoinForger machine digestEncoding c d keyC keyD n).forge
                 keys.1 coins)) s) := by
-  obtain ⟨k, Control, hfinite, machine, c, d, keyC, keyD, hkeys, _, _, hrun⟩ :=
-    hprogram.exists_savedCoins_of_keyGen hgen
+  obtain ⟨k, Control, hfinite, machine, c, d, _, _, hrun⟩ :=
+    hprogram.exists_savedCoins_of_length_le keyC keyD
   let := hfinite
-  refine ⟨k, Control, hfinite, machine, c, d, keyC, keyD,
+  refine ⟨k, Control, hfinite, machine, c, d,
     isOraclePPTOn_savedWordReplay machine c d keyC keyD, ?_⟩
-  intro n keys hkeys' Digest digestEncoding Store handler s
-  have hpk := hkeys n keys hkeys'
+  intro n keys hkeys Digest digestEncoding Store handler s
+  have hpk := hgen n keys hkeys
   have h := run_interpret_decode_mixture digestEncoding (program n keys.1) _ _
     (hrun n keys.1 hpk) Store handler s
   simpa only [savedCoinForger, savedWordReplay, savedCoinBudget, ite_eq_left hpk,
@@ -329,13 +331,16 @@ existing EUF-CMA game. Signing, hash queries, and final verification share one m
 freshness excludes only signing the final message, so repeated signing queries are allowed.
 One native replay machine and clock work for every digest type and encoding, which may therefore
 vary with the security parameter.
+The supported public keys need only a polynomial length bound `keyC * (n + 1) ^ keyD`.
 This bridge does not assert unforgeability or a discrete-log reduction. -/
-theorem exists_eufCmaGame_savedCoinForger {gen : ℕ → ProbComp (List Bool × List Bool)}
-    (hgen : IsPPTOn encUnary (encPair encBits encBits) gen)
+theorem exists_eufCmaGame_savedCoinForger
+    {gen : ℕ → ProbComp (List Bool × List Bool)} {keyC keyD : ℕ}
+    (hgen : ∀ n keys, keys ∈ (ProbComp.eval (gen n)).support →
+      keys.1.length ≤ keyC * (n + 1) ^ keyD)
     {program : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool)}
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
-      (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ),
+      (machine : MultiTapePTM k Bool Control Bool) (c d : ℕ),
       IsOraclePPTOn encReplayInput (encPair encBits encBits)
         (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) ∧
       ∀ n (Digest : Type) [Fintype Digest] [Nonempty Digest]
@@ -347,9 +352,9 @@ theorem exists_eufCmaGame_savedCoinForger {gen : ℕ → ProbComp (List Bool × 
         worldGame scheme (fun pk => routeWordProgram digestEncoding (program n pk))
           (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg) =
         eufCmaGame scheme (savedCoinForger machine digestEncoding c d keyC keyD n) := by
-  obtain ⟨k, Control, hfinite, machine, c, d, keyC, keyD, hefficient, hrun⟩ :=
+  obtain ⟨k, Control, hfinite, machine, c, d, hefficient, hrun⟩ :=
     exists_savedCoinForger hgen hprogram
-  refine ⟨k, Control, hfinite, machine, c, d, keyC, keyD, hefficient, ?_⟩
+  refine ⟨k, Control, hfinite, machine, c, d, hefficient, ?_⟩
   intro n Digest _ _ digestEncoding scheme hgen'
   refine ⟨callBounded_savedCoinForger machine digestEncoding c d keyC keyD n, ?_⟩
   rw [eufCmaGame_eq_worldGame]

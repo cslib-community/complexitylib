@@ -32,8 +32,8 @@ discrete-logarithm assumption, for every uniform oracle-PPT native forger
 [PointchevalStern2000]; [BellareNeven2006]). The forger plays the existing shared-oracle game of
 the native scheme: actual key generation `schnorrSigKeyGen`, actual nonces `sampleExp`, adaptive
 signing queries, hash queries on arbitrary words, and final-message freshness. The only premises
-are `F.DiscreteLog` for a deterministic polynomial-time group family, the forger's certificate,
-and a challenge width `w` with `2 ^ w ≤ q` and negligible `2⁻ʷ`.
+are `F.DiscreteLog` for a fixed group family whose encoded descriptions have polynomial length, the
+forger's certificate, and a challenge width `w` with `2 ^ w ≤ q` and negligible `2⁻ʷ`.
 
 The discrete-logarithm adversary is the explicit program `schnorrForkingAdversary`. It samples the
 forger's tape, `2B` strict-PPT simulated transcripts (`schnorrSimulatedTranscript`) and two banks of
@@ -55,8 +55,10 @@ The proof chains four steps, each about existing objects:
    of the native adversary, through `map_eval_schnorrForkingAdversary` and the exact pass agreement
    `eval_schnorrForkPass`.
 
-Random setups are not covered: the existing game gives the forger only the public key, so the
-group description must be computable from the security parameter.
+The group family fixes one description per security parameter. It need not be computable: the
+discrete-logarithm game gives the description to the reduction, and the saved-coin budget needs only
+its encoded length to be polynomial. Random setups are not covered, because the existing game gives
+the forger only the public key.
 
 ## Main definitions
 
@@ -574,21 +576,23 @@ end Law
 open OracleComp in
 /-- **Schnorr signatures are EUF-CMA secure in the random-oracle model under the
 discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7 and Lemma 19.8;
-[PointchevalStern2000]; [BellareNeven2006]). Fix a deterministic group family `description`
-computable in polynomial time and a challenge width `w` computable in polynomial time with
-`2 ^ w n ≤ q` and negligible `1 / 2 ^ w n`. If discrete logarithms are hard for the setup
-`fun n => PMF.pure (description n)`, then every native word forger with `IsOraclePPT` wins the
-existing shared-oracle EUF-CMA game of the native Schnorr scheme with negligible probability. The
-game uses the actual key generator `schnorrSigKeyGen` and the actual nonce sampler `sampleExp`,
-adaptive signing queries, hash queries on arbitrary words, and final-message freshness.
+[PointchevalStern2000]; [BellareNeven2006]). Fix a group family `description`, one description
+per security parameter with encoded length polynomial in `n`, and a challenge width `w` computable
+in polynomial time with `2 ^ w n ≤ q` and negligible `1 / 2 ^ w n`. If discrete logarithms are
+hard for the setup `fun n => PMF.pure (description n)`, then every native word forger with
+`IsOraclePPT` wins the existing shared-oracle EUF-CMA game of the native Schnorr scheme with
+negligible probability. The game uses the actual key generator `schnorrSigKeyGen` and the actual
+nonce sampler `sampleExp`, adaptive signing queries, hash queries on arbitrary words, and
+final-message freshness.
 
 The only premises are the discrete-logarithm assumption, the forger's certificate and the
 parameter side conditions. The proof applies `F.DiscreteLog` to the explicit two-pass adversary
 `schnorrForkingAdversary`, whose certificate `isPPTOn_schnorrForkingAdversary` is derived from the
-forger's. Random setups are not covered: the existing game gives the forger only the public key,
-so the description must be computable from the security parameter. -/
+forger's. The family need not be computable, because the discrete-logarithm game gives the
+description to the reduction. Random setups are not covered: the existing game gives the forger
+only the public key. -/
 theorem negligible_worldGame_schnorrEncodedROMScheme (description : ℕ → F.Desc)
-    (hdescription : ComputableInPolyTime description encUnary F.encDesc)
+    (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
     {width : ℕ → ℕ} (hwidth : ComputableInPolyTime width encUnary encUnary)
     (hwq : ∀ n, 2 ^ width n ≤ F.order (description n))
     (hchallenge : Negligible fun n => (1 / 2 ^ width n : ℝ≥0))

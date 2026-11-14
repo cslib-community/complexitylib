@@ -26,16 +26,17 @@ moves a forger from the actual laws to the ideal ones in the existing EUF-CMA ga
   `eufCmaGame_schnorrEncodedROMScheme_eq` applies.
 
 For a forger making at most `Qs` signing calls the total is `(Qs + 1) / 2 ^ n`. For a native
-oracle-PPT forger and a polynomial-time deterministic group description, the saved-coin adapter
-of `WordRandomOracle` supplies the call budget, so the bound needs no assumed query cap. These are
-statistical transport laws for the existing games; they do not certify the forking reduction.
+oracle-PPT forger and a deterministic group family whose encoded descriptions have polynomial
+length, the saved-coin adapter of `WordRandomOracle` supplies the call budget, so the bound needs
+no assumed query cap. These are statistical transport laws for the existing games; they do not
+certify the forking reduction.
 
 ## Main results
 
 * `closeTo_runWith_schnorrEncodedROMScheme`: adaptive joint-state nonce replacement.
 * `closeTo_eufCmaGame_schnorrEncodedROMScheme`: actual key and nonce sampling versus the ideal game.
 * `exists_closeTo_worldGame_schnorrEncodedROMScheme`: native forgers with a derived polynomial
-  query budget, for explicitly polynomial-time deterministic descriptions.
+  query budget, for deterministic descriptions of polynomial encoded length.
 
 ## References
 
@@ -120,12 +121,13 @@ theorem closeTo_eufCmaGame_schnorrEncodedROMScheme (hm : 2 ^ m ≤ F.order d)
     Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm, runWith] using hgame
 
 /-- An actual native forger gets one efficient replay and one parameter-only polynomial query
-budget from actual key-generation support. Descriptions here are supplied by the stated
-polynomial-time deterministic function; this does not assert a random-setup routing theorem.
-The raw-word world game retains the actual key and nonce laws before statistical transport. -/
+budget from actual key-generation support. Descriptions here are a fixed deterministic family whose
+encoded length is polynomial in the security parameter; the family need not be computable, and
+this does not assert a random-setup routing theorem. The raw-word world game retains the actual key
+and nonce laws before statistical transport. -/
 theorem exists_closeTo_worldGame_schnorrEncodedROMScheme
     (description : ℕ → F.Desc)
-    (hdescription : ComputableInPolyTime description encUnary F.encDesc)
+    (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
     (width : ℕ → ℕ) (hwidth : ∀ n, 2 ^ width n ≤ F.order (description n))
     {program : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool)}
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
@@ -148,16 +150,18 @@ theorem exists_closeTo_worldGame_schnorrEncodedROMScheme
           (eufCmaGame (F.schnorrWordROMScheme (description n) (hwidth n))
             (F.schnorrDecodedForger (description n) A))
           ((budget + 1 : ℕ) * (1 / 2 ^ n : ℝ≥0)) := by
-  have hprepare : ComputableInPolyTime (fun n : ℕ => (n, description n))
-      encUnary (encPair encUnary F.encDesc) :=
-    (show ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary by fun_prop).prod hdescription
-  have hgen : IsPPTOn encUnary (encPair encBits encBits)
-      (fun n => F.schnorrSigKeyGen n (description n)) :=
-    IsPPTOn.preprocess
-      (program := fun input : ℕ × F.Desc => F.schnorrSigKeyGen input.1 input.2)
-      (prepare := fun n : ℕ => (n, description n))
-      F.isPPTOn_schnorrSigKeyGen hprepare
-  obtain ⟨k, Control, hfinite, machine, c, e, keyC, keyD, hefficient, hgame⟩ :=
+  obtain ⟨genC, genD, hgenLength⟩ := F.isPPTOn_schnorrSigKeyGen.length_le
+  have hinput : PolynomiallyBounded fun n =>
+      genC * ((encPair encUnary F.encDesc (n, description n)).length + 1) ^ genD := by
+    simp only [length_encPair, encUnary_apply, List.length_replicate]
+    fun_prop
+  obtain ⟨keyC, keyD, hinputBound⟩ := polynomiallyBounded_iff_le.mp hinput
+  have hgen (n : ℕ) (keys : List Bool × List Bool)
+      (hkeys : keys ∈ (ProbComp.eval (F.schnorrSigKeyGen n (description n))).support) :
+      keys.1.length ≤ keyC * (n + 1) ^ keyD :=
+    (length_le_encPair_left encBits encBits keys).trans
+      ((hgenLength (n, description n) keys hkeys).trans (hinputBound n))
+  obtain ⟨k, Control, hfinite, machine, c, e, hefficient, hgame⟩ :=
     exists_eufCmaGame_savedCoinForger
       (gen := fun n => F.schnorrSigKeyGen n (description n)) (program := program) hgen hprogram
   refine ⟨k, Control, hfinite, machine, c, e, keyC, keyD, hefficient, ?_⟩
