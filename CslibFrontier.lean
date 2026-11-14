@@ -2147,8 +2147,10 @@ public import CslibFrontier.Computability.Complexity.Classes.PP.Oracle
 public import CslibFrontier.Computability.Complexity.Classes.PP.Time
 public import CslibFrontier.Computability.Complexity.Classes.PP.TruthTable
 public import CslibFrontier.Computability.Complexity.Classes.Padding
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Language
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Space
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
@@ -2213,7 +2215,9 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterminis
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
+public import CslibFrontier.Computability.Complexity.Classes.Space.Quantitative
 public import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+public import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 public import CslibFrontier.Computability.Complexity.Classes.Space.TM2
 public import CslibFrontier.Computability.Complexity.Classes.Space.TQBF
 public import CslibFrontier.Computability.Complexity.Classes.Space.TQBF.Evaluation
@@ -4366,6 +4370,7 @@ public import CslibFrontier.Crypto.Computational.GoldreichLevin.Reduction
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordDecoder
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordReduction
 public import CslibFrontier.Crypto.Computational.GoldwasserMicali
+public import CslibFrontier.Crypto.Computational.HQC.DQCSD
 public import CslibFrontier.Crypto.Computational.HardCore
 public import CslibFrontier.Crypto.Computational.HashAndSign
 public import CslibFrontier.Crypto.Computational.Homomorphic.Basic
@@ -4715,6 +4720,7 @@ public import CslibFrontier.Crypto.Protocols.Cipher.EvenMansour
 public import CslibFrontier.Crypto.Protocols.Cipher.FeistelNetworks
 public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
+public import CslibFrontier.Crypto.Protocols.FAEST.Challenge
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NoCheck

@@ -783,6 +783,24 @@ four-bit sample that an incorrect independent redraw of the third secret accepts
 law rejects. These are distribution definitions and exact finite laws, not assumptions that
 2-QCSD-P or 3-QCSD-PT are hard.
 
+Import [`Computational/HQC/DQCSD.lean`](../../CslibFrontier/Crypto/Computational/HQC/DQCSD.lean)
+to state that these exact source distributions are indistinguishable to the native quantum word
+tests above. `SyndromeSample.toWord` encodes the public block followed by the syndrome in `2n`
+bits. `TruncatedSyndromeSample.toWord` encodes both public blocks, the complete first syndrome,
+and the retained prefix of the second in `3n + (n - ell)` bits; both encodings are injective.
+`NativeQuantumTwoDQCSDP` and `NativeQuantumThreeDQCSDPT` are the resulting asymptotic assumptions,
+and their `of_within` theorems transfer concrete bounds with separate qubit, gate, and query
+budgets. The four `*_iff_*` theorems expose both source-named assumptions through the shared
+`NativeQuantum.IndistinguishableWithin` and
+`NativeQuantum.ComputationallyIndistinguishable` interfaces. The [checked
+client](../../CslibFrontierTests/Crypto/HQCDQCSD.lean) is an ordinary module that instantiates
+positive parameter families, checks both encodings and all four length contracts, runs the exact
+two-block words through the generic native game, exercises both concrete bridges, and consumes all
+four assumptions through those shared interfaces. This is original no-advice, no-useful-oracle
+packaging of the cited distributions: it proves no DQCSD hardness, does not bundle the
+specification's separate primitive-prime requirement, and adds no QROM, decoding-failure, or
+HQC-PKE/KEM security result.
+
 The word-source model assumes independence and uniformity; it does not establish them for an
 XOF. Positions use natural numbers, with checked 16-bit representability conditions for the
 published parameter sets; byte serialization, native runtime, decryption-failure bounds and
