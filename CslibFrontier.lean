@@ -4269,6 +4269,12 @@ public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.HashFamily
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.LinearProbing
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.Accessors
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.Compaction
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.InEpoch
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.MetaSync
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.Params
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.WindowOps
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.Succinct
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctBucketOps
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctChainOps
@@ -4336,6 +4342,9 @@ public import CslibFrontier.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.KWise
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.ReducedKWise
+public import CslibFrontier.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise
+public import CslibFrontier.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise.Horner
+public import CslibFrontier.DataStructure.HashFamily.WordRAM.RuntimeReducedKWise.ParamsInit
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
 public import CslibFrontier.DataStructure.KServer.Basic
 public import CslibFrontier.DataStructure.KServer.DoubleCoverage
