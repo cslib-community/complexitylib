@@ -179,6 +179,17 @@ installed read-only using atomic hard-link creation; completed files are never e
 The program uses `os.Root` to confine filesystem access. This is not a sandbox against a
 compromised operator or program: publication and GC currently run as the same Unix user.
 
+## Reproduce client transfer measurements
+
+From the repository root, run `python3 tools/cache-origin/benchmark-client.py --baseline REV
+--output /tmp/cache-http-benchmark.json`, replacing `REV` with a commit containing the old
+full-upload publisher. This needs Python 3.11+, curl and openssl and opens only a loopback TLS
+listener with generated fixture credentials. Defaults model 9,533 opaque archives with 17
+missing; flags select counts, archive bytes and repeated alternating runs. Results include
+actual received body bytes and client wall/CPU time. The sink verifies uploaded digests but
+omits the Go origin's retained-object hashing, storage and fsync. Use these measurements to
+separate transfer savings from server work; they do not predict production end-to-end latency.
+
 ## Retention and cleanup
 
 ```bash
