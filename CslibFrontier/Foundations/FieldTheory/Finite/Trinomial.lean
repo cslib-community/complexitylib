@@ -179,50 +179,6 @@ theorem irreducible_trinomial (t : ℕ) : Irreducible (trinomial t) := by
 
 /-! ## Bitwise operations, carryless multiplication, and 4-limb reduction on `polyOfCode` -/
 
-/-- Unfolding `polyOfCode m` into its constant term `m : ZMod 2` and `X * polyOfCode (m / 2)`. -/
-theorem polyOfCode_eq_C_add_X_mul (m : ℕ) :
-    polyOfCode m = C (m : ZMod 2) + X * polyOfCode (m / 2) := by
-  rcases eq_or_ne m 0 with rfl | hm
-  · simp [polyOfCode_zero]
-  · rw [polyOfCode, ite_eq_right hm]
-
-/-- Helper characterizing `(m : ZMod 2)` from `m % 2`. -/
-private theorem natCast_zmod_two_eq (m : ℕ) :
-    (m : ZMod 2) = if m % 2 = 1 then 1 else 0 := by
-  rw [← ZMod.natCast_mod]
-  rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h]
-
-/-- Coefficient `i` of `polyOfCode m` is bit `i` of `m` read in `ZMod 2`. -/
-theorem coeff_polyOfCode (m i : ℕ) :
-    (polyOfCode m).coeff i = bitEquiv.symm (m.testBit i) := by
-  induction i generalizing m with
-  | zero =>
-    rw [polyOfCode_eq_C_add_X_mul]
-    simp only [coeff_add, coeff_C_zero, coeff_X_mul_zero, add_zero, Nat.testBit_zero,
-      natCast_zmod_two_eq]
-    rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h]
-  | succ i ih =>
-    rw [polyOfCode_eq_C_add_X_mul, coeff_add, coeff_C_succ, zero_add, coeff_X_mul,
-      ih (m / 2), Nat.testBit_succ]
-
-/-- `polyOfCode` is injective: distinct natural numbers have distinct binary polynomials. -/
-theorem polyOfCode_injective : Function.Injective polyOfCode := by
-  intro a b hab
-  apply Nat.eq_of_testBit_eq
-  intro i
-  have hi := congrArg (fun p : (ZMod 2)[X] => bitEquiv (p.coeff i)) hab
-  simpa [coeff_polyOfCode] using hi
-
-/-- If `m < 2 ^ k`, then `polyOfCode m` has degree strictly less than `k`. -/
-theorem degree_polyOfCode_lt {m k : ℕ} (hm : m < 2 ^ k) :
-    (polyOfCode m).degree < k := by
-  rcases eq_or_ne m 0 with rfl | hm0
-  · simp only [polyOfCode_zero, degree_zero]
-    exact WithBot.bot_lt_coe k
-  · have hne : polyOfCode m ≠ 0 := (polyOfCode_ne_zero_and_natDegree hm0).1
-    rw [degree_eq_natDegree hne, natDegree_polyOfCode hm0, Nat.cast_lt]
-    exact Nat.log_lt_of_lt_pow hm0 hm
-
 /-- Bitwise exclusive-or on codes corresponds to polynomial addition over `ZMod 2`. -/
 @[simp]
 theorem polyOfCode_xor (a b : ℕ) :
