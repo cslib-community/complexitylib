@@ -98,12 +98,15 @@ before another separated query/response step. -/
 theorem conditionalSnd_queryResponse_update {D : Type*} (policy : PMF (A × C))
     (source : A → PMF (B × S)) (update : A → B → C → PMF D) (a : A) (b : B)
     (h : (a, b) ∈ ((queryResponse policy source).map Prod.fst).support) :
-    conditionalSnd ((queryResponse policy source).bind fun pair =>
-      (update pair.1.1 pair.1.2 pair.2.1).map fun d => (pair.1, (d, pair.2.2))) (a, b) =
+    conditionalSnd ((queryResponse policy source).bind
+      fun ⟨⟨query, reply⟩, ⟨localState, sourceState⟩⟩ =>
+        (update query reply localState).map fun next => ((query, reply), (next, sourceState)))
+      (a, b) =
       ((conditionalSnd policy a).bind (update a b)).bind fun d =>
         (conditionalSnd (source a) b).map (d, ·) := by
-  have he : (queryResponse policy source).bind (fun pair =>
-      (update pair.1.1 pair.1.2 pair.2.1).map fun d => (pair.1, (d, pair.2.2))) =
+  have he : (queryResponse policy source).bind
+      (fun ⟨⟨query, reply⟩, ⟨localState, sourceState⟩⟩ =>
+        (update query reply localState).map fun next => ((query, reply), (next, sourceState))) =
       ((policy.map Prod.fst).bind fun a => ((source a).map Prod.fst).map (a, ·)).bind
         (fun ab => (((conditionalSnd policy ab.1).bind (update ab.1 ab.2)).bind fun d =>
           (conditionalSnd (source ab.1) ab.2).map (d, ·)).map (ab, ·)) := by

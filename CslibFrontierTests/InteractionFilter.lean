@@ -29,10 +29,10 @@ open Cslib.Probability
 open scoped ENNReal
 
 /-- Fresh independent fair private randomness. -/
-@[expose] def fair : PMF Bool := PMF.uniformOfFintype Bool
+def fair : PMF Bool := PMF.uniformOfFintype Bool
 
 /-- The actual first source response and persistent hidden bit. -/
-@[expose] def first : PMF (Bool × Bool) :=
+def first : PMF (Bool × Bool) :=
   fair.bind fun s => fair.map fun noise => (s && noise, s)
 
 private theorem first_apply (r s : Bool) :
@@ -65,11 +65,11 @@ theorem first_filter : PMF.conditionalSnd first false true = 1 / 3 := by
   norm_num [ENNReal.toReal_div]
 
 /-- The query is formed from the actual first response and policy-private randomness. -/
-@[expose] def policy (reply : Bool) (privateCoin : PMF Bool) : PMF (Bool × Bool) :=
+def policy (reply : Bool) (privateCoin : PMF Bool) : PMF (Bool × Bool) :=
   privateCoin.map fun c => (Bool.xor reply c, c)
 
 /-- Querying reveals the hidden bit; declining the query returns a constant answer. -/
-@[expose] def source (reply query : Bool) : PMF (Bool × Bool) :=
+def source (reply query : Bool) : PMF (Bool × Bool) :=
   (PMF.conditionalSnd first reply).map fun s => ((if query then s else false), s)
 
 private theorem source_false :
@@ -133,14 +133,15 @@ structure RetentionState where
   retained : Bool
 
 /-- After the reply, a fresh private coin chooses retention while keeping earlier private state. -/
-@[expose] def update (_query reply old : Bool) : PMF RetentionState :=
+def update (_query reply old : Bool) : PMF RetentionState :=
   fair.map fun fresh => ⟨old, Bool.xor reply fresh⟩
 
 -- Fresh-coin processing preserves the full private/source product.
 example :
     PMF.conditionalSnd
-      ((PMF.queryResponse (policy false fair) (source false)).bind fun pair =>
-        (update pair.1.1 pair.1.2 pair.2.1).map fun d => (pair.1, (d, pair.2.2)))
+      ((PMF.queryResponse (policy false fair) (source false)).bind
+        fun ⟨⟨query, reply⟩, ⟨localState, sourceState⟩⟩ =>
+          (update query reply localState).map fun next => ((query, reply), (next, sourceState)))
       (false, false) =
       (fair.map fun fresh => (⟨false, fresh⟩ : RetentionState)).bind fun d =>
         (PMF.conditionalSnd first false).map (d, ·) := by
@@ -154,13 +155,13 @@ example :
   simpa only [hp, PMF.pure_bind, update, Bool.false_xor, source_false] using he
 
 /-- A constant answer word hides a billed token count that the policy actually sees. -/
-@[expose] def coarse : PMF (Unit × Bool) := fair.map fun s => ((), s)
+def coarse : PMF (Unit × Bool) := fair.map fun s => ((), s)
 
 /-- The billed token amount is visible to the policy although the answer word is constant. -/
-@[expose] def invoice (s : Bool) : ℕ := if s then 2 else 1
+def invoice (s : Bool) : ℕ := if s then 2 else 1
 
 /-- The policy reads the invoice and queries with the recovered hidden bit. -/
-@[expose] def invoiceQuery : PMF (Bool × Bool) := fair.map fun s => (decide (invoice s = 2), s)
+def invoiceQuery : PMF (Bool × Bool) := fair.map fun s => (decide (invoice s = 2), s)
 
 -- Dropping that invoice leaves a fair coarse posterior, although the next query reveals the bit.
 example : PMF.conditionalSnd coarse () false = 1 / 2 ∧
