@@ -789,6 +789,33 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
 
+### Security theorems
+
+A security theorem may assume only (a) named hardness assumptions about independently defined
+problems (`F.DDH setup`, `DecisionLWE …`, `OneWay f`), (b) that the adversary is in the admitted
+class (`A.IsPPT`, `IsOraclePPT …`), and (c) efficiency or correctness of generic components that
+the caller supplies. It must not assume anything about an object that the library constructs: the
+advantage or success of a reduction, distinguisher, simulator or extractor, that object's
+membership in an adversary class or its efficiency, or the quality of the scheme's own key
+generator. Nor may it bound the advantage only for parameters that an `∃` chooses after the
+adversary (`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`): the reduction must choose them itself.
+
+Write each reduction as an explicit program with an `isPPT_…` or `isOraclePPT_…` lemma proved
+from the adversary's certificate, and prove the asymptotic theorem by applying the assumption to
+the reduction through that lemma, as `DDH.elGamalINDCPA` does
+([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
+Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
+`Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s
+advantage, or `B_A ∈ 𝒟`, as a premise is an algebraic helper: its name (`…_of_reduction_le`) and
+docstring say so, and no headline or asymptotic theorem stops at it.
+
+Names and docstrings state the model (standard, random-oracle, ideal, query-bounded or
+information-theoretic), the notion (single- or multi-challenge, one-time or many-time,
+honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
+cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
+to an honestly named and documented helper, and updates its ROADMAP, manual and
+[results inventory](results/README.md) mentions (#5293).
+
 ## Design commitments (do not re-litigate casually)
 
 - Base pin is upstream cslib `main` at a SHA; never a fork.

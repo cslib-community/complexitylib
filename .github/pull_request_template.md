@@ -10,7 +10,10 @@ For mathematical changes, state the claim and important assumptions. Where relev
 the source-to-Lean mapping or why existing definitions could not be reused.
 For API/reuse refactors, identify a representative caller and what it no longer repeats;
 follow AGENTS.md#check-the-api-through-its-callers.
-New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception. -->
+New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception.
+Security theorems follow AGENTS.md#security-theorems: they assume nothing about an object the
+library constructs (a reduction's advantage, class membership or efficiency, or the scheme's own
+key generator), and each reduction they use has an `isPPT_…`/`isOraclePPT_…` lemma. -->
 
 Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its
 author) and the person whose agents did the work, as in AGENTS.md#file-rules. Delete if no file is
