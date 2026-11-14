@@ -295,11 +295,12 @@ class HandoffTests(unittest.TestCase):
         for name in ("lib/lean/Fixture/Basic.olean.server", "lib/lean/Fixture/Basic.olean.private",
                      "lib/lean/Fixture/Basic.ir", "ir/Fixture/Basic.c", "bin/fixture"):
             self.assertTrue((self.build / name).is_file(), name)
-        # Prepare archives from the validated outputs before packing the root build. Lake
-        # handles the association with their traces; nothing is copied in from the consumer.
+        # Model archives inherited from an earlier main publication. An ordinary merge-group
+        # build and handoff should retain them without another archive-preparation phase.
         run("lake", "build", "--no-build", "--wfail", "--iofail", "Fixture", "-o",
             str(self.base / "producer-mapping.jsonl"))
         self.assertEqual(len(list(self.build.rglob("*.ltar"))), 2)
+        run("lake", "build", "--wfail", "--iofail", "fixture")
         run("git", "add", ".")
         run("git", "-c", "commit.gpgsign=false", "-c", "user.name=Test",
             "-c", "user.email=test@example.invalid", "commit", "-qm", "Real Lake fixture")

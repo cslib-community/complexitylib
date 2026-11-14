@@ -126,14 +126,10 @@ CI_ONLY = {
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
-    "Save .lake after cache publication (experiment)":
-        "main pushes only; default-off CI cache experiment (#4972)",
     "Parallel-definition and duplicate-statement notices (advisory)":
         "advisory; never fails the job. Run `scripts/parallel_defs.py [--theorems]` to see it",
     "PR description names (advisory)":
         "advisory; reads the pull request event. Run `scripts/check_pr_names.py --pr N`",
-    "Prepare publication archives for build handoff":
-        "merge groups only; optional archive retention experiment (#5271)",
     "Stage merge-group build outputs": "merge groups only; build handoff to main",
     "Upload merge-group build outputs": "merge groups only; build handoff to main",
     "Stage cache publication": "main pushes only; cache publication",

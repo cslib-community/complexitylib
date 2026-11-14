@@ -138,11 +138,10 @@ request body sizes and whether it used incremental transfer or a full compatibil
 fallback. The [protocol contract](../../tools/cache-origin/README.md#publication-contract)
 explains those modes; a smaller upload does not mean staging became cheaper.
 
-The default-off archive-retention experiment also prepares archives before a merge-group handoff.
-Its strict `--no-build` preparation refuses source recompilation and replayed diagnostics; failure
-only skips the optional handoff. Retention can move expensive packaging onto the merge queue when
-archives are missing. Compare merge-group preparation and handoff transfer with `main`'s staging
-and Actions restore/save costs, and verify that the handoff actually succeeded before attributing
-an improvement to the complete cycle.
+CI saves `.lake` after staging so subsequent builds can reuse the new archives. Ordinary builds
+and successful handoffs preserve unchanged archives; source changes still let Lake invalidate
+them. Include Actions restore/save bytes and time and handoff transfer costs when comparing the
+whole cycle. Larger snapshots can evict older caches, and cancellation before the late save loses
+that run's snapshot; a failed check remains failed even when its reusable build outputs are saved.
 
 [complexitylib]: ../sources.md#complexitylib

@@ -174,8 +174,8 @@ trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 For hosted cache optimizations, measure the merge queue and following `main` run together.
-Archive retention can move packaging before the merge; report successful handoff coverage,
-transfer costs and activation status separately from a faster `main` stage
+Include Actions cache and handoff transfer costs, and distinguish a successful handoff from a
+fallback build; a faster publication stage alone does not establish a faster complete cycle
 ([profiling](workflows/troubleshooting.md#profile-slow-cache-publication)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
