@@ -203,12 +203,6 @@ theorem IsStationary.distToStationary_mul_le (hπ : P.IsStationary π) (ℓ t : 
     pow_le_pow_left₀ (P.distPair_nonneg t) (P.distPair_le_two_mul_distToStationary t) ℓ
 
 omit [Fintype S] in
-theorem IsStationary.mul {P₁ P₂ : MarkovChain S} (h₁ : P₁.IsStationary π)
-    (h₂ : P₂.IsStationary π) : (P₁ * P₂).IsStationary π := by
-  change π.bind (fun x => (P₁ x).bind P₂) = π
-  rw [← PMF.bind_bind, h₁, h₂]
-
-omit [Fintype S] in
 private theorem isStationary_list_prod {l : List (MarkovChain S)}
     (hl : ∀ Q ∈ l, Q.IsStationary π) : l.prod.IsStationary π := by
   induction l with

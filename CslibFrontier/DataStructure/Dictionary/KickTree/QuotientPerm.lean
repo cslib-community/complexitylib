@@ -39,29 +39,37 @@ universe `U ≥ n` once `n ≥ quotientPermThreshold c`, without assuming `U ≥
 
 * **Primary sources**:
   - [BenderFarachColtonKuszmaulKuszmaulLiu2022] (`arXiv:2111.00602v2`): Section 1 (PDF pp. 2–3 /
-    printed pp. 1–2), Section 2.4 (PDF p. 8 / printed p. 7), Section 5.3 Theorem 21 (PDF pp. 34–36
-    / printed pp. 33–35, polynomial-universe quotiented `k`-kick trees via a `Θ(log n)`-wise
-    permutation on `[U]` and `Pr[∏_{x ∈ R} Q_x = 1] ≤ (|Q| / |U|) ^ |R|`), and Section 6.1
-    Theorems 22–23 (PDF pp. 37–39 / printed pp. 36–38, large keys via indirection; formal theorem
-    numbering starts at Theorem 2 on PDF p. 12 / printed p. 11).
-  - [ArbitmanNaorSegev2010] (`arXiv:0912.5424v3`): Section 5.2 Claim 5.4 (PDF pp. 22–23 / printed
-    pp. 21–22), Section 5.3 Theorem 5.6 (PDF p. 25 / printed p. 24, `(1 / 2) * (2 * δ) ^ t`
-    contraction), and Section 5.4 Claim 5.7 (PDF p. 26 / printed p. 25, 1-round Feistel sharding).
+    printed pp. 1–2), Section 2.4 (PDF p. 8 / printed p. 7, lines 376–386, fn. 12), Section 5.3
+    Theorem 21 (PDF pp. 34–36 / printed pp. 33–35, quotiented `k`-kick trees via a uniformly random
+    permutation on `[U]`, simulated for `|U| ≤ poly(n)` using `poly(n)`-independent permutations,
+    and `Pr[∏_{x ∈ R} Q_x = 1] ≤ (|Q| / |U|) ^ |R|`), and Section 6.1 Theorems 22–23
+    (PDF pp. 37–39 / printed pp. 36–38, large keys via indirection; formal theorem numbering starts
+    at Theorem 2 on PDF p. 12 / printed p. 11).
+  - [ArbitmanNaorSegev2010] (`arXiv:0912.5424v3`): Section 5.2 (PDF pp. 21–23 / printed pp. 20–22,
+    1-round Feistel sharded permutation construction and intra-shard injectivity), Claim 5.4,
+    Section 5.3 Theorem 5.6 (PDF p. 25 / printed p. 24, `(1 / 2) * (2 * δ) ^ t` contraction quoted
+    from \[KNR09\]), and Section 5.4 Claim 5.7 (PDF p. 26 / printed p. 25, bin load / capacity
+    bounds).
   - [NaorReingold1999] (*J. Cryptology* 12(1):29–66, 1999): Section 2.3 Definitions 2.8–2.10
-    (p. 36 / PDF p. 8), Section 3.2 Definition 3.1 & Theorems 3.1–3.2 (pp. 38–39 / PDF pp. 10–11),
+    (p. 36 / PDF p. 8), Section 3.2 Definition 3.1 & Theorems 3.1–3.2 (pp. 38–39 / PDF pp. 10–11;
+    in their notation, $C_1$ denotes the uniform embedding distribution on distinct inputs),
     Section 5.2 Theorem 5.2 (pp. 48–50 / PDF pp. 20–22), Section 6 Definition 6.1 (p. 52 / PDF
     p. 24), and Section 8 Corollary 8.1 (pp. 60–61 / PDF pp. 32–33).
 * **Original formalization adaptations**:
-  - Rather than assuming an idealized `Θ(log n)`-wise permutation on `[U]` for `U = poly(n)` or
-    large-key indirection, `quotientPermEquiv` combines **Case A** (`m + caseAGap c n ≤ a`, 2-round
-    unbalanced Feistel `caseAEquiv`) and **Case B** (`a < m + caseAGap c n`, Arbitman–Naor–Segev
-    1-round Feistel sharding + `nrRounds c` unbalanced 3-round Feistel Naor–Reingold blocks).
+  - Rather than assuming an idealized uniformly random permutation on `[U]` simulated via
+    `poly(n)`-independent permutations for `U = poly(n)` or large-key indirection,
+    `quotientPermEquiv` combines **Case A** (`m + caseAGap c n ≤ a`, 2-round unbalanced Feistel
+    `caseAEquiv`) and **Case B** (`a < m + caseAGap c n`, Arbitman–Naor–Segev 1-round Feistel
+    sharding + `nrRounds c` unbalanced 3-round Feistel Naor–Reingold blocks).
+  - The construction is single-shard ($S = 1$) because all key quotients are mapped under a single
+    unified permutation instance rather than partitioned across multiple independent shards.
   - `QuotientPermSeed` instantiates round functions via `multiplyShiftReduced` / `oddMulModWord`
     (`CslibFrontier.Probability.KWiseIndependent.ReducedLimbs`) and a shared `DoubleTabTopSeed`
     (`CslibFrontier.Probability.KWiseIndependent.DoubleTabulation` [Thorup2013]), requiring an
     explicit large asymptotic capacity threshold `quotientPermThreshold c ≤ n` (e.g.
-    `2 ^ 50239744` at `c = 0`, satisfying `4 ≤ quotientPermThreshold c`). Word-RAM circuit
-    compilation belongs to the downstream Word-RAM hash layer.
+    `quotientPermThreshold 0 = 2 ^ 50239744`, which is an asymptotic theoretical threshold ensuring
+    all failure probabilities are negligible, satisfying `4 ≤ quotientPermThreshold c`). Word-RAM
+    circuit compilation belongs to the downstream Word-RAM hash layer.
 
 ## Main definitions
 

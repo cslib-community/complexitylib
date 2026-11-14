@@ -16,6 +16,7 @@ import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.KWiseIndependent.Coupling
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
@@ -789,45 +790,25 @@ theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
       Set.InjOn (reduceBits m (quotientPermRedBits c n) p.2) (S_L : Set _)}
   have hbad_top : ((PMF.uniformOfFintype (Top × Fin (2 ^ (m - 1)))).toOuterMeasure
       GoodTopᶜ).toReal ≤ 1 / (8 * (n : ℝ) ^ (c + 2)) + 1 / (16 * (n : ℝ) ^ (c + 1)) := by
-    let E₁ : Set Top := {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)}ᶜ
-    let E₂ : Set (Fin (2 ^ (m - 1))) :=
-      {α₀ | Set.InjOn (reduceBits m (quotientPermRedBits c n) α₀) (S_L : Set _)}ᶜ
-    have hsub : univ.filter (· ∈ GoodTopᶜ) ⊆
-        (univ.filter (· ∈ E₁)) ×ˢ univ ∪ univ ×ˢ (univ.filter (· ∈ E₂)) := by
-      intro ⟨τ, α₀⟩ hp
-      rw [mem_filter] at hp
-      by_cases hτ : IsKUnique (quotientPermInd c n) (simpleTabTuple τ)
-      · refine mem_union_right _ (mem_product.mpr ⟨mem_univ τ, mem_filter.mpr ⟨mem_univ α₀, ?_⟩⟩)
-        exact fun h => hp.2 ⟨hτ, h⟩
-      · exact mem_union_left _ (mem_product.mpr ⟨mem_filter.mpr ⟨mem_univ τ, hτ⟩, mem_univ α₀⟩)
-    have hcard : (#(univ.filter (· ∈ GoodTopᶜ)) : ℝ) ≤
-        (#(univ.filter (· ∈ E₁)) : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) +
-          (Fintype.card Top : ℝ) * (#(univ.filter (· ∈ E₂)) : ℝ) := by
-      have hn1 : #(univ.filter (· ∈ GoodTopᶜ)) ≤
-          #(univ.filter (· ∈ E₁)) * Fintype.card (Fin (2 ^ (m - 1))) +
-            Fintype.card Top * #(univ.filter (· ∈ E₂)) := by
-        calc #(univ.filter (· ∈ GoodTopᶜ))
-            ≤ #((univ.filter (· ∈ E₁)) ×ˢ univ ∪ univ ×ˢ (univ.filter (· ∈ E₂))) :=
-              card_le_card hsub
-          _ ≤ #((univ.filter (· ∈ E₁)) ×ˢ (univ : Finset (Fin (2 ^ (m - 1))))) +
-                #((univ : Finset Top) ×ˢ (univ.filter (· ∈ E₂))) := card_union_le _ _
-          _ = _ := by simp
-      exact_mod_cast hn1
-    have hp₁ := prob_not_isKUnique_quotientPerm_le hn
-    have hp₂ := prob_not_injOn_reduceBits_le hn S_L hSL
-    rw [toOuterMeasure_uniformOfFintype_toReal] at hp₁ hp₂ ⊢
-    rw [Fintype.card_prod, Nat.cast_mul]
-    have hpos1 : (0 : ℝ) < Fintype.card Top := Nat.cast_pos.mpr Fintype.card_pos
-    have hpos2 : (0 : ℝ) < Fintype.card (Fin (2 ^ (m - 1))) := Nat.cast_pos.mpr Fintype.card_pos
-    calc (#(univ.filter (· ∈ GoodTopᶜ)) : ℝ) /
-            ((Fintype.card Top : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ))
-        ≤ ((#(univ.filter (· ∈ E₁)) : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) +
-            (Fintype.card Top : ℝ) * (#(univ.filter (· ∈ E₂)) : ℝ)) /
-            ((Fintype.card Top : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ)) :=
-          div_le_div_of_nonneg_right hcard (by positivity)
-      _ = (#(univ.filter (· ∈ E₁)) : ℝ) / (Fintype.card Top : ℝ) +
-            (#(univ.filter (· ∈ E₂)) : ℝ) / (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) := by field_simp
-      _ ≤ 1 / (8 * (n : ℝ) ^ (c + 2)) + 1 / (16 * (n : ℝ) ^ (c + 1)) := add_le_add hp₁ hp₂
+    have hstep : ∀ τ ∈ (PMF.uniformOfFintype Top).support,
+        τ ∈ {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)} →
+        (((PMF.uniformOfFintype (Fin (2 ^ (m - 1)))).map fun α₀ => (τ, α₀)).toOuterMeasure
+          GoodTopᶜ).toReal ≤ 1 / (16 * (n : ℝ) ^ (c + 1)) := by
+      intro τ _ hτ
+      rw [PMF.toOuterMeasure_map_apply]
+      have hτ_uniq : IsKUnique (quotientPermInd c n) (simpleTabTuple τ) := hτ
+      have hsub : (fun α₀ => (τ, α₀)) ⁻¹' GoodTopᶜ =
+          {α₀ | Set.InjOn (reduceBits m (quotientPermRedBits c n) α₀) (S_L : Set _)}ᶜ := by
+        ext α₀
+        simp [GoodTop, hτ_uniq]
+      rw [hsub]
+      exact prob_not_injOn_reduceBits_le hn S_L hSL
+    have hbind := toOuterMeasure_bind_failure_toReal_le (PMF.uniformOfFintype Top)
+      (fun τ => (PMF.uniformOfFintype (Fin (2 ^ (m - 1)))).map fun α₀ => (τ, α₀))
+      {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)} GoodTopᶜ
+      (by positivity) hstep
+    rw [uniformOfFintype_prod Top (Fin (2 ^ (m - 1)))] at hbind
+    exact hbind.trans (add_le_add (prob_not_isKUnique_quotientPerm_le hn) le_rfl)
   have habs := dist_caseA_restrict_le hma
     (fun (p : Top × Fin (2 ^ (m - 1))) (botA₀ : BotA₀) =>
       reducedDoubleTab c n m (a - m) p.2 p.1 botA₀)
@@ -901,73 +882,25 @@ theorem prob_doubleTab_bucketLoad_outside_le {c n s_in s_out k_mom : ℕ}
     a_dev ≤ |(bucketLoad (h_sh p.1 p.2) S_sh σ : ℝ) - (#S_sh : ℝ) / (2 ^ s_out : ℝ)|}
   let tailB := (2 ^ (s_out + 1) : ℝ) *
     (3 * (k_mom : ℝ) * ((#S_sh : ℝ) / (2 ^ s_out : ℝ)) / a_dev ^ 2) ^ k_mom
-  let BadTop : Finset Top := univ.filter fun τ =>
-    ¬ IsKUnique (quotientPermInd c n) (simpleTabTuple τ)
-  let BadBot (τ : Top) : Finset BotSh := univ.filter fun b => (τ, b) ∈ E_pair
-  have hsub : univ.filter (· ∈ E_pair) ⊆
-      (BadTop ×ˢ (univ : Finset BotSh)) ∪ (univ \ BadTop).biUnion fun τ => {τ} ×ˢ BadBot τ := by
-    intro ⟨τ, b⟩ hp
-    rw [mem_filter] at hp
-    by_cases hτ : τ ∈ BadTop
-    · exact mem_union_left _ (mem_product.mpr ⟨hτ, mem_univ b⟩)
-    · refine mem_union_right _ (mem_biUnion.mpr ⟨τ, mem_sdiff.mpr ⟨mem_univ τ, hτ⟩, ?_⟩)
-      exact mem_product.mpr ⟨mem_singleton_self τ, mem_filter.mpr ⟨mem_univ b, hp.2⟩⟩
-  have hcard_union : (#(univ.filter (· ∈ E_pair)) : ℝ) ≤
-      (#BadTop : ℝ) * (Fintype.card BotSh : ℝ) +
-        (Fintype.card Top : ℝ) * ((Fintype.card BotSh : ℝ) * tailB) := by
-    have hn1 : #(univ.filter (· ∈ E_pair)) ≤
-        #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #(BadBot τ) := by
-      calc #(univ.filter (· ∈ E_pair))
-          ≤ #(BadTop ×ˢ (univ : Finset BotSh) ∪
-              (univ \ BadTop).biUnion fun τ => {τ} ×ˢ BadBot τ) := card_le_card hsub
-        _ ≤ #(BadTop ×ˢ (univ : Finset BotSh)) +
-              #((univ \ BadTop).biUnion fun τ => {τ} ×ˢ BadBot τ) := card_union_le _ _
-        _ ≤ #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #({τ} ×ˢ BadBot τ) := by
-              rw [card_product, card_univ]; exact Nat.add_le_add_left card_biUnion_le _
-        _ = #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #(BadBot τ) := by simp
-    have hbot_le (τ : Top) (hτ : τ ∈ univ \ BadTop) :
-        (#(BadBot τ) : ℝ) ≤ (Fintype.card BotSh : ℝ) * tailB := by
-      have huniq : IsKUnique (quotientPermInd c n) (simpleTabTuple τ) := by
-        simpa [BadTop] using (mem_sdiff.mp hτ).2
-      have hkw := (isKWise_doubleTab_pow_of_le (s_out := s_out) hs_in huniq).mono hk_ind
-      have hd := dens_exists_bucketLoad_sub_ge_le hk_pos hkw S_sh hk_mu ha_dev
-      rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast,
-        NNRat.cast_natCast, div_le_iff₀ (Nat.cast_pos.mpr Fintype.card_pos)] at hd
-      have hfilt : BadBot τ = univ.filter (fun b : BotSh => ∃ σ : Fin (2 ^ s_out),
-          a_dev ≤ |(bucketLoad (h_sh τ b) S_sh σ : ℝ) - (#S_sh : ℝ) / (2 ^ s_out : ℝ)|) :=
-        rfl
-      rw [hfilt]
-      linarith
-    calc (#(univ.filter (· ∈ E_pair)) : ℝ)
-        ≤ (#BadTop : ℝ) * (Fintype.card BotSh : ℝ) + ∑ τ ∈ univ \ BadTop, (#(BadBot τ) : ℝ) := by
-          exact_mod_cast hn1
-      _ ≤ (#BadTop : ℝ) * (Fintype.card BotSh : ℝ) +
-            ∑ _τ ∈ univ \ BadTop, ((Fintype.card BotSh : ℝ) * tailB) :=
-          add_le_add le_rfl (sum_le_sum hbot_le)
-      _ ≤ (#BadTop : ℝ) * (Fintype.card BotSh : ℝ) +
-            (Fintype.card Top : ℝ) * ((Fintype.card BotSh : ℝ) * tailB) := by
-          rw [sum_const, nsmul_eq_mul]
-          have hsub_top : (#(univ \ BadTop) : ℝ) ≤ (Fintype.card Top : ℝ) := by
-            exact_mod_cast card_le_univ _
-          have hnn : 0 ≤ (Fintype.card BotSh : ℝ) * tailB := by positivity
-          nlinarith
-  change ((PMF.uniformOfFintype (Top × BotSh)).toOuterMeasure E_pair).toReal ≤
-    1 / (8 * (n : ℝ) ^ (c + 2)) + tailB
-  rw [toOuterMeasure_uniformOfFintype_toReal, Fintype.card_prod, Nat.cast_mul]
-  have htop_prob := prob_not_isKUnique_quotientPerm_le hn
-  rw [toOuterMeasure_uniformOfFintype_toReal] at htop_prob
-  have hfilt_top : univ.filter (· ∈ ({T₁ : Top |
-      IsKUnique (quotientPermInd c n) (simpleTabTuple T₁)}ᶜ : Set Top)) = BadTop :=
-    filter_congr fun _ _ => Iff.rfl
-  rw [hfilt_top] at htop_prob
-  have hposT : (0 : ℝ) < Fintype.card Top := Nat.cast_pos.mpr Fintype.card_pos
-  have hposB : (0 : ℝ) < Fintype.card BotSh := Nat.cast_pos.mpr Fintype.card_pos
-  calc (#(univ.filter (· ∈ E_pair)) : ℝ) / ((Fintype.card Top : ℝ) * (Fintype.card BotSh : ℝ))
-      ≤ ((#BadTop : ℝ) * (Fintype.card BotSh : ℝ) +
-          (Fintype.card Top : ℝ) * ((Fintype.card BotSh : ℝ) * tailB)) /
-          ((Fintype.card Top : ℝ) * (Fintype.card BotSh : ℝ)) :=
-        div_le_div_of_nonneg_right hcard_union (by positivity)
-    _ = (#BadTop : ℝ) / (Fintype.card Top : ℝ) + tailB := by field_simp
-    _ ≤ 1 / (8 * (n : ℝ) ^ (c + 2)) + tailB := by linarith
+  have hstep : ∀ τ ∈ (PMF.uniformOfFintype Top).support,
+      τ ∈ {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)} →
+      (((PMF.uniformOfFintype BotSh).map fun b => (τ, b)).toOuterMeasure
+        E_pair).toReal ≤ tailB := by
+    intro τ _ hτ
+    rw [PMF.toOuterMeasure_map_apply]
+    have hkw := (isKWise_doubleTab_pow_of_le (s_out := s_out) hs_in hτ).mono hk_ind
+    have hd := dens_exists_bucketLoad_sub_ge_le hk_pos hkw S_sh hk_mu ha_dev
+    have hpre : (fun b => (τ, b)) ⁻¹' E_pair =
+        {b : BotSh | ∃ σ : Fin (2 ^ s_out),
+          a_dev ≤ |(bucketLoad (h_sh τ b) S_sh σ : ℝ) - (#S_sh : ℝ) / (2 ^ s_out : ℝ)|} := rfl
+    rw [PMF.toOuterMeasure_uniformOfFintype_toReal]
+    simpa only [hpre, Set.mem_ofPred_eq, dens_eq_card_div_card, NNRat.cast_div,
+      NNRat.cast_natCast] using hd
+  have hbind := toOuterMeasure_bind_failure_toReal_le (PMF.uniformOfFintype Top)
+    (fun τ => (PMF.uniformOfFintype BotSh).map fun b => (τ, b))
+    {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)} E_pair
+    (by positivity) hstep
+  rw [uniformOfFintype_prod Top BotSh] at hbind
+  exact hbind.trans (add_le_add (prob_not_isKUnique_quotientPerm_le hn) le_rfl)
 
 end Cslib.DataStructure.Dictionary.KickTree

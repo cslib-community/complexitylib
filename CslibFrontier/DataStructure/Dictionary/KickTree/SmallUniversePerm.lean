@@ -28,9 +28,10 @@ import Mathlib.Tactic.Ring
 
 This module constructs unbalanced 3-round Feistel Naor–Reingold blocks and `t`-round compositions on
 `Fin (2 ^ a')` ([NaorReingold1999], Sections 3.2, 5.2, 6, and 8), combines them with the
-Arbitman–Naor–Segev 1-round Feistel shard router (`caseBEquiv`, [ArbitmanNaorSegev2010], Section 5.4
-Claim 5.7), and proves abstract `k`-tuple statistical-distance contraction and intra-shard suffix
-bijectivity for `CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm`.
+Arbitman–Naor–Segev 1-round Feistel shard router (`caseBEquiv`, [ArbitmanNaorSegev2010], Section 5.2
+construction for intra-shard injectivity and Section 5.4 Claim 5.7 for bin load bounds), and proves
+abstract `k`-tuple statistical-distance contraction and intra-shard suffix bijectivity for
+`CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm`.
 
 ## Main definitions
 
@@ -181,25 +182,6 @@ theorem nrComposedEquiv_succ_left (a' : ℕ) :
         nrComposedEquiv_symm a' t (fun i => blks i.castSucc), Equiv.trans_apply, Fin.rev_zero,
         Fin.rev_succ]
 
-private theorem map_xor_restrict_eq_uniform {ι T : Type*}
-    [Fintype ι] [Nonempty ι] [Fintype T] [DecidableEq T]
-    {s s' k : ℕ} {h : ι → Fin (2 ^ s') → Fin (2 ^ s)}
-    (hh : IsKWiseIndependentHash k h) (hT : Fintype.card T ≤ k)
-    (base : T → Fin (2 ^ s)) {inp : T → Fin (2 ^ s')} (hinj : Function.Injective inp) :
-    (PMF.uniformOfFintype ι).map (fun seed i => base i ^^^ h seed (inp i)) =
-      PMF.uniformOfFintype (T → Fin (2 ^ s)) := by
-  let shiftEq : (T → Fin (2 ^ s)) ≃ (T → Fin (2 ^ s)) :=
-    { toFun := fun f i => base i ^^^ f i
-      invFun := fun f i => base i ^^^ f i
-      left_inv := fun f => by ext i; simp
-      right_inv := fun f => by ext i; simp }
-  calc (PMF.uniformOfFintype ι).map (fun seed i => base i ^^^ h seed (inp i))
-      = ((PMF.uniformOfFintype ι).map (fun seed i => h seed (inp i))).map shiftEq := by
-          rw [PMF.map_comp]; rfl
-    _ = (PMF.uniformOfFintype (T → Fin (2 ^ s))).map shiftEq := by
-          rw [uniformOfFintype_map_of_isKWise (hh.comp hinj) hT]
-    _ = PMF.uniformOfFintype (T → Fin (2 ^ s)) := uniformOfFintype_map_equiv shiftEq
-
 /-- Seed triple `(s₀, s₁, s₂)` for one Naor–Reingold block over seed spaces `ι₀, ι₁, ι₂`. -/
 structure NRBlockSeed (ι₀ ι₁ ι₂ : Type*) where
   /-- Pre-whitening round seed. -/
@@ -248,7 +230,11 @@ theorem nrBlockSeedDist_eq {ι₀ ι₁ ι₂ : Type*} [Fintype ι₀] [Nonempty
 
 /-- **Single-block Naor–Reingold `k`-tuple statistical-distance bound** ([NaorReingold1999],
 Section 3.2 Definition 3.1, Section 5.2, Section 6 Definition 6.1, and Section 8 Corollary 8.1,
-printed pp. 38, 49–50, 52, 60–61 / PDF pp. 10, 21–22, 24, 32–33). -/
+printed pp. 38, 49–50, 52, 60–61 / PDF pp. 10, 21–22, 24, 32–33).
+
+In Naor–Reingold's notation, $C_1$ corresponds to the uniform embedding distribution
+`PMF.uniformOfFintype (T ↪ Fin (2 ^ a'))` on distinct inputs, and the block bound bounds
+distinguishing advantage from $C_1$. -/
 theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
     [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T]
     {a' k : ℕ}
@@ -619,9 +605,10 @@ where
   simp [Equiv.trans_apply, Equiv.prodCongr_apply, feistelPair]
 
 /-- **Deterministic shard collision-freedom** ([ArbitmanNaorSegev2010], `arXiv:0912.5424v3`,
-Section 5.4, Claim 5.7, PDF p. 26 / printed p. 25): for every `CaseBRounds` `r` and shard
+Section 5.2 construction, PDF pp. 21–23 / printed pp. 20–22): for every `CaseBRounds` `r` and shard
 `σ : Fin (2 ^ shardBits m)`, the suffix projection `keySuffix hma` (`y_R`) is strictly injective on
-all keys routed into shard `σ`. -/
+all keys routed into shard `σ`. (Section 5.4 Claim 5.7 provides bin load bounds for this
+construction.) -/
 theorem injOn_yR_of_caseBShard_eq {a m t : ℕ} (hma : m ≤ a) (r : CaseBRounds a m t)
     (σ : Fin (2 ^ shardBits m)) :
     Set.InjOn (keySuffix hma) {u : Fin (2 ^ a) | caseBShard hma r u = σ} := by
@@ -685,21 +672,9 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
                   h_sh τ s_sh (yEmb u)),
                 ((Equiv.refl T).embeddingCongr π yEmb, fun u : T => h_aux τ s_aux u.1))) U_all ≤
         (1 / 2 : ℝ) * (3 * (κ : ℝ) ^ 2 / (2 ^ nrHalfLow (suffixBits a m) : ℝ)) ^ t := by
-    let shiftSh : (T → Fin (2 ^ shardBits m)) ≃ (T → Fin (2 ^ shardBits m)) :=
-      { toFun := fun f u => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ f u
-        invFun := fun f u => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ f u
-        left_inv := fun f => by ext u; simp
-        right_inv := fun f => by ext u; simp }
     have hsh_unif : ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) =>
-        (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ h_sh τ s_sh (yEmb u)) = U_sh := by
-      have hraw := uniformOfFintype_map_of_isKWise ((hgood_sh τ hτ).comp yEmb.injective) hT_card
-      calc ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) =>
-              (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ h_sh τ s_sh (yEmb u))
-          = ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) =>
-              h_sh τ s_sh (yEmb u)).map shiftSh := by
-              rw [PMF.map_comp]; rfl
-        _ = U_sh.map shiftSh := by rw [hraw]
-        _ = U_sh := uniformOfFintype_map_equiv shiftSh
+        (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ h_sh τ s_sh (yEmb u)) = U_sh :=
+      map_xor_restrict_eq_uniform (hgood_sh τ hτ) hT_card _ yEmb.injective
     have haux_unif : ((PMF.uniformOfFintype ι_aux).map fun s_aux (u : T) =>
         h_aux τ s_aux u.1) = U_aux :=
       uniformOfFintype_map_of_isKWise ((hgood_aux τ hτ).comp Subtype.val_injective) hT_card
