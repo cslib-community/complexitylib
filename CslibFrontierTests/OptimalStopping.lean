@@ -99,8 +99,8 @@ theorem median_tightLaws_one :
       1 / 2 ≤ (jointLaw (tightLaws 1)).toOuterMeasure {xs | listMax xs ≤ 1} := by
   classical
   constructor <;>
-  · rw [toOuterMeasure_eq_tsum, tightLaws_eq, tsum_jointLaw_cons_mul, tsum_pure_mul,
-      tsum_jointLaw_cons_mul, tsum_longShot_mul]
+  · rw [toOuterMeasure_eq_tsum, tightLaws_eq, tsum_jointLaw_cons_mul,
+      Cslib.Probability.PMF.tsum_pure_mul, tsum_jointLaw_cons_mul, tsum_longShot_mul]
     simp only [tsum_jointLaw_nil_mul, Set.mem_ofPred_eq, listMax]
     norm_num
 

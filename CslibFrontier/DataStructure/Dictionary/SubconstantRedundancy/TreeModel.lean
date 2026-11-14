@@ -199,8 +199,10 @@ private theorem rehashBeforeUpdate_spec (hcr : P.ConcentrationReady)
 open scoped Classical in
 /-- Internal fresh-key insertion on `st` (`x ∉ paddedDom d`, `#S' ∈ [nLow 0, nHigh 0]`): runs
 `normalInsertFresh` when `st.seeds` stays good on `Insert.insert x S`, and otherwise invokes
-`st.rehashSubtree` (`Algorithm 4`) at the highest failing node `(ℓ₀, nodeAt ℓ₀ x)` followed by
-`normalInsertFresh`. -/
+`st.rehashSubtree` (`Algorithm 4`) at the highest failing node `(ℓ₀, nodeAt ℓ₀ x)` using
+`Classical.choose` to non-constructively select good replacement seeds, followed by
+`normalInsertFresh`. See `TreeSchedule.TreeState.execRawInsertFresh` in `TreeExec.lean` for the
+randomized `OracleComp` execution with idealized good-seed oracle sampling. -/
 noncomputable def rawInsertFresh (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (x : Fin P.paddedUniv) (v : Fin P.valBound) : P.TreeState :=
@@ -278,7 +280,10 @@ theorem wellFormedPadded_rawInsertFresh (hcr : P.ConcentrationReady)
 open scoped Classical in
 /-- Internal member-key deletion on `st` (`z ∈ paddedDom d`, `#S' ∈ [nLow 0, nHigh 0]`): runs
 `normalDeleteMem` (`Algorithm 3`) when `st.seeds` stays good on `S.erase z`, and otherwise invokes
-`st.rehashSubtree` (`Algorithm 4`) at `(ℓ₀, nodeAt ℓ₀ z)` followed by `normalDeleteMem`. -/
+`st.rehashSubtree` (`Algorithm 4`) at `(ℓ₀, nodeAt ℓ₀ z)` using `Classical.choose` to
+non-constructively select good replacement seeds, followed by `normalDeleteMem`. See
+`TreeSchedule.TreeState.execRawDeleteMem` in `TreeExec.lean` for the randomized `OracleComp`
+execution with idealized good-seed oracle sampling. -/
 noncomputable def rawDeleteMem (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (z : Fin P.paddedUniv) : P.TreeState :=
@@ -594,8 +599,9 @@ namespace TreeState
 variable {P : TreeSchedule}
 
 /-- Insert or overwrite external key `u : Fin P.univ` with bounded value `v : Fin P.valBound`,
-maintaining sentinel padding in `{cap - 1, cap}` (`Section 5.3`). Falls back to no-op on invalid
-state or capacity bounds via `Classical.choose`. -/
+maintaining sentinel padding in `{cap - 1, cap}` (`Section 5.3`). Falls back to a no-op on the
+`else` branch when preconditions or capacity bounds fail, using `Classical.choose` inside
+`rawInsertFresh` / `rawDeleteMem` for non-constructive seed choice on rehash branches. -/
 noncomputable def insert (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) (v : Fin P.valBound) : P.TreeState :=
@@ -689,8 +695,9 @@ theorem query_insert (hcr : P.ConcentrationReady)
   rw [hq]
 
 /-- Delete external key `u : Fin P.univ` (no-op if absent), maintaining sentinel padding in
-`{cap - 1, cap}` (`Section 5.3` & `Algorithm 3`). Falls back to no-op on invalid state or capacity
-bounds via `Classical.choose`. -/
+`{cap - 1, cap}` (`Section 5.3` & `Algorithm 3`). Falls back to a no-op on the `else` branch
+when preconditions or capacity bounds fail, using `Classical.choose` inside
+`rawInsertFresh` / `rawDeleteMem` for non-constructive seed choice on rehash branches. -/
 noncomputable def delete (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) : P.TreeState :=

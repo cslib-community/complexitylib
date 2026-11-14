@@ -48,10 +48,10 @@ For the canonical Section 5 parameter instantiation (`canonicalSchedule`) and en
   (`ChildRouterSeed`), whereas nodes with `nLow ℓ < childRouterThreshold epsInv alphaInv` switch
   to `(2 * childRouterHalfInd (nHigh ℓ))`-wise `trinomialPolyHash`, avoiding the doubly exponential
   `childRouterThreshold` lower bound on `thresholdN`.
-* **Out-of-scope gaps**: Word-RAM compilation to executable memory programs (`Memory.Prog`, in
-  separate downstream Word-RAM realization modules), Section 4 small-`R`
-  adapter trees (`R < n / log₂ ^ 0.1 n`), strong history independence, dynamic resizing in `|S|`,
-  and super-polynomial key universes (`U > n ^ (1 + α_max)`) are out of scope here.
+* **Out-of-scope gaps**: Word-RAM compilation to executable memory programs (`Memory.Prog` and
+  `Code`), Section 4 small-`R` adapter trees (`R < n / log₂ ^ 0.1 n`), strong history independence,
+  dynamic resizing in `|S|`, and super-polynomial key universes (`U > n ^ (1 + α_max)`) are out of
+  scope here.
 
 ## Main definitions
 

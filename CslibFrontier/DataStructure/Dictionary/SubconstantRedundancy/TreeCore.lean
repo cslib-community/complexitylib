@@ -103,15 +103,6 @@ theorem LeafNode.query_eq_none_of_notMem {P : TreeSchedule}
   rw [Minimap.queryFin_of_notMem scheme ln.toFixedEncoded hk]
   rfl
 
-private theorem option_map_val_inj {X : ℕ} {o₁ o₂ : Option (Fin X)}
-    (h : o₁.map Fin.val = o₂.map Fin.val) : o₁ = o₂ := by
-  rcases o₁ with _ | a <;> rcases o₂ with _ | b
-  · rfl
-  · simp at h
-  · simp at h
-  · simp only [Option.map_some, Option.some.injEq] at h
-    exact congrArg some (Fin.ext h)
-
 private theorem leafOfFinset_valuesBounded {P : TreeSchedule}
     (S : Finset (Fin (2 ^ P.idBits P.depth)))
     (f : Fin (2 ^ P.idBits P.depth) → Fin (P.quotUniv P.depth) × Fin P.valBound) :
@@ -196,7 +187,7 @@ theorem LeafNode.query_ofFinset {P : TreeSchedule}
       if k ∈ S then some (f k) else none := by
   have hfin : Minimap.queryFin scheme (LeafNode.ofFinset scheme seed wait S hS f).toFixedEncoded k =
       if k ∈ S then some (finProdFinEquiv (f k)) else none := by
-    apply option_map_val_inj
+    apply (Option.map_inj_right fun _ _ => Fin.ext).mp
     unfold LeafNode.ofFinset
     rw [toFixedEncoded_ofFixedEncoded]
     change Minimap.query scheme _ k = _
@@ -237,7 +228,7 @@ theorem LeafNode.query_overwrite {P : TreeSchedule}
   let packed := finProdFinEquiv qv
   have hfin : Minimap.queryFin scheme (ln.overwrite scheme k qv hk).toFixedEncoded k' =
       Function.update (Minimap.queryFin scheme ln.toFixedEncoded) k (some packed) k' := by
-    apply option_map_val_inj
+    apply (Option.map_inj_right fun _ _ => Fin.ext).mp
     unfold LeafNode.overwrite
     rw [toFixedEncoded_ofFixedEncoded]
     change Minimap.query scheme _ k' = _
@@ -292,7 +283,7 @@ theorem LeafNode.query_replace {P : TreeSchedule}
       Function.update
         (Function.update (Minimap.queryFin scheme ln.toFixedEncoded) k_old none)
         k_new (some packed) k' := by
-    apply option_map_val_inj
+    apply (Option.map_inj_right fun _ _ => Fin.ext).mp
     unfold LeafNode.replace
     rw [toFixedEncoded_ofFixedEncoded]
     change Minimap.query scheme _ k' = _

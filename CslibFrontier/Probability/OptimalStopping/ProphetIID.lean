@@ -126,7 +126,7 @@ theorem tsum_withCoin_mul (coin : PMF Bool) (μ : PMF ℝ≥0) (f : ℝ≥0 × B
   rw [Cslib.Probability.PMF.tsum_bind_mul]
   refine tsum_congr fun x => ?_
   rw [Cslib.Probability.PMF.tsum_bind_mul, tsum_fintype, Fintype.sum_bool]
-  simp only [tsum_pure_mul]
+  simp only [PMF.tsum_pure_mul]
 
 private theorem tsum_withCoin_mul_fst (coin : PMF Bool) (μ : PMF ℝ≥0) (g : ℝ≥0 → ℝ≥0∞) :
     ∑' o, withCoin coin μ o * g o.1 = ∑' x, μ x * g x := by

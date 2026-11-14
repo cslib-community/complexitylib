@@ -352,12 +352,6 @@ private theorem pi_pure {ι : Type} {spec : OracleSpec ι} {m : ℕ} {β : Fin m
     rw [OracleComp.pi_succ, pure_bind, ih, ← bind_pure_comp, pure_bind]
     exact congrArg pure (Fin.cons_self_tail row)
 
-private theorem mem_support_pi {ι : Type} {spec : OracleSpec ι} {m : ℕ} {β : Fin m → Type}
-    {programs : (i : Fin m) → OracleComp spec (β i)} {r : (i : Fin m) → β i}
-    (hr : r ∈ (OracleComp.pi programs).support) (i : Fin m) :
-    r i ∈ (programs i).support :=
-  (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) programs r).mp hr i
-
 private theorem isGoodNodeSeed_of_mem_support_queryGoodOrArb {P : TreeSchedule} {L : ℕ}
     (hL : L ≤ P.depth) {s : Finset (P.PrimId L)} (hb : P.validPrimBounds L s)
     {g : P.NodeSeed L} (hg : g ∈ (P.queryGoodOrArb L hL s).support) :
@@ -431,7 +425,8 @@ theorem mem_support_initTrunc {P : TreeSchedule} :
     obtain rfl := Nat.eq_zero_of_le_zero hj0
     rw [SeedAssignment.primSetAt_zero]
     exact isGoodNodeSeed_of_mem_support_queryGoodOrArb h0
-      (P.validPrimBounds_primSetZero_of_root hS₀) (mem_support_pi hrow₀ u)
+      (P.validPrimBounds_primSetZero_of_root hS₀)
+      ((OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow₀ u)
   | ℓ + 1, hℓ1, S₀, hS₀, ts, hts => by
     dsimp only [initTrunc] at hts
     rw [OracleComp.mem_supportWith_bind_iff] at hts
@@ -450,7 +445,8 @@ theorem mem_support_initTrunc {P : TreeSchedule} :
       subst heq
       rw [anc.extend_seed_succ row hℓ1 u]
       exact isGoodNodeSeed_of_mem_support_queryGoodOrArb hℓ1
-        (hg_anc.validPrimBounds_succ hℓ1 u) (mem_support_pi hrow u)
+        (hg_anc.validPrimBounds_succ hℓ1 u)
+        ((OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow u)
 
 /-- Every outcome `(ts', mask) ∈ (P.stepTrunc ℓ hℓ st ts).support` satisfies `GoodTrunc` on
 `st.postSet`, and every node `u` with `mask u = false` preserves all ancestor seeds `j ≤ ℓ`. -/
@@ -473,7 +469,7 @@ theorem mem_support_stepTrunc {P : TreeSchedule} :
       P.validPrimBounds_primSetZero_of_root st.post_bounds
     refine ⟨⟨st.post_bounds, fun j hj0 u => ?_⟩, fun u hmu j hj0 => ?_⟩
     · obtain rfl := Nat.eq_zero_of_le_zero hj0
-      have hru := mem_support_pi hrow u
+      have hru := (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow u
       dsimp only [singleNodeStep] at hru
       rw [hts', SeedAssignment.primSetAt_zero]
       change P.IsGoodNodeSeed 0 (row_new u) (P.primSetZero st.postSet)
@@ -485,7 +481,7 @@ theorem mem_support_stepTrunc {P : TreeSchedule} :
         exact isGoodNodeSeed_of_mem_support_queryGoodOrArb h0 hb0 hru
     · obtain rfl := Nat.eq_zero_of_le_zero hj0
       rw [P.ancestorAt_refl, hts']
-      have hru := mem_support_pi hrow u
+      have hru := (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow u
       have hg : P.IsGoodNodeSeed 0 (ts.seed 0 le_rfl h0 u) (P.primSetZero st.postSet) := by
         have hm := congrFun hmask u
         rw [hmu] at hm
@@ -513,7 +509,7 @@ theorem mem_support_stepTrunc {P : TreeSchedule} :
       · have heq : j = ℓ + 1 := by omega
         subst heq
         rw [am_anc.1.extend_seed_succ row_new hℓ1 u]
-        have hrv := mem_support_pi hrow u
+        have hrv := (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow u
         dsimp only [singleNodeStep] at hrv
         by_cases hcond : am_anc.2 (P.parentNode ℓ u) ||
             !decide (P.IsGoodNodeSeed (ℓ + 1) (ts.lastRow hℓ1 u)
@@ -542,7 +538,7 @@ theorem mem_support_stepTrunc {P : TreeSchedule} :
       · have heq : j = ℓ + 1 := by omega
         subst heq
         rw [P.ancestorAt_refl, hts', am_anc.1.extend_seed_succ row_new hℓ1 v]
-        have hrv := mem_support_pi hrow v
+        have hrv := (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow v
         dsimp only [singleNodeStep] at hrv
         rw [hmv'] at hrv
         exact hrv
@@ -652,7 +648,7 @@ theorem stepTrunc_seed_eq_outside_inSubtree {P : TreeSchedule} (st : P.PaddedSte
           !decide (P.IsGoodNodeSeed (m + 1) (t_cur.lastRow hL w)
             (am_m.1.toFull.primSetAt st.postSet (m + 1) hL w))) = false := by
         simp [hp_false, hgw]
-      have hrw := mem_support_pi hrow w
+      have hrw := (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) _ _).mp hrow w
       dsimp only [singleNodeStep] at hrw
       rw [hneed_w] at hrw
       refine ⟨by rw [hmask1]; exact hneed_w, ?_⟩

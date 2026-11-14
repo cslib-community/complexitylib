@@ -25,15 +25,19 @@ and Renfei Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key*
 
 ## Modeling design
 
-* **Normal updates vs. localized subtree seed resampling**: On each single-key sentinel-padded
-  update (`execRawInsertFresh`, `execRawDeleteMem`), if `st.seeds` remains good on the post-update
-  padded set `S'`, the execution takes the deterministic normal path (`normalInsertFresh` or
-  `normalDeleteMem`, `0` oracle queries). When `st.seeds` fails on `S'`, `stepTrunc` resamples only
-  node seeds inside the failing subtree `InSubtree ℓ₀ u₀` (`stepTrunc_seed_eq_outside_inSubtree`)
-  under `rehashWorkCost` (`2 * nFloor ℓ` work per resampled node) and `materializeFromTrunc`
-  constructs the canonical `TreeState` for `d'` with those resampled seeds (localized storage
-  reconstruction on `TreeState` is formalized separately by `TreeState.rehashSubtree` in
-  `TreeRehash.lean`).
+* **Normal updates vs. localized subtree seed resampling and canonical materialization**: On each
+  single-key sentinel-padded update (`execRawInsertFresh`, `execRawDeleteMem`), if `st.seeds`
+  remains good on the post-update padded set `S'`, the execution takes the deterministic normal
+  path (`normalInsertFresh` or `normalDeleteMem`, `0` oracle queries). When `st.seeds` fails on
+  `S'`, `stepTrunc` resamples only node seeds inside the failing subtree `InSubtree ℓ₀ u₀`
+  (`stepTrunc_seed_eq_outside_inSubtree`) under `rehashWorkCost` (`2 * nFloor ℓ` work per
+  resampled node), and `materializeFromTrunc` then constructs the canonical `TreeState` for
+  post-update dictionary `d'` from the resulting full-depth seed assignment. Performing global
+  canonical materialization after localized seed resampling is a clean modeling adaptation that
+  unifies the state invariant `WellFormedPadded` across execution steps while charging the exact
+  localized `rehashWorkCost`; localized storage-level subtree reconstruction is formalized
+  separately by `TreeState.rehashSubtree` in `TreeRehash.lean`, with localized `rehashSubtree`
+  inside `execHistory` tracked as a remaining direction on #5349 and `ROADMAP.md`.
 * **Sentinel-padded step expansion**: Each external `insert` or `delete` maintains
   `#(paddedDom d) ∈ {cap - 1, cap}` by performing at most `2` internal single-key padded updates
   (one sentinel update plus one real-key update), so `M` external operations emit at most `2 * M`
@@ -133,20 +137,6 @@ theorem materializeFromTrunc_of_good (P : TreeSchedule) (hcr : P.ConcentrationRe
       P.buildTreeFromSeeds scheme d sc ts.toSeeds hg := by
   dsimp only [materializeFromTrunc]
   rw [dite_eq_left hg]
-
-theorem materializeFromTrunc_eq_rehashSubtree_zero
-    (P : TreeSchedule) (hcr : P.ConcentrationReady)
-    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
-    {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
-    {st : P.TreeState} (hwf : st.WellFormedPadded scheme d storeLvl)
-    (ts : P.TruncSeeds P.depth) (hg : ts.toSeeds.AllGoodSeeds (P.paddedDom d))
-    (u₀ : Fin (P.numNodes 0))
-    (houtside : ∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
-      ¬ P.InSubtree 0 u₀ j v → ts.toSeeds.seed j hj v = st.seeds.seed j hj v) :
-    P.materializeFromTrunc hcr scheme d st.sentCount ts =
-      st.rehashSubtree hwf 0 (by omega) u₀ ts.toSeeds houtside hg := by
-  rw [P.materializeFromTrunc_of_good hcr scheme d st.sentCount ts hg,
-    st.rehashSubtree_zero hwf u₀ ts.toSeeds houtside hg]
 
 /-- Randomized `OracleComp` initialization of an empty external dictionary (`Dictionary.empty`)
 padded with `P.cap` sentinels. -/

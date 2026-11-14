@@ -8,8 +8,10 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Params
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Schedule
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.BitBudget
 import CslibFrontier.Foundations.Data.Finset.Density
+import CslibFrontier.Foundations.Probability.TwoStage
 
 /-!
 # Regime-Switched Child-Router and Node-Level Hash Seeds
@@ -85,65 +87,6 @@ whenever `nLow ℓ < childRouterThreshold epsInv alphaInv` (`Section 5.4` small-
 def smallRouterMaxDegree (epsInv alphaInv : ℕ) : ℕ :=
   2 * FeistelPerm.childRouterHalfInd (4 * FeistelPerm.childRouterThreshold epsInv alphaInv)
 
-private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
-    [Fintype β] [Nonempty β] (G : Finset α) (Q : α → β → Prop)
-    [∀ a, DecidablePred (Q a)] [DecidablePred fun p : α × β => Q p.1 p.2]
-    {δ : ℝ} (hδ0 : 0 ≤ δ) (hgood : ∀ a ∈ G, (dens {y : β | Q a y} : ℝ) ≤ δ) :
-    (dens {p : α × β | Q p.1 p.2} : ℝ) ≤ (dens {a : α | a ∉ G} : ℝ) + δ := by
-  classical
-  have hA : (0 : ℝ) < Fintype.card α := Nat.cast_pos.mpr Fintype.card_pos
-  have hB : (0 : ℝ) < Fintype.card β := Nat.cast_pos.mpr Fintype.card_pos
-  have hsub : (univ.filter fun p : α × β => Q p.1 p.2) ⊆
-      ((univ.filter fun a : α => a ∉ G) ×ˢ (univ : Finset β)) ∪
-        G.biUnion fun a => (univ.filter (Q a)).map
-          ⟨fun y => (a, y), fun _ _ h => (Prod.mk.inj h).2⟩ := by
-    intro ⟨a, y⟩ hp
-    have hQ := (mem_filter.mp hp).2
-    rw [mem_union]
-    by_cases ha : a ∈ G
-    · right
-      exact mem_biUnion.mpr ⟨a, ha, mem_map.mpr ⟨y, mem_filter.mpr ⟨mem_univ y, hQ⟩, rfl⟩⟩
-    · left
-      exact mem_product.mpr ⟨mem_filter.mpr ⟨mem_univ a, ha⟩, mem_univ y⟩
-  have hcard_nat : #(univ.filter fun p : α × β => Q p.1 p.2) ≤
-      #(univ.filter fun a : α => a ∉ G) * Fintype.card β +
-        ∑ a ∈ G, #(univ.filter (Q a)) := by
-    calc #(univ.filter fun p : α × β => Q p.1 p.2)
-        ≤ _ := card_le_card hsub
-      _ ≤ #((univ.filter fun a : α => a ∉ G) ×ˢ (univ : Finset β)) +
-            #(G.biUnion fun a => (univ.filter (Q a)).map
-              ⟨fun y => (a, y), fun _ _ h => (Prod.mk.inj h).2⟩) := card_union_le _ _
-      _ ≤ #(univ.filter fun a : α => a ∉ G) * Fintype.card β +
-            ∑ a ∈ G, #((univ.filter (Q a)).map
-              ⟨fun y => (a, y), fun _ _ h => (Prod.mk.inj h).2⟩) := by
-          rw [card_product, card_univ]
-          exact Nat.add_le_add_left card_biUnion_le _
-      _ = _ := by simp only [card_map]
-  have hsum_le : (∑ a ∈ G, (#(univ.filter (Q a)) : ℝ)) ≤
-      δ * (Fintype.card α : ℝ) * (Fintype.card β : ℝ) := by
-    calc (∑ a ∈ G, (#(univ.filter (Q a)) : ℝ))
-        ≤ ∑ _a ∈ G, δ * (Fintype.card β : ℝ) := by
-          refine sum_le_sum fun a ha => ?_
-          have hg := hgood a ha
-          rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
-            div_le_iff₀ hB] at hg
-          exact hg
-      _ = (#G : ℝ) * (δ * (Fintype.card β : ℝ)) := by rw [sum_const, nsmul_eq_mul]
-      _ ≤ (Fintype.card α : ℝ) * (δ * (Fintype.card β : ℝ)) :=
-          mul_le_mul_of_nonneg_right (by exact_mod_cast card_le_univ G) (by positivity)
-      _ = δ * (Fintype.card α : ℝ) * (Fintype.card β : ℝ) := by ring
-  rw [dens_eq_card_div_card, dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_div,
-    NNRat.cast_natCast, NNRat.cast_natCast, NNRat.cast_natCast, NNRat.cast_natCast,
-    Fintype.card_prod, Nat.cast_mul, div_le_iff₀ (mul_pos hA hB)]
-  have hcard_real : (#(univ.filter fun p : α × β => Q p.1 p.2) : ℝ) ≤
-      (#(univ.filter fun a : α => a ∉ G) : ℝ) * (Fintype.card β : ℝ) +
-        ∑ a ∈ G, (#(univ.filter (Q a)) : ℝ) := by exact_mod_cast hcard_nat
-  have hdiv : ((#(univ.filter fun a : α => a ∉ G) : ℝ) / (Fintype.card α : ℝ) + δ) *
-      ((Fintype.card α : ℝ) * (Fintype.card β : ℝ)) =
-      (#(univ.filter fun a : α => a ∉ G) : ℝ) * (Fintype.card β : ℝ) +
-        δ * (Fintype.card α : ℝ) * (Fintype.card β : ℝ) := by
-    field_simp
-  linarith
 
 namespace TreeSchedule
 
@@ -717,19 +660,19 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
       have hsL : P.branchBits (j + 1) ≤ P.idBits (j + 1) := by
         have := P.idBits_step_le (j + 1) (by omega) hlt
         omega
-      let G : Finset (FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
-          (P.idCompRightUniv (j + 1))) :=
-        Finset.univ.filter fun idS =>
+      have hprod := dens_prod_le_add_of_good
+        (good := fun idS : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
+          (P.idCompRightUniv (j + 1)) =>
           Set.InjOn (FeistelPerm.idCompressorHead (P.idBits (j + 1)) (P.idCompRightUniv (j + 1))
-            idS) (S0 : Set (Fin (2 ^ P.idBits (j + 1)) × Fin (P.idCompRightUniv (j + 1))))
-      have hprod := dens_prod_le_of_good G
-        (fun idS r => ¬ P.IsGoodNodeSeed (j + 1) (.inner hlt idS r) S)
-        (δ := 1 / (P.nFloor (j + 1) : ℝ) ^ 2) (by positivity)
-        (fun idS hidS => by
-          have hinj : Set.InjOn
-              (FeistelPerm.idCompressorHead (P.idBits (j + 1)) (P.idCompRightUniv (j + 1)) idS)
-              (S0 : Set (Fin (2 ^ P.idBits (j + 1)) × Fin (P.idCompRightUniv (j + 1)))) :=
-            (mem_filter.mp hidS).2
+            idS) (S0 : Set (Fin (2 ^ P.idBits (j + 1)) × Fin (P.idCompRightUniv (j + 1)))))
+        (bad := fun p : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
+          (P.idCompRightUniv (j + 1)) × P.RouterSeed (j + 1) =>
+          ¬ P.IsGoodNodeSeed (j + 1) (.inner hlt p.1 p.2) S)
+        (δ := 2 / (P.nFloor (j + 1) : ℝ) ^ 2)
+        (p := 1 / (P.nFloor (j + 1) : ℝ) ^ 2)
+        hid_le
+        (by positivity)
+        (fun idS hinj => by
           let S_id := (S0.image
             (FeistelPerm.idCompressorHead (P.idBits (j + 1)) (P.idCompRightUniv (j + 1)) idS)).map
             (FeistelPerm.bitDomainEquiv hsL).toEmbedding
@@ -746,16 +689,6 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
           exact (NNRat.cast_le.mpr (dens_le_dens hsub_r)).trans
             (P.dens_routerRound_outside_bounds_le hcr hlt S_id
               (hcard_id.symm ▸ hlo) (hcard_id.symm ▸ hhi)))
-      have hsub_G : (Finset.univ.filter fun idS : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
-          (P.idCompRightUniv (j + 1)) => idS ∉ G) ⊆
-          Finset.univ.filter fun θ : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
-            (P.idCompRightUniv (j + 1)) =>
-            ¬ Set.InjOn
-              (FeistelPerm.idCompressorHead (P.idBits (j + 1)) (P.idCompRightUniv (j + 1)) θ)
-              (S0 : Set (Fin (2 ^ P.idBits (j + 1)) × Fin (P.idCompRightUniv (j + 1)))) := by
-        intro θ hθ
-        simp only [mem_filter, Finset.mem_univ, true_and, G] at hθ ⊢
-        exact hθ
       have hsub_in : (Finset.univ.filter
           fun p : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
             (P.idCompRightUniv (j + 1)) × P.RouterSeed (j + 1) =>
@@ -767,14 +700,9 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
         intro p hp
         simp only [mem_filter, Finset.mem_univ, true_and, nodeSeedInnerEquiv_apply] at hp ⊢
         exact hp
-      have hG_bound : (dens {a : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
-          (P.idCompRightUniv (j + 1)) | a ∉ G} : ℝ) ≤ 2 / (P.nFloor (j + 1) : ℝ) ^ 2 :=
-        (NNRat.cast_le.mpr (dens_le_dens hsub_G)).trans hid_le
       calc (dens _ : ℝ)
           ≤ _ := by exact_mod_cast dens_le_dens hsub_in
-        _ ≤ _ := hprod
-        _ ≤ 2 / (P.nFloor (j + 1) : ℝ) ^ 2 + 1 / (P.nFloor (j + 1) : ℝ) ^ 2 :=
-            add_le_add hG_bound le_rfl
+        _ ≤ 2 / (P.nFloor (j + 1) : ℝ) ^ 2 + 1 / (P.nFloor (j + 1) : ℝ) ^ 2 := hprod
         _ = 3 / (P.nFloor (j + 1) : ℝ) ^ 2 := by ring
     · rw [← Fintype.dens_filter_comp_equiv (P.nodeSeedLeafEquiv hlt)]
       have hsub_lf : (Finset.univ.filter fun idS : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))

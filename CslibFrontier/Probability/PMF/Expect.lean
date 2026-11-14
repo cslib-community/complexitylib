@@ -65,7 +65,6 @@ theorem tsum_bind_mul {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β �
   exact tsum_comm
 
 /-- Expectation of `k : α → ℝ≥0∞` under `PMF.pure a` equals `k a`. -/
-@[simp]
 theorem tsum_pure_mul {α : Type*} (a : α) (k : α → ℝ≥0∞) :
     (∑' x, (PMF.pure a : PMF α) x * k x) = k a := by
   classical

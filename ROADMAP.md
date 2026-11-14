@@ -771,9 +771,8 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search.
   Read-only operations behind a node-access oracle, whose query counts equal the node-visit counts.
   B+-trees, with only separator keys in interior nodes and every entry in a leaf: structure, queries, updates, bulk loading and the same cost bounds.
-- **Subconstant-redundancy dynamic dictionary** ([#5328](https://github.com/cslib-community/cslib-frontier/pull/5328)): Pure multi-level tree schedule, node storage, operations, and `infoBits + O(R)` bit-budget bound with unconditional `O((n + M) log* n)` expected rehashing work under the idealized `goodSeedLaw` oracle across external dynamic dictionary histories (Li, Liang, Yu, and Zhou, SODA 2024).
-  *Milestone completed*: pure mathematical tree schedule, regime-switched hash seeds and concentration, state and invariants, and `OracleComp` execution model coupling external update histories to bounded rehashing work.
-  *Remaining objectives*: Word-RAM `Memory.Prog` and `Code` compilation of lookup tables and bit-packed node metadata (M4 DFS layout), Section 4 small-`R` adapter trees (`R < n / log₂^{0.1} n`), strong history independence, dynamic resizing in `|S|`, super-polynomial key universes (`U > n^{O(1)}`), and end-to-end composition of rejection retry loops with physical memory layout.
+- **Subconstant-redundancy dynamic dictionary** ([#5349](https://github.com/cslib-community/cslib-frontier/issues/5349)): dynamic succinct dictionaries with subconstant redundancy $R$ for large parameter regimes ($n / \log_2^{0.1} n \le R \le n$, polynomial universes $n^{1+\alpha_{\min}} \le U \le n^{1+\alpha_{\max}}$) following Li, Liang, Yu, and Zhou (SODA 2024, arXiv:2310.20536).
+  Multi-level tree schedule, storage nodes, operations, bit budget $\mathrm{infoBits} + O(R)$, and $O((n+M)\log^* n)$ expected rehashing work under idealized oracle sampling across dynamic histories.
 
 ### Parallel, external-memory and distributed models
 

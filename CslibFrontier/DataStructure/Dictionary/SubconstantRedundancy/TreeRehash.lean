@@ -374,21 +374,6 @@ noncomputable def rehashSubtree
       leaves := fun v => if P.InSubtree ℓ₀ u₀ P.depth v then st_canon.leaves v else st.leaves v
       sentCount := st.sentCount }
 
-/-- At tree root `ℓ₀ = 0`, `rehashSubtree` reduces to canonical `buildTreeFromSeeds`. -/
-@[simp]
-theorem rehashSubtree_zero
-    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
-    (st : P.TreeState) {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
-    (hwf : st.WellFormedPadded scheme d storeLvl)
-    (u₀ : Fin (P.numNodes 0)) (seeds' : P.SeedAssignment)
-    (houtside : ∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
-      ¬ P.InSubtree 0 u₀ j v → seeds'.seed j hj v = st.seeds.seed j hj v)
-    (hgood' : seeds'.AllGoodSeeds (P.paddedDom d)) :
-    st.rehashSubtree hwf 0 (by omega) u₀ seeds' houtside hgood' =
-      P.buildTreeFromSeeds scheme d st.sentCount seeds' hgood' := by
-  dsimp only [rehashSubtree]
-  rw [dite_eq_left rfl]
-
 @[simp]
 theorem sentCount_rehashSubtree
     {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
