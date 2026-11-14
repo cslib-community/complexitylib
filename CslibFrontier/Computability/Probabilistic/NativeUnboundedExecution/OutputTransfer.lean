@@ -15,6 +15,7 @@ import CslibFrontier.Probability.PMF.Bind
 
 ## Main results
 
+* `selectionOnly_of_output_memory_support`: discharge provenance from joint output/memory support.
 * `selectionOnly_of_output_memory_bind`, `selectionOnly_of_output_memory`: transfer
   successful-output provenance between
   actual native programs once their full output/oracle-memory laws are proved.
@@ -29,6 +30,35 @@ namespace Cslib.Probability.NativeUnboundedExecution
 open Turing NativeOpenExecution
 variable {Operation Private Control Control' J : Type} {k k' : ℕ}
 variable {input input' : List Bool} [DecidableEq Operation] [DecidableEq J]
+
+/-- Successful-output provenance follows from the actual joint output/memory
+support. This discharge rule retains all source events and imposes no halting or
+success requirement on the program. -/
+theorem selectionOnly_of_output_memory_support
+    (machine : MultiTapePTM k Bool Control Operation) (env : Environment Operation Private)
+    (parse : Operation → List Bool → List Bool → Finset J)
+    (decode : List Bool → Option (Finset J)) (accept : Finset J → Bool)
+    (world : World k Control Operation Private input)
+    (H : ∀ output memory, some (output, memory) ∈
+      ((terminal machine env world).map
+        (Option.map fun w => (w.config.tapes.output, w.memory))).support →
+      ∀ C, decode output = some C → accept C = true →
+        C ⊆ NativeOpenSelection.proposals parse memory.events) :
+    SelectionOnly machine env parse decode accept world := by
+  intro fuel next hn C hc ha
+  have hh : halted next := by
+    unfold NativeOpenSelection.result at hc
+    split_ifs at hc with h
+    exact Option.isNone_iff_eq_none.mp h
+  have ht := (terminal_support machine env world next).mpr ⟨hh, fuel, hn⟩
+  have hm : some (next.config.tapes.output, next.memory) ∈
+      ((terminal machine env world).map
+        (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
+    (PMF.mem_support_map_iff _ _ _).mpr ⟨some next, ht, rfl⟩
+  have hc' : decode next.config.tapes.output = some C := by
+    have hh' : next.config.tapes.state = none := hh
+    simpa only [NativeOpenSelection.result, hh', Option.isNone_none, ite_true] using hc
+  exact H _ _ hm C hc' ha
 
 /-- Successful selection provenance depends only on terminal output bytes and
 full oracle memory. Divergent mass is preserved by the law equality as well. -/
@@ -46,16 +76,8 @@ theorem selectionOnly_of_output_memory_bind {I : Type}
         (Option.map fun w => (w.config.tapes.output, w.memory)))
     (hadmit : ∀ i ∈ μ.support, SelectionOnly other (env' i) parse decode accept (start i)) :
     SelectionOnly machine env parse decode accept world := by
-  intro fuel next hn C hc ha
-  have hh : halted next := by
-    unfold NativeOpenSelection.result at hc
-    split_ifs at hc with h
-    exact Option.isNone_iff_eq_none.mp h
-  have ht := (terminal_support machine env world next).mpr ⟨hh, fuel, hn⟩
-  have hm : some (next.config.tapes.output, next.memory) ∈
-      ((terminal machine env world).map
-        (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
-    (PMF.mem_support_map_iff _ _ _).mpr ⟨some next, ht, rfl⟩
+  apply selectionOnly_of_output_memory_support machine env parse decode accept world
+  intro output memory hm C hc ha
   rw [hlaw] at hm
   obtain ⟨i, hi, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
   obtain ⟨result, hr, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
@@ -65,9 +87,8 @@ theorem selectionOnly_of_output_memory_bind {I : Type}
     obtain ⟨ho, hm⟩ := Prod.mk.inj (Option.some.inj he)
     obtain ⟨hb, t, ht⟩ := (terminal_support other (env' i) (start i) before).mp hr
     have hc' : NativeOpenSelection.result decode before = some C := by
-      have hh' : next.config.tapes.state = none := hh
       have hb' : before.config.tapes.state = none := hb
-      simpa only [NativeOpenSelection.result, hh', hb', Option.isNone_none, ite_true, ho] using hc
+      simpa only [NativeOpenSelection.result, hb', Option.isNone_none, ite_true, ← ho] using hc
     have hp := hadmit i hi t before ht C hc' ha
     simpa only [hm] using hp
 

@@ -4,7 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.ResidualPolicy
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+
+public import CslibFrontier.Probability.StochasticOracle.ResidualPolicy
 import Mathlib.Tactic
 
 /-!
@@ -17,13 +22,14 @@ one-turn cost at least five and two-turn cost at least three. Both bounds are
 attained, giving the strict adaptivity ratio 5/3.
 -/
 
+public section
 noncomputable section
 open Finset Cslib.Optimization.OneConstraint
 open Cslib.Probability.StochasticOracle.ResidualCover
 namespace CslibFrontierTests.StochasticOracleResidualCover
 
 /-- This is an actual yes-input, with an overlapping unused candidate. -/
-def block : Block where
+@[expose] def block : Block where
   r := 2
   r_pos := by norm_num
   family := {{0, 1, 2}, {3, 4, 5}, {0, 3, 4}}
@@ -45,10 +51,10 @@ def block : Block where
 
 /-- Arbitrarily many candidates per block are permitted in the generic theorems;
 this concrete instance has five six-point blocks, not singleton obligations. -/
-def blocks : Fin 5 → Block := fun _ => block
+@[expose] def blocks : Fin 5 → Block := fun _ => block
 
 /-- Source costs c(n)=1, alpha=2, and a full-support uniform near-cover law. -/
-def parameters : Parameters 5 where
+@[expose] def parameters : Parameters 5 where
   missing :=
     { weight := fun _ => 1 / 5
       nonneg := by intro j; norm_num

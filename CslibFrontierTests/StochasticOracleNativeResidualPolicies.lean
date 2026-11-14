@@ -4,6 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+
 import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 import CslibFrontier.Computability.Probabilistic.NativeQueryAll
 import CslibFrontierTests.StochasticOracleResidualCover
@@ -19,6 +24,9 @@ one. The same unbounded machine instantiates the derived policy/readback and
 nonreuse/behavioral-admission theorems. Wrong subinstance bytes are canceled and billed.
 No native optimum or successful-cover conclusion is assumed.
 -/
+
+-- Anonymous checks and private fixtures intentionally expose no test API.
+set_option linter.privateModule false
 
 noncomputable section
 namespace CslibFrontierTests.StochasticOracleNativeResidualPolicies
@@ -130,23 +138,25 @@ example :
 -- The same native reader has constructed posterior tables and exact stopped
 -- output readback, rather than an assumed machine-to-policy representation.
 example :
-    ((NativeResidualPolicies.policy blocks points candidates parameters limits (PMF.pure invoice)
+    ((NativeResidualPolicies.policy blocks points candidates parameters limits
+      (fun _ _ _ => PMF.pure invoice)
       (NativeQueryAll.machine () 0) start).run parameters).toPMF.map
         (fun (_, _, _, _, C) => C) =
       (NativeUnboundedExecution.terminal (NativeQueryAll.machine () 0)
         (environment limits sampler) start).map
           (NativeResidualPolicies.terminalOutput blocks candidates) := by
-  simpa only [NativeResidualInvoice.sample_pure, sampler, limits] using
+  simpa only [NativeResidualConditionalInvoice.sample_const,
+    NativeResidualInvoice.sample_pure, sampler, limits] using
     NativeResidualPolicies.terminal_law blocks points candidates parameters limits
-      (PMF.pure invoice)
+      (fun _ _ _ => PMF.pure invoice)
     _ start (NativeBatch.initial_invariant limits ()) rfl
 
 example :
     (NativeResidualPolicies.selectionPolicy blocks points candidates parameters limits
-      (PMF.pure invoice)
+      (fun _ _ _ => PMF.pure invoice)
       (NativeQueryAll.machine () 0) start).Admissible parameters := by
   exact NativeResidualPolicies.selection_admissible blocks points candidates parameters limits
-    (PMF.pure invoice)
+    (fun _ _ _ => PMF.pure invoice)
     _ start (NativeBatch.initial_invariant limits ()) rfl
 
 -- The universal construction also applies to the exact named adaptive upper
@@ -160,10 +170,10 @@ private def adaptiveStart :
 
 example :
     (NativeResidualPolicies.selectionPolicy blocks points candidates parameters limits
-      (PMF.pure invoice)
+      (fun _ _ _ => PMF.pure invoice)
       NativeResidualSelector.controller.program adaptiveStart).Admissible parameters := by
   exact NativeResidualPolicies.selection_admissible blocks points candidates parameters limits
-    (PMF.pure invoice) _ adaptiveStart (NativeBatch.initial_invariant limits ()) rfl
+    (fun _ _ _ => PMF.pure invoice) _ adaptiveStart (NativeBatch.initial_invariant limits ()) rfl
 
 -- An incorrect source subinstance is canceled, even for the near-cover role.
 -- The extra suffix is actual invalid bytes, not a false semantic-parser premise.
@@ -206,13 +216,14 @@ private theorem prices : ∀ i, (invoice i : ℝ) =
 -- Positive, source-matching invoices instantiate the comparison with the same
 -- actual correlated reader. These are no longer unrelated analytic price fields.
 example : ENNReal.ofReal ((NativeResidualPolicies.policy blocks points candidates parameters
-    limits (PMF.pure invoice) (NativeQueryAll.machine () 0) start).cost parameters) ≤
+    limits (fun _ _ _ => PMF.pure invoice) (NativeQueryAll.machine () 0) start).cost parameters) ≤
     NativeBatch.Quantitative.expected limits sampler (NativeQueryAll.machine () 0)
       NativeBatch.Trace.charge 3 start := by
-  simpa only [NativeResidualInvoice.sample_pure, sampler, limits] using
+  simpa only [NativeResidualConditionalInvoice.sample_const,
+    NativeResidualInvoice.sample_pure, sampler, limits] using
     NativeResidualPolicies.policy_cost_le_native blocks points candidates parameters
-      limits (PMF.pure invoice) _ start (NativeResidualInvoice.hasMean_pure parameters
-        invoice prices)
+      limits (fun _ _ _ => PMF.pure invoice) _ start (NativeResidualConditionalInvoice.hasMean_const
+        (NativeResidualInvoice.hasMean_pure parameters invoice prices))
 
 example : batchCost parameters (calls nearBatch) = 2 ∧
     NativeResidualOracle.invoiceCost invoice (calls nearBatch) = 2 := by
@@ -239,12 +250,16 @@ example {k : ℕ} {Control : Type} {input : List Bool}
     3 ≤ NativeBatch.Quantitative.expected limits sampler machine
       NativeBatch.Trace.charge 3 world := by
   have h := NativeResidualPolicies.native_two_lower blocks points candidates parameters limits
-    (PMF.pure invoice) machine world hi hzero rfl (by norm_num)
-    (NativeResidualInvoice.hasMean_pure parameters invoice prices)
-    (by simpa only [NativeResidualInvoice.sample_pure, sampler, limits] using hadmit)
-    (by simpa only [NativeResidualInvoice.sample_pure, sampler, limits] using hsuccess)
+    (fun _ _ _ => PMF.pure invoice) machine world hi hzero rfl (by norm_num)
+    (NativeResidualConditionalInvoice.hasMean_const
+      (NativeResidualInvoice.hasMean_pure parameters invoice prices))
+    (by simpa only [NativeResidualConditionalInvoice.sample_const,
+      NativeResidualInvoice.sample_pure, sampler, limits] using hadmit)
+    (by simpa only [NativeResidualConditionalInvoice.sample_const,
+      NativeResidualInvoice.sample_pure, sampler, limits] using hsuccess)
   norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean] at h
-  simpa only [NativeResidualInvoice.sample_pure, sampler, limits, parameters,
+  simpa only [NativeResidualConditionalInvoice.sample_const,
+    NativeResidualInvoice.sample_pure, sampler, limits, parameters,
     StochasticOracleResidualCover.parameters, Nat.reduceAdd] using h
 
 private def optimumInput : GuardedStartup.Input :=

@@ -70,7 +70,8 @@ private theorem all_slots :
       change (if 0 < 1 then some _ else (none : Option Word)).isSome = true
       rfl⟩⟩
 
-private theorem active_batch (hz : 0 < z) :
+/-- The executable all-specialist request activates every role except the near role. -/
+theorem active_batch (hz : 0 < z) :
     active (batch T points candidates hz).slots = univ.erase 0 := by
   ext i
   by_cases hi : i = 0
@@ -86,7 +87,8 @@ private theorem active_batch (hz : 0 < z) :
       rfl
     · exact Finset.mem_erase.mpr ⟨hi, mem_univ _⟩
 
-private theorem calls_batch (hz : 0 < z) :
+/-- The executable all-specialist batch selects exactly the specialist source roles. -/
+theorem calls_batch (hz : 0 < z) :
     NativeResidualOracle.calls (batch T points candidates hz) = specialistBatch := by
   rw [NativeResidualOracle.calls, active_batch]
   ext i
@@ -172,11 +174,14 @@ and unit per-opportunity cutoffs. -/
 @[expose] def config (budget : ℕ) : Limits (z + 1) :=
   ⟨fun _ => 1, by intro _; norm_num, 2, budget⟩
 
-private theorem source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
+/-- The all-specialist source draws its invoice only after its one accepted batch. -/
+theorem source_conditional (P : Parameters z)
+    (ν : NativeResidualConditionalInvoice.Kernel z)
     (hz : 0 < z) (budget : ℕ) (hb : 0 < budget) :
-    environment (config budget) (NativeResidualOracle.sample T points candidates P invoice)
+    environment (config budget) (NativeResidualConditionalInvoice.sample T points candidates P ν)
       ((), request (NativeResidualRouting.initial false (input T points candidates)))
-      initialMemory = PMF.pure (replyOf (receipt T points candidates invoice hz),
+      initialMemory = (ν [] (batch T points candidates hz) none).map fun invoice =>
+        (replyOf (receipt T points candidates invoice hz),
         (memory T points candidates invoice hz).privateState) := by
   have ha : admit (config budget) (ConcurrentBatch.initial ())
       (encodeBatch (batch T points candidates hz)) = some (batch T points candidates hz) := by
@@ -184,8 +189,10 @@ private theorem source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
   change serve _ _ _ (ConcurrentBatch.initial ()) = _
   rw [request_batch T points candidates hz, serve_accepted _ _ _ _ _ ha]
   have hc : none ∉ (specialistBatch : ResidualCover.Batch z) := by simp [specialistBatch]
-  simp only [NativeResidualOracle.sample, calls_batch T points candidates hz, reply, hc, ite_false,
-    Distribution.toPMF_pure, PMF.pure_map]
+  simp only [NativeResidualConditionalInvoice.sample, calls_batch T points candidates hz,
+    reply, hc, ite_false, Distribution.toPMF_pure, PMF.pure_bind, PMF.map_comp, Function.comp_def]
+  apply congrArg (fun f => (ν [] (batch T points candidates hz) none).map f)
+  funext invoice
   have hr : observe (config budget) ((config (z := z) budget).deadline -
       (ConcurrentBatch.initial (n := z + 1) ()).elapsed) (batch T points candidates hz)
       (NativeResidualOracle.paths T points candidates invoice (batch T points candidates hz) none) =
@@ -247,6 +254,41 @@ theorem completed (invoice : Fin (z + 1) → ℕ) (hz : 0 < z) :
 
 /-- Full actual native one-batch output and source-memory law on the same input
 and sampler, valid with either the one- or two-turn budget. -/
+theorem native_law_conditional (P : Parameters z)
+    (ν : NativeResidualConditionalInvoice.Kernel z)
+    (hz : 3 ≤ z) (budget : ℕ) (hb : 0 < budget) :
+    (NativeUnboundedExecution.terminal (controller false).program
+      (environment (config budget)
+        (NativeResidualConditionalInvoice.sample T points candidates P ν))
+      ⟨(controller false).program.initialConfig
+        (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
+          (Option.map fun next => (next.config.tapes.output, next.memory)) =
+      (ν [] (batch T points candidates (by omega)) none).map fun invoice =>
+        some (RuntimeControl.result (finished T points candidates invoice (by omega)),
+          memory T points candidates invoice (by omega)) := by
+  have hl := congrArg (PMF.map (Option.map fun o : NativeReplyContext.Observation
+      (ServerState (z + 1) Unit) => (o.output, o.memory)))
+    (controller_law false _
+      (environment (config budget)
+        (NativeResidualConditionalInvoice.sample T points candidates P ν))
+      (input T points candidates) initialMemory)
+  simp only [PMF.map_comp, Function.comp_def, Option.map_map,
+    NativeReplyContext.observe, Bool.false_eq_true, ite_false] at hl
+  rw [hl]
+  rw [Feedback.run, NativeResidualAttainment.initial_live T points candidates false hz]
+  simp only [Bool.false_eq_true, ite_false, PMF.monad_bind_eq_bind,
+    source_conditional T points candidates P ν (by omega) budget hb, PMF.map_bind,
+    PMF.bind_map,
+    Feedback.run, Option.map_some]
+  simp only [PMF.map, Function.comp_def, PMF.pure_bind]
+  apply congrArg (ν [] (batch T points candidates (by omega)) none).bind
+  funext invoice
+  rw [request_batch T points candidates (by omega)]
+  rfl
+
+
+/-- Full actual native one-batch output and source-memory law on the same input
+and sampler, valid with either the one- or two-turn budget. -/
 theorem native_law (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
     (hz : 3 ≤ z) (budget : ℕ) (hb : 0 < budget) :
     (NativeUnboundedExecution.terminal (controller false).program
@@ -256,20 +298,9 @@ theorem native_law (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
           (Option.map fun next => (next.config.tapes.output, next.memory)) =
       PMF.pure (some (RuntimeControl.result (finished T points candidates invoice (by omega)),
         memory T points candidates invoice (by omega))) := by
-  have hl := congrArg (PMF.map (Option.map fun o : NativeReplyContext.Observation
-      (ServerState (z + 1) Unit) => (o.output, o.memory)))
-    (controller_law false _
-      (environment (config budget) (NativeResidualOracle.sample T points candidates P invoice))
-      (input T points candidates) initialMemory)
-  simp only [PMF.map_comp, Function.comp_def, Option.map_map,
-    NativeReplyContext.observe, Bool.false_eq_true, ite_false] at hl
-  rw [hl]
-  rw [Feedback.run, NativeResidualAttainment.initial_live T points candidates false hz]
-  simp only [Bool.false_eq_true, ite_false, PMF.monad_bind_eq_bind,
-    source T points candidates P invoice (by omega) budget hb, PMF.pure_bind,
-    Feedback.run, PMF.pure_map, Option.map_some]
-  rw [request_batch T points candidates (by omega)]
-  rfl
+  simpa only [NativeResidualConditionalInvoice.sample_const, NativeResidualInvoice.sample_pure,
+    PMF.pure_map] using
+    native_law_conditional T points candidates P (fun _ _ _ => PMF.pure invoice) hz budget hb
 
 
 private theorem memory_resources (invoice : Fin (z + 1) → ℕ) (hz : 0 < z) :

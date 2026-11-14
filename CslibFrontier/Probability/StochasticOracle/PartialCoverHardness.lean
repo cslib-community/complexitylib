@@ -23,7 +23,8 @@ Given an unweighted Set Cover instance $(U, \{V_i\}_{i \in [k]})$, oracle $i$ re
 $V_i$ with certainty at unit token cost and unit latency. With $p = \eta = 1$,
 $y_e = 1/n$ and $\rho = n$, every response covering a new element passes the local
 dual test, so a one-turn batch succeeds exactly when its returned sets cover $U$ and
-its token cost is the number of queried oracles.
+its token cost is the number of oracle calls, counting repeated calls separately.
+An optimal batch needs at most one call to each deterministic oracle.
 
 `Selection` is the binary input of this deterministic oracle class: ground labels,
 the known returned set of every oracle and natural token costs. `success` is the

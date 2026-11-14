@@ -449,13 +449,17 @@ theorem native_minimal (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
       ⟨machine.initialConfig (encoding ⟨NativeResidualAttainment.input T points candidates, p⟩),
         NativeResidualAttainment.initialMemory⟩ := by
   rw [native_expected_cost T points candidates P invoice hz p h hprice]
-  simpa only [NativeResidualInvoice.sample_pure, NativeResidualAttainment.limits] using
+  simpa only [NativeResidualConditionalInvoice.sample_const, NativeResidualInvoice.sample_pure,
+    NativeResidualAttainment.limits] using
     NativeResidualPolicies.native_two_lower T points candidates P
-      NativeResidualAttainment.limits (PMF.pure invoice) machine _
+      NativeResidualAttainment.limits (fun _ _ _ => PMF.pure invoice) machine _
       (NativeBatch.initial_invariant NativeResidualAttainment.limits ()) rfl rfl
-      (by omega) (NativeResidualInvoice.hasMean_pure P invoice hprice)
-      (by simpa only [NativeResidualInvoice.sample_pure] using hadmit)
-      (by simpa only [NativeResidualInvoice.sample_pure] using hsuccess)
+      (by omega) (NativeResidualConditionalInvoice.hasMean_const
+        (NativeResidualInvoice.hasMean_pure P invoice hprice))
+      (by simpa only [NativeResidualConditionalInvoice.sample_const,
+        NativeResidualInvoice.sample_pure] using hadmit)
+      (by simpa only [NativeResidualConditionalInvoice.sample_const,
+        NativeResidualInvoice.sample_pure] using hsuccess)
 
 /-- The cost-aware program attains the source minimum in the existing native
 competitor class, on the original ABI with explicit price metadata. -/

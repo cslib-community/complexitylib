@@ -11,6 +11,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualRouting
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.TerminalResources
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeProvenance
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutputObservation
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
 
@@ -170,7 +171,8 @@ private theorem active_batch (i : Fin (z + 1)) :
   ext k
   by_cases h : k = i <;> simp [active, batch, h]
 
-private theorem calls_batch (i : Fin (z + 1)) :
+/-- The executable singleton request selects exactly its original source role. -/
+theorem calls_batch (i : Fin (z + 1)) :
     NativeResidualOracle.calls (batch T points candidates i) = {finSuccEquiv z i} := by
   rw [NativeResidualOracle.calls, active_batch, Finset.map_singleton]
   rfl
@@ -294,45 +296,57 @@ private theorem second_admit (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
       (active (receipt T points candidates invoice 0 (some j)).batch.slots) := hd
   exact ite_eq_left ⟨by norm_num [limits], by norm_num [limits], hd'⟩
 
-/-- The first source response is sampled only after the native near batch is
-selected. All later clients use this same original-label source sampler. -/
-theorem first_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ) :
-    serve limits (NativeResidualOracle.sample T points candidates P invoice)
+/-- Actual first response with a possibly residual-dependent invoice, drawn
+only after the original near batch has been selected. -/
+theorem first_source_conditional (P : Parameters z)
+    (ν : NativeResidualConditionalInvoice.Kernel z) :
+    serve limits (NativeResidualConditionalInvoice.sample T points candidates P ν)
       (request (NativeResidualRouting.initial true (input T points candidates)))
       (ConcurrentBatch.initial ()) =
-      P.missing.toPMF.map fun j =>
-        (replyOf (receipt T points candidates invoice 0 (some j)),
-          (afterNearMemory T points candidates invoice j).privateState) := by
+      P.missing.toPMF.bind fun j =>
+        (ν [] (batch T points candidates 0) (some j)).map fun invoice =>
+          (replyOf (receipt T points candidates invoice 0 (some j)),
+            (afterNearMemory T points candidates invoice j).privateState) := by
   rw [first_request]
   rw [serve_accepted _ _ _ _ _ (first_admit T points candidates)]
   have hc : NativeResidualOracle.calls (batch T points candidates 0) = {none} := by
     rw [calls_batch, finSuccEquiv_zero]
-  simp only [NativeResidualOracle.sample, hc, reply, Finset.mem_singleton, ite_true,
-    Distribution.toPMF_map, PMF.map_comp, Function.comp_def]
-  apply congrArg (fun f => P.missing.toPMF.map f)
+  simp only [NativeResidualConditionalInvoice.sample, hc, reply, Finset.mem_singleton, ite_true,
+    Distribution.toPMF_map, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def,
+    ConcurrentBatch.initial]
+  apply congrArg P.missing.toPMF.bind
   funext j
+  apply congrArg (fun f => (ν [] (batch T points candidates 0) (some j)).map f)
+  funext invoice
   have hremaining : (limits (z := z)).deadline -
       (ConcurrentBatch.initial (n := z + 1) ()).elapsed = 2 := by
     simp [limits, ConcurrentBatch.initial]
+  simp only [ConcurrentBatch.initial] at hremaining
   rw [hremaining,
     observed_receipt T points candidates invoice 0 (some j) 2 (by norm_num)]
   rfl
 
-/-- The response-dependent follow-up is accepted once, uses the exact original
-specialist subinstance, and returns its actual report and invoice. -/
-theorem second_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
-    (hz : 3 ≤ z) (j : Fin z) (previous : Fin (z + 1) → ℕ := invoice) :
-    serve limits (NativeResidualOracle.sample T points candidates P invoice)
+/-- Actual follow-up response using the invoice law at its reached history,
+including the already observed near invoice and selected specialist. -/
+theorem second_source_conditional (P : Parameters z)
+    (ν : NativeResidualConditionalInvoice.Kernel z) (hz : 3 ≤ z) (j : Fin z)
+    (previous : Fin (z + 1) → ℕ) :
+    serve limits (NativeResidualConditionalInvoice.sample T points candidates P ν)
       (request (afterNear T points candidates j (previous 0)))
       (afterNearMemory T points candidates previous j).privateState =
-      PMF.pure (replyOf (receipt T points candidates invoice j.succ none),
+      (ν (afterNearMemory T points candidates previous j).privateState.history
+        (batch T points candidates j.succ) none).map fun invoice =>
+        (replyOf (receipt T points candidates invoice j.succ none),
         commit (afterNearMemory T points candidates previous j).privateState
           (receipt T points candidates invoice j.succ none) ()) := by
   rw [second_request T points candidates hz,
     serve_accepted _ _ _ _ _ (second_admit T points candidates previous j)]
-  simp only [NativeResidualOracle.sample, calls_batch, finSuccEquiv_succ, reply,
+  simp only [NativeResidualConditionalInvoice.sample, calls_batch, finSuccEquiv_succ, reply,
     Finset.mem_singleton, reduceCtorEq, ite_false, Distribution.toPMF_pure,
-    PMF.pure_map]
+    PMF.pure_bind, PMF.map_comp, Function.comp_def]
+  apply congrArg (fun f => (ν (afterNearMemory T points candidates previous j).privateState.history
+    (batch T points candidates j.succ) none).map f)
+  funext invoice
   have hremaining : (limits (z := z)).deadline -
       (afterNearMemory T points candidates previous j).privateState.elapsed = 1 := by
     have hres := (receipt_resources T points candidates previous 0 (some j)).2
@@ -341,6 +355,31 @@ theorem second_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
     exact tsub_eq_of_eq_add (by norm_num)
   rw [hremaining, observed_receipt T points candidates invoice j.succ none 1 le_rfl]
 
+
+/-- The fixed-invoice first response specializes the conditional source law. -/
+theorem first_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ) :
+    serve limits (NativeResidualOracle.sample T points candidates P invoice)
+      (request (NativeResidualRouting.initial true (input T points candidates)))
+      (ConcurrentBatch.initial ()) =
+      P.missing.toPMF.map fun j =>
+        (replyOf (receipt T points candidates invoice 0 (some j)),
+          (afterNearMemory T points candidates invoice j).privateState) := by
+  simpa only [NativeResidualConditionalInvoice.sample_const, NativeResidualInvoice.sample_pure,
+    PMF.map, Function.comp_def, PMF.pure_bind] using
+    first_source_conditional T points candidates P (fun _ _ _ => PMF.pure invoice)
+
+/-- The fixed-invoice follow-up specializes the conditional source law. -/
+theorem second_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
+    (hz : 3 ≤ z) (j : Fin z) (previous : Fin (z + 1) → ℕ := invoice) :
+    serve limits (NativeResidualOracle.sample T points candidates P invoice)
+      (request (afterNear T points candidates j (previous 0)))
+      (afterNearMemory T points candidates previous j).privateState =
+      PMF.pure (replyOf (receipt T points candidates invoice j.succ none),
+        commit (afterNearMemory T points candidates previous j).privateState
+          (receipt T points candidates invoice j.succ none) ()) := by
+  simpa only [NativeResidualConditionalInvoice.sample_const, NativeResidualInvoice.sample_pure,
+    PMF.pure_map] using
+    second_source_conditional T points candidates P (fun _ _ _ => PMF.pure invoice) hz j previous
 
 /-- The first actual native report is the original near-cover packet, including its invoice. -/
 theorem near_word (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
@@ -502,7 +541,9 @@ theorem native_law (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 3 �
   simpa only [PMF.map_comp, Function.comp_def, Option.map_some] using hf
 
 
-private theorem memory_resources (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
+/-- The completed adaptive memory records exactly both selected role invoices
+and two units of source elapsed time. -/
+theorem afterSpecialistMemory_resources (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
     tokenBill (afterSpecialistMemory T points candidates invoice j).events =
         (invoice 0 + invoice j.succ : ℕ) ∧
       elapsed (afterSpecialistMemory T points candidates invoice j).events = 2 := by
@@ -514,6 +555,15 @@ private theorem memory_resources (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
   constructor
   · exact add_comm _ _
   · norm_num
+
+/-- The completed adaptive source memory has elapsed time two, independently
+of both role invoices and the selected residual. -/
+theorem afterSpecialistMemory_elapsed (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
+    (afterSpecialistMemory T points candidates invoice j).privateState.elapsed = 2 := by
+  simp only [afterSpecialistMemory, afterNearMemory, initialMemory, Memory.record, commit,
+    ConcurrentBatch.initial, zero_add, (receipt_resources T points candidates invoice 0 (some j)).2,
+    (receipt_resources T points candidates invoice j.succ none).2]
+  norm_num
 
 /-- Actual native accrued token bill and oracle duration, derived jointly for the
 same program, source seed and runtime role table. Costs are paid on both calls;
@@ -532,8 +582,8 @@ theorem native_resources (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz 
         (tokenBill pair.2.events, elapsed pair.2.events)))
     (native_law T points candidates P invoice hz)
   simpa only [PMF.map_comp, Function.comp_def, Option.map_map, Option.map_some,
-    (memory_resources T points candidates invoice _).1,
-    (memory_resources T points candidates invoice _).2] using h
+    (afterSpecialistMemory_resources T points candidates invoice _).1,
+    (afterSpecialistMemory_resources T points candidates invoice _).2] using h
 
 /-- The final native tape contains an optimal decoded source cover with
 probability one, by the deadline. This is a statement about the actual compiled
@@ -563,7 +613,7 @@ theorem native_optimal_output (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
           elapsed (afterSpecialistMemory T points candidates invoice j).events ≤ 2)) = true := by
     obtain ⟨C, hdecode, hcover, hcost⟩ := completed T points candidates hz invoice j
     rw [hdecode]
-    simp [hcover, hcost, (memory_resources T points candidates invoice j).2]
+    simp [hcover, hcost, (afterSpecialistMemory_resources T points candidates invoice j).2]
   simp only [Function.comp_def, Option.any_some, h]
   exact PMF.map_const _ _
 
@@ -613,7 +663,7 @@ theorem native_expected_cost (P : Parameters z) (invoice : Fin (z + 1) → ℕ) 
   change (∑' result, μ result *
     result.elim 0 (fun next => (tokenBill next.memory.events : ℝ≥0∞))) = _
   rw [← hm, hlaw, PMF.tsum_map_mul]
-  simp only [Option.elim_some, (memory_resources T points candidates invoice _).1]
+  simp only [Option.elim_some, (afterSpecialistMemory_resources T points candidates invoice _).1]
   have hnear : (invoice 0 : ℝ) = P.nearCost := by simpa using hprice 0
   have hspec (j : Fin z) : (invoice j.succ : ℝ) = P.specialistCost j := by
     simpa using hprice j.succ
@@ -633,7 +683,8 @@ theorem native_expected_cost (P : Parameters z) (invoice : Fin (z + 1) → ℕ) 
   rfl
 
 
-private theorem output_provenance (invoice : Fin (z + 1) → ℕ) (j : Fin z)
+/-- Every decoded completed adaptive output comes from its actual response events. -/
+theorem completed_output_provenance (invoice : Fin (z + 1) → ℕ) (j : Fin z)
     (hx : Valid (SourceEncoding.toNative (source T points candidates)))
     (C : Finset (Fin (SourceEncoding.toNative (source T points candidates)).rows.length))
     (hC : decodeFamily (SourceEncoding.toNative (source T points candidates)).rows.length
@@ -692,7 +743,7 @@ theorem native_selectionOnly (P : Parameters z) (invoice : Fin (z + 1) → ℕ) 
     have hhalt : next.config.tapes.state = none := hh
     simpa only [NativeOpenSelection.result, hhalt, Option.isNone_none, ite_true, ← ho] using hC
   rw [NativeBatch.candidateParser_proposals, ← hm]
-  exact output_provenance T points candidates invoice j
+  exact completed_output_provenance T points candidates invoice j
     (SourceEncoding.valid_toNative _ (source_valid T points candidates (by omega))) C hdecode
 
 
@@ -700,6 +751,28 @@ theorem native_selectionOnly (P : Parameters z) (invoice : Fin (z + 1) → ℕ) 
 /-- Source promises derive validity of the actual original runtime WSC input. -/
 theorem valid (hz : 0 < z) : Valid (input T points candidates).startup.system :=
   SourceEncoding.valid_toNative _ (source_valid T points candidates hz)
+
+/-- The completed adaptive output passes the same tape certificate used for
+all native competitors, with its actual deadline and source memory. -/
+theorem completed_certifiedObservation (invoice : Fin (z + 1) → ℕ) (hz : 3 ≤ z) (j : Fin z) :
+    BatchOutput.certifiedObservation limits (input T points candidates).startup.system
+      (valid T points candidates (by omega))
+      (some (RuntimeControl.result (afterSpecialist T points candidates invoice j),
+        afterSpecialistMemory T points candidates invoice j)) = true := by
+  obtain ⟨C, hc, hcover, hcost⟩ := completed T points candidates hz invoice j
+  have hI : instanceOf (input T points candidates).startup.system
+      (valid T points candidates (by omega)) =
+      nativeInstance T points candidates (by omega) := rfl
+  have hrho : (input T points candidates).startup.system.rho = 1 := rfl
+  have hc' : decodeFamily (input T points candidates).startup.system.rows.length
+      (RuntimeControl.result (afterSpecialist T points candidates invoice j)) = some C := hc
+  simp only [BatchOutput.certifiedObservation, Option.any_some, hc', BatchOutput.accept,
+    hI, hrho, Rat.cast_one, one_mul, native_dual_objective]
+  simp only [afterSpecialistMemory_elapsed, limits, le_refl, decide_true, Bool.and_true]
+  change decide ((nativeInstance T points candidates (by omega)).covered (C.image Fin.val) =
+    (nativeInstance T points candidates (by omega)).ground) &&
+    decide ((nativeInstance T points candidates (by omega)).cost (C.image Fin.val) ≤ 1) = true
+  simp only [hcover, hcost, le_refl, decide_true, Bool.and_self]
 
 /-- The same named native controller has certified halted tape success one in
 Theorem 5's exact event convention, including its oracle-only deadline. -/
@@ -710,57 +783,10 @@ theorem native_certified (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz 
         (GuardedStartup.encoding (input T points candidates)),
         initialMemory⟩).map (BatchOutput.certified limits (input T points candidates).startup.system
           (valid T points candidates (by omega)))) true = 1 := by
-  classical
-  let μ := NativeUnboundedExecution.terminal (controller true).program
-    (environment limits (NativeResidualOracle.sample T points candidates P invoice))
-    (⟨(controller true).program.initialConfig
-        (GuardedStartup.encoding (input T points candidates)),
-      initialMemory⟩ : World (controller true).tapes (controller true).Controls Unit
-        (ServerState (z + 1) Unit) (GuardedStartup.encoding (input T points candidates)))
-  have hgood : ∀ result ∈ μ.support,
-      BatchOutput.certified limits (input T points candidates).startup.system
-        (valid T points candidates (by omega)) result = true := by
-    intro result hs
-    have hm : result.map (fun next => (next.config.tapes.output, next.memory)) ∈
-        (μ.map (Option.map fun next => (next.config.tapes.output, next.memory))).support :=
-      (PMF.mem_support_map_iff _ _ _).mpr ⟨result, hs, rfl⟩
-    rw [native_law T points candidates P invoice hz] at hm
-    obtain ⟨j, _, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
-    cases result with
-    | none => cases he
-    | some next =>
-      obtain ⟨ho, hm⟩ := Prod.mk.inj (Option.some.inj he)
-      have hh := ((NativeUnboundedExecution.terminal_support _ _ _ _).mp hs).1
-      have hinv := NativeBatch.terminal_invariant limits
-        (NativeResidualOracle.sample T points candidates P invoice) (controller true).program
-        ⟨(controller true).program.initialConfig
-          (GuardedStartup.encoding (input T points candidates)), initialMemory⟩ next
-        (NativeBatch.initial_invariant limits ()) hs
-      obtain ⟨C, hc, hcover, hcost⟩ := completed T points candidates hz invoice j
-      have ht : next.memory.privateState.elapsed ≤ (limits (z := z)).deadline :=
-        hinv.1.2.2.1
-      have hI : instanceOf (input T points candidates).startup.system
-          (valid T points candidates (by omega)) =
-          nativeInstance T points candidates (by omega) := rfl
-      have hhalt : next.config.tapes.state = none := hh
-      have hdecode : NativeOpenSelection.result
-          (decodeFamily (input T points candidates).startup.system.rows.length) next = some C := by
-        simp only [NativeOpenSelection.result, hhalt, Option.isNone_none, ite_true, ← ho]
-        exact hc
-      have hrho : (input T points candidates).startup.system.rho = 1 := rfl
-      simp only [BatchOutput.certified, Option.any_some, hdecode,
-        BatchOutput.accept, hI, hrho, Rat.cast_one, one_mul, native_dual_objective]
-      simp only [ht, decide_true, Bool.and_true]
-      exact Bool.and_eq_true_iff.mpr ⟨decide_eq_true hcover, decide_eq_true hcost.le⟩
-  have he : μ.map (BatchOutput.certified limits (input T points candidates).startup.system
-      (valid T points candidates (by omega))) = PMF.pure true := by
-    calc
-      _ = μ.map (fun _ => true) := by
-        apply PMF.bind_congr_on_support
-        intro result hs
-        simp only [Function.comp_def, hgood result hs]
-      _ = PMF.pure true := PMF.map_const _ _
-  simpa only [PMF.pure_apply, ite_true] using congrArg (fun law => law true) he
+  rw [BatchOutput.terminal_certified, native_law T points candidates P invoice hz,
+    PMF.map_comp]
+  simp only [Function.comp_def, completed_certifiedObservation T points candidates invoice hz]
+  simp only [PMF.map_apply, ite_true, PMF.tsum_coe]
 
 open scoped ENNReal in
 /-- The adaptive controller's exact actual bill is attained in the existing
