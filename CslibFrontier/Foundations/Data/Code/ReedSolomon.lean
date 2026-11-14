@@ -39,6 +39,9 @@ meet the Singleton bound `Cslib.Code.finrank_add_le_card_add_one` with equality.
 
 * `Cslib.Code.mem_reedSolomon`: the codewords are the evaluations of polynomials of degree less
   than `k`.
+* `Cslib.Code.card_filter_eval_eq_zero_le`, `Cslib.Code.card_filter_eval_eq_eval_le`: a nonzero
+  polynomial vanishes at no more of the distinct points `α i` than its degree, and two distinct
+  polynomials of `natDegree ≤ d` agree at no more than `d` of them.
 * `Cslib.Code.le_hammingNorm_of_mem_reedSolomon`, `Cslib.Code.le_minDist_reedSolomon`: nonzero
   codewords have weight at least `n - k + 1`.
 * `Cslib.Code.minDist_reedSolomon`: the minimum distance is `n - k + 1`.
@@ -84,12 +87,25 @@ theorem eval_mem_reedSolomon (α : ι → F) {p : F[X]} (hp : p.degree < k) :
 variable [Fintype ι] [DecidableEq F]
 
 /-- A nonzero polynomial vanishes at no more of the distinct points `α i` than its degree. -/
-private theorem card_filter_eval_eq_zero_le (hα : Function.Injective α) {p : F[X]} (hp : p ≠ 0) :
+theorem card_filter_eval_eq_zero_le (hα : Function.Injective α) {p : F[X]} (hp : p ≠ 0) :
     #{i | p.eval (α i) = 0} ≤ p.natDegree := by
   rw [← card_image_of_injective _ hα]
   refine card_le_degree_of_subset_roots fun a ha => ?_
   obtain ⟨i, hi, rfl⟩ := mem_image.1 ha
   exact (mem_roots hp).2 (mem_filter.1 hi).2
+
+/-- Two distinct polynomials of `natDegree` at most `d` agree at no more than `d` of the distinct
+points `α i`. -/
+theorem card_filter_eval_eq_eval_le (hα : Function.Injective α) {d : ℕ} {P Q : F[X]}
+    (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d) (hne : P ≠ Q) :
+    #{i | P.eval (α i) = Q.eval (α i)} ≤ d := by
+  have hsub : ({i | P.eval (α i) = Q.eval (α i)} : Finset ι) =
+      ({i | (P - Q).eval (α i) = 0} : Finset ι) := by
+    ext i
+    simp [sub_eq_zero]
+  rw [hsub]
+  exact (card_filter_eval_eq_zero_le hα (sub_ne_zero.2 hne)).trans
+    ((natDegree_sub_le P Q).trans (max_le hP hQ))
 
 /-- With distinct points, a nonzero codeword of the Reed–Solomon code with degree bound `k` has
 weight at least `n - k + 1`. -/

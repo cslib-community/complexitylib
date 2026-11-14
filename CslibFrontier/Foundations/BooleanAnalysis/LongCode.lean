@@ -54,13 +54,17 @@ projects its frequency set: `chi T (f ∘ π) = chi (projectSet π T) f`
 * `Cslib.BitString.chi_comp_eq_chi_projectSet`: pulling a character back along a map.
 * `Cslib.BitString.longCodeSubcubeProb_longCode`,
   `Cslib.BitString.longCodeSubcubeProb_hadamardCode`,
-  `Cslib.BitString.longCodeSubcubeProb_hadamardCode_le`: every long code passes the subcube test
-  with probability `1`, while every nonzero linear function `hadamardCode s` passes with
-  probability `3 / 4 + (1 / 2) ^ (#{i | s i} + 1)` (`≤ 7 / 8` when `2 ≤ #{i | s i}`).
+  `Cslib.BitString.longCodeSubcubeProb_hadamardCode_le`,
+  `Cslib.BitString.longCodeSubcubeProb_le_of_linear`: every long code passes the subcube test with
+  probability `1`, while every nonzero linear function `hadamardCode s` passes with probability
+  `3 / 4 + (1 / 2) ^ (#{i | s i} + 1)` (`≤ 7 / 8` when `2 ≤ #{i | s i}`, i.e. whenever `B` is
+  linear, nonzero, and not a long-code codeword).
 
 ## References
 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, draft of
+  2007-01-08][AroraBarak07]
 * [J. Håstad, *Some optimal inapproximability results*][Hastad2001]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
@@ -250,10 +254,11 @@ end Projection
 
 /-! ### The subcube test on the long code -/
 
-/-- **The long-code subcube test predicate** ([Arora and Barak][AroraBarak09], Exercise 18.16(d)):
-on random `f, h : α → Bool`, if `B f = false`, check that `B (fun i => f i && h i) = false`
-(where `fun i => f i && h i` is a uniformly random point in the subcube `{g | ∀ i, g i ≤ f i}`);
-equivalently, `B (fun i => f i && h i) ≤ B f` (`B f || !B (fun i => f i && h i)`). -/
+/-- **The long-code subcube test predicate** ([Arora and Barak][AroraBarak07],
+Chapter 18, Exercise 16(d)): on random `f, h : α → Bool`, if `B f = false`, check that
+`B (fun i => f i && h i) = false` (where `fun i => f i && h i` is a uniformly random point in the
+subcube `{g | ∀ i, g i ≤ f i}`); equivalently, `B (fun i => f i && h i) ≤ B f`
+(`B f || !B (fun i => f i && h i)`). -/
 def longCodeSubcubeAccept (B : (α → Bool) → Bool) (f h : α → Bool) : Bool :=
   B f || !B (fun i => f i && h i)
 
@@ -296,14 +301,14 @@ private theorem ite_filter_eq_empty_eq_pow_mul_sum_powerset (S : Finset α) (f :
 
 variable [Fintype α]
 
-/-- **The long-code subcube test acceptance probability** ([Arora and Barak][AroraBarak09],
-Exercise 18.16(d)): the probability over independent uniform `f, h : α → Bool` that
+/-- **The long-code subcube test acceptance probability** ([Arora and Barak][AroraBarak07],
+Chapter 18, Exercise 16(d)): the probability over independent uniform `f, h : α → Bool` that
 `longCodeSubcubeAccept B f h = true`. -/
 noncomputable def longCodeSubcubeProb (B : (α → Bool) → Bool) : ℝ :=
   𝔼 f : α → Bool, 𝔼 h : α → Bool, bitVal ℝ (longCodeSubcubeAccept B f h)
 
-/-- **Completeness of the long-code subcube test** ([Arora and Barak][AroraBarak09],
-Exercise 18.16(d)): every long code passes the subcube test with probability `1`. -/
+/-- **Completeness of the long-code subcube test** ([Arora and Barak][AroraBarak07],
+Chapter 18, Exercise 16(d)): every long code passes the subcube test with probability `1`. -/
 @[simp]
 theorem longCodeSubcubeProb_longCode (x : α) :
     longCodeSubcubeProb (longCode x) = 1 := by
@@ -382,8 +387,8 @@ theorem expect_chi_and (S : Finset α) :
     (fun h => False.elim (h (mem_powerset.2 (empty_subset S)))), ite_eq_left rfl, mul_one]
 
 /-- **Acceptance probability of the long-code subcube test on a nonzero linear function**
-([Arora and Barak][AroraBarak09], Exercise 18.16(d)): for any `s : α → Bool` with `s ≠ 0`, the
-Hadamard codeword `hadamardCode s` passes the subcube test with probability
+([Arora and Barak][AroraBarak07], Chapter 18, Exercise 16(d)): for any `s : α → Bool` with `s ≠ 0`,
+the Hadamard codeword `hadamardCode s` passes the subcube test with probability
 `3 / 4 + (1 / 2) ^ (#{i | s i} + 1)`. -/
 theorem longCodeSubcubeProb_hadamardCode {s : α → Bool} (hs : s ≠ 0) :
     longCodeSubcubeProb (hadamardCode s) = 3 / 4 + (1 / 2 : ℝ) ^ (#{i | s i} + 1) := by
@@ -432,8 +437,8 @@ theorem longCodeSubcubeProb_hadamardCode {s : α → Bool} (hs : s ≠ 0) :
   ring
 
 /-- **Soundness of the long-code subcube test against linear functions of weight at least `2`**
-([Arora and Barak][AroraBarak09], Exercise 18.16(d)): if `2 ≤ #{i | s i}`, then `hadamardCode s`
-passes the subcube test with probability at most `7 / 8`. -/
+([Arora and Barak][AroraBarak07], Chapter 18, Exercise 16(d)): if `2 ≤ #{i | s i}`, then
+`hadamardCode s` passes the subcube test with probability at most `7 / 8`. -/
 theorem longCodeSubcubeProb_hadamardCode_le {s : α → Bool}
     (hs : 2 ≤ #{i | s i}) : longCodeSubcubeProb (hadamardCode s) ≤ 7 / 8 := by
   have hs0 : s ≠ 0 := by
@@ -443,6 +448,40 @@ theorem longCodeSubcubeProb_hadamardCode_le {s : α → Bool}
   have hpow : (1 / 2 : ℝ) ^ (#{i | s i} + 1) ≤ (1 / 2 : ℝ) ^ (2 + 1) :=
     pow_le_pow_of_le_one (by norm_num) (by norm_num) (Nat.add_le_add_right hs 1)
   linarith
+
+/-- **Soundness of the long-code subcube test against nonzero non-dictator linear functions**
+([Arora and Barak][AroraBarak07], Chapter 18, Exercise 16(d)): if `B : (α → Bool) → Bool` is a
+linear function (`∀ f g, B (f + g) = (B f ^^ B g)`) that is nonzero and not a long-code codeword,
+then `B` passes the subcube test with probability at most `7 / 8`. -/
+theorem longCodeSubcubeProb_le_of_linear {B : (α → Bool) → Bool}
+    (hlin : ∀ f g, B (f + g) = (B f ^^ B g)) (hB0 : B ≠ 0) (hnotLC : ∀ x, B ≠ longCode x) :
+    longCodeSubcubeProb B ≤ 7 / 8 := by
+  obtain ⟨s, rfl⟩ := exists_eq_hadamardCode_iff.2 hlin
+  refine longCodeSubcubeProb_hadamardCode_le ?_
+  have hs0 : ∃ x, s x = true := by
+    by_contra! h
+    apply hB0
+    have hs : s = 0 := funext fun x => Bool.eq_false_iff.2 (h x)
+    subst hs
+    exact funext fun a => zero_dotProduct a
+  obtain ⟨x, hx⟩ := hs0
+  have hsx : ∃ y, y ≠ x ∧ s y = true := by
+    by_contra! h
+    apply hnotLC x
+    rw [longCode_eq_hadamardCode]
+    congr 1
+    funext y
+    by_cases hyx : y = x
+    · subst hyx
+      simp [hx]
+    · simp [Pi.single_eq_of_ne hyx, Bool.zero_eq_false, Bool.eq_false_iff.2 (h y hyx)]
+  obtain ⟨y, hyx, hy⟩ := hsx
+  rw [← card_pair hyx.symm]
+  refine card_le_card fun z hz => ?_
+  rcases mem_insert.1 hz with rfl | hz
+  · exact mem_filter.2 ⟨mem_univ _, hx⟩
+  · rw [mem_singleton.1 hz]
+    exact mem_filter.2 ⟨mem_univ _, hy⟩
 
 end SubcubeTest
 

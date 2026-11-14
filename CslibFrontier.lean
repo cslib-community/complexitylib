@@ -5978,6 +5978,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.StagedJetArithmetic
 public import CslibFrontier.Foundations.Data.Polynomial.TaperedHermite
 public import CslibFrontier.Foundations.Data.Polynomial.TruncatedAlgebra
 public import CslibFrontier.Foundations.Data.Polynomial.TruncatedJetBridge
+public import CslibFrontier.Foundations.Data.Rat.Approximation
 public import CslibFrontier.Foundations.Data.Rat.Basic
 public import CslibFrontier.Foundations.Data.Rat.Reconstruction
 public import CslibFrontier.Foundations.Data.Seq.Computation

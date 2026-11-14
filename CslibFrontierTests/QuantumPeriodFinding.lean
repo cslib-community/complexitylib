@@ -8,6 +8,7 @@ module
 
 import CslibFrontier.Algorithms.Quantum.PeriodFinding
 import CslibFrontier.Foundations.Data.Nat.Totient
+import CslibFrontier.Foundations.Data.Rat.Approximation
 
 set_option linter.privateModule false
 
@@ -147,8 +148,8 @@ example : (1 : ℝ) / (5 : ℝ) ^ 2 < |((1 / 3 : ℚ) : ℝ) - ((2 / 5 : ℚ) : 
   Rat.one_div_sq_lt_abs_sub_of_den_le_of_den_lt (N := 5) (q := 2 / 5) (r := 1 / 3)
     (by norm_num) (by norm_num) (by norm_num) |> fun h => by rwa [abs_sub_comm] at h
 
--- Exercise 20.7: any rational `q` with `q.den < 6` within `1 / 72` of `2 / 5` equals `2 / 5`.
-example {q : ℚ} (hq : q.den < 6) (h : |(2 / 5 : ℝ) - q| ≤ 1 / (2 * (6 : ℝ) ^ 2)) :
+-- Exercise 20.7: any rational `q` with `q.den ≤ 6` within `1 / 72` of `2 / 5` equals `2 / 5`.
+example {q : ℚ} (hq : q.den ≤ 6) (h : |(2 / 5 : ℝ) - q| ≤ 1 / (2 * (6 : ℝ) ^ 2)) :
     q = 2 / 5 :=
   Rat.eq_of_den_lt_of_abs_sub_le (α := 2 / 5) (N := 6) hq (by norm_num) h (by norm_num)
 
@@ -156,7 +157,7 @@ example {q : ℚ} (hq : q.den < 6) (h : |(2 / 5 : ℝ) - q| ≤ 1 / (2 * (6 : �
 -- `< 1 / 50` of `3 / 5` is `(3, 5)`.
 example {j r : ℕ} (hr0 : 0 < r) (hr : r ≤ 5) (hcop : Nat.Coprime j r)
     (h : |(3 / 5 : ℝ) - (j : ℝ) / r| < 1 / (2 * (5 : ℝ) ^ 2)) : j = 3 ∧ r = 5 :=
-  eq_of_coprime_of_abs_sub_div_lt (α := 3 / 5) hr0 hr (by decide) (by decide) hcop (by decide) h
+  Rat.eq_of_coprime_of_abs_sub_div_lt (α := 3 / 5) hr0 hr (by decide) (by decide) hcop (by decide) h
     (by norm_num)
 
 end CslibFrontierTests.QuantumPeriodFinding

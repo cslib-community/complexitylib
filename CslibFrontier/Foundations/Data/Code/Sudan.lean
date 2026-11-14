@@ -64,10 +64,12 @@ polynomials; no running time is formalized here.
   `Cslib.Code.ncard_sep_natDegree_le_mul_le_two_mul`,
   `Cslib.Code.ncard_sep_natDegree_le_le_two_div`,
   `Cslib.Code.ncard_sep_natDegree_le_eval_le_two_div`: Johnson list-size bounds `2 * |ι| / a` and
-  `2 / ε` for degree-bounded polynomials (Arora and Barak, Exercise 17.9).
+  `2 / ε` for degree-bounded polynomials ([Arora and Barak][AroraBarak07], Chapter 17, Exercise 9).
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, draft of
+  2007-01-08][AroraBarak07]
 * [M. Sudan, *Decoding of Reed Solomon codes beyond the error-correction bound*][Sudan1997]
 * [V. Guruswami, A. Rudra, M. Sudan, *Essential Coding Theory*]
   [GuruswamiRudraSudan2019]
@@ -160,18 +162,6 @@ theorem ncard_sep_reedSolomon_mul_le (hα : Function.Injective α) (hk : 2 ≤ k
 
 /-! ### Johnson list-size bounds for degree-bounded polynomials -/
 
-/-- Two distinct polynomials of `natDegree` at most `d` agree at no more than `d` of the distinct
-points `α i`. -/
-theorem card_filter_eval_eq_eval_le (hα : Function.Injective α) {d : ℕ} {P Q : F[X]}
-    (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d) (hne : P ≠ Q) :
-    #{i | P.eval (α i) = Q.eval (α i)} ≤ d := by
-  have hsub0 : P - Q ≠ 0 := sub_ne_zero.2 hne
-  rw [← card_image_of_injective _ hα]
-  refine (card_le_degree_of_subset_roots (p := P - Q) fun a ha => ?_).trans
-    ((natDegree_sub_le P Q).trans (max_le hP hQ))
-  obtain ⟨i, hi, rfl⟩ := mem_image.1 ha
-  exact (mem_roots hsub0).2 (by simp [(mem_filter.1 hi).2])
-
 private theorem card_inter_filter_eval_eq_le [DecidableEq ι] (hα : Function.Injective α)
     (w : ι → F) {d : ℕ} {P Q : F[X]} (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d) (hne : P ≠ Q) :
     #(({i | P.eval (α i) = w i} : Finset ι) ∩ ({i | Q.eval (α i) = w i} : Finset ι)) ≤ d := by
@@ -234,10 +224,10 @@ theorem ncard_sep_natDegree_le_mul_le_two_mul (hα : Function.Injective α) (w :
   exact card_mul_le_two_mul_of_natDegree_le hα hfin.toFinset w
     (fun P hP => (hfin.mem_toFinset.1 hP).1) (fun P hP => (hfin.mem_toFinset.1 hP).2) h
 
-/-- **Reed–Solomon list-size bound** ([Arora and Barak][AroraBarak09], Exercise 17.9): for any
-`w : ι → F` on a nonempty finite set of distinct evaluation points `α : ι → F`, degree bound `d`,
-and `ε > 2 * √(d / |ι|)`, at most `2 / ε` polynomials of degree at most `d` agree with `w` on at
-least `ε * |ι|` points. -/
+/-- **Reed–Solomon list-size bound** ([Arora and Barak][AroraBarak07], Chapter 17, Exercise 9): for
+any `w : ι → F` on a nonempty finite set of distinct evaluation points `α : ι → F`, degree bound
+`d`, and `ε > 2 * √(d / |ι|)`, at most `2 / ε` polynomials of degree at most `d` agree with `w` on
+at least `ε * |ι|` points. -/
 theorem ncard_sep_natDegree_le_le_two_div [Nonempty ι] (hα : Function.Injective α) (w : ι → F)
     (d : ℕ) {ε : ℝ} (hε : 2 * Real.sqrt ((d : ℝ) / Fintype.card ι) < ε) :
     ({P : F[X] | P.natDegree ≤ d ∧
@@ -284,8 +274,8 @@ theorem ncard_sep_natDegree_le_le_two_div [Nonempty ι] (hα : Function.Injectiv
   rw [le_div_iff₀ hε0]
   nlinarith
 
-/-- **Reed–Solomon list-size bound over a finite field** ([Arora and Barak][AroraBarak09],
-Exercise 17.9): for any `f : F → F` over a finite field `F`, degree bound `d`, and
+/-- **Reed–Solomon list-size bound over a finite field** ([Arora and Barak][AroraBarak07],
+Chapter 17, Exercise 9): for any `f : F → F` over a finite field `F`, degree bound `d`, and
 `ε > 2 * √(d / |F|)`, at most `2 / ε` polynomials of degree at most `d` agree with `f` on at
 least `ε * |F|` inputs. -/
 theorem ncard_sep_natDegree_le_eval_le_two_div [Fintype F] (f : F → F) (d : ℕ) {ε : ℝ}

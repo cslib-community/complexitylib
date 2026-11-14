@@ -91,6 +91,21 @@ example : longCodeSubcubeProb (hadamardCode (fun _ : Bool => true)) = 7 / 8 := b
 example : longCodeSubcubeProb (hadamardCode (fun _ : Fin 3 => true)) ≤ 7 / 8 :=
   longCodeSubcubeProb_hadamardCode_le (by decide)
 
+/-- **Long-code subcube test soundness from the linear-function hypotheses** (Arora–Barak Exercise
+18.16(d)): any linear function `B : (Bool → Bool) → Bool` that is nonzero and not a long-code
+codeword passes with probability at most `7 / 8` (witnessed by `f ↦ f false ^^ f true`). -/
+example : longCodeSubcubeProb (fun f : Bool → Bool => f false ^^ f true) ≤ 7 / 8 :=
+  longCodeSubcubeProb_le_of_linear
+    (by decide)
+    (fun h => by
+      have := congrFun h (fun b => b)
+      revert this
+      decide)
+    (fun x h => by
+      have := congrFun h (fun _ => true)
+      revert x this
+      decide)
+
 /-- A concrete 1-edge Label Cover instance on `Bool` with identity projection `id`. -/
 private def oneEdgeGraph : Graph (Bool → Bool) :=
   ⟨1, [⟨0, 0, id⟩]⟩

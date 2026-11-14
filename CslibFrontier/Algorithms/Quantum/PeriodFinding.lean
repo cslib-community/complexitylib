@@ -86,19 +86,9 @@ annihilator.
   exactly `φ(r) / r`.
 * `Cslib.Quantum.HasExactPeriod.inv_log_add_one_le_periodFindingOutcome_recover`: that probability
   is at least `1 / (log₂ r + 1)`.
-* `Rat.one_div_mul_den_le_abs_sub`, `Rat.one_div_sq_le_abs_sub_of_den_le`,
-  `Rat.one_div_sq_lt_abs_sub_of_den_le_of_den_lt`, `Rat.eq_of_den_le_of_abs_sub_lt`,
-  `Rat.eq_of_den_lt_of_abs_sub_le`: two distinct rationals with denominators at most `N` are at
-  least `1 / N ^ 2` apart (strictly when one has denominator `< N`), so at most one rational with
-  denominator `≤ N` lies within `< 1 / (2 N ^ 2)` of any real `α` ([Arora and Barak][AroraBarak07],
-  Chapter 20, Exercises 7 and 11).
-* `Cslib.Quantum.eq_of_coprime_of_abs_div_sub_lt`,
-  `Cslib.Quantum.eq_of_coprime_of_abs_sub_div_lt`: a coprime pair `(j, r)` with `0 < r ≤ N` is
-  uniquely determined by `j / r` up to error `< 1 / (2 N ^ 2)`.
 
 ## References
 
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [P. W. Shor, *Polynomial-time algorithms for prime factorization and discrete logarithms on a
   quantum computer*][Shor1997]
 * [R. de Wolf, *Quantum Computing: Lecture Notes*][deWolf2019]
@@ -414,127 +404,5 @@ theorem HasExactPeriod.inv_log_add_one_le_periodFindingOutcome_recover {f : ZMod
   exact Nat.le_totient_mul_log_add_one r
 
 end Measurement
-
-/-! ### Uniqueness of rational approximation for order finding -/
-
-/-- Two distinct rational numbers `q ≠ r` are separated by at least `1 / (q.den * r.den)`. -/
-theorem _root_.Rat.one_div_mul_den_le_abs_sub {q r : ℚ} (hne : q ≠ r) :
-    (1 : ℝ) / ((q.den : ℝ) * r.den) ≤ |(q : ℝ) - r| := by
-  have hq0 : (0 : ℝ) < q.den := Nat.cast_pos.2 q.den_pos
-  have hr0 : (0 : ℝ) < r.den := Nat.cast_pos.2 r.den_pos
-  rw [div_le_iff₀ (mul_pos hq0 hr0), ← abs_of_pos (mul_pos hq0 hr0), ← abs_mul]
-  have hident : ((q : ℝ) - r) * ((q.den : ℝ) * r.den) =
-      ((q.num * (r.den : ℤ) - r.num * (q.den : ℤ) : ℤ) : ℝ) := by
-    rw [Rat.cast_def q, Rat.cast_def r]
-    push_cast
-    field_simp
-  rw [hident, ← Int.cast_abs]
-  have hzne : q.num * (r.den : ℤ) - r.num * (q.den : ℤ) ≠ 0 := by
-    intro hz
-    apply hne
-    rw [← Rat.num_div_den q, ← Rat.num_div_den r,
-      div_eq_div_iff (Nat.cast_ne_zero.2 q.den_nz) (Nat.cast_ne_zero.2 r.den_nz)]
-    exact_mod_cast sub_eq_zero.1 hz
-  exact_mod_cast Int.one_le_abs hzne
-
-/-- Two distinct rational numbers with denominators at most `N` are separated by at least
-`1 / N ^ 2`. -/
-theorem _root_.Rat.one_div_sq_le_abs_sub_of_den_le {q r : ℚ} {N : ℕ} (hq : q.den ≤ N)
-    (hr : r.den ≤ N) (hne : q ≠ r) : (1 : ℝ) / (N : ℝ) ^ 2 ≤ |(q : ℝ) - r| := by
-  refine (one_div_le_one_div_of_le (mul_pos (Nat.cast_pos.2 q.den_pos) (Nat.cast_pos.2 r.den_pos))
-    ?_).trans (Rat.one_div_mul_den_le_abs_sub hne)
-  rw [sq]
-  exact mul_le_mul (Nat.cast_le.2 hq) (Nat.cast_le.2 hr) (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-
-/-- Two distinct rational numbers with denominators `q.den ≤ N` and `r.den < N` are strictly more
-than `1 / N ^ 2` apart ([Arora and Barak][AroraBarak07], Chapter 20, Exercises 7 and 11). -/
-theorem _root_.Rat.one_div_sq_lt_abs_sub_of_den_le_of_den_lt {q r : ℚ} {N : ℕ} (hq : q.den ≤ N)
-    (hr : r.den < N) (hne : q ≠ r) : (1 : ℝ) / (N : ℝ) ^ 2 < |(q : ℝ) - r| := by
-  refine (one_div_lt_one_div_of_lt (mul_pos (Nat.cast_pos.2 q.den_pos) (Nat.cast_pos.2 r.den_pos))
-    ?_).trans_le (Rat.one_div_mul_den_le_abs_sub hne)
-  rw [sq]
-  exact mul_lt_mul_of_le_of_lt_of_nonneg_of_pos (Nat.cast_le.2 hq) (Nat.cast_lt.2 hr)
-    (Nat.cast_nonneg _) (Nat.cast_pos.2 (q.den_pos.trans_le hq))
-
-/-- **Uniqueness of rational approximation within `1 / (2 N ^ 2)`**
-([Arora and Barak][AroraBarak07], Chapter 20, Exercise 7): for any real `α` and `N : ℕ`, at most
-one rational `q` with `q.den ≤ N` satisfies `|α - q| < 1 / (2 * N ^ 2)`. -/
-theorem _root_.Rat.eq_of_den_le_of_abs_sub_lt {α : ℝ} {q r : ℚ} {N : ℕ} (hq : q.den ≤ N)
-    (hr : r.den ≤ N) (hαq : |α - q| < 1 / (2 * (N : ℝ) ^ 2))
-    (hαr : |α - r| ≤ 1 / (2 * (N : ℝ) ^ 2)) : q = r := by
-  by_contra hne
-  have hsep := Rat.one_div_sq_le_abs_sub_of_den_le hq hr hne
-  have htri : |(q : ℝ) - r| ≤ |α - q| + |α - r| := by
-    rw [abs_sub_comm α q]
-    exact abs_sub_le (q : ℝ) α r
-  have hsum : |α - q| + |α - r| < 1 / (N : ℝ) ^ 2 := by
-    calc |α - q| + |α - r| < 1 / (2 * (N : ℝ) ^ 2) + 1 / (2 * (N : ℝ) ^ 2) :=
-          add_lt_add_of_lt_of_le hαq hαr
-      _ = 1 / (N : ℝ) ^ 2 := by ring
-  linarith
-
-/-- **Uniqueness of rational approximation with denominator `< N`**
-([Arora and Barak][AroraBarak07], Chapter 20, Exercise 7): for any real `α` and `N : ℕ`, at most
-one rational `q` with `q.den < N` satisfies `|α - q| ≤ 1 / (2 * N ^ 2)`. -/
-theorem _root_.Rat.eq_of_den_lt_of_abs_sub_le {α : ℝ} {q r : ℚ} {N : ℕ} (hq : q.den < N)
-    (hr : r.den < N) (hαq : |α - q| ≤ 1 / (2 * (N : ℝ) ^ 2))
-    (hαr : |α - r| ≤ 1 / (2 * (N : ℝ) ^ 2)) : q = r := by
-  by_contra hne
-  have hsep := Rat.one_div_sq_lt_abs_sub_of_den_le_of_den_lt hq.le hr hne
-  have htri : |(q : ℝ) - r| ≤ |α - q| + |α - r| := by
-    rw [abs_sub_comm α q]
-    exact abs_sub_le (q : ℝ) α r
-  have hsum : |α - q| + |α - r| ≤ 1 / (N : ℝ) ^ 2 := by
-    calc |α - q| + |α - r| ≤ 1 / (2 * (N : ℝ) ^ 2) + 1 / (2 * (N : ℝ) ^ 2) := add_le_add hαq hαr
-      _ = 1 / (N : ℝ) ^ 2 := by ring
-  linarith
-
-/-- **Uniqueness of coprime fractions with denominators at most `N`**
-([Arora and Barak][AroraBarak07], Chapter 20, Exercise 11): if `(j₁, r₁)` and `(j₂, r₂)` are
-coprime pairs of natural numbers with `0 < r₁ ≤ N`, `0 < r₂ ≤ N`, and
-`|j₁ / r₁ - j₂ / r₂| < 1 / N ^ 2`, then `j₁ = j₂` and `r₁ = r₂`. -/
-theorem eq_of_coprime_of_abs_div_sub_lt {j₁ r₁ j₂ r₂ N : ℕ} (hr₁0 : 0 < r₁) (hr₁ : r₁ ≤ N)
-    (hr₂0 : 0 < r₂) (hr₂ : r₂ ≤ N) (hcop₁ : Nat.Coprime j₁ r₁) (hcop₂ : Nat.Coprime j₂ r₂)
-    (hdist : |(j₁ : ℝ) / r₁ - (j₂ : ℝ) / r₂| < 1 / (N : ℝ) ^ 2) : j₁ = j₂ ∧ r₁ = r₂ := by
-  have hr₁R : (0 : ℝ) < r₁ := Nat.cast_pos.2 hr₁0
-  have hr₂R : (0 : ℝ) < r₂ := Nat.cast_pos.2 hr₂0
-  have hmul : (r₁ : ℝ) * r₂ ≤ (N : ℝ) ^ 2 := by
-    rw [sq]
-    exact mul_le_mul (Nat.cast_le.2 hr₁) (Nat.cast_le.2 hr₂) (Nat.cast_nonneg _)
-      (Nat.cast_nonneg _)
-  have hlt : |(j₁ : ℝ) / r₁ - (j₂ : ℝ) / r₂| < 1 / ((r₁ : ℝ) * r₂) :=
-    hdist.trans_le (one_div_le_one_div_of_le (mul_pos hr₁R hr₂R) hmul)
-  rw [lt_div_iff₀ (mul_pos hr₁R hr₂R), ← abs_of_pos (mul_pos hr₁R hr₂R), ← abs_mul] at hlt
-  have hident : ((j₁ : ℝ) / r₁ - (j₂ : ℝ) / r₂) * ((r₁ : ℝ) * r₂) =
-      ((j₁ * r₂ : ℕ) : ℝ) - ((j₂ * r₁ : ℕ) : ℝ) := by
-    push_cast
-    field_simp
-  rw [hident, ← Int.cast_natCast (j₁ * r₂), ← Int.cast_natCast (j₂ * r₁), ← Int.cast_sub,
-    ← Int.cast_abs] at hlt
-  have hltZ : |((j₁ * r₂ : ℕ) : ℤ) - ((j₂ * r₁ : ℕ) : ℤ)| < 1 := by exact_mod_cast hlt
-  have h0 : ((j₁ * r₂ : ℕ) : ℤ) - ((j₂ * r₁ : ℕ) : ℤ) = 0 := by
-    have := abs_lt.1 hltZ
-    omega
-  have heq : j₁ * r₂ = j₂ * r₁ := by exact_mod_cast sub_eq_zero.1 h0
-  have hr12 : r₁ = r₂ := Nat.dvd_antisymm
-    (hcop₁.symm.dvd_of_dvd_mul_left ⟨j₂, by linarith⟩)
-    (hcop₂.symm.dvd_of_dvd_mul_left ⟨j₁, by linarith⟩)
-  subst hr12
-  exact ⟨Nat.eq_of_mul_eq_mul_right hr₁0 heq, rfl⟩
-
-/-- **Uniqueness of coprime fraction recovery from an approximation within `1 / (2 N ^ 2)`**
-([Arora and Barak][AroraBarak07], Chapter 20, Exercises 7 and 11): if `(j₁, r₁)` and `(j₂, r₂)` are
-coprime pairs of natural numbers with `0 < r₁ ≤ N` and `0 < r₂ ≤ N` whose quotients both lie within
-`1 / (2 N ^ 2)` of `α : ℝ` (one strictly), then `j₁ = j₂` and `r₁ = r₂`. -/
-theorem eq_of_coprime_of_abs_sub_div_lt {α : ℝ} {j₁ r₁ j₂ r₂ N : ℕ} (hr₁0 : 0 < r₁)
-    (hr₁ : r₁ ≤ N) (hr₂0 : 0 < r₂) (hr₂ : r₂ ≤ N) (hcop₁ : Nat.Coprime j₁ r₁)
-    (hcop₂ : Nat.Coprime j₂ r₂) (hα₁ : |α - (j₁ : ℝ) / r₁| < 1 / (2 * (N : ℝ) ^ 2))
-    (hα₂ : |α - (j₂ : ℝ) / r₂| ≤ 1 / (2 * (N : ℝ) ^ 2)) : j₁ = j₂ ∧ r₁ = r₂ := by
-  refine eq_of_coprime_of_abs_div_sub_lt hr₁0 hr₁ hr₂0 hr₂ hcop₁ hcop₂ ?_
-  have htri : |(j₁ : ℝ) / r₁ - (j₂ : ℝ) / r₂| ≤ |α - (j₁ : ℝ) / r₁| + |α - (j₂ : ℝ) / r₂| := by
-    rw [abs_sub_comm α ((j₁ : ℝ) / r₁)]
-    exact abs_sub_le ((j₁ : ℝ) / r₁) α ((j₂ : ℝ) / r₂)
-  have hsum : 1 / (2 * (N : ℝ) ^ 2) + 1 / (2 * (N : ℝ) ^ 2) = 1 / (N : ℝ) ^ 2 := by ring
-  linarith
 
 end Cslib.Quantum
