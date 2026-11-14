@@ -4,12 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Foundations.BooleanAnalysis.FourierDegree
 import CslibFrontier.Foundations.BooleanAnalysis.FriedgutJunta
 
 /-! Instances and non-vacuity witnesses for the Kahn–Kalai–Linial theorem, Talagrand's
 inequality, Friedgut's junta theorem, coordinate-set variation and equality in the Poincaré
 inequality. -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.KahnKalaiLinialFriedgut
 
@@ -127,21 +131,21 @@ example : totalInfluence (fun x : Fin 2 → Bool => signVal (x 0)) = 1 := by
 -- Every balanced Boolean function with total influence at most `1` is a literal.
 example {f : (ι → Bool) → Bool} (hbal : 𝔼 x, signVal (f x) = 0)
     (hI : totalInfluence (fun x => signVal (f x)) ≤ 1) :
-    ∃ i, ∀ x, f x = (x i == !f 0) :=
+    ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i :=
   (totalInfluence_signVal_le_one_iff_of_expect_eq_zero hbal).1 hI
 
 -- Balance is essential: the constant-`false` function on `Fin 2` has total influence `0 ≤ 1` and
 -- satisfies equality in the Poincaré inequality, but is not a literal.
 example : totalInfluence (fun _ : Fin 2 → Bool => signVal false) ≤ 1 ∧
-    ¬∃ i : Fin 2, ∀ x : Fin 2 → Bool, false = (x i == !false) := by
+    ¬∃ (i : Fin 2) (b : Bool), (fun _ : Fin 2 → Bool => false) = fun x => b ^^ x i := by
   refine ⟨?_, ?_⟩
   · have h := (totalInfluence_signVal_eq_expect_sub_expect_sq_iff
-      (fun _ : Fin 2 → Bool => false)).2 (Or.inl fun _ => rfl)
+      (fun _ : Fin 2 → Bool => false)).2 (Or.inl ⟨false, rfl⟩)
     simp only [sub_self, sq, mul_zero, expect_const univ_nonempty] at h
     linarith
-  · rintro ⟨i, hi⟩
-    have h := hi (fun _ => true)
-    revert h
-    decide
+  · rintro ⟨i, b, hi⟩
+    have h0 := congrFun hi (fun _ => false)
+    have h1 := congrFun hi (fun _ => true)
+    cases b <;> simp at h0 h1
 
 end CslibFrontierTests.KahnKalaiLinialFriedgut

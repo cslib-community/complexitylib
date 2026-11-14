@@ -55,7 +55,7 @@ the coordinates `i ∉ J`, bounds the others. Taking `A = 9 ^ (K / ε)` and
 
 ## References
 
-* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [E. Friedgut, *Boolean functions with low average sensitivity depend on few
   coordinates*][Friedgut1998]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
@@ -115,7 +115,7 @@ theorem exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq (f : 
 distance at most twice the probability that resampling the coordinates outside `J` changes its
 value from a Boolean function of the coordinates in `J`
 [O'Donnell, Proposition 3.31 and Exercise 3.28][ODonnell2014]
-[Arora–Barak, Chapter 19, Exercise 4][AroraBarak09]. -/
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
 theorem exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne (f : (ι → Bool) → Bool)
     (J : Finset ι) :
     ∃ g : (ι → Bool) → Bool, DependsOn g (J : Set ι) ∧
@@ -129,7 +129,7 @@ theorem exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne (f : (ι
 /-- **Small variation on `I` gives a junta outside `I`**: a Boolean function is at relative Hamming
 distance at most twice the probability that resampling the coordinates in `I` changes its value
 from a Boolean function of the coordinates outside `I`
-[Arora–Barak, Chapter 19, Exercise 4][AroraBarak09]. -/
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
 theorem exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne
     (f : (ι → Bool) → Bool) (I : Finset ι) :
     ∃ g : (ι → Bool) → Bool, DependsOn g ((Iᶜ : Finset ι) : Set ι) ∧

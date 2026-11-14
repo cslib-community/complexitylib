@@ -47,7 +47,7 @@ distance from `f` the weight of `f` outside the subsets of `J`
 
 ## References
 
-* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
@@ -205,7 +205,7 @@ theorem expect_expect_sub_piecewise_sq (f : (ι → Bool) → ℝ) (J : Finset �
 coordinates outside `J` from a uniform `z` changes the value of `f` at a uniform `x` is half the
 Fourier weight of `signVal ∘ f` outside the subsets of `J`
 [O'Donnell, Exercise 3.28 and Proposition 3.31][ODonnell2014]
-[Arora–Barak, Chapter 19, Exercise 4][AroraBarak09]. -/
+[Arora–Barak, Chapter 19, Exercise 4][AroraBarak07]. -/
 theorem expect_expect_piecewise_ne (f : (ι → Bool) → Bool) (J : Finset ι) :
     (𝔼 x, 𝔼 z, if f x = f (J.piecewise x z) then (0 : ℝ) else 1) =
       (∑ S with ¬S ⊆ J, fourierCoeff (fun x => signVal (f x)) S ^ 2) / 2 := by

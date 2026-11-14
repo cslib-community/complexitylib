@@ -35,12 +35,12 @@ function of degree at most `d`, read as signs, has total influence at most `d`
 one, equality holds in the Poincaré inequality if and only if the function has degree at most one
 (`BitString.totalInfluence_eq_expect_sub_expect_sq_iff_mem_lowDegree`), and a Boolean function has
 degree at most one (equivalently, total influence equal to its variance) if and only if it is
-constant or a literal `x ↦ x i == !f 0` (`BitString.mem_lowDegree_one_signVal_iff`,
+constant or a literal `x ↦ b ^^ x i` (`BitString.mem_lowDegree_one_signVal_iff`,
 `BitString.totalInfluence_signVal_eq_expect_sub_expect_sq_iff`); for balanced Boolean functions
 this characterizes average sensitivity one
 (`BitString.totalInfluence_signVal_eq_one_iff_of_expect_eq_zero`)
 [O'Donnell, Exercise 1.19 and Proposition 2.40][ODonnell2014]
-[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak09].
+[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak07].
 
 **Schwartz–Zippel on the cube**: a nonzero function of degree at most `k` is nonzero on at least a
 `2 ^ (-k)` fraction of the cube (`BitString.one_le_two_pow_mul_dens_ne_zero`,
@@ -80,7 +80,7 @@ differentiating in every coordinate of `S`, the derivative is a nonzero constant
 
 ## References
 
-* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach* (2007 draft)][AroraBarak07]
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
@@ -241,10 +241,6 @@ theorem two_pow_card_le_two_pow_mul_card_ne_zero (g : (ι → Bool) → ℝ) {k 
 private theorem signVal_eq_iff (a b : Bool) : signVal a = signVal b ↔ a = b := by
   cases a <;> cases b <;> norm_num
 
-/-- The sign of `a == !b` is the product of the signs of `b` and `a`. -/
-private theorem signVal_beq_not (a b : Bool) : signVal (a == !b) = signVal b * signVal a := by
-  cases a <;> cases b <;> norm_num
-
 /-- **Equality in the Poincaré inequality**, Fourier-coefficient form: the total influence equals
 the variance if and only if the Fourier coefficients vanish above degree one
 [O'Donnell, Proposition 2.40][ODonnell2014]. -/
@@ -327,10 +323,10 @@ theorem fourierCoeff_signVal_eq_zero_of_sq_eq_one (f : (ι → Bool) → Bool) {
     (mem_erase.2 ⟨hTS, mem_univ T⟩))
 
 /-- If a Boolean function read as signs has squared Fourier coefficient `1` on `{i}`, then it is the
-literal `x ↦ x i == !f 0`. -/
-theorem eq_beq_not_of_fourierCoeff_signVal_singleton_sq_eq_one (f : (ι → Bool) → Bool) {i : ι}
+literal `x ↦ f 0 ^^ x i`. -/
+theorem eq_xor_of_fourierCoeff_signVal_singleton_sq_eq_one (f : (ι → Bool) → Bool) {i : ι}
     (hi : fourierCoeff (fun x => signVal (f x)) {i} ^ 2 = 1) (x : ι → Bool) :
-    f x = (x i == !f 0) := by
+    f x = (f 0 ^^ x i) := by
   have hval (y : ι → Bool) :
       signVal (f y) = fourierCoeff (fun x => signVal (f x)) {i} * signVal (y i) := by
     rw [← sum_fourierCoeff_mul_chi (fun x => signVal (f x)) y,
@@ -340,20 +336,20 @@ theorem eq_beq_not_of_fourierCoeff_signVal_singleton_sq_eq_one (f : (ι → Bool
   have h0 := hval 0
   simp only [Pi.zero_apply, Bool.zero_eq_false, signVal_false, mul_one] at h0
   have hx := hval x
-  rw [← h0, ← signVal_beq_not, signVal_eq_iff] at hx
+  rw [← h0, ← signVal_xor, signVal_eq_iff] at hx
   exact hx
 
 /-- **Boolean functions of degree at most one are constants or literals**, Fourier-coefficient
 form: the Fourier coefficients of `signVal ∘ f` vanish above degree one if and only if `f` is
-constant or a literal `x ↦ x i == !f 0` [O'Donnell, Exercise 1.19][ODonnell2014]. -/
-theorem fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq (f : (ι → Bool) → Bool) :
+constant or a literal `x ↦ b ^^ x i` [O'Donnell, Exercise 1.19][ODonnell2014]. -/
+theorem fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_xor (f : (ι → Bool) → Bool) :
     (∀ S : Finset ι, 1 < #S → fourierCoeff (fun x => signVal (f x)) S = 0) ↔
-      (∀ x, f x = f 0) ∨ ∃ i, ∀ x, f x = (x i == !f 0) := by
+      (∃ b, f = Function.const _ b) ∨ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   set F : (ι → Bool) → ℝ := fun x => signVal (f x)
   refine ⟨fun hdeg => ?_, ?_⟩
   · by_cases hall : ∀ i : ι, fourierCoeff F {i} = 0
     · left
-      intro x
+      refine ⟨f 0, funext fun x => ?_⟩
       have hval (y : ι → Bool) : F y = fourierCoeff F ∅ := by
         rw [← sum_fourierCoeff_mul_chi F y, sum_eq_single ∅]
         · simp
@@ -368,20 +364,19 @@ theorem fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq (f : (ι → 
     · right
       push Not at hall
       obtain ⟨i, hi⟩ := hall
-      refine ⟨i, eq_beq_not_of_fourierCoeff_signVal_singleton_sq_eq_one f ?_⟩
+      refine ⟨i, f 0, funext (eq_xor_of_fourierCoeff_signVal_singleton_sq_eq_one f ?_)⟩
       have hsq : fourierCoeff F {i} ^ 2 = |fourierCoeff F {i}| := by
         rw [← derivative_eq_fourierCoeff_singleton_of_fourierCoeff_eq_zero F hdeg i 0,
           sq_derivative_signVal]
       have habs : |fourierCoeff F {i}| = 1 :=
         mul_left_cancel₀ (abs_ne_zero.2 hi) (by rw [← sq, sq_abs, hsq, mul_one])
       rw [hsq, habs]
-  · rintro (hconst | ⟨i, hlit⟩) S hS
-    · have hF : F = fun _ => signVal (f 0) := funext fun x => congrArg signVal (hconst x)
-      have hne : S ≠ ∅ := nonempty_iff_ne_empty.1 (card_pos.1 (by omega))
-      rw [hF, fourierCoeff_const, ite_eq_right hne]
-    · have hF : F = fun x => signVal (f 0) * chi ℝ {i} x := by
+  · rintro (⟨b, rfl⟩ | ⟨i, b, rfl⟩) S hS
+    · have hne : S ≠ ∅ := nonempty_iff_ne_empty.1 (card_pos.1 (by omega))
+      exact (fourierCoeff_const (signVal b) S).trans (ite_eq_right hne)
+    · have hF : F = fun x => signVal b * chi ℝ {i} x := by
         funext x
-        rw [chi_singleton, ← signVal_beq_not, ← hlit x]
+        simp [F, chi_singleton]
       have hne : {i} ≠ S := fun h => by
         have := congrArg card h
         rw [card_singleton] at this
@@ -390,35 +385,35 @@ theorem fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq (f : (ι → 
 
 omit [Fintype ι] [DecidableEq ι] in
 /-- **Boolean functions of degree at most one are constants or literals**: `signVal ∘ f` has degree
-at most one if and only if `f` is constant or a literal `x ↦ x i == !f 0`
+at most one if and only if `f` is constant or a literal `x ↦ b ^^ x i`
 [O'Donnell, Exercise 1.19][ODonnell2014]. -/
 theorem mem_lowDegree_one_signVal_iff [Finite ι] (f : (ι → Bool) → Bool) :
     (fun x => signVal (f x)) ∈ lowDegree ℝ ι 1 ↔
-      (∀ x, f x = f 0) ∨ ∃ i, ∀ x, f x = (x i == !f 0) := by
+      (∃ b, f = Function.const _ b) ∨ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   classical
   cases nonempty_fintype ι
   rw [mem_lowDegree_iff_fourierCoeff_eq_zero,
-    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq]
+    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_xor]
 
 /-- **Equality in the Poincaré inequality for Boolean functions**: a Boolean function read as signs
 has total influence equal to its variance if and only if it is constant or a literal
-`x ↦ x i == !f 0` [O'Donnell, Proposition 2.40][ODonnell2014]. -/
+`x ↦ b ^^ x i` [O'Donnell, Proposition 2.40][ODonnell2014]. -/
 theorem totalInfluence_signVal_eq_expect_sub_expect_sq_iff (f : (ι → Bool) → Bool) :
     totalInfluence (fun x => signVal (f x)) =
       𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2 ↔
-      (∀ x, f x = f 0) ∨ ∃ i, ∀ x, f x = (x i == !f 0) := by
+      (∃ b, f = Function.const _ b) ∨ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   rw [totalInfluence_eq_expect_sub_expect_sq_iff_fourierCoeff_eq_zero,
-    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq]
+    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_xor]
 
 /-- **Equality in the Poincaré inequality for Boolean functions**, inequality form: a Boolean
 function read as signs has total influence at most its variance if and only if it is constant or a
-literal `x ↦ x i == !f 0` [O'Donnell, Proposition 2.40][ODonnell2014]. -/
+literal `x ↦ b ^^ x i` [O'Donnell, Proposition 2.40][ODonnell2014]. -/
 theorem totalInfluence_signVal_le_expect_sub_expect_sq_iff (f : (ι → Bool) → Bool) :
     totalInfluence (fun x => signVal (f x)) ≤
       𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2 ↔
-      (∀ x, f x = f 0) ∨ ∃ i, ∀ x, f x = (x i == !f 0) := by
+      (∃ b, f = Function.const _ b) ∨ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   rw [totalInfluence_le_expect_sub_expect_sq_iff_fourierCoeff_eq_zero,
-    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_beq]
+    fourierCoeff_signVal_eq_zero_iff_eq_const_or_exists_eq_xor]
 
 /-- **Balanced Boolean functions have variance one**. -/
 theorem expect_sub_expect_sq_signVal_of_expect_eq_zero {f : (ι → Bool) → Bool}
@@ -428,29 +423,30 @@ theorem expect_sub_expect_sq_signVal_of_expect_eq_zero {f : (ι → Bool) → Bo
 
 /-- **Balanced Boolean functions of average sensitivity one are literals**: for a balanced Boolean
 function (`𝔼 x, signVal (f x) = 0`), the total influence (average sensitivity) equals one if and
-only if the function is a literal `x ↦ x i == !f 0`
-[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak09]
+only if the function is a literal `x ↦ b ^^ x i`
+[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak07]
 [O'Donnell, Proposition 2.40][ODonnell2014]. -/
 theorem totalInfluence_signVal_eq_one_iff_of_expect_eq_zero {f : (ι → Bool) → Bool}
     (hbal : 𝔼 x, signVal (f x) = 0) :
-    totalInfluence (fun x => signVal (f x)) = 1 ↔ ∃ i, ∀ x, f x = (x i == !f 0) := by
+    totalInfluence (fun x => signVal (f x)) = 1 ↔ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   rw [← expect_sub_expect_sq_signVal_of_expect_eq_zero hbal,
     totalInfluence_signVal_eq_expect_sub_expect_sq_iff]
-  refine or_iff_right fun hconst => ?_
-  have h1 : (𝔼 x, signVal (f x)) = signVal (f 0) := by
-    rw [expect_congr rfl fun x _ => congrArg signVal (hconst x), expect_const univ_nonempty]
-  have habs := abs_signVal (f 0)
+  refine or_iff_right ?_
+  rintro ⟨b, rfl⟩
+  have h1 : (𝔼 x : ι → Bool, signVal (Function.const _ b x)) = signVal b :=
+    expect_const univ_nonempty (signVal b)
+  have habs := abs_signVal b
   rw [← h1, hbal] at habs
   norm_num at habs
 
 /-- **Balanced Boolean functions of average sensitivity at most one are literals**: for a balanced
 Boolean function (`𝔼 x, signVal (f x) = 0`), the total influence (average sensitivity) is at most
-one if and only if the function is a literal `x ↦ x i == !f 0`
-[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak09]
+one if and only if the function is a literal `x ↦ b ^^ x i`
+[Arora–Barak, Chapter 19, Exercise 5(b)][AroraBarak07]
 [O'Donnell, Proposition 2.40][ODonnell2014]. -/
 theorem totalInfluence_signVal_le_one_iff_of_expect_eq_zero {f : (ι → Bool) → Bool}
     (hbal : 𝔼 x, signVal (f x) = 0) :
-    totalInfluence (fun x => signVal (f x)) ≤ 1 ↔ ∃ i, ∀ x, f x = (x i == !f 0) := by
+    totalInfluence (fun x => signVal (f x)) ≤ 1 ↔ ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i := by
   rw [← expect_sub_expect_sq_signVal_of_expect_eq_zero hbal,
     totalInfluence_signVal_le_expect_sub_expect_sq_iff,
     ← totalInfluence_signVal_eq_expect_sub_expect_sq_iff,
