@@ -88,7 +88,8 @@ def promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog �
 2. Copies `(q_top, v_top)` into tail item `u`.
 3. Calls `removeLastTailItemProg (base, b)` to compact and remove tail item `r_top`.
 4. Writes `(q_u, v_u)` into physical slab slot `gm 0 * slabSize n_max + k` and returns `k + 1`. -/
-abbrev promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
   promoteStepGenProg ((mkDictParams U V w n_max h_space, x.1), x.2)
 
 @[simp] theorem promoteStepGenProg_mk (U V w n_max h_space : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ) :
@@ -852,7 +853,8 @@ def promoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
 /-- `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket `b = d.2` at
 `base = d.1` (`gm (gmRIdx b) = 2 * K`) into a new full slab via `promoteLoopProg` followed by
 `gmPushSlabProg`. -/
-abbrev promoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def promoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   promoteSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem promoteSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :

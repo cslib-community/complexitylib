@@ -245,7 +245,8 @@ def insertNewGenProg
 /-- Helper `Memory.Prog` appending a new `(q_target, v_new)` entry to bucket `b` and prepending
 its logical index `j_new = bCount b` to micro-chain `(b, m)` when `totalSlots < n_max`.
 Input `d = ((((base, b), q_target), v_new), m)`. -/
-abbrev insertNewProg (U V w n_max h_space : ℕ)
+@[expose]
+def insertNewProg (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   insertNewGenProg (mkDictParams U V w n_max h_space, d)
 
@@ -335,7 +336,8 @@ def insertBodyGenProg
 /-- Dictionary `insert` body `insertBodyProg` (`d = ((((base, b), q_target), v_new), m)`):
 searches bucket `b` for `q_target` via `searchBucketProg`; if found, overwrites `valAt` in-place;
 otherwise calls `insertNewProg`. -/
-abbrev insertBodyProg (U V w n_max h_space : ℕ)
+@[expose]
+def insertBodyProg (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   insertBodyGenProg (mkDictParams U V w n_max h_space, d)
 

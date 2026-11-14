@@ -758,7 +758,8 @@ def queryWithHashGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog
 /-- Feistel-dispatched `query` in `Memory.Prog` (`d = ((base, u), h_q)`): computes
 `b = (h_q &&& (2 ^ b_bits - 1)) ^^^ (u &&& (2 ^ b_bits - 1))`, `q = u >>> b_bits`, and
 `m = h_q >>> b_bits`, then runs `queryBodyProg`. -/
-abbrev queryWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog (Option ℕ) :=
+@[expose]
+def queryWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog (Option ℕ) :=
   queryWithHashGenProg (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d)
 
 @[simp]
@@ -835,7 +836,8 @@ def insertWithHashGenProg (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) : M
   insertBodyGenProg (d.1, ((((d.2.1.1.1, b), q), d.2.1.2), m))
 
 /-- Feistel-dispatched `insert` in `Memory.Prog` (`d = (((base, u), v_new), h_q)`). -/
-abbrev insertWithHashProg (U V w₀ n_max : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def insertWithHashProg (U V w₀ n_max : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   insertWithHashGenProg (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d)
 
 @[simp]
@@ -914,7 +916,8 @@ def deletePrepWithHashGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) :
 
 /-- Phase 1 of Feistel-dispatched `delete` in `Memory.Prog` (`d = ((base, u), h_q)`):
 computes `(b, q, m)` from `(u, h_q)` and runs `deletePrepProg`. -/
-abbrev deletePrepWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) :
+@[expose]
+def deletePrepWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) :
     Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
   deletePrepWithHashGenProg (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d)
 
@@ -970,7 +973,8 @@ def deleteFinishWithHashGenProg
 (`d = ((((base, u), h_q), ((found, j_del), phys_del)), h_q_last)`):
 computes `(b, m)` from `(u, h_q)` and `m_last = h_q_last >>> bucketBits n_max`, then runs
 `deleteFinishProg`. -/
-abbrev deleteFinishWithHashProg (U V w₀ n_max : ℕ)
+@[expose]
+def deleteFinishWithHashProg (U V w₀ n_max : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit :=
   deleteFinishWithHashGenProg (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d)
 

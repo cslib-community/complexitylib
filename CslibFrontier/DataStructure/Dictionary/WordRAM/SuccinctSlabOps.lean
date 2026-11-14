@@ -330,7 +330,8 @@ def lastSlotOfGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
 
 /-- `Memory.Prog` operation resolving the physical slot `slotOf n_max gm b (bCount n_max gm b - 1)`
 of the last item in a non-empty bucket `b = d.2` at `base = d.1` (`1 ≤ bCount n_max gm b`). -/
-abbrev lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   lastSlotOfGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem lastSlotOfGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -494,7 +495,8 @@ def pushBackTailWriteGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) 
 /-- Helper `Memory.Prog` for the multi-bucket prefix of `pushBackSlotProg`: appends one tail item
 to bucket `b = d.1.1.2` at `base = d.1.1.1`, writes `(q_val, v_val) = (d.1.2, d.2)` into its
 physical slot, and returns the updated tail count `r_b_new = gm' (gmRIdx b)`. -/
-abbrev pushBackTailWriteProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def pushBackTailWriteProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog ℕ :=
   pushBackTailWriteGenProg (((mkDictParams U V w n_max h_space, d.1.1), d.1.2), d.2)
 
 @[simp] theorem pushBackTailWriteGenProg_mk (U V w n_max h_space : ℕ)
@@ -786,7 +788,8 @@ def pushBackSlotGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Mem
 /-- `Memory.Prog` operation appending `(q_val, v_val) = (d.1.2, d.2)` at logical slot
 `bCount n_max gm b` of bucket `b = d.1.1.2` at `base = d.1.1.1`, promoting `K` tail items into a
 new full slab when `r_b + 1 = 2 * K`. -/
-abbrev pushBackSlotProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def pushBackSlotProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   pushBackSlotGenProg (((mkDictParams U V w n_max h_space, d.1.1), d.1.2), d.2)
 
 @[simp] theorem pushBackSlotGenProg_mk (U V w n_max h_space : ℕ)
@@ -1142,7 +1145,8 @@ def popBackSlotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit :=
 /-- `Memory.Prog` operation removing the last logical slot `bCount n_max gm b - 1` of a non-empty
 bucket `b = d.2` at `base = d.1`, demoting the top full slab into `K = slabSize n_max` tail items
 when `r_b - 1 = 0 ∧ 0 < q_b`. -/
-abbrev popBackSlotProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def popBackSlotProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   popBackSlotGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem popBackSlotGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :

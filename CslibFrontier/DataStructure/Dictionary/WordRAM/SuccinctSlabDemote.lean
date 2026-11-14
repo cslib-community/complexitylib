@@ -91,7 +91,8 @@ For `u = (slabSize n_max - 1) - k`, `p_del = gm (gmSlabTopIdx b)`, and `p_last =
 2. Appends a new tail item `t_new = gm 1` to bucket `b` (`g_tail = (n_max - 1) - t_new`).
 3. Writes `(q_last, v_last)` to `g_del` first, and `(q_del, v_del)` to `g_tail` second,
    then returns `k + 1`. -/
-abbrev demoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def demoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
   demoteStepGenProg ((mkDictParams U V w n_max h_space, x.1), x.2)
 
 @[simp] theorem demoteStepGenProg_mk (U V w n_max h_space : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ) :
@@ -784,7 +785,8 @@ def demoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
 /-- `Memory.Prog` operation demoting the top full slab of bucket `b = d.2` at `base = d.1`
 (`gm (gmRIdx b) = 0`, `1 ≤ gm (gmQIdx b)`) into `K = slabSize n_max` tail items via
 `demoteLoopProg` followed by `gmPopSlabProg`. -/
-abbrev demoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def demoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   demoteSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem demoteSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :

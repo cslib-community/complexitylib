@@ -78,7 +78,8 @@ def deletePrepGenProg
 searches bucket `b` for `q_target`; if found (`res.1.1 = 1`), resolves the last slot `phys_last` of
 bucket `b`, reads its quotient `q_last`, and returns `(res, q_last)`; otherwise returns
 `(((0, 0), 0), 0)`. -/
-abbrev deletePrepProg (U V w n_max h_space : ℕ)
+@[expose]
+def deletePrepProg (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
   deletePrepGenProg (mkDictParams U V w n_max h_space, d)
 
@@ -210,7 +211,8 @@ def deleteSwapGenProg
 (`d = ((((base, b), j_del), phys_del), (m_last, j_last))`):
 unlinks `j_last` from `(b, m_last)` (if indexed), copies `(q_last, v_last)` into `phys_del`, and
 prepends `j_del` to `(b, m_last)` (if indexed). -/
-abbrev deleteSwapProg (U V w n_max h_space : ℕ)
+@[expose]
+def deleteSwapProg (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit :=
   deleteSwapGenProg (mkDictParams U V w n_max h_space, d)
 
@@ -335,7 +337,8 @@ def deleteFoundGenProg
 /-- Found-branch helper for `delete` (`d = ((((base, b), j_del), phys_del), (m, m_last))`):
 unlinks `j_del` from `(b, m)`, reads `c_b`, runs `deleteSwapProg` if `j_del < c_b - 1`, and
 calls `popBackSlotProg`. -/
-abbrev deleteFoundProg (U V w n_max h_space : ℕ)
+@[expose]
+def deleteFoundProg (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit :=
   deleteFoundGenProg (mkDictParams U V w n_max h_space, d)
 
@@ -542,7 +545,8 @@ def deleteFinishGenProg
 
 /-- Phase 2 of `delete` (`d = ((((base, b), (found, j_del)), phys_del), m), m_last`):
 if `found = 1`, calls `deleteFoundProg`; otherwise returns `()`. -/
-abbrev deleteFinishProg (U V w n_max h_space : ℕ)
+@[expose]
+def deleteFinishProg (U V w n_max h_space : ℕ)
     (d : ((((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   deleteFinishGenProg (mkDictParams U V w n_max h_space, d)
 

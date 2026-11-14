@@ -130,7 +130,8 @@ def gmPushSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
 
 /-- `Memory.Prog` operation allocating a new full slab `p_new = gm 0` as the new top slab
 `s_new = gm (gmQIdx b)` of bucket `b = d.2` at `base = d.1`. -/
-abbrev gmPushSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def gmPushSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   gmPushSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmPushSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -368,7 +369,8 @@ def gmUnlinkTopSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
 
 /-- `Memory.Prog` operation unlinking the top slab of bucket `b = d.2` at `base = d.1` and
 returning its physical slab index `p_del = gm (gmSlabTopIdx b)`. -/
-abbrev gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   gmUnlinkTopSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmUnlinkTopSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -614,7 +616,8 @@ def gmRelinkMovedSlabGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.
     else pure ()
 
 /-- `Memory.Prog` helper performing `gmRelinkMovedSlab` for `d = ((base, p_del), p_last)`. -/
-abbrev gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   gmRelinkMovedSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmRelinkMovedSlabGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -800,7 +803,8 @@ def gmLinkMovedNeighborsGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memo
       writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * p_del + 3), abv_last))
 
 /-- `Memory.Prog` helper performing `gmLinkMovedNeighbors` for `d = ((base, p_del), p_last)`. -/
-abbrev gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   gmLinkMovedNeighborsGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmLinkMovedNeighborsGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -1001,7 +1005,8 @@ def gmCompactSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := 
 
 /-- `Memory.Prog` operation compacting the slab pool by relocating the metadata of
 `p_last = gm 0 - 1` into `p_del = d.2` (when `p_del < p_last`) and decrementing `gm 0`. -/
-abbrev gmCompactSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def gmCompactSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   gmCompactSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmCompactSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -1170,7 +1175,8 @@ def gmPopSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
 
 /-- `Memory.Prog` operation popping the top slab of bucket `b = d.2` at `base = d.1` and compacting
 the physical slab pool. -/
-abbrev gmPopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def gmPopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   gmPopSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem gmPopSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :

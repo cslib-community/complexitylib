@@ -725,7 +725,8 @@ def appendTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := 
 
 /-- `Memory.Prog` operation appending one tail item to bucket `b = d.2` at `base = d.1`
 (`0 < bucketBits n_max`) and returning the newly allocated physical tail offset `t_new = gm 1`. -/
-abbrev appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   appendTailItemGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem appendTailItemGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -952,7 +953,8 @@ def removeLastTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Uni
 (`0 < bucketBits n_max`, `1 ≤ gm (gmRIdx b)`), compacting the tail pool by moving the payload at
 physical slot `(n_max - 1) - (gm 1 - 1)` into `(n_max - 1) - t_del` and updating `GlobalMeta` via
 `gmRemoveTail`. -/
-abbrev removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+@[expose]
+def removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
   removeLastTailItemGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem removeLastTailItemGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :

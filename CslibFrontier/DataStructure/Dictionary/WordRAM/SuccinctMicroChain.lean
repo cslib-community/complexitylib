@@ -124,7 +124,8 @@ def readLMHeadGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog �
   readLMGenProg ⟨0, by decide⟩ (d.1, (d.2.1.1, d.2.1.2 * dpNumMicro d.1 + d.2.2))
 
 /-- Read `lmHead n_max lm b m` at `d = ((base, b), m)` in `Memory.Prog`. -/
-abbrev readLMHeadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+@[expose]
+def readLMHeadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
   readLMHeadGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem readLMHeadGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -139,7 +140,8 @@ def writeLMHeadGenProg (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) : Memo
   writeLMGenProg ⟨0, by decide⟩ (d.1, ((d.2.1.1.1, d.2.1.1.2 * dpNumMicro d.1 + d.2.1.2), d.2.2))
 
 /-- Write `val = d.2` to `lmHead n_max lm b m` at `d = (((base, b), m), val)` in `Memory.Prog`. -/
-abbrev writeLMHeadProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def writeLMHeadProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   writeLMHeadGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem writeLMHeadGenProg_mk (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) :
@@ -1064,7 +1066,8 @@ def lmPrependGenProg (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) : Memory
 
 /-- `Memory.Prog` operation prepending local slot `j_new = d.2` to micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1`. -/
-abbrev lmPrependProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def lmPrependProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   lmPrependGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
@@ -1347,7 +1350,8 @@ def lmUnlinkGenProg (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) : Memory.
 
 /-- `Memory.Prog` operation unlinking local slot `j_del = d.2` from micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1`. -/
-abbrev lmUnlinkProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def lmUnlinkProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   lmUnlinkGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
@@ -1622,7 +1626,8 @@ def microStepGenProg
 given `x.1 = (((base, b), q_target), z0)` and `x.2 = (((ptr, found), j_found), phys_found)`
 with `0 < ptr`, inspects `j = ptr - 1`, resolves its physical slot `phys`, reads `quotAt phys`,
 and either stops with `(((0, 1), j), phys)` on match or advances to `next_ptr`. -/
-abbrev microStepProg (U V w n_max h_space : ℕ)
+@[expose]
+def microStepProg (U V w n_max h_space : ℕ)
     (x : (((ℕ × ℕ) × ℕ) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)) :
     Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
   microStepGenProg (((mkDictParams U V w n_max h_space, x.1.1), x.1.2), x.2)
@@ -1795,7 +1800,8 @@ def microLoopGenProg
     x.1 (effBucketCap (dpNMax x.1.1.1)) x.2
 
 /-- Phase 1 bounded while loop over a micro-bucket chain with ghost cutoff `effBucketCap n_max`. -/
-abbrev microLoopProg (U V w n_max h_space : ℕ)
+@[expose]
+def microLoopProg (U V w n_max h_space : ℕ)
     (x : (((ℕ × ℕ) × ℕ) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)) :
     Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
   microLoopGenProg (((mkDictParams U V w n_max h_space, x.1.1), x.1.2), x.2)
@@ -1968,7 +1974,8 @@ def searchMicroChainGenProg
 
 /-- Phase 1 micro-chain search `searchMicroChainProg`:
 reads `h0 = lmHead b m` (`d = (((base, b), q_target), m)`) and runs `microLoopProg` from `h0`. -/
-abbrev searchMicroChainProg (U V w n_max h_space : ℕ)
+@[expose]
+def searchMicroChainProg (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
   searchMicroChainGenProg (mkDictParams U V w n_max h_space, d)
 

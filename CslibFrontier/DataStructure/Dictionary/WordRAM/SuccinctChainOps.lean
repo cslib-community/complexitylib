@@ -278,7 +278,8 @@ def prependIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) :
 
 /-- `Memory.Prog` operation prepending `j_new = d.2` to micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_new < min n_max (effBucketCap n_max)`. -/
-abbrev prependIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def prependIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   prependIfIndexedGenProg ((mkDictParams U V w n_max h_space, d.1), d.2)
 
 @[simp]
@@ -423,7 +424,8 @@ def unlinkIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : 
 
 /-- `Memory.Prog` operation unlinking `j_del = d.2` from micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_del < min n_max (effBucketCap n_max)`. -/
-abbrev unlinkIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def unlinkIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   unlinkIfIndexedGenProg ((mkDictParams U V w n_max h_space, d.1), d.2)
 
 @[simp]
@@ -557,7 +559,8 @@ def readTotalSlotsGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
     pure (n_slabs * dpSlabSize d.1 + n_tails)
 
 /-- `Memory.Prog` reader returning `totalSlots n_max gm` at `base`. -/
-abbrev readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog ℕ :=
+@[expose]
+def readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog ℕ :=
   readTotalSlotsGenProg (mkDictParams U V w n_max h_space, base)
 
 @[simp]
@@ -634,7 +637,8 @@ def copyLastPayloadGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Pr
 
 /-- `Memory.Prog` helper copying `(quotAt, valAt)` from the last logical slot
 `lastSlotOfProg (base, b)` of bucket `b = d.1.2` (`base = d.1.1`) into `phys_del = d.2`. -/
-abbrev copyLastPayloadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose]
+def copyLastPayloadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   copyLastPayloadGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
