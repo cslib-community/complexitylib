@@ -121,19 +121,6 @@ def Branches.get (branches : Branches) : Bool → Act
 @[simp] theorem Branches.get_true (branches : Branches) :
     branches.get true = branches.trueBranch := rfl
 
-/-- Decode a user control tag. `none` is the extra finite trap control used only when the initial
-tag is malformed. -/
-def control (states tag : ℕ) : Option (Fin states) :=
-  Fin.ofNat? states tag
-
-@[simp] theorem control_eq_some_of_lt (states tag : ℕ) (h : tag < states) :
-    control states tag = some ⟨tag, h⟩ := by
-  simp only [control, Fin.ofNat?_eq_some_of_lt states tag h]
-
-@[simp] theorem control_eq_none_of_not_lt (states tag : ℕ) (h : ¬ tag < states) :
-    control states tag = none := by
-  simp only [control, Fin.ofNat?_eq_none_of_not_lt states tag h]
-
 /-- Denotation uses exactly the declared user controls plus one malformed-initial trap control. -/
 theorem Desc.card_control (d : Desc) :
     Fintype.card (Option (Fin d.states)) = d.states + 1 := by
@@ -143,17 +130,17 @@ theorem Desc.card_control (d : Desc) :
 halts; a valid state resumes outside the malformed-initial trap. -/
 def nextControl (states : ℕ) : Option ℕ → Option (Option (Fin states))
   | none => none
-  | some tag => (control states tag).map some
+  | some tag => (Fin.ofNat? states tag).map some
 
 @[simp] theorem nextControl_none (states : ℕ) : nextControl states none = none := rfl
 
 @[simp] theorem nextControl_some_of_lt (states tag : ℕ) (h : tag < states) :
     nextControl states (some tag) = some (some ⟨tag, h⟩) := by
-  simp only [nextControl, control_eq_some_of_lt states tag h, Option.map_some]
+  simp only [nextControl, Fin.ofNat?_eq_some_of_lt states tag h, Option.map_some]
 
 @[simp] theorem nextControl_some_of_not_lt (states tag : ℕ) (h : ¬ tag < states) :
     nextControl states (some tag) = none := by
-  simp only [nextControl, control_eq_none_of_not_lt states tag h, Option.map_none]
+  simp only [nextControl, Fin.ofNat?_eq_none_of_not_lt states tag h, Option.map_none]
 
 /-- An ordinary local action represented with finite lists denotes an action on exactly `tapes`
 work tapes and the finite control `Option (Fin states)`. Missing work-tape entries leave a tape
@@ -239,11 +226,11 @@ def Desc.action (d : Desc) (state : Option (Fin d.states)) (input : Option ℕ)
 description's finite tag set; no operation-dispatch callback remains in the denotation. -/
 def Desc.toMachine (d : Desc) :
     MultiTapePTM d.tapes ℕ (Option (Fin d.states)) (Fin d.operations) where
-  initial := control d.states d.q₀
+  initial := Fin.ofNat? d.states d.q₀
   tr state input work answers coin := d.action state input work answers coin
 
 @[simp] theorem Desc.toMachine_initial (d : Desc) :
-    d.toMachine.initial = control d.states d.q₀ := rfl
+    d.toMachine.initial = Fin.ofNat? d.states d.q₀ := rfl
 
 theorem Desc.toMachine_tr (d : Desc) (state : Option (Fin d.states))
     (input : Option ℕ)

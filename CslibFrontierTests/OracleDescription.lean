@@ -284,7 +284,7 @@ theorem invalid_initial_action (coin : Bool) :
     malformed.action malformed.toMachine.initial none noWork (oneAnswer none) coin =
       haltAction 0 1 1 := by
   dsimp
-  simp only [control_eq_none_of_not_lt 1 1 (by omega)]
+  simp only [Fin.ofNat?_eq_none_of_not_lt 1 1 (by omega)]
   rfl
 
 end CslibFrontierTests.OracleDescription
