@@ -6481,6 +6481,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discr
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.FiniteTable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.HistoryExpectation
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Prefix
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Provenance
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
@@ -6564,6 +6565,7 @@ public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discret
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Deadline
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.FiniteTable
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Optimum
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Execution
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Output
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record

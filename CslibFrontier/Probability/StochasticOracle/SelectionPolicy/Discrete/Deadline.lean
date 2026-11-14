@@ -145,8 +145,7 @@ theorem deadline_probability_le (u b r : ℕ) (hr : ∀ k < r, b * k < I.ground.
     (p : Set.Icc (0 : ℝ) 1) (ρ D ℓ : ℝ) (hℓ : 0 < ℓ)
     (H : ProgressBounds I propose choose respond output duration u b p ρ D)
     (HT : LatencyBound choose respond duration u ℓ) :
-    ((outputLaw choose respond output u).toOuterMeasure
-      {z | CertifiedOutput I ρ D duration z.history z.returned}).toReal ≤
+    successProbability I choose respond output duration u ρ D ≤
       (ProbabilityTheory.binomial (min u ⌊D / ℓ⌋₊) p).real (Set.Ici r) := by
   let v := min u ⌊D / ℓ⌋₊
   let pre : Set (Fin u → Record B R) :=
