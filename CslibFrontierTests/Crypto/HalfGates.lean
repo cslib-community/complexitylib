@@ -1,10 +1,12 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
-import CslibFrontier.Crypto.Primitives.Garbling.HalfGates.Privacy
+module
+
+public import CslibFrontier.Crypto.Primitives.Garbling.HalfGates.Privacy
 
 /-! # Half-gates garbling: checked instances
 
@@ -12,6 +14,8 @@ A two-gate circuit `(x₀ ∧ x₁) ⊕ x₀` garbled with labels in `ZMod 2 × 
 two ciphertexts, for its AND gate only; the garbled circuit evaluates correctly on every input, by
 computation; an XOR-only circuit has an empty table; and the correctness, simulator and privacy
 theorems instantiated with the identity tweak map. -/
+
+@[expose] public section
 
 namespace CslibFrontierTests.HalfGates
 
@@ -61,6 +65,16 @@ example (R : ZMod 2) (Z : Fin 2 → ZMod 2 × Bool) (x : Fin 2 → Bool) :
 example (y : Fin 1 → Bool) (X : Fin 2 → ZMod 2 × Bool) (ct : Slot andXor → ZMod 2 × Bool) :
     (simulateWith andXor toyH id y X ct).run toyH id = y :=
   View.run_simulateWith andXor toyH id y X ct
+
+-- Two slots (one AND gate): at most two queries, and at most one query per tweak when the tweak
+-- map is injective.
+example (x : Fin 2 → Bool) (D : View andXor (ZMod 2) → ProbComp Bool) :
+    (reduction andXor toyH id x D).IsQueryBounded 2 :=
+  isQueryBounded_reduction andXor toyH id x D
+
+example (x : Fin 2 → Bool) (D : View andXor (ZMod 2) → ProbComp Bool) :
+    Garbling.CCR.IsTweakUnique (reduction andXor toyH id x D) :=
+  isTweakUnique_reduction andXor toyH id x Function.injective_id D
 
 -- Privacy with the identity tweak map: the distinguishing advantage is the CCR advantage of the
 -- reduction.

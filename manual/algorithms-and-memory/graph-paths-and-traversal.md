@@ -148,6 +148,27 @@ These are pure Lean functions on adjacency lists, with `TimeM` cost models (as f
 
 The [DFS examples](../../CslibFrontierTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order, and the [SCC and 2-SAT examples](../../CslibFrontierTests/SCCAndTwoSAT.lean) check DAGs, cycles, two-component condensation graphs, satisfiable and unsatisfiable 2-CNF instances, and exact tick counts. The [Bellman–Ford examples](../../CslibFrontierTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Bridges, biconnectivity and Bellman–Ford predecessor trees remain tracked in [#3053](https://github.com/cslib-community/cslib-frontier/issues/3053).
 
+## Expander-walk hitting probabilities
+
+Import `CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct` for
+Goldreich Exercise 8.43. Work with a finite nonempty `Cslib.RotationMap V D`, with both
+vertex and slot types nonempty. For `B : ℕ → Finset V`,
+`dens_filter_forall_walkAt_mem_le_product B t` bounds the probability of visiting
+`B i` at every index by `sqrt (dens (B 0))` times the product of
+`sqrt (dens (B (i + 1)) + spectralExpansion²)` for `i < t`.
+A seed is a uniform vertex and `t` independent uniform incident slots: `t` counts
+edges and the source length is `t + 1` vertices. Parallel edges and loops are allowed.
+
+For a constant set, use `dens_filter_forall_walkAt_mem_le_rpow_of_spectralExpansion_le`:
+supply the source parameters `lambda`, `d` and a proof of
+`spectralExpansion ≤ lambda / d` to obtain the real power with exponent `(t + 1)/2`.
+The [ordinary-import client](../../CslibFrontierTests/ExpanderHittingProduct.lean)
+checks one vertex, empty/full sets, unequal densities and source-parameter transport.
+From the repository root, check it with
+`lake build CslibFrontierTests.ExpanderHittingProduct` after the normal cache bootstrap.
+These are finite probability bounds; they assert no machine uniformity, running time,
+or Exercise 8.44 concentration endpoint.
+
 ## Continuous metric graphs
 
 Import `CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Basic` ([Basic.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Basic.lean)), along with [Geodesic.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Geodesic.lean), [Maps.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Maps.lean), [Subdivision.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Subdivision.lean), [Realization.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Realization.lean), [NearVertex.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/NearVertex.lean) and [Bipartite.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/MetricGraph/Bipartite.lean). Public declarations live in `SimpleGraph` and `SimpleGraph.MetricGraph`.
