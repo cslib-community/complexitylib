@@ -46,6 +46,8 @@ independent of the prefix and is reused, after other preparations of the virtual
 * `Turing.MultiTapeTM.Universal.Desc.computes_iff_of_iterate`: a description whose run is, after
   some steps, the image of the run of another description computes the same outputs.
 * `Turing.MultiTapeTM.Universal.Redirect.iterate_stepOut_redirect`: redirected runs.
+* `Turing.MultiTapeTM.Universal.Hardwire.iterate_hardwire`: the exact preparation clock followed
+  by a step-for-step run of the original description.
 * `Turing.MultiTapeTM.Universal.Desc.computes_hardwire`,
   `Turing.MultiTapeTM.Universal.Desc.halts_hardwire`: the behavior of `hardwire d p`.
 
@@ -775,6 +777,24 @@ theorem iterate_prepare :
 
 end Run
 
+/-- After the exact preparation clock, `hardwire d p` runs `d` step for step on `p ++ x`.
+The right side retains the redirected configuration, so the statement also certifies every
+intermediate machine state. -/
+theorem iterate_hardwire (d : Desc) (p x : List Bool) (t : ℕ) :
+    (stepOut (hardwire d p) (x.map eBit))^[2 * (p.length + x.length) + 4 + t]
+      (init (hardwire d p), []) =
+        (redirectCfg (fun q => 2 * q + 1) (x.length + 1) 0 [] ((p ++ x).map eBit) [] []
+          (((stepOut d ((p ++ x).map eBit))^[t] (init d, [])).1),
+        ((stepOut d ((p ++ x).map eBit))^[t] (init d, [])).2) := by
+  have hxs : ∀ a ∈ (p ++ x).map eBit, a ≠ marker := by
+    intro a ha
+    obtain ⟨b, -, rfl⟩ := List.mem_map.mp ha
+    cases b <;> simp [marker]
+  rw [add_comm, Function.iterate_add_apply, iterate_prepare]
+  exact iterate_stepOut_redirect (n := d.tapes) (fun _ _ h => by omega)
+    (find?_redirect_hardwire d p) (by simp [inputSymbol]) hxs rfl rfl
+    (fun ts _ was => by simp) t (by simp [init]) (by simp [init]) []
+
 end Hardwire
 
 open Redirect Hardwire in
@@ -782,17 +802,10 @@ open Redirect Hardwire in
 exactly when `d` halts on `p ++ x` with output `o`. -/
 theorem Desc.computes_hardwire (d : Desc) (p x : List Bool) (o : List ℕ) :
     (hardwire d p).Computes (x.map eBit) o ↔ d.Computes ((p ++ x).map eBit) o := by
-  have hxs : ∀ a ∈ (p ++ x).map eBit, a ≠ marker := by
-    intro a ha
-    obtain ⟨b, -, rfl⟩ := List.mem_map.mp ha
-    cases b <;> simp [marker]
   refine Desc.computes_iff_of_iterate
     (redirectCfg (fun q => 2 * q + 1) (x.length + 1) 0 [] ((p ++ x).map eBit) [] [])
-    (fun c => by simp [redirectCfg]) (2 * (p.length + x.length) + 4) (fun t => ?_) o
-  rw [add_comm, Function.iterate_add_apply, iterate_prepare]
-  exact iterate_stepOut_redirect (n := d.tapes) (fun _ _ h => by omega)
-    (find?_redirect_hardwire d p) (by simp [inputSymbol]) hxs rfl rfl
-    (fun ts _ was => by simp) t (by simp [init]) (by simp [init]) []
+    (fun c => by simp [redirectCfg]) (2 * (p.length + x.length) + 4)
+    (iterate_hardwire d p x) o
 
 /-- **Halting of `hardwire d p`**: on every input of bits `x`, it halts exactly when `d` halts on
 `p ++ x`. -/

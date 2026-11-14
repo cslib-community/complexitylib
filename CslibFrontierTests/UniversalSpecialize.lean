@@ -57,12 +57,20 @@ example :
         specializeSize readFirstProgramBit zeroTapeProgram ∧
     descLen (specialize readFirstProgramBit oneTapeProgram) ≤
         specializeSize readFirstProgramBit oneTapeProgram ∧
+    descLen (specialize readFirstProgramBit zeroTapeProgram) <
+        descLen (specialize readFirstProgramBit oneTapeProgram) ∧
     specializeSize readFirstProgramBit zeroTapeProgram <
         specializeSize readFirstProgramBit oneTapeProgram ∧
     specializePrepareSteps zeroTapeProgram [] <
         specializePrepareSteps oneTapeProgram [] := by
   have hlen : descLen zeroTapeProgram < descLen oneTapeProgram := by decide
-  refine ⟨descLen_specialize_le _ _, descLen_specialize_le _ _, ?_, ?_⟩
+  -- These closed generated descriptions contain thousands of encoded bits. The scoped depth is
+  -- used only to reduce their exact lengths; it does not affect any library proof or algorithm.
+  have hzero : descLen (specialize readFirstProgramBit zeroTapeProgram) = 4072 := by
+    set_option maxRecDepth 20000 in decide
+  have hone : descLen (specialize readFirstProgramBit oneTapeProgram) = 7540 := by
+    set_option maxRecDepth 50000 in decide
+  refine ⟨descLen_specialize_le _ _, descLen_specialize_le _ _, by omega, ?_, ?_⟩
   · unfold specializeSize
     exact Nat.mul_lt_mul_of_pos_left
       (Nat.pow_lt_pow_left (by omega) (by norm_num)) (by norm_num)

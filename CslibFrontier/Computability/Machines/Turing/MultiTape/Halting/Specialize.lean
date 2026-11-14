@@ -91,28 +91,6 @@ theorem Desc.halts_specialize (controller program : Desc) (x : List Bool) :
       controller.Halts ((frame (eDesc program) ++ x).map eBit) := by
   exact Desc.halts_hardwire controller (frame (eDesc program)) x
 
-namespace Hardwire
-
-/-- After exactly `specializePrepareSteps program x` steps, specialization has prepared the
-framed program code and residual input as the controller's virtual input. -/
-theorem iterate_prepare_specialize (controller program : Desc) (x : List Bool) :
-    (stepOut (specialize controller program) (x.map eBit))^[
-        specializePrepareSteps program x]
-      (init (specialize controller program), []) =
-        (Redirect.redirectCfg (fun q => 2 * q + 1) (x.length + 1) 0 []
-          ((frame (eDesc program) ++ x).map eBit) [] [] (init controller), []) := by
-  change
-    (stepOut (hardwire controller (frame (eDesc program))) (x.map eBit))^[
-        4 * descLen program + 2 * x.length + 6]
-      (init (hardwire controller (frame (eDesc program))), []) = _
-  rw [show 4 * descLen program + 2 * x.length + 6 =
-      2 * ((frame (eDesc program)).length + x.length) + 4 by
-    simp only [descLen, length_frame]
-    omega]
-  exact iterate_prepare controller (frame (eDesc program)) x
-
-end Hardwire
-
 /-- The complete online clock map: preparation costs `specializePrepareSteps program x`, then each
 controller step costs exactly one specialized-description step. The right side retains the
 redirected configuration so this statement also certifies intermediate machine state. -/
@@ -126,15 +104,15 @@ theorem iterate_specialize (controller program : Desc) (x : List Bool) (t : ℕ)
             (init controller, [])).1),
           ((stepOut controller ((frame (eDesc program) ++ x).map eBit))^[t]
             (init controller, [])).2) := by
-  have hxs : ∀ a ∈ (frame (eDesc program) ++ x).map eBit, a ≠ Redirect.marker := by
-    intro a ha
-    obtain ⟨b, -, rfl⟩ := List.mem_map.mp ha
-    cases b <;> simp [Redirect.marker]
-  rw [add_comm, Function.iterate_add_apply, Hardwire.iterate_prepare_specialize]
-  exact Redirect.iterate_stepOut_redirect (n := controller.tapes) (fun _ _ h => by omega)
-    (Hardwire.find?_redirect_hardwire controller (frame (eDesc program)))
-    (by simp [inputSymbol]) hxs rfl rfl (fun ts _ was => by simp) t
-    (by simp [init]) (by simp [init]) []
+  change
+    (stepOut (hardwire controller (frame (eDesc program))) (x.map eBit))^[
+        specializePrepareSteps program x + t]
+      (init (hardwire controller (frame (eDesc program))), []) = _
+  rw [show specializePrepareSteps program x =
+      2 * ((frame (eDesc program)).length + x.length) + 4 by
+    simp only [specializePrepareSteps, descLen, length_frame]
+    omega]
+  exact Hardwire.iterate_hardwire controller (frame (eDesc program)) x t
 
 /-- Executing the specialized description for its preparation clock plus `t` steps returns exactly
 the controller's `t`-step result on the embedded program and residual input. -/
