@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
-public import CslibFrontier.Computability.Complexity.Reduction.Turing
 
 /-!
 # NP-complete languages reducing to their complements
@@ -24,11 +23,6 @@ Dually, `NP = coNP` at every encoding exactly when a fixed NP-complete language 
 coNP-complete language reduce to each other
 (`Cslib.Complexity.NPComplete.NP_eq_coNP_iff_reducible`).
 This is the argument of Exercise 7, Chapter 2 of the 2007 draft, for 3SAT and TAUTOLOGY.
-Because polynomial-time Turing reductions can negate the oracle answer
-(`Cslib.Complexity.PolyTimeTuringReducible.compl_left`), every `coNP`-hard language is `NP`-hard
-under polynomial-time Turing reductions (`Cslib.Complexity.coNPHard.npTuringHard`), and every
-`NP`-hard language is `coNP`-hard under polynomial-time Turing reductions
-(`Cslib.Complexity.NPHard.coNPTuringHard`).
 -/
 
 public section
@@ -36,30 +30,6 @@ public section
 namespace Cslib.Complexity
 
 variable {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool} {B : Set β}
-
-/-- Hardness for `coNP` under polynomial-time Turing reductions. -/
-abbrev coNPTuringHard (encB : β ↪ List Bool) (B : Set β) : Prop :=
-  PolyTimeTuringHard @coNP encB B
-
-/-- Completeness for `coNP` under polynomial-time Turing reductions. -/
-abbrev coNPTuringComplete (encB : β ↪ List Bool) (B : Set β) : Prop :=
-  PolyTimeTuringComplete @coNP encB B
-
-/-- Every `coNP`-hard problem is `NP`-hard under polynomial-time Turing reductions: to decide
-`A ∈ NP`, query the `coNP`-hard oracle on the many-one reduction of `Aᶜ ∈ coNP` and negate the
-answer. -/
-theorem coNPHard.npTuringHard (hB : coNPHard encB B) : NPTuringHard encB B := by
-  intro α enc A hA
-  have hAc : Aᶜ ∈ coNP enc := by
-    simpa only [coNP, Set.mem_ofPred_eq, compl_compl] using hA
-  simpa only [compl_compl] using (hB enc Aᶜ hAc).polyTimeTuringReducible.compl_left
-
-/-- Every `NP`-hard problem is `coNP`-hard under polynomial-time Turing reductions: to decide
-`A ∈ coNP`, query the `NP`-hard oracle on the many-one reduction of `Aᶜ ∈ NP` and negate the
-answer. -/
-theorem NPHard.coNPTuringHard (hB : NPHard encB B) : coNPTuringHard encB B := by
-  intro α enc A hA
-  simpa only [compl_compl] using (hB enc Aᶜ hA).polyTimeTuringReducible.compl_left
 
 /-- An NP-complete language reducing to its complement puts every coNP language in NP. -/
 theorem NPComplete.coNP_subset_NP_of_reducible_compl (hB : NPComplete encB B)

@@ -39,6 +39,8 @@ oracle for `B` within polynomial time [Ladner, Lynch and Selman][LadnerLynchSelm
   completeness under polynomial-time Turing reductions.
 * `Cslib.Complexity.NPTuringHard`, `Cslib.Complexity.NPTuringComplete`: Turing hardness and
   completeness for `NP`.
+* `Cslib.Complexity.coNPTuringHard`, `Cslib.Complexity.coNPTuringComplete`: Turing hardness and
+  completeness for `coNP`.
 * `Cslib.Complexity.PPTuringHard`, `Cslib.Complexity.PPTuringComplete`: Turing hardness and
   completeness for `PP`.
 * `Cslib.Complexity.PSPACETuringHard`, `Cslib.Complexity.PSPACETuringComplete`: Turing hardness and
@@ -79,6 +81,8 @@ oracle for `B` within polynomial time [Ladner, Lynch and Selman][LadnerLynchSelm
 * `Cslib.Complexity.PolyTimeTuringReducible.mem_P`: `P` is closed under Turing reductions to word
   languages.
 * `Cslib.Complexity.PolyTimeHard.polyTimeTuringHard`: many-one hardness implies Turing hardness.
+* `Cslib.Complexity.coNPHard.npTuringHard`, `Cslib.Complexity.NPHard.coNPTuringHard`: Turing
+  hardness across complementation between `NP` and `coNP`.
 * `Cslib.Complexity.PolyTimeHard.polyTimeTuringHard_of_turing`: transferring many-one hardness
   across a Turing reduction.
 * Hardness transfer to `P`:
@@ -374,6 +378,30 @@ abbrev NPTuringHard (encB : β ↪ List Bool) (B : Set β) : Prop :=
 /-- Completeness for `NP` under polynomial-time Turing reductions. -/
 abbrev NPTuringComplete (encB : β ↪ List Bool) (B : Set β) : Prop :=
   PolyTimeTuringComplete @NP encB B
+
+/-- Hardness for `coNP` under polynomial-time Turing reductions. -/
+abbrev coNPTuringHard (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeTuringHard @coNP encB B
+
+/-- Completeness for `coNP` under polynomial-time Turing reductions. -/
+abbrev coNPTuringComplete (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeTuringComplete @coNP encB B
+
+/-- Every `coNP`-hard problem is `NP`-hard under polynomial-time Turing reductions: to decide
+`A ∈ NP`, query the `coNP`-hard oracle on the many-one reduction of `Aᶜ ∈ coNP` and negate the
+answer. -/
+theorem coNPHard.npTuringHard (hB : coNPHard encB B) : NPTuringHard encB B := by
+  intro α enc A hA
+  have hAc : Aᶜ ∈ coNP enc := by
+    simpa only [coNP, Set.mem_ofPred_eq, compl_compl] using hA
+  simpa only [compl_compl] using (hB enc Aᶜ hAc).polyTimeTuringReducible.compl_left
+
+/-- Every `NP`-hard problem is `coNP`-hard under polynomial-time Turing reductions: to decide
+`A ∈ coNP`, query the `NP`-hard oracle on the many-one reduction of `Aᶜ ∈ NP` and negate the
+answer. -/
+theorem NPHard.coNPTuringHard (hB : NPHard encB B) : coNPTuringHard encB B := by
+  intro α enc A hA
+  simpa only [compl_compl] using (hB enc Aᶜ hA).polyTimeTuringReducible.compl_left
 
 /-- Hardness for `PP` under polynomial-time Turing reductions. -/
 abbrev PPTuringHard (encB : β ↪ List Bool) (B : Set β) : Prop :=

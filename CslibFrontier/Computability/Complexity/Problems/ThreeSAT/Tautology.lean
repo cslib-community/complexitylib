@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.PH.Complete
 public import CslibFrontier.Computability.Complexity.Problems.Tautology
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
+public import CslibFrontier.Computability.Complexity.Reduction.Turing
 
 /-!
 # NP = coNP exactly when 3SAT and TAUTOLOGY reduce to each other
