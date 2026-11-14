@@ -66,7 +66,7 @@ public section
 namespace Cslib.Complexity.CountingSimulation
 
 open Cslib.Circuits.Frontier Cslib.GenericRAM Turing.MultiTapeTM Finset
-open Turing.MultiTapeTM.ComputableTidilyInPolyTime (binary_sum)
+open Turing.MultiTapeTM.ComputableInPolyTime (binary_sum)
 
 variable {C T : Type} {encC : C ↪ List Bool} {encT : T ↪ List Bool}
   {entry : T → List Bool → List ℕ}
@@ -142,7 +142,7 @@ private noncomputable def termCertificate
     NativeCertificate (fun q : C × ℕ => truncCoeffSum entry (build q) % modulus q.1)
       (encPair encC encNat) encNat :=
   ((NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).comp
-    (((NativeCertificate.ofPolyTime binary_sum.computableInPolyTime).comp
+    (((NativeCertificate.ofPolyTime binary_sum).comp
         (cA.comp (NativeCertificate.ofPolyTime hbuild))).prod
       (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)))).congr fun _ => rfl
 
@@ -154,7 +154,7 @@ private theorem termCertificate_time
     (hmodulus : ComputableInPolyTime modulus encC encNat) (q : C × ℕ) :
     (termCertificate cA hbuild hmodulus).time q =
       (NativeCertificate.ofPolyTime hbuild).time q + cA.time (build q) +
-        (NativeCertificate.ofPolyTime binary_sum.computableInPolyTime).time
+        (NativeCertificate.ofPolyTime binary_sum).time
           ((build q).2.2.2.truncContraction entry (build q).1 (build q).2.1) +
         (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)).time q +
         (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).time
@@ -168,7 +168,7 @@ private theorem termCertificate_space
     (hmodulus : ComputableInPolyTime modulus encC encNat) (q : C × ℕ) :
     (termCertificate cA hbuild hmodulus).space q =
       (NativeCertificate.ofPolyTime hbuild).space q + cA.space (build q) +
-        (NativeCertificate.ofPolyTime binary_sum.computableInPolyTime).space
+        (NativeCertificate.ofPolyTime binary_sum).space
           ((build q).2.2.2.truncContraction entry (build q).1 (build q).2.1) +
         (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)).space q +
         (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).space
@@ -206,7 +206,7 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
   refine ⟨⟨_, _, h⟩, ?_⟩
   -- The polynomial-time pieces of a term.
   obtain ⟨pB, hpB, mB, bB⟩ := exists_mono_poly_cert hbuild
-  obtain ⟨pS, hpS, mS, bS⟩ := exists_mono_poly_cert binary_sum.computableInPolyTime
+  obtain ⟨pS, hpS, mS, bS⟩ := exists_mono_poly_cert binary_sum
   obtain ⟨pF, hpF, mF, bF⟩ := exists_mono_poly_cert (modulusFst_polyTime hmodulus)
   obtain ⟨pM, hpM, mM, bM⟩ := exists_mono_poly_cert ComputableInPolyTime.binary_mod
   obtain ⟨pBL, hpBL, mBL, bBL⟩ := exists_mono_poly hbuild.polyBounded_length

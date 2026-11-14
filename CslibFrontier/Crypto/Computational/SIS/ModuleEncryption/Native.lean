@@ -308,7 +308,7 @@ private theorem columnSum_polyTime :
       (encPair (encList (encList encNat)) encUnary) encNat := by
   unfold columnSum
   have hsum : ComputableInPolyTime List.sum (encList encNat) encNat :=
-    .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sum
+    Turing.MultiTapeTM.ComputableInPolyTime.binary_sum
   apply hsum.comp
   have hlist : ComputableInPolyTime (fun p : List (List ℕ) × ℕ => p.1)
       (encPair (encList (encList encNat)) encUnary) (encList (encList encNat)) := by fun_prop

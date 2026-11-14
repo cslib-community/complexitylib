@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Tactic.PolyTime
 
 /-! Ordinary providers preserve unary division defaults and captured padded-row inputs. -/
@@ -58,3 +59,9 @@ example {α : Type} {input : α ↪ List Bool} {value bound : α → ℕ}
     (hbound : ComputableInPolyTime bound input encUnary) (hle : ∀ a, value a ≤ bound a) :
     ComputableInPolyTime value input encUnary :=
   ComputableInPolyTime.binary_to_unary_bounded hvalue hbound hle
+
+-- Binary summation composes with a caller-supplied plain list certificate.
+example {α : Type} {input : α ↪ List Bool} {values : α → List ℕ}
+    (hvalues : ComputableInPolyTime values input (encList encNat)) :
+    ComputableInPolyTime (fun a => (values a).sum) input encNat :=
+  ComputableInPolyTime.binary_sum.comp hvalues

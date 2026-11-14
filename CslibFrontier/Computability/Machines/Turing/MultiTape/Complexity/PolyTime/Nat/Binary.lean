@@ -59,7 +59,7 @@ multiplication.
 * `Turing.MultiTapeTM.BinarySub.sub_eq`: truncated subtraction through the final borrow.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add`, `.binary_mul`: addition and
   multiplication.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sum`: the sum of a list.
+* `Turing.MultiTapeTM.ComputableInPolyTime.binary_sum`: plain binary-list summation.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_two_pow`: `2 ^ k` in binary, from `k` in
   unary.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_lt`, `.binary_le`: comparisons.
@@ -179,9 +179,13 @@ theorem binary_add' {α : Type} {input : α ↪ List Bool} {left right : α → 
     ComputableTidilyInPolyTime (fun a => left a + right a) input encNat :=
   binary_add.comp (hleft.prod hright)
 
+end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
 /-- The sum of a list of binary naturals, by a left fold of binary additions. -/
 @[fun_prop]
-theorem binary_sum : ComputableTidilyInPolyTime List.sum (encList encNat) encNat := by
+theorem binary_sum : ComputableInPolyTime List.sum (encList encNat) encNat := by
   have hq := fst (encPair (encList encNat) encNat) encNat
   have h := foldlWith_of_bounded_growth (encA := encNat) (encL := encList encNat)
     (encB := encNat) (par := fun l : List ℕ => l) (list := fun l => l)
@@ -193,6 +197,15 @@ theorem binary_sum : ComputableTidilyInPolyTime List.sum (encList encNat) encNat
       have := Nat.size_add_le s a
       lia)
   simpa only [← List.sum_eq_foldl_nat] using h
+
+end Turing.MultiTapeTM.ComputableInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+/-- Compatibility certificate for clients still requiring tidy binary summation. -/
+@[fun_prop]
+theorem binary_sum : ComputableTidilyInPolyTime List.sum (encList encNat) encNat :=
+  ComputableInPolyTime.binary_sum.tidy
 
 /-- `2 ^ k` in binary, from `k` in unary, by doubling. -/
 @[fun_prop]
