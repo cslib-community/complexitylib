@@ -103,10 +103,9 @@ theorem exec {w s n start stop k : ℕ} (x : Data 16)
         rw [hym, hys]; exact hmem _ hlo hlt
       have had : Fits w (y.regs src + y.regs idx) := by
         rw [hys]; exact hfit.of_le (by omega)
-      have hic : Fits w (y.regs idx + 1) := hfit.of_le (by omega)
       have hcc : Fits w (y.regs count + 1) := hfit.of_le (by omega)
       refine ⟨?_, ?run, ?_, ?_⟩
-      case run => ram_eval [body, hidx, hread, hyk, hyo, had, hic, hcc]
+      case run => ram_eval [body, hidx, hread, hyk, hyo, had, hcc]
       · simp +decide only [I, Data.set_regs, Data.set_mem, Function.update_apply,
           idx, count, value, addr, len, src, key, one, active, ↓reduceIte]
         exact ⟨hyn, hys, hyk, hyo, by omega, by omega, by omega, by omega, by omega, hym⟩

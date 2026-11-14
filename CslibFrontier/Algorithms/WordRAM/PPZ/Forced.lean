@@ -379,14 +379,13 @@ theorem clauseLoop_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (ψ 
         (by simpa [encodeClause] using hpc)
       simpa using this.2
     have hc : (Cond.lt ptr cEnd).Holds y := by simp only [Cond.holds_lt]; omega
-    have hf1 : Fits w (y.regs ptr + 1) := hce.of_le (by omega)
     have hf2 : Fits w (y.regs ptr + 1 + c.length) := hce.of_le (by omega)
     have hone := hf.one_eq
     have hzero := hf.zero_eq
     let y₁ := ((((y.set len c.length).set lptr (y.regs ptr + 1)).set lend
       (y.regs ptr + 1 + c.length)).set hasLit 0).set ok 1
     have hinit : ExecWithin w clauseInit y y₁ 5 := by
-      ram_eval [y₁, clauseInit, hlen, hone, hzero, hf1, hf2]
+      ram_eval [y₁, clauseInit, hlen, hone, hzero, hf2]
     have hfy₁ : ScanFrame w τ x y₁ :=
       ((((hf.set (by decide) _).set (by decide) _).set (by decide) _).set (by decide) _).set
         (by decide) _

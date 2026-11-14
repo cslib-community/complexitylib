@@ -655,11 +655,10 @@ theorem fillLoop_spec {w B e : ℕ} (hfit : Fits w (B + e)) :
     obtain ⟨i, hi⟩ : ∃ i, x.regs iReg = i := ⟨_, rfl⟩
     rw [hi] at hd ⊢
     have hc : (Cond.lt iReg eReg).Holds x := by simp [Cond.holds_lt, he, hi]; omega
-    have hf1 : Fits w (B + i) := hfit.of_le (by omega)
     have hf2 : Fits w (i + 1) := hfit.of_le (by omega)
     let y := ((x.set addr (B + i)).write (B + i) 0).set iReg (i + 1)
     have hrun : ExecWithin w fillBody x y 3 := by
-      ram_eval [y, fillBody, hb, hz, ho, hi, hf1, hf2]
+      ram_eval [y, fillBody, hb, hz, ho, hi, hf2]
     obtain ⟨z, hz', hzm⟩ := fillLoop_spec hfit d y (by simp +decide [y, hb])
       (by simp +decide [y, he]) (by simp +decide [y, hz]) (by simp +decide [y, ho])
       (by simp [y]; omega)
@@ -689,18 +688,10 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
     ExecWithin w ampSetup (Data.init (k :: c :: encode φ)) (ampSetupData k c φ) 18 ∧
       RoundFrame φ 4 ((k :: c :: encode φ).length + 1) (ampSetupData k c φ).mem
         (ampSetupData k c φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hf3 : Fits w 3 := hw.of_le (by simp [encode]; omega)
   have hf4 : Fits w 4 := hw.of_le (by simp [encode]; omega)
-  have hf5 : Fits w ((k :: c :: encode φ).length + 1) := hw.of_le (by omega)
-  have hf6 : Fits w ((k :: c :: encode φ).length + 1 + n) := hw.of_le (by omega)
-  have hf7 : Fits w ((k :: c :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
   have hkn : (k - 1) * n ≤ k * n := Nat.mul_le_mul_right n (Nat.sub_le k 1)
-  have hf8 : Fits w (k - 1) := hw.of_le (by omega)
-  have hf9 : Fits w ((k - 1) * n) := hw.of_le (by omega)
-  have hf10 : Fits w ((k - 1) * n + k) := hw.of_le (by omega)
-  have hf11 : Fits w ((k - 1) * n + k - 1) := hw.of_le (by omega)
   have hf12 : Fits w (((k - 1) * n + k - 1) / k) := hw.of_le (by
     have := Nat.div_le_self ((k - 1) * n + k - 1) k; omega)
   have hm0 : (Data.init (k :: c :: encode φ) : Data 32).mem 0 = (k :: c :: encode φ).length :=
@@ -710,8 +701,8 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   have hm3 : (Data.init (k :: c :: encode φ) : Data 32).mem 3 = n := rfl
   refine ⟨?run, ?frame⟩
   case run =>
-    ram_eval [ampSetup, ampSetupData, ppzExp, Data.init_regs, hm0, hm1, hm2, hm3, hf1, hf2, hf3,
-      hf4, hf5, hf6, hf7, hf8, hf9, hf10, hf11, hf12]
+    ram_eval [ampSetup, ampSetupData, ppzExp, Data.init_regs, hm0, hm1, hm2, hm3, hf2, hf3,
+      hf4, hf12]
   case frame =>
     refine ⟨by simp +decide [ampSetupData], by simp +decide [ampSetupData],
       by simp +decide [ampSetupData], by simp +decide [ampSetupData],
@@ -748,14 +739,13 @@ theorem countSetup_spec {w B e c : ℕ} (x : Data 32) (hz : x.regs zero = 0) (ho
   have hr₁ {i : Fin 32} (hi : fillLoop.Preserves i) (hi' : i ≠ iReg) : y₁.regs i = x.regs i := by
     rw [hy₁.regs_eq hi, Data.set_regs, Function.update_of_ne hi']
   -- the top digit
-  have hf1 : Fits w (B + e) := hw.of_le (by omega)
   have hf2 : Fits w (e + 1) := hw.of_le (by omega)
   have hy₂ : ExecWithin w countTop y₁ (((((y₁.set addr (B + e)).write
       (B + e) 1).set bLen (e + 1)).set mulr c).set carry 0) 5 := by
     ram_eval [countTop, hr₁ (i := bBase) (by decide) (by decide), hB,
       hr₁ (i := eReg) (by decide) (by decide), he, hr₁ (i := one) (by decide) (by decide), ho,
       hr₁ (i := cReg) (by decide) (by decide), hc, hr₁ (i := zero) (by decide) (by decide), hz,
-      hf1, hf2]
+      hf2]
   obtain ⟨y₂, hy₂e⟩ : ∃ y₂, (((((y₁.set addr (B + e)).write
       (B + e) 1).set bLen (e + 1)).set mulr c).set carry 0) = y₂ := ⟨_, rfl⟩
   rw [hy₂e] at hy₂

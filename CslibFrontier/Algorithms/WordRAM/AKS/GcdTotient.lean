@@ -174,13 +174,12 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
     (Finset.card_filter_le _ _).trans (Finset.card_range A).le
   let ph := if Nat.gcd R A = 1 then y.regs phi + 1 else y.regs phi
   let z := (y₄.set phi ph).set a (A + 1)
-  have hfph : Fits w (y.regs phi + 1) := hfR.of_le (by omega)
   have hfA1 : Fits w (A + 1) := hfR.of_le (by omega)
   have hrun₅ : ExecWithin (B := .standard) w
       (ram[ if ga = one then [ phi ← phi + one ] else [ phi ← phi ]; a ← a + one ]) y₄ z 4 := by
     by_cases hg1 : Nat.gcd R A = 1
     · refine ExecWithin.mono (T := 3) ?_ (by omega)
-      ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfph, hfA1]
+      ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfA1]
     · ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfA1]
   have hza : z.regs a = A + 1 := by simp [z]
   refine ⟨z, (hrun₁.seq (hrun₂.seq (hrun₃.seq (hrun₄.seq hrun₅)))).mono (by omega), ?_, ?_⟩
@@ -224,11 +223,10 @@ theorem exec {w : ℕ} (x : Data 11) {N R : ℕ} (hn : x.regs n = N) (hr : x.reg
     ∃ y, ExecWithin w program x y (time R) ∧ y.regs ok ≤ 1 ∧
       (y.regs ok = 1 ↔ ∀ b, 1 ≤ b → b ≤ R → b.gcd N = 1 ∨ b.gcd N = N) ∧
       y.regs phi = Nat.totient R ∧ y.regs n = N ∧ y.regs r = R := by
-  have h1f : Fits w 1 := hfR.of_le (by omega)
   let x₀ := ((((x.set one 1).set lim (R + 1)).set a 0).set ok 1).set phi 0
   have hrun₀ : ExecWithin (B := .standard) w
       (ram[ one ← #1; lim ← r + one; a ← #0; ok ← #1; phi ← #0 ]) x x₀ 5 := by
-    ram_eval [x₀, hr, h1f, hfR]
+    ram_eval [x₀, hr, hfR]
   have hx₀ : Inv N R (x₀.regs a) x₀ := by
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [x₀, hn, hr]
   obtain ⟨y, hrun, ⟨hyn, hyr, _, _, hyok, hyiff, hyphi⟩, _⟩ :=

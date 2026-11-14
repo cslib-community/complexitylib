@@ -63,9 +63,8 @@ theorem exec {w : ℕ} (x : Data 4) (h2 : Fits w 2) (hn : Fits w (x.regs arg))
     have hgt : 1 < y.regs arg := by simpa only [Cond.holds_lt, ho] using hc
     have hpos : 0 < Nat.log 2 (y.regs arg) := Nat.log_pos (by decide) (by omega)
     have hdiv : Fits w (y.regs arg / 2) := hn.of_le ((Nat.div_le_self _ _).trans harg)
-    have hinc : Fits w (y.regs result + 1) := hout.of_le (by omega)
     refine ⟨?z, ?run, ?inv, ?decrease⟩
-    case run => ram_eval [body, ho, ht, hdiv, hinc, arg, result, one, two, Fin.mk.injEq]
+    case run => ram_eval [body, ho, ht, hdiv, arg, result, one, two, Fin.mk.injEq]
     case inv =>
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [Function.update_apply] using ho

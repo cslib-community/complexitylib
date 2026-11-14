@@ -134,13 +134,11 @@ theorem exec_prepareBand {w L m N : ℕ} (side : Bool) (β : ℕ) (x : Data 96)
       ((memory_fits hfit).of_le (snapshot_le_memoryEnd L m N)).of_le (by
         have hlow := band_input_le_snapshot L m N
         omega)
-    have hinc : Fits w (i + 1) := hadd.of_le (by omega)
     let z := ((t.set address (i + 2)).write (i + 2)
       (encode (bandValue L m N β side matrix i))).set index (i + 1)
     have hez : ExecWithin w (ram[
         address ← index + two; *address ← value; index ← index + one ]) t z 3 := by
-      ram_eval [z, htindex, htone, httwo, hv, hadd, hinc,
-        address, index, two, one, value, Fin.mk.injEq]
+      ram_eval [z, htindex, htone, httwo, hv, hadd, address, index, two, one, value, Fin.mk.injEq]
     have he : ExecWithin w (prepareBody side) y z (13 * L + 37) := by
       simpa only [prepareBody, Nat.add_assoc] using hes.seq (het.seq hez)
     have hzindex : z.regs index = i + 1 := by simp [z]

@@ -99,14 +99,9 @@ private theorem exec_body {w : ℕ} (x : Data 14) (ho : x.regs one = 1)
   have hL : L ≤ x.regs total - x.regs pos := min_le_right ..
   have hsub : Fits w (x.regs total - x.regs pos) := hfit.of_le (by omega)
   have hlen : Fits w L := hsub.of_le hL
-  have htriple : Fits w (x.regs count * 3) := hfit.of_le (by omega)
-  have haddr : Fits w (x.regs count * 3 + x.regs dst) := hfit.of_le (by omega)
-  have haddr1 : Fits w (x.regs count * 3 + x.regs dst + 1) := hfit.of_le (by omega)
-  have haddr2 : Fits w (x.regs count * 3 + x.regs dst + 1 + 1) := hfit.of_le (by omega)
   have hptr1 : Fits w (x.regs ptr + L) := hquery.of_le (by omega)
   have hptr2 : Fits w (x.regs ptr + L + L) := hquery.of_le (by omega)
   have hpos : Fits w (x.regs pos + L) := hfit.of_le (by omega)
-  have hcount : Fits w (x.regs count + 1) := hfit.of_le (by omega)
   let a := x.set length (x.regs total - x.regs pos) |>.set length L
     |>.set addr (x.regs count * 3) |>.set addr (x.regs count * 3 + x.regs dst)
     |>.write (x.regs count * 3 + x.regs dst) (x.regs residue)
@@ -120,13 +115,13 @@ private theorem exec_body {w : ℕ} (x : Data 14) (ho : x.regs one = 1)
   · by_cases h : x.regs capacity < x.regs total - x.regs pos
     · have he : L = x.regs capacity := min_eq_left h.le
       rw [he] at hlen hptr1 hptr2 hpos
-      ram_eval [body, a, ho, hthree, h, he, hsub, hlen, htriple, haddr, haddr1, haddr2,
-        hptr1, hptr2, hpos, hcount, length, total, pos, capacity, addr, count, three,
+      ram_eval [body, a, ho, hthree, h, he, hsub, hlen, hptr1, hptr2, hpos, length, total, pos,
+        capacity, addr, count, three,
         dst, residue, one, ptr, Fin.mk.injEq]
     · have he : L = x.regs total - x.regs pos := min_eq_right (by omega)
       rw [he] at hlen hptr1 hptr2 hpos
-      ram_eval [body, a, ho, hthree, h, he, hsub, hlen, htriple, haddr, haddr1, haddr2,
-        hptr1, hptr2, hpos, hcount, length, total, pos, capacity, addr, count, three,
+      ram_eval [body, a, ho, hthree, h, he, hsub, hlen, hptr1, hptr2, hpos, length, total, pos,
+        capacity, addr, count, three,
         dst, residue, one, ptr, Fin.mk.injEq]
   · change a.regs pos = x.regs pos + L
     simp +decide [a, pos, count]
@@ -250,8 +245,7 @@ theorem exec {w : ℕ} (x : Data 14) (hcap : 0 < x.regs capacity)
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; three ← #3; pos ← #0; count ← #0; ptr ← queries ]) x x₀ 5 := by
     have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h3 : Fits w 3 := hfit.of_le (by omega)
-    ram_eval [x₀, b, h1, h3, one, three, pos, count, ptr, queries, Fin.mk.injEq]
+    ram_eval [x₀, b, h1, one, three, pos, count, ptr, queries, Fin.mk.injEq]
   obtain ⟨y, hy, hI, hc⟩ := ExecWithin.loop_invariant I
     (fun y => N - y.regs pos) hbody hx₀
   obtain ⟨hyr, -, -, hyp, hymin, hyc, hylast, -, hycells, hyframe⟩ := hI

@@ -52,13 +52,6 @@ theorem exec_writeSlot {w L H D R s : ℕ} (x : Data registers)
       (∀ i, ¬WriteLocal i → y.regs i = x.regs i) := by
   let r := Nat.count (Eligible L H) s
   have hrc : r ≤ s := Nat.count_le _
-  have hfds : Fits w (D + s) := hfit.of_le (by omega)
-  have hfr : Fits w (r + 1) := hfit.of_le (by omega)
-  have hf3r : Fits w (r * 3) := hfit.of_le (by omega)
-  have hfra : Fits w (R + r * 3) := hfit.of_le (by omega)
-  have hfra1 : Fits w (R + r * 3 + 1) := hfit.of_le (by omega)
-  have hfra2 : Fits w (R + r * 3 + 1 + 1) := hfit.of_le (by omega)
-  have hfs : Fits w (s + 1) := hfit.of_le (by omega)
   let bad := (((x.set Reg.address (D + s)).write (D + s) 0).set
     Reg.temporary (x.regs Reg.temporary)).set Reg.slot (s + 1)
   let good := ((((((((((((x.set Reg.address (D + s)).write (D + s) 0).set
@@ -70,8 +63,8 @@ theorem exec_writeSlot {w L H D R s : ℕ} (x : Data registers)
   by_cases hlarge : H < population (recordCode L s) L
   · have hv : ¬Eligible L H s := fun h => (Nat.not_lt_of_ge h.2) hlarge
     have hy : ExecWithin w writeSlot x bad 17 := by
-      ram_eval [writeSlot, bad, hd, hr, hs, hh, hp, h1, h0, hlarge, hfds, hfs,
-        Reg.address, Reg.directory, Reg.records, Reg.slot, Reg.height, Reg.population,
+      ram_eval [writeSlot, bad, hd, hr, hs, hh, hp, h1, h0, hlarge, Reg.address, Reg.directory,
+        Reg.records, Reg.slot, Reg.height, Reg.population,
         Reg.temporary, Reg.one, Reg.nil, Fin.mk.injEq]
     refine ⟨bad, hy, ?_, ?_, ?_, fun i hi => hy.regs_eq (writeSlot_preserves i hi)⟩
     · simp [bad, catalogueWrite, hv, directoryWord, Data.write, Data.set]
@@ -82,7 +75,7 @@ theorem exec_writeSlot {w L H D R s : ℕ} (x : Data registers)
     · have hv : ¬Eligible L H s := fun h => (Nat.not_lt_of_ge h.1) hsmall
       have hy : ExecWithin w writeSlot x bad 17 := by
         ram_eval [writeSlot, bad, hd, hr, hs, hh, hp, he, h1, h0,
-          hlarge, hsmall, hfds, hfs, Reg.address, Reg.directory, Reg.records, Reg.slot,
+          hlarge, hsmall, Reg.address, Reg.directory, Reg.records, Reg.slot,
           Reg.height, Reg.population, Reg.stars, Reg.temporary, Reg.one, Reg.nil, Fin.mk.injEq]
       refine ⟨bad, hy, ?_, ?_, ?_, fun i hi => hy.regs_eq (writeSlot_preserves i hi)⟩
       · simp [bad, catalogueWrite, hv, directoryWord, Data.write, Data.set]
@@ -92,8 +85,7 @@ theorem exec_writeSlot {w L H D R s : ℕ} (x : Data registers)
     · have hv : Eligible L H s := ⟨Nat.le_of_not_lt hsmall, Nat.le_of_not_lt hlarge⟩
       have hy : ExecWithin w writeSlot x good 17 := by
         ram_eval [writeSlot, emit, good, r, hd, hr, hs, hh, hc, hcode, he, hp,
-          hstride, h1, h3, h0, hlarge, hsmall, hfds, hfr, hf3r, hfra, hfra1, hfra2, hfs,
-          Reg.address, Reg.directory, Reg.records, Reg.slot, Reg.height, Reg.population,
+          hstride, h1, h3, h0, hlarge, hsmall, Reg.address, Reg.directory, Reg.records, Reg.slot, Reg.height, Reg.population,
           Reg.stars, Reg.completion, Reg.starPower, Reg.temporary, Reg.count,
           Reg.one, Reg.three, Reg.nil, Fin.mk.injEq]
       refine ⟨good, hy, ?_, ?_, ?_, fun i hi => hy.regs_eq (writeSlot_preserves i hi)⟩

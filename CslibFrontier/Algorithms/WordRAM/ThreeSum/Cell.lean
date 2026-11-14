@@ -246,14 +246,11 @@ private theorem exec_BC {w N b d q r c t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (
   have hfit : Fits (w + 2) (a + a) := by
     simpa only [encode_nat] using (encode_fits hidx).mono (by omega : w + 1 ≤ w + 2)
   have hmfit : Fits (w + 2) (c * t) := hfit.of_le (by dsimp [a]; omega)
-  have hafit : Fits (w + 2) a := hfit.of_le (by omega)
-  have hdfit : Fits (w + 2) (a - r) := hfit.of_le (by omega)
-  have hddfit : Fits (w + 2) ((a - r) + (a - r)) := hfit.of_le (by omega)
   have h3 : Fits (w + 2) 3 := (show Fits 2 3 from by decide).mono (by omega)
   have hp : ExecWithin (w + 2) setupBC x z 7 := by
     by_cases hh : a < r <;>
-      ram_eval [setupBC, z, z₁, z₀, hcell, hmat, hrow, hcol, ht, hs, hmfit, hafit,
-        hdfit, hddfit, h3, hd, hh, a, cell, matBC, row, col, side, inst, index, dest,
+      ram_eval [setupBC, z, z₁, z₀, hcell, hmat, hrow, hcol, ht, hs, hmfit, h3, hd, hh, a, cell,
+        matBC, row, col, side, inst, index, dest,
         Fin.mk.injEq]
   have hix : GenericRAM.Signed.Fits w ix := by
     dsimp only [ix]
@@ -294,10 +291,9 @@ private theorem exec_AC {w N b d q r c t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (
     simpa only [encode_nat] using (encode_fits hidx).mono (by omega : w + 1 ≤ w + 2)
   have hsum : Fits (w + 2) (r + c) := hfit.of_le (by dsimp [a]; nlinarith)
   have hmul : Fits (w + 2) ((r + c) * t) := hfit.of_le (by dsimp [a]; omega)
-  have hafit : Fits (w + 2) a := hfit.of_le (by omega)
   have hp : ExecWithin (w + 2) setupAC x z 6 := by
     ram_eval [setupAC, z, hcell, hmat, hrow, hcol, ht, hs, hneg,
-      hsum, hmul, hafit, hfit, hd, a, cell, matAC, row, col, side, inst, index, dest,
+      hsum, hmul, hfit, hd, a, cell, matAC, row, col, side, inst, index, dest,
       filler, negFill, Fin.mk.injEq]
   obtain ⟨u, hu, hum, hureg⟩ := exec_weight (d := d + q) (z := (a : ℤ)) true z
     (by

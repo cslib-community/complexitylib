@@ -113,11 +113,10 @@ theorem exec {w : ℕ} (x : Data 15)
   change Fits w (4 * ((n * n) * (n * n)) + 4) at hN
   change Fits w (S + g) at hB
   change Fits w (n + B) at hH
-  have h1 : Fits w 1 := hD.of_le (by omega)
   let a := x.set one 1 |>.set arg D
   have hstart : ExecWithin (B := .standard) w (ram[ one ← #1; arg ← dimension ]) x a 2 := by
     have hfit : Fits w D := hD.of_le (by dsimp [D]; omega)
-    ram_eval [a, D, h1, hfit, one, arg, dimension, Fin.mk.injEq]
+    ram_eval [a, D, hfit, one, arg, dimension, Fin.mk.injEq]
   have haD : a.regs arg = D := by simp [a]
   obtain ⟨b, hb, hbroot, -, hbm, -⟩ := NatSqrt.exec_rename sqrtReg sqrtReg_injective a
     (by change Fits w (4 * a.regs arg + 4); rw [haD]; exact hD)
@@ -139,13 +138,12 @@ theorem exec {w : ℕ} (x : Data 15)
     by_cases h : n * n = 0
     · simp [h]
     · exact Nat.le_mul_of_pos_right _ (by omega)
-  have hafit : Fits w (n * n) := hN.of_le (by omega)
   have hn4 : Fits w ((n * n) * (n * n)) := hN.of_le (by omega)
   have hquot : Fits w ((n * n) * (n * n) / D) := hn4.of_le (Nat.div_le_self ..)
   let c := b.set middleRoot S |>.set area (n * n)
     |>.set arg ((n * n) * (n * n)) |>.set arg ((n * n) * (n * n) / D)
   have hbetween : ExecWithin w between b c 4 := by
-    ram_eval [between, c, hbroot, hbsize, hbD, hafit, hn4, hquot,
+    ram_eval [between, c, hbroot, hbsize, hbD, hn4, hquot,
       middleRoot, area, arg, root, size, dimension, Fin.mk.injEq]
   have hcarg : c.regs arg = (n * n) * (n * n) / D := by simp [c]
   obtain ⟨d, hd, hdroot, -, hdm, -⟩ := NatSqrt.exec_rename sqrtReg sqrtReg_injective c (by

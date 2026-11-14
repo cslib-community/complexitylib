@@ -38,7 +38,6 @@ theorem exec_quadrant {w t : ℕ} (base dst : Fin 64) (x : Data 64)
   have hsum : Fits w (x.regs base + t * x.regs Reg.quarter) := hw.of_le (by
     have hmul := Nat.mul_le_mul_right (x.regs Reg.quarter) (show t ≤ 3 by omega)
     omega)
-  have htag : Fits w t := hw.of_le (by omega)
   by_cases ht0 : t = 0
   · let y := x.set dst (x.regs base)
     have he : ExecWithin w (quadrant base dst t) x y 1 := by
@@ -51,7 +50,7 @@ theorem exec_quadrant {w t : ℕ} (base dst : Fin 64) (x : Data 64)
   · let y := ((x.set Reg.temporary t).set Reg.temporary
       (t * x.regs Reg.quarter)).set dst (x.regs base + t * x.regs Reg.quarter)
     have he : ExecWithin w (quadrant base dst t) x y 3 := by
-      ram_eval [quadrant, ht0, y, htag, hprod, hsum, hbt, hqt, Reg.temporary, Reg.quarter]
+      ram_eval [quadrant, ht0, y, hprod, hsum, hbt, hqt, Reg.temporary, Reg.quarter]
     refine ⟨y, he, rfl, ?_, ?_⟩
     · simp only [y, Data.set, Function.update_self]
     · intro i hi htemp

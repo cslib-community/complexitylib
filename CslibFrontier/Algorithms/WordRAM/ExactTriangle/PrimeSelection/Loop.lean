@@ -141,11 +141,8 @@ theorem exec_of_count {w D T : ℕ} (counter : Code .standard 128) (score : ℕ 
     · rw [hzk']; omega
   let x₀ := (((((((x.set Reg.one 1).set Reg.zero 0).set Reg.four 4).set Reg.cursor 2).set
     Reg.square 4).set Reg.best 0).set Reg.bestCount 0).set Reg.found 0
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have h4 : Fits w 4 := hfit.of_le (by omega)
   have hinit : ExecWithin w setup x x₀ 8 := by
-    ram_eval [setup, x₀, h1, h2, h4, Reg.one, Reg.zero, Reg.four, Reg.cursor,
+    ram_eval [setup, x₀, Reg.one, Reg.zero, Reg.four, Reg.cursor,
       Reg.square, Reg.best, Reg.bestCount, Reg.found, Fin.mk.injEq]
   have hx₀ : I x₀ := by
     refine ⟨?_, rfl, rfl, rfl, by change 2 ≤ 2; omega, ?_, rfl,

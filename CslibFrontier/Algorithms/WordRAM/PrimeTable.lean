@@ -198,13 +198,11 @@ theorem exec {w : ℕ} (x : Data 15)
       Nat.primeCounting', Nat.count_zero, memory_zero]
   obtain ⟨y, he, ⟨hl, hb, _, _, _, _, hcount, hm⟩, _⟩ := ExecWithin.loop_count P
     (fun _ ⟨_, _, hstop, _⟩ => hstop) hbody (by simp +decide [x₀, cursor, count, stop]) hx₀
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
   have hstop : Fits w (x.regs limit + 1) := hfit.of_le (by omega)
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; zero ← #0; two ← #2; cursor ← #0; count ← #0;
         stop ← limit + one ]) x x₀ 6 := by
-    ram_eval [x₀, m, h1, h2, hstop, limit, base, stop, one, zero, two, cursor, count, Fin.mk.injEq]
+    ram_eval [x₀, m, hstop, limit, base, stop, one, zero, two, cursor, count, Fin.mk.injEq]
   refine ⟨y, ?_, hm, ?_, hl, hb⟩
   · have hi₀ : x₀.regs cursor = 0 := rfl
     have hcost : 7 * m + 13 + 2 = 7 * m + 15 := by omega

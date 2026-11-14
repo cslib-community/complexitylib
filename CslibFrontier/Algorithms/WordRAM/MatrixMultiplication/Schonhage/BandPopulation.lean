@@ -61,17 +61,15 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
     have hpop := population_le L a
     have hfpop : Fits w (y.regs population + y.regs residue % 2) :=
       hfit.of_le (by omega)
-    have hfmod : Fits w (y.regs residue % 2) := hfit.of_le (by omega)
     have hfdiv : Fits w (y.regs residue / 2) :=
       hfit.of_le ((Nat.div_le_self _ _).trans (by omega))
-    have hfnext : Fits w (y.regs counter + 1) := hfit.of_le (by omega)
     let z := (((y.set digit (y.regs residue % 2)).set population
       (y.regs population + y.regs residue % 2)).set residue (y.regs residue / 2)).set
       counter (y.regs counter + 1)
     have he : ExecWithin w (ram[
         digit ← residue % two; population ← population + digit;
         residue ← residue / two; counter ← counter + one ]) y z 4 := by
-      ram_eval [z, hfpop, hfmod, hfdiv, hfnext, h1, h2,
+      ram_eval [z, hfpop, hfdiv, h1, h2,
         digit, residue, population, counter, one, two, Fin.mk.injEq]
     refine ⟨z, he, ?_, by simp [z]⟩
     · have hsum : (y.regs population + y.regs residue % 2) +

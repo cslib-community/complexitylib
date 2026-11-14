@@ -100,7 +100,6 @@ theorem exec_core {W b m t N : ℕ}
     omega)
   obtain ⟨y, hy, ymatch, yframe⟩ := MemoryWindow.execWithin hp'
     (BoxProduct.not_readsWidth true) sbound smatch (setup_fits hfit).1 hwindow
-  have h1 : Fits W 1 := hfit.of_le (by omega)
   have hI : Fits W (QueriedProduct.inputEnd m N qs.length + 1) := by
     have hlen := hi'.2 0
     change (Data.init (BoxProduct.input true (21 * m) t X Y qs) : Data 160).mem 0 < _ at hlen
@@ -110,7 +109,7 @@ theorem exec_core {W b m t N : ℕ}
   have yI : y.regs Reg.inputSize = QueriedProduct.inputEnd m N qs.length :=
     (ymatch.regs _).trans pp.inputSize
   have hz : ExecWithin W includeThreshold y z 2 := by
-    ram_eval [includeThreshold, z, yI, h1, hI, Reg.third, Reg.inputSize,
+    ram_eval [includeThreshold, z, yI, hI, Reg.third, Reg.inputSize,
       QueriedProduct.Reg.inputSize, Fin.mk.injEq]
   have yb : y.regs Reg.base = b := ymatch.base_eq
   have yM : y.regs Reg.modulus = windowSize N qs.length := ymatch.modulus_eq

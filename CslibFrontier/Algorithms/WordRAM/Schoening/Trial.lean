@@ -244,7 +244,6 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
     rw [hj] at hd hbits ⊢
     have hjn : j < n := by omega
     have hc : (Cond.lt cnt nReg).Holds x := by simp [Cond.holds_lt, hx.nReg_eq, hj]; omega
-    have hf1 : Fits w (A + j) := hw.of_le (by omega)
     have hf2 : Fits w (j + 1) := hw.of_le (by omega)
     let Y : ℕ → Data 24 := fun k =>
       (((x.set val k).set addr (A + j)).write (A + j) k).set cnt (j + 1)
@@ -253,7 +252,7 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
           (x.set val k.val) (Y k.val) 3 := by
       intro k
       have hk1 : x.regs one = 1 := hx.one_eq
-      ram_eval [Y, hx.aBase_eq, hx.one_eq, hj, hf1, hf2]
+      ram_eval [Y, hx.aBase_eq, hx.one_eq, hj, hf2]
     have hbody := ExecRandLaw.rand_seq (w := w) (f := fun y => assignmentAt y.mem A n)
       (P := fun y => ∃ k ≤ 1, y = Y k) (y := fun k => Y k.val)
       (by rw [hx.one_eq]; exact hw.of_le (by omega)) hrest
@@ -390,10 +389,6 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ} (hw : Fits w
         rw [show x.regs cPtr + 1 + k.val = x.regs cPtr + (k.val + 1) by omega, h, hl,
           List.get_eq_getElem]
       have hv : x.mem (A + l.1.val) = (σ l.1).toNat := hσ l.1
-      have hf1 : Fits w (x.regs cPtr + 1) := hw.of_le (by omega)
-      have hf2 : Fits w (x.regs cPtr + 1 + k.val) := hw.of_le (by omega)
-      have hf3 : Fits w l.1.val := hw.of_le (by omega)
-      have hf4 : Fits w (A + l.1.val) := hw.of_le (by omega)
       have hf5 : Fits w (1 - (σ l.1).toNat) := hw.of_le (by omega)
       let Y := (((((((((x₂.set var k.val).set addr (x.regs cPtr + 1)).set addr
         (x.regs cPtr + 1 + k.val)).set lit (litCode l)).set var l.1.val).set addr
@@ -402,8 +397,7 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ} (hw : Fits w
       have hYm : Y.mem = Function.update x.mem (A + l.1.val) (1 - (σ l.1).toNat) := rfl
       refine ⟨Y, ?run, ⟨?frame, ?bits⟩, ?law⟩
       case run =>
-        ram_eval [Y, flipRest, x₂, hx.one_eq, hx.aBase_eq, hlit, litCode_shiftRight, hv, hf1, hf2,
-          hf3, hf4, hf5]
+        ram_eval [Y, flipRest, x₂, hx.one_eq, hx.aBase_eq, hlit, litCode_shiftRight, hv, hf5]
       case frame =>
         refine hx.congr (by simp +decide [Y, x₂]) (by simp +decide [Y, x₂])
           (by simp +decide [Y, x₂]) (by simp +decide [Y, x₂]) (by simp +decide [Y, x₂])
@@ -581,12 +575,11 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
   have h := ExecRandLaw.seq (κ := walk φ (3 * n)) (R₂ := 3 * n)
     (T₂ := 3 + (3 * n * (12 * (encodeClauses φ).length + 20) + 2 +
       (12 * (encodeClauses φ).length + 5))) hinit fun y ⟨hy, hyb⟩ => by
-    have hf2 : Fits w (n + n) := hw.of_le (by omega)
     have hf3 : Fits w (n + n + n) := hw.of_le (by omega)
     let y₃ := ((y.set steps (n + n)).set steps (n + n + n)).set cnt 0
     have hpre : ExecWithin w (ram[ steps ← nReg + nReg; steps ← steps + nReg; cnt ← zero ]) y y₃
         3 := by
-      ram_eval [y₃, hy.nReg_eq, hy.zero_eq, hf2, hf3]
+      ram_eval [y₃, hy.nReg_eq, hy.zero_eq, hf3]
     have hy₃ : Frame φ C A M y₃ := ((hy.set (by decide) _).set (by decide) _).set (by decide) _
     have hwalk := walkLoop_law (φ := φ) hw hA (3 * n) y₃ hy₃ (by simpa [y₃] using hyb)
       (by simp +decide only [y₃, Data.set_regs, Function.update_apply, ↓reduceIte, Nat.zero_add]
@@ -656,13 +649,11 @@ def setupData (φ : CNF (Fin n)) : Data 24 :=
 theorem trialSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).length + 3 * n + 1)) :
     ExecWithin w trialSetup (Data.init (encode φ)) (setupData φ) 5 ∧
       Frame φ 2 ((encode φ).length + 1) (setupData φ).mem (setupData φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
-  have hf2 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
   have hf3 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hm0 : (Data.init (encode φ) : Data 24).mem 0 = (encode φ).length := rfl
   have hm1 : (Data.init (encode φ) : Data 24).mem 1 = n := rfl
   refine ⟨?run, ?frame⟩
-  case run => ram_eval [trialSetup, setupData, Data.init_regs, hm0, hm1, hf1, hf2, hf3]
+  case run => ram_eval [trialSetup, setupData, Data.init_regs, hm0, hm1, hf3]
   case frame =>
     refine ⟨by simp +decide [setupData], by simp +decide [setupData], by simp +decide [setupData],
       by simp +decide [setupData], by simp +decide [setupData],

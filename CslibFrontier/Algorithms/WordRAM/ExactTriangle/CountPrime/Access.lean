@@ -43,12 +43,10 @@ theorem exec_morton {w k : ℕ} (x : Data 128) (h2 : x.regs Reg.two = 2)
   have hprod : Fits w (Nat.Morton.spread (x.regs Reg.row) * 2) := hw.of_le (by
     unfold Nat.Morton.index at hi
     omega)
-  have haddrR : Fits w (x.regs Reg.spread + x.regs Reg.row) := hw.of_le (by omega)
-  have haddrC : Fits w (x.regs Reg.spread + x.regs Reg.column) := hw.of_le (by omega)
   refine ⟨?y, ?run, ?mem, ?position, ?regs⟩
   case run =>
-    ram_eval [morton, h2, hreadr, hreadc, hsum, hprod, haddrR, haddrC,
-      Reg.address, Reg.spread, Reg.rowSpread, Reg.columnSpread, Reg.position,
+    ram_eval [morton, h2, hreadr, hreadc, hsum, hprod, Reg.address, Reg.spread, Reg.rowSpread,
+      Reg.columnSpread, Reg.position,
       Reg.row, Reg.column, Reg.two]
   case mem => rfl
   case position => simp only [Data.set, Function.update_self, Nat.Morton.index, Nat.mul_comm]
@@ -70,8 +68,6 @@ theorem exec_readResidue {w : ℕ} (transpose : Bool) (x : Data 128)
   have hrow := Nat.mul_le_mul_right (x.regs Reg.side) (Nat.succ_le_of_lt hr)
   have hcol := Nat.mul_le_mul_right (x.regs Reg.side) (Nat.succ_le_of_lt hc)
   rw [Nat.succ_mul] at hrow hcol
-  have hpr : Fits w (x.regs Reg.row * x.regs Reg.side) := hw.of_le (by omega)
-  have hpc : Fits w (x.regs Reg.column * x.regs Reg.side) := hw.of_le (by omega)
   have hir : Fits w (x.regs Reg.row * x.regs Reg.side + x.regs Reg.column) :=
     hw.of_le (by omega)
   have hic : Fits w (x.regs Reg.column * x.regs Reg.side + x.regs Reg.row) :=
@@ -84,7 +80,7 @@ theorem exec_readResidue {w : ℕ} (transpose : Bool) (x : Data 128)
   | false =>
     refine ⟨?y, ?run, ?mem, ?residue, ?regs⟩
     case run =>
-      ram_eval [readResidue, hpr, hir, har, Reg.row, Reg.column,
+      ram_eval [readResidue, hir, har, Reg.row, Reg.column,
         Reg.side, Reg.residueSource, Reg.address, Reg.temporary, Reg.residue]
     case mem => rfl
     case residue => rfl
@@ -95,7 +91,7 @@ theorem exec_readResidue {w : ℕ} (transpose : Bool) (x : Data 128)
   | true =>
     refine ⟨?yTrue, ?runTrue, ?memTrue, ?residueTrue, ?regsTrue⟩
     case runTrue =>
-      ram_eval [readResidue, hpc, hic, hac, Reg.row, Reg.column,
+      ram_eval [readResidue, hic, hac, Reg.row, Reg.column,
         Reg.side, Reg.residueSource, Reg.address, Reg.temporary, Reg.residue]
     case memTrue => rfl
     case residueTrue => rfl

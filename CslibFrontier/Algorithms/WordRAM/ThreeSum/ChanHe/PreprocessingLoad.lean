@@ -55,10 +55,9 @@ theorem loadRoot_exec {w U f t : ℕ} {l : Frontend.Layout} {rs : List (ℕ × �
     hfit.of_le (by omega)
   have hbase : Fits w (l.descriptors + t * 6) := by
     simpa only [Nat.add_zero] using ha' 0 (by decide)
-  have hmul : Fits w (t * 6) := hfit.of_le (by omega)
   have hF : Fits w f := hf ▸ hx.1 levels
   have he : Exec w loadRoot x y 14 := by
-    ram_eval [loadRoot, y, a, hc, hd, hf, hs, ho, hmul, ha 0 (by decide),
+    ram_eval [loadRoot, y, a, hc, hd, hf, hs, ho, ha 0 (by decide),
       ha 1 (by decide), ha 2 (by decide), ha 3 (by decide), ha 4 (by decide),
       ha 5 (by decide), hF, hx.2, current, descriptors, levels, stride, one, address,
       Traversal.slot, Nat.mul_comm, Nat.add_assoc, hbase,

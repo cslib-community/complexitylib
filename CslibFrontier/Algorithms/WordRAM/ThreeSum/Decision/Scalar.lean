@@ -51,12 +51,10 @@ theorem exec_power {w B E : ℕ} (x : Data 16)
     have hmul : Fits w (B ^ (E - y.regs remaining) * B) := by
       rw [← pow_succ]
       exact hfit.of_le (Nat.pow_le_pow_right hB (by omega))
-    have hdec : Fits w (y.regs remaining - 1) := hcount.of_le (by omega)
     let z := y.set envelope (B ^ (E - y.regs remaining) * B)
       |>.set remaining (y.regs remaining - 1)
     have he : ExecWithin w powerBody y z 2 := by
-      ram_eval [powerBody, z, hyv, hys, hyo, hmul, hdec,
-        envelope, scale, remaining, one, Fin.mk.injEq]
+      ram_eval [powerBody, z, hyv, hys, hyo, hmul, envelope, scale, remaining, one, Fin.mk.injEq]
     refine ⟨z, he, ⟨?_, ?_, ?_, ?_⟩, ?_⟩
     · simpa +decide [z, envelope, remaining] using (show y.regs remaining - 1 ≤ E by omega)
     · simp +decide only [z, Data.set_regs, Function.update_apply, envelope, remaining,

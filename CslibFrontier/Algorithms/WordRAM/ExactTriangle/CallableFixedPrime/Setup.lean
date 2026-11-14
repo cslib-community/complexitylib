@@ -74,7 +74,6 @@ theorem exec_setup {W : ℕ} (x : Data 640)
   have fit : Fits W (b + 4 * windowSize n D g p total + 1024) := hfit
   obtain ⟨hw, hS, hwidth, h6166⟩ := setup_fits fit
   have h2 : Fits W 2 := fit.of_le (by omega)
-  have h4 : Fits W 4 := fit.of_le (by omega)
   have hc : Fits W 6166 := fit.of_le (by omega)
   have hsize : Fits W S := fit.of_le (by omega)
   have hsize' : Fits W (S + 1) := fit.of_le (by omega)
@@ -96,7 +95,7 @@ theorem exec_setup {W : ℕ} (x : Data 640)
       ∃ s, ExecWithin W sizeArgument x s 7 ∧ s.regs (clogBank 0) = S ∧
         s.mem = x.mem ∧ s.regs Reg.base = b := by
     refine ⟨?s, ?run, ?value, ?mem, ?base⟩
-    case run => ram_eval [sizeArgument, clogBank, n, D, g, p, total, S, h4, hND, hNDg,
+    case run => ram_eval [sizeArgument, clogBank, n, D, g, p, total, S, hND, hNDg,
       hNDgp, hNDgpt, hsize, Reg.n, Reg.dimension, Reg.groups, Reg.prime, Reg.total,
       Fin.mk.injEq]
     case value => simp +decide [S, n, D, g, p, total, clogBank]

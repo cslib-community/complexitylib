@@ -112,9 +112,7 @@ theorem exec_tableWrite {w : ℕ} (L m inv tab t : ℕ) (x : Data 96)
       (∀ i, i ≠ address → i ≠ temporary → i ≠ mask → i ≠ rank → y.regs i = x.regs i) := by
   have hbound := prefixCount_le L m t
   have ha : Fits w (inv + t) := hfit.of_le (by omega)
-  have htaddr : Fits w (tab + prefixCount L m t) := hfit.of_le (by omega)
   have hr : Fits w (prefixCount L m t + 1) := hfit.of_le (by omega)
-  have ht1 : Fits w (t + 1) := hfit.of_le (by omega)
   by_cases hp : MaskTable.population L t = m
   · by_cases hselected : prefixCount L m t < K0 L m * K0 L m
     · let y := (((((((x.set address (inv + t)).write (inv + t) 0).set temporary
@@ -123,7 +121,7 @@ theorem exec_tableWrite {w : ℕ} (L m inv tab t : ℕ) (x : Data 96)
           rank (prefixCount L m t + 1)).set mask (t + 1)
       refine ⟨y, ?_, ?_, ?_, ?_, ?_⟩
       · ram_eval [tableWrite, y, hinv, htab, hmask, hrank, hpop, hm, hsq, h0, h1,
-          ha, htaddr, hr, ht1, hp, hselected,
+          ha, hr, hp, hselected,
           inverse, table, mask, rank, population, inner, square, zero, one, address,
           temporary, Fin.mk.injEq]
       · simp [y, tableStep, lookup, ht, hp, hselected, Data.write, Data.set,
@@ -138,7 +136,7 @@ theorem exec_tableWrite {w : ℕ} (L m inv tab t : ℕ) (x : Data 96)
           (x.regs rank)).set rank (prefixCount L m t + 1)).set mask (t + 1)
       refine ⟨y, ?_, ?_, ?_, ?_, ?_⟩
       · ram_eval [tableWrite, y, hinv, htab, hmask, hrank, hpop, hm, hsq, h0, h1,
-          ha, ht1, hr, hp, hselected, inverse, table, mask, rank, population, inner,
+          ha, hr, hp, hselected, inverse, table, mask, rank, population, inner,
           square, zero, one, address, temporary, Fin.mk.injEq]
       · simp [y, tableStep, lookup, ht, hp, hselected, Data.write, Data.set]
       · simp [y, Data.set, address, mask, rank]
@@ -150,7 +148,7 @@ theorem exec_tableWrite {w : ℕ} (L m inv tab t : ℕ) (x : Data 96)
         (x.regs rank)).set mask (t + 1)
     refine ⟨y, ?_, ?_, ?_, ?_, ?_⟩
     · ram_eval [tableWrite, y, hinv, htab, hmask, hrank, hpop, hm, hsq, h0, h1,
-        ha, ht1, hp, inverse, mask, rank, population, inner, zero, one,
+        ha, hp, inverse, mask, rank, population, inner, zero, one,
         address, Fin.mk.injEq]
     · simp [y, tableStep, lookup, ht, hp, Data.write, Data.set]
     · simp [y, Data.set, address, mask, rank]

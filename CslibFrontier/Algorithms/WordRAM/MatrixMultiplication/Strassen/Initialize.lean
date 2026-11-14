@@ -46,13 +46,10 @@ theorem exec_setup {w : ℕ} (x : Data 64)
       (∀ j : Fin 7, y.mem (y.regs Reg.frame + j.val) = y.regs (field j)) ∧
       ∀ a, a < y.regs Reg.frame ∨ y.regs Reg.frame + 7 ≤ a → y.mem a = x.mem a := by
   have hpow : 0 < 4 ^ x.regs Reg.depth := by positivity
-  have h7 : Fits w 7 := hw.of_le (by omega)
-  have h4 : Fits w 4 := hw.of_le (by omega)
-  have h1 : Fits w 1 := hw.of_le (by omega)
   let r := (((((x.set Reg.zero 0).set Reg.one 1).set Reg.four 4).set Reg.frameWidth 7).set
     Reg.powerBase 4).set Reg.powerExponent (x.regs Reg.depth)
   have hr : ExecWithin w powerArguments x r 6 := by
-    ram_eval [powerArguments, r, h1, h4, h7, Reg.zero, Reg.one, Reg.four, Reg.frameWidth,
+    ram_eval [powerArguments, r, Reg.zero, Reg.one, Reg.four, Reg.frameWidth,
       Reg.powerBase, Reg.powerExponent, Reg.depth]
   let f : Fin 5 → Fin 64 := Fin.castLE (by decide)
   obtain ⟨s, hpower, hsvalue, _, _, htm, _, _, hframe⟩ :=
@@ -84,8 +81,8 @@ theorem exec_setup {w : ℕ} (x : Data 64)
   let u := ((((s.set Reg.size (4 ^ x.regs Reg.depth * x.regs Reg.modulus)).set Reg.frames
     root).set Reg.frame root).set Reg.phase 0).set Reg.active 1
   have hu : ExecWithin w locateRoot s u 5 := by
-    ram_eval [locateRoot, u, root, hsvalue, hsmod, hsscratch, hsize, hframe, h1,
-      Reg.powerValue, Reg.modulus, Reg.size, Reg.frames, Reg.frame, Reg.scratch,
+    ram_eval [locateRoot, u, root, hsvalue, hsmod, hsscratch, hsize, hframe, Reg.powerValue,
+      Reg.modulus, Reg.size, Reg.frames, Reg.frame, Reg.scratch,
       Reg.phase, Reg.active]
   have hur (i : Fin 64) (hsize : i ≠ Reg.size) (hframes : i ≠ Reg.frames)
       (hframe : i ≠ Reg.frame) (hphase : i ≠ Reg.phase) (hactive : i ≠ Reg.active) :

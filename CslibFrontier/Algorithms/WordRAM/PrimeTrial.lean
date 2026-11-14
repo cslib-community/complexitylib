@@ -124,11 +124,10 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
       exact h d hd hdp (Nat.mod_eq_zero_of_dvd hdiv)
     · rintro ⟨_, h⟩ d hd hdp hzero
       exact h d hd hdp (Nat.dvd_of_mod_eq_zero hzero)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
   have h2 : Fits w 2 := hfit.of_le (by omega)
   have hinit : ExecWithin (B := .standard) w
       (ram[ divisor ← #2; flag ← #1; one ← #1; zero ← #0 ]) x x₀ 4 := by
-    ram_eval [x₀, h1, h2]
+    ram_eval [x₀, h2]
   refine ⟨y, ?_, by simpa only [hprime] using hf, ha, hm⟩
   have hd₀ : x₀.regs divisor = 2 := rfl
   exact (hinit.seq he).mono (by rw [hd₀]; dsimp only [p]; omega)

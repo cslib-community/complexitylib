@@ -141,11 +141,10 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
     simpa only [convolution] using hzacc
   let y := ((z.set Reg.address (x.regs Reg.output + r)).write
     (x.regs Reg.output + r) (encode (convolution p u v r))).set Reg.coefficient (r + 1)
-  have hnextrow : Fits (w + 2) (r + 1) := h2p.of_le (by omega)
   have hstore : ExecWithin (w + 2)
       (ram[ Reg.address ← Reg.output + Reg.coefficient; *Reg.address ← Reg.accumulator;
         Reg.coefficient ← Reg.coefficient + Reg.one ]) z y 3 := by
-    ram_eval [y, hout, hnextrow, hzr, hzo, hz1, hza,
+    ram_eval [y, hout, hzr, hzo, hz1, hza,
       Reg.address, Reg.output, Reg.coefficient, Reg.one, Reg.accumulator, Fin.mk.injEq]
   have he : ExecWithin (w + 2) coefficient x y (42 * p + 7) :=
     (hinit.seq (hz.seq hstore)).mono (by simp +decide [x₀, Reg.index, Reg.accumulator]; omega)

@@ -101,10 +101,6 @@ theorem setup_exec {w U : ℕ} (l : Layout) (k : ℕ) (x : Data 48)
       y.regs current = 0 ∧ y.regs heap = l.pointer 0 ∧ y.mem = x.mem := by
   obtain ⟨fN, fSq, fS, fD, fA, f2A, fP, fAC, fE, _, f5⟩ := layout_bounds l U
   have f0 : Fits w 0 := fits_zero w
-  have f1 : Fits w 1 := hfit.of_le (by omega)
-  have f2 : Fits w 2 := hfit.of_le (by omega)
-  have f3 : Fits w 3 := hfit.of_le (by omega)
-  have f4 : Fits w 4 := hfit.of_le (by omega)
   have f5' : Fits w 5 := hfit.of_le f5
   have fn := hfit.of_le fN
   have fsq := hfit.of_le fSq
@@ -130,7 +126,7 @@ theorem setup_exec {w U : ℕ} (l : Layout) (k : ℕ) (x : Data 48)
       Layout.arrays, Layout.count, Layout.splits, pow_two, Nat.mul_comm,
       Nat.mul_left_comm, Nat.mul_assoc] using hfit.of_le fE
   refine ⟨?y, ?run, ?_, ?_, ?_, ?_⟩
-  case run => ram_eval [setup, hn, hΛ, hd, f0, f1, f2, f3, f4, f5', fn, fsq,
+  case run => ram_eval [setup, hn, hΛ, hd, f0, f5', fn, fsq,
     fs, fd, fa, f2a, fp, fac, fe]
   · constructor
     all_goals simp +decide [Data.set_regs, hU, hn, hΛ, hk, hc, hlen, hd,

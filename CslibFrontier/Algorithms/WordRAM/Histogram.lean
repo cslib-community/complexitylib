@@ -209,9 +209,8 @@ private theorem exec_clear {w : ℕ} (x : Data 11) (h1 : Fits w 1)
     obtain ⟨hr, ho, hz, hm⟩ := hy
     have hdst := hr dst (by decide)
     have ha : Fits w (y.regs dst + y.regs idx) := hd.of_le (by rw [hdst]; omega)
-    have hn : Fits w (y.regs idx + 1) := hd.of_le (by omega)
     refine ⟨?z, ?run, ?inv, ?increment⟩
-    case run => ram_eval [clearBody, ha, hn, ho]
+    case run => ram_eval [clearBody, ha, ho]
     case inv =>
       refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
@@ -280,7 +279,6 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
       rw [hm, hdst, memory_read _ _ _ _ _ _ hkey]
     have ha : Fits w (y.regs src + y.regs idx) := hs.of_le (by rw [hsrc]; omega)
     have hb : Fits w (y.regs dst + keys (y.regs idx)) := hd.of_le (by rw [hdst]; omega)
-    have hn : Fits w (y.regs idx + 1) := ht.of_le (by omega)
     have hc := count_le keys (y.regs idx) (keys (y.regs idx))
     have hpnext := pairs_le_sq keys (y.regs idx + 1)
     have hsquare : (y.regs idx + 1) * (y.regs idx + 1) ≤ x.regs len * x.regs len :=
@@ -294,7 +292,7 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
     have hcount : Fits w (count keys (y.regs idx) (keys (y.regs idx)) + 1) :=
       ht.of_le (by omega)
     refine ⟨?z, ?run, ?inv, ?increment⟩
-    case run => ram_eval [body, ha, hb, hn, ho, hread, hbucket, hp, ht₁, ht₂, hcount]
+    case run => ram_eval [body, ha, hb, ho, hread, hbucket, hp, ht₁, ht₂, hcount]
     case inv =>
       refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi

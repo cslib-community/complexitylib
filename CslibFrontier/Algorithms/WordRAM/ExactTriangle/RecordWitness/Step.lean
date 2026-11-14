@@ -118,14 +118,13 @@ theorem exec_step_skip {W n first length out queries count i : ℕ} (x : Data 40
         |>.set Reg.index (i + 1)
     else (x.set Reg.answer (x.regs Reg.answer)).set Reg.index (i + 1)
   have ha : Fits W (out + i) := hfit.of_le (by omega)
-  have ht : Fits W (i + 1) := hfit.of_le (by omega)
   have he : ExecWithin W step x y 6 := by
     by_cases hf : x.regs Reg.found = 0
     · have hz : x.mem (out + i) = 0 := hskip.resolve_left (not_not_intro hf)
-      ram_eval [step, y, hf, hz, hi, hx.output, hx.zero, hx.one, ha, ht,
-        Reg.found, Reg.zero, Reg.address, Reg.output, Reg.index, Reg.answer, Reg.one]
-    · ram_eval [step, y, hf, hi, hx.zero, hx.one, ht,
-        Reg.found, Reg.zero, Reg.answer, Reg.index, Reg.one]
+      ram_eval [step, y, hf, hz, hi, hx.output, hx.zero, hx.one, ha, Reg.found, Reg.zero,
+        Reg.address, Reg.output, Reg.index, Reg.answer, Reg.one]
+    · ram_eval [step, y, hf, hi, hx.zero, hx.one, Reg.found, Reg.zero, Reg.answer, Reg.index,
+      Reg.one]
   have frame (j : Fin 400) (hj : j ≠ Reg.index) (ha : j ≠ Reg.address)
       (hb : j ≠ Reg.answer) : y.regs j = x.regs j := by
     by_cases hf : x.regs Reg.found = 0 <;> simp [y, hf, hj, ha, hb]

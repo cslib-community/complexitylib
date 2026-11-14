@@ -419,12 +419,11 @@ private theorem SetupState.numStep₁ {φ : CNF (Fin n)} {k c A w : ℕ} {ds : L
     ∃ y, ExecWithin w numStep₁ x y (10 * (mulStep (2 * (k - 1)) ds).length + 8) ∧
       SetupState φ k c A (mulStep (2 * (k - 1)) ds) y := by
   unfold mulStep at hfit ⊢
-  have hf1 : Fits w (k - 1) := hf.of_le (by omega)
   have hf2 : Fits w (k - 1 + (k - 1)) := hf.of_le (by omega)
   let x₃ := ((x.set mulr (k - 1)).set mulr (k - 1 + (k - 1))).set carry 0
   have hpre : ExecWithin w (ram[ mulr ← kReg - one; mulr ← mulr + mulr; carry ← zero ] :
       Code .standard 24) x x₃ 3 := by
-    ram_eval [x₃, h.kReg_eq, h.frame.one_eq, h.frame.zero_eq, hf1, hf2]
+    ram_eval [x₃, h.kReg_eq, h.frame.one_eq, h.frame.zero_eq, hf2]
   have h₃ : SetupState φ k c A ds x₃ :=
     ((h.set (by decide) _).set (by decide) _).set (by decide) _
   obtain ⟨y, hy, hyS, -⟩ := h₃.mulAdd (a := 2 * (k - 1)) (cy := 0) (Bd := 2 * (k - 1))
@@ -509,13 +508,11 @@ theorem countSetup_exec {φ : CNF (Fin n)} {k c A w : ℕ} {x : Data 24} (hk : 3
   have hfl {m : ℕ} (hm : m ≤ ℓ) : Fits w (A + n + m) := hfa.of_le (by omega)
   -- the counter starts at `3 n + 1`
   have hL₀ : (mulAddDigits 0 (3 * n + 1) []).length ≤ ℓ := (hs1 0 (Nat.zero_le _)).trans hlast
-  have hf3 : Fits w (n + n) := hfm.of_le (by omega)
-  have hf4 : Fits w (n + n + n) := hfm.of_le (by omega)
   have hf5 : Fits w (n + n + n + 1) := hfm.of_le (by omega)
   let x₄ := (((x.set mulr 0).set carry (n + n)).set carry (n + n + n)).set carry (n + n + n + 1)
   have hpre : ExecWithin w (ram[ mulr ← zero; carry ← nReg + nReg; carry ← carry + nReg;
       carry ← carry + one ] : Code .standard 24) x x₄ 4 := by
-    ram_eval [x₄, h.frame.zero_eq, h.frame.one_eq, h.frame.nReg_eq, hf3, hf4, hf5]
+    ram_eval [x₄, h.frame.zero_eq, h.frame.one_eq, h.frame.nReg_eq, hf5]
   have h₄ : SetupState φ k c A [] x₄ :=
     (((h.set (by decide) _).set (by decide) _).set (by decide) _).set (by decide) _
   obtain ⟨y₀, hy₀, hS₀, -⟩ := h₄.mulAdd (a := 0) (cy := 3 * n + 1) (Bd := 3 * n + 1)
@@ -587,12 +584,6 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
     (hw : Fits w ((k :: c :: encode φ).length + n + k + 4)) :
     ExecWithin w ampSetup (Data.init (k :: c :: encode φ)) (ampSetupData k c φ) 13 ∧
       SetupState φ k c ((k :: c :: encode φ).length + 1) [] (ampSetupData k c φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
-  have hf2 : Fits w ((k :: c :: encode φ).length + 1) := hw.of_le (by omega)
-  have hf3 : Fits w 2 := hw.of_le (by omega)
-  have hf4 : Fits w 3 := hw.of_le (by omega)
-  have hf5 : Fits w 4 := hw.of_le (by omega)
-  have hf6 : Fits w ((k :: c :: encode φ).length + 1 + n) := hw.of_le (by omega)
   have hf7 : Fits w (k - 3) := hw.of_le (by omega)
   have hm0 : (Data.init (k :: c :: encode φ) : Data 24).mem 0 = (k :: c :: encode φ).length :=
     rfl
@@ -601,8 +592,7 @@ theorem ampSetup_exec (k c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   have hm3 : (Data.init (k :: c :: encode φ) : Data 24).mem 3 = n := rfl
   refine ⟨?run, ?state⟩
   case run =>
-    ram_eval [ampSetup, ampSetupData, Data.init_regs, hm0, hm1, hm2, hm3, hf1, hf2, hf3, hf4, hf5,
-      hf6, hf7]
+    ram_eval [ampSetup, ampSetupData, Data.init_regs, hm0, hm1, hm2, hm3, hf7]
   case state =>
     refine ⟨⟨by simp +decide [ampSetupData], by simp +decide [ampSetupData],
       by simp +decide [ampSetupData], by simp +decide [ampSetupData],

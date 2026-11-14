@@ -58,14 +58,11 @@ theorem exec_powers {w L Q : ℕ} (x : Data registers) (hL : x.regs inputDepth =
     nlinarith
   have hbase := hbound.of_le hscalar
   have h0 : Fits w 0 := fits_zero w
-  have h2 : Fits w 2 := hbase.of_le (by omega)
-  have h4 : Fits w 4 := hbase.of_le (by omega)
-  have h9 : Fits w 9 := hbase.of_le (by omega)
   have h10 : Fits w 10 := hbase.of_le (by omega)
   have hfit_pow : Fits w (10 ^ L + L + 2) := hbase.of_le (by omega)
   let x0 := ((((x.set nil 0).set two 2).set ten 10).set nine 9).set frameWidth 4
   have hsetup : ExecWithin w powerSetup x x0 5 := by
-    ram_eval [powerSetup, x0, h0, h2, h4, h9, h10]
+    ram_eval [powerSetup, x0, h0, h10]
   have hx0_ten : (x0.comap powerRegisters).regs Power.base = 10 := by
     simp +decide [x0, powerRegisters, Power.base, nil, two, ten, nine, frameWidth]
   have hx0_depth : (x0.comap powerRegisters).regs Power.exponent = L := by

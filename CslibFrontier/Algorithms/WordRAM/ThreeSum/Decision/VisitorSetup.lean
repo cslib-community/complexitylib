@@ -51,13 +51,11 @@ theorem exec_prepareEnvelope {r κ n w : ℕ} (x : Data (registerCount r))
   let y := x.set (m one) 1 |>.set (m two) 2 |>.set (m zero) 0
     |>.set (m scale) (n + 2) |>.set (m envelope) 1
     |>.set (m remaining) (envelopeExponent κ)
-  have h1 : Fits w 1 := hB.of_le (by omega)
-  have h2 : Fits w 2 := hB.of_le (by omega)
   have hne (i j : Fin 16) : m i = m j ↔ i = j := (controller_injective r).eq_iff
   have hp (i : Fin 128) (j : Fin 16) : preprocessingRegisters r i ≠ m j :=
     (controller_ne_preprocessing j i).symm
   have he : ExecWithin w (prepareEnvelope κ) x y 6 := by
-    ram_eval [prepareEnvelope, y, m, hn, hB, hE, h1, h2, hne,
+    ram_eval [prepareEnvelope, y, m, hn, hB, hE, hne,
       one, two, zero, scale, inputLength, envelope, remaining, Fin.mk.injEq]
   refine ⟨y, he, ?_, ?_, ?_, ?_, ?_, ?_, ?_, rfl⟩
   · simp +decide [y, m, hne, scale, one, two, zero, envelope, remaining]

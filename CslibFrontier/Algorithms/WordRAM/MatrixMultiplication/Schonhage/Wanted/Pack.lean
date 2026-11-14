@@ -94,16 +94,10 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
   have hbit : Fits w (x.regs mask % 2) := hfit.of_le (by
     have := Nat.mod_lt (x.regs mask) (by decide : 0 < 2)
     omega)
-  have hpfit : Fits w (x.regs power * 10) := hfit.of_le (by omega)
-  have hjfit : Fits w (x.regs level + 1) := hfit.of_le (by omega)
   have hrest : L - x.regs level = L - (x.regs level + 1) + 1 := by omega
   by_cases hb : x.regs mask % 2 = 0
   · let d := (x.regs row % 3) * 3 + x.regs col % 3
     have hd : d < 9 := by dsimp [d]; omega
-    have hrd : Fits w (x.regs row % 3) := hfit.of_le (by omega)
-    have hr3 : Fits w (x.regs row % 3 * 3) := hfit.of_le (by omega)
-    have hcd : Fits w (x.regs col % 3) := hfit.of_le (by omega)
-    have hdf : Fits w d := hfit.of_le (by omega)
     have hrq : Fits w (x.regs row / 3) := hfit.of_le
       ((Nat.div_le_self _ _).trans (by have := hx.row_le; omega))
     have hcq : Fits w (x.regs col / 3) := hfit.of_le
@@ -120,8 +114,7 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
       level (x.regs level + 1))
     have he : ExecWithin w packBody x y 13 := by
       ram_eval [packBody, y, d, hx.fixed.two, hx.fixed.three, hx.fixed.one,
-        hx.fixed.ten, hb, hmfit, hbit, hpfit, hjfit, hrd, hr3, hcd, hdf,
-        hrq, hcq, hmul, hadd, Nat.lt_one_iff,
+        hx.fixed.ten, hb, hmfit, hbit, hrq, hcq, hmul, hadd, Nat.lt_one_iff,
         mask, bit, row, col, digit, temporary, code, power, level, two, three, one, ten,
         Fin.mk.injEq]
     refine ⟨y, he, ⟨parameters_after_body hx.fixed he, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩,
@@ -160,7 +153,7 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
       level (x.regs level + 1))
     have he : ExecWithin w packBody x y 13 := by
       ram_eval [packBody, y, hx.fixed.two, hx.fixed.nine, hx.fixed.one, hx.fixed.ten,
-        hb, hmfit, hbit, hpfit, hjfit, h9, hmul, hadd, Nat.lt_one_iff,
+        hb, hmfit, hbit, h9, hmul, hadd, Nat.lt_one_iff,
         mask, bit, row, col, digit, temporary, code, power, level, two, three, one, ten, nine,
         Fin.mk.injEq]
     refine ⟨y, he, ⟨parameters_after_body hx.fixed he, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩,

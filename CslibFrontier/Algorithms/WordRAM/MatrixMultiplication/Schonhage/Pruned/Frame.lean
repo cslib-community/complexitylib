@@ -113,11 +113,9 @@ theorem exec_loadFrame {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
     valueBase (x.regs values + x.regs level * x.regs span)).set nextLevel j).set
     temporary (j * x.regs span)).set childList (x.regs lists + j * x.regs span)).set
     childValues (x.regs values + j * x.regs span))
-  have hlev : Fits w (x.regs level * 4) := hw.of_le (by omega)
   have hf (k : ℕ) (hk : k ≤ 3) : Fits w (f + k) := hw.of_le (by dsimp [f]; omega)
   have hf0 : Fits w (x.regs frames + x.regs level * 4) := by
     simpa only [f, Nat.add_zero] using hf 0 (by decide)
-  have hj : Fits w (x.regs level + 1) := hw.of_le (by omega)
   have hprod : Fits w (x.regs level * x.regs span) := hw.of_le (by nlinarith)
   have hnextprod : Fits w ((x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
   have hl : Fits w (x.regs lists + x.regs level * x.regs span) := hw.of_le (by nlinarith)
@@ -125,8 +123,8 @@ theorem exec_loadFrame {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
   have hcl : Fits w (x.regs lists + (x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
   have hcv : Fits w (x.regs values + (x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
   have hexact : Exec w loadFrame x y 17 := by
-    ram_eval [loadFrame, y, f, j, h1, h4, hlev, hf0, hf 1 (by decide),
-      hf 2 (by decide), hf 3 (by decide), hj, hprod, hnextprod, hl, hv, hcl, hcv,
+    ram_eval [loadFrame, y, f, j, h1, h4, hf0, hf 1 (by decide),
+      hf 2 (by decide), hf 3 (by decide), hprod, hnextprod, hl, hv, hcl, hcv,
       frame, address, count, leafPrefix, stride, term, temporary, listBase, valueBase,
       nextLevel, childList, childValues, level, span, frames, lists, values, frameWidth, one,
       Fin.mk.injEq, Nat.add_zero]

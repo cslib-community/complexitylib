@@ -233,14 +233,12 @@ theorem exec_tileStep {w L H D R V AA BB A B s : ℕ} (x : Data registers)
     (vf _ (by decide)).trans ((uf _ (by decide)).trans hj)
   have v1 : v.regs Reg.one = 1 :=
     (vf _ (by decide)).trans ((uf _ (by decide)).trans hx.one)
-  have haddr : Fits (w + 2) (V + Nat.count (Eligible L H) s) := hfit.of_le (by omega)
-  have hinc : Fits (w + 2) (Nat.count (Eligible L H) s + 1) := hfit.of_le (by omega)
   let y := ((v.set Reg.address (V + Nat.count (Eligible L H) s)).write
     (V + Nat.count (Eligible L H) s) (Signed.encode (slotValue a b s))).set
       Reg.current (Nat.count (Eligible L H) s + 1)
   have hstore : ExecWithin (w + 2) tileStore v y 3 := by
-    ram_eval [tileStore, y, vV, vj, v1, vacc, haddr, hinc,
-      Reg.address, Reg.values, Reg.current, Reg.accumulator, Reg.one, Fin.mk.injEq]
+    ram_eval [tileStore, y, vV, vj, v1, vacc, Reg.address, Reg.values, Reg.current, Reg.accumulator,
+      Reg.one, Fin.mk.injEq]
   have hy : ExecWithin (w + 2) tileStep x y 326 := hu.seq (hvexec.seq hstore)
   exact ⟨y, hy, by simp [y], by simp only [y, Data.set_mem, Data.write_mem, vm, um]⟩
 

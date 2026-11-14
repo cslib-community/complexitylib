@@ -44,12 +44,9 @@ theorem exec_initialize {w L Q : ℕ} (x : Data registers) (hL : x.mem 1 = L)
   have hscalar : L + Q + 10 ^ L + 16 ≤ addressBound L Q := by
     unfold addressBound
     nlinarith only [hp]
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have h3 : Fits w 3 := hfit.of_le (by omega)
   let h := (((x.set address 1).set inputDepth L).set address 2).set queryCount Q
   have hheader : ExecWithin w header x h 4 := by
-    ram_eval [header, h, hL, hQ, h1, h2, address, inputDepth, queryCount, Fin.mk.injEq]
+    ram_eval [header, h, hL, hQ, address, inputDepth, queryCount, Fin.mk.injEq]
   have hdepth : h.regs inputDepth = L := by simp +decide [h, address, inputDepth, queryCount]
   obtain ⟨p, hpower, hpmem, hpL, hspan, _, hnil, hone, _, hten, hnine, hfour, _⟩ :=
     exec_powers h hdepth hfit
@@ -57,7 +54,6 @@ theorem exec_initialize {w L Q : ℕ} (x : Data registers) (hL : x.mem 1 = L)
     (hpower.regs_eq (by decide : powers.Preserves queryCount)).trans (by simp [h])
   let u := ((((((p.set arrayA 3).set arrayB (3 + 10 ^ L)).set queries (3 + 10 ^ L + 10 ^ L)).set
     output (3 + 10 ^ L + 10 ^ L + Q)).set scratch (3 + 10 ^ L + 10 ^ L + Q + Q)).set epoch 0)
-  have hB : Fits w (3 + 10 ^ L) := hfit.of_le (by omega)
   have hqueries : Fits w (3 + 10 ^ L + 10 ^ L) :=
     hfit.of_le (by unfold addressBound; nlinarith only [hp])
   have hout : Fits w (3 + 10 ^ L + 10 ^ L + Q) :=
@@ -65,7 +61,7 @@ theorem exec_initialize {w L Q : ℕ} (x : Data registers) (hL : x.mem 1 = L)
   have hs : Fits w (3 + 10 ^ L + 10 ^ L + Q + Q) :=
     hfit.of_le (by unfold addressBound; nlinarith only [hp])
   have hparameters : ExecWithin w parameters p u 6 := by
-    ram_eval [parameters, u, hspan, hpQ, h3, hB, hqueries, hout, hs, arrayA, arrayB, queries,
+    ram_eval [parameters, u, hspan, hpQ, hqueries, hout, hs, arrayA, arrayB, queries,
       output, scratch, epoch, span, queryCount, Fin.mk.injEq]
   have unchanged (i : Fin registers) (hi : parameters.Preserves i) : u.regs i = p.regs i :=
     hparameters.regs_eq hi

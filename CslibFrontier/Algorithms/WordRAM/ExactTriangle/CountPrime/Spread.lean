@@ -72,20 +72,16 @@ theorem exec_spreadTable {w k : ℕ} (x : Data 128)
         Nat.Morton.spread (y.regs Reg.index) := by
       rw [Nat.Morton.spread_eq (y.regs Reg.index)]
       omega
-    have hquot : Fits w (y.regs Reg.index / 2) := hw.of_le (by omega)
     have hreadaddr : Fits w (y.regs Reg.spread + y.regs Reg.index / 2) := hw.of_le (by
       rw [hbase]; omega)
     have hprod : Fits w (Nat.Morton.spread (y.regs Reg.index / 2) * 4) :=
       hw.of_le (by omega)
-    have hrem : Fits w (y.regs Reg.index % 2) := hw.of_le (by omega)
-    have hsum : Fits w (Nat.Morton.spread (y.regs Reg.index)) := hw.of_le (by omega)
     have hwrite : Fits w (y.regs Reg.spread + y.regs Reg.index) := hw.of_le (by
       rw [hbase]; omega)
-    have hinc : Fits w (y.regs Reg.index + 1) := hw.of_le (by omega)
     refine ⟨?z, ?run, ?inv, ?decrease⟩
     case run =>
-      ram_eval [spreadStep, hy1, hy2, hy4, hread, hquot, hreadaddr, hprod, hrem,
-        hrec, hsum, hwrite, hinc, Reg.index, Reg.address, Reg.temporary, Reg.position,
+      ram_eval [spreadStep, hy1, hy2, hy4, hread, hreadaddr, hprod, hrec, hwrite, Reg.index,
+        Reg.address, Reg.temporary, Reg.position,
         Reg.spread, Reg.one, Reg.two, Reg.four, Fin.mk.injEq]
     case inv =>
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
@@ -118,11 +114,10 @@ theorem exec_spreadTable {w k : ℕ} (x : Data 128)
     case decrease =>
       change 2 ^ k - (y.regs Reg.index + 1) < 2 ^ k - y.regs Reg.index
       omega
-  have hfit1 : Fits w 1 := hw.of_le (by omega)
   let y :=
     (((x.set Reg.address (x.regs Reg.spread)).write (x.regs Reg.spread) 0).set Reg.index 1)
   have hinit : ExecWithin w spreadSetup x y
-      3 := by ram_eval [spreadSetup, y, h0, hfit1, Reg.address, Reg.spread, Reg.zero, Reg.index]
+      3 := by ram_eval [spreadSetup, y, h0, Reg.address, Reg.spread, Reg.zero, Reg.index]
   have hI : I y := by
       refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · intro i hi

@@ -252,13 +252,11 @@ theorem initLoop_spec {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
     obtain ⟨i, hi⟩ : ∃ i, x.regs iReg = i := ⟨_, rfl⟩
     rw [hi] at hd hv
     have hc : (Cond.lt iReg nReg).Holds x := by simp [Cond.holds_lt, hx.nReg_eq, hi]; omega
-    have hf1 : Fits w (Tb + i) := hw.of_le (by omega)
-    have hf2 : Fits w (Tb + n + i) := hw.of_le (by omega)
     have hf3 : Fits w (i + 1) := hw.of_le (by omega)
     let y := (((((x.set addr (Tb + i)).write (Tb + i) 2).set addr (Tb + n + i)).write
       (Tb + n + i) i).set iReg (i + 1))
     have hrun : ExecWithin w initBody x y 5 := by
-      ram_eval [y, initBody, hx.tBase_eq, hx.pBase_eq, hx.two_eq, hx.one_eq, hi, hf1, hf2, hf3]
+      ram_eval [y, initBody, hx.tBase_eq, hx.pBase_eq, hx.two_eq, hx.one_eq, hi, hf3]
     have hym : y.mem = Function.update (Function.update x.mem (Tb + i) 2) (Tb + n + i) i := rfl
     have hy : RoundFrame φ C Tb M y := hx.of_execWithin (by decide) hrun fun a ha => by
       rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
@@ -441,14 +439,12 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hmk : x.mem (Tb + n + (k'.val + i)) = (g k : ℕ) := by
       rw [show Tb + n + (k'.val + i) = Tb + n + i + (k : ℕ) by omega]
       exact hx.order k
-    have hfa : Fits w (k'.val + i) := hw.of_le (by omega)
-    have hfb : Fits w (Tb + n + i) := hw.of_le (by omega)
     have hfc : Fits w (Tb + n + (k'.val + i)) := hw.of_le (by omega)
     let y₁ := ((((((((x₂.set jReg k'.val).set jReg (k'.val + i)).set aI (Tb + n + i)).set aJ
       (Tb + n + (k'.val + i))).set val (g 0 : ℕ)).set xReg (g k : ℕ)).write (Tb + n + i)
       (g k : ℕ)).write (Tb + n + (k'.val + i)) (g 0 : ℕ))
     have hswap : ExecWithin w swapCode (x₂.set jReg k'.val) y₁ 7 := by
-      ram_eval [y₁, x₂, swapCode, hx.i_eq, hf.pBase_eq, hm0, hmk, hfa, hfb, hfc]
+      ram_eval [y₁, x₂, swapCode, hx.i_eq, hf.pBase_eq, hm0, hmk, hfc]
     have hy₁m : y₁.mem = Function.update (Function.update x.mem (Tb + n + i) (g k : ℕ))
         (Tb + n + i + (k : ℕ)) (g 0 : ℕ) := by
       simp only [y₁, Data.write_mem, Data.set_mem, x₂]
@@ -473,7 +469,6 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hiz : z.regs iReg = i := (hz.regs_eq hoc.preserves_i).trans hi₁
     have hxz : z.regs xReg = (g k : ℕ) := (hz.regs_eq hoc.preserves_x).trans hxr₁
     -- the value set, and the store
-    have hfs : Fits w (Tb + (g k : ℕ)) := hw.of_le (by omega)
     have hfi : Fits w (i + 1) := hw.of_le (by omega)
     have hstore : ∀ b : Bool, ∃ Y, ExecWithin w storeCode (z.set res b.toNat) Y 3 ∧
         StepPost φ C Tb M i τ g Y ∧ F Y = F (z.set res b.toNat) := by
@@ -481,7 +476,7 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
       let Y := (((z.set res b.toNat).set addr (Tb + (g k : ℕ))).write (Tb + (g k : ℕ))
         b.toNat).set iReg (i + 1)
       have hrun : ExecWithin w storeCode (z.set res b.toNat) Y 3 := by
-        ram_eval [Y, storeCode, hfz.tBase_eq, hxz, hiz, hfz.one_eq, hfs, hfi]
+        ram_eval [Y, storeCode, hfz.tBase_eq, hxz, hiz, hfz.one_eq, hfi]
       have hYm : Y.mem = Function.update z.mem (Tb + (g k : ℕ)) b.toNat := rfl
       refine ⟨Y, hrun, ⟨k, b, by simp +decide [Y, hjz]; omega, by simp +decide [Y], ?_⟩,
         by simp +decide [Y, F]⟩
@@ -760,15 +755,13 @@ def roundSetupData (φ : CNF (Fin n)) : Data 32 :=
 theorem roundSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).length + 2 * n + 1)) :
     ExecWithin w roundSetup (Data.init (encode φ)) (roundSetupData φ) 8 ∧
       RoundFrame φ 2 ((encode φ).length + 1) (roundSetupData φ).mem (roundSetupData φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
-  have hf3 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
   have hf4 : Fits w ((encode φ).length + 1 + n) := hw.of_le (by omega)
   have hm0 : (Data.init (encode φ) : Data 32).mem 0 = (encode φ).length := rfl
   have hm1 : (Data.init (encode φ) : Data 32).mem 1 = n := rfl
   refine ⟨?run, ?frame⟩
   case run =>
-    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hf1, hf2, hf3, hf4]
+    ram_eval [roundSetup, roundSetupData, Data.init_regs, hm0, hm1, hf2, hf4]
   case frame =>
     refine ⟨by simp +decide [roundSetupData], by simp +decide [roundSetupData],
       by simp +decide [roundSetupData], by simp +decide [roundSetupData],

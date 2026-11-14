@@ -209,11 +209,10 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
     |>.set 0 (x.regs cursor * x.regs stride)
     |>.set 0 (x.regs cursor * x.regs stride + x.regs queries)
     |>.set 1 (x.regs heap) |>.set 3 (x.regs capacity) |>.set 4 (x.regs cursor)
-  have hq0 : Fits w (x.regs cursor * x.regs stride) := hquery.of_le (by omega)
   have hq1 : Fits w (x.regs cursor * x.regs stride + x.regs queries) :=
     hquery.of_le (by omega)
   have hd : ExecWithin w deliver x a 7 := by
-    ram_eval [deliver, a, hcount, hread, hq0, hq1, counts, cursor, addr, stride,
+    ram_eval [deliver, a, hcount, hread, hq1, counts, cursor, addr, stride,
       queries, heap, capacity, chunkTotal, chunkQueries, chunkDst, chunkCapacity,
       chunkResidue, Fin.mk.injEq]
   have ha (i : Fin 32) (hi : 14 ≤ i.val) (hne : i ≠ addr) : a.regs i = x.regs i := by
@@ -240,16 +239,13 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
     |>.set heap (x.regs heap + (C ⌈/⌉ x.regs capacity) * 3)
     |>.set written (x.regs written + C ⌈/⌉ x.regs capacity)
     |>.set cursor (x.regs cursor + 1)
-  have hm : Fits w (C ⌈/⌉ x.regs capacity * 3) := hheap.of_le (by omega)
-  have hh : Fits w (x.regs heap + C ⌈/⌉ x.regs capacity * 3) := hheap.of_le (by omega)
-  have hw : Fits w (x.regs written + C ⌈/⌉ x.regs capacity) := hwritten.of_le (by omega)
   have hf : ExecWithin w advance b z 4 := by
     have bho := hb one (by decide) (by decide)
     have bht := hb three (by decide) (by decide)
     have bhh := hb heap (by decide) (by decide)
     have bhw := hb written (by decide) (by decide)
     have bhc := hb cursor (by decide) (by decide)
-    ram_eval [advance, z, hc, bho, bht, bhh, bhw, bhc, ho, ht, hm, hh, hw, hcursor,
+    ram_eval [advance, z, hc, bho, bht, bhh, bhw, bhc, ho, ht, hcursor,
       temp, three, heap, written, cursor, one, chunkCount, Fin.mk.injEq]
   refine ⟨z, (hd.seq (he.seq hf)).mono (by omega), ?_, ?_, ?_, ?_, ?_⟩
   · simp +decide [z, cursor]
@@ -405,11 +401,10 @@ theorem exec {w : ℕ} (x : Data 32) (C : ℕ → ℕ)
       (ram[ one ← #1; three ← #3; cursor ← #0; written ← #0; heap ← dst;
         stride ← size * size; stride ← stride + stride ]) x a 7 := by
     have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h3 : Fits w 3 := hfit.of_le (by omega)
     have hN : Fits w (x.regs size * x.regs size) := hfit.of_le (by dsimp [N]; omega)
     have h2N : Fits w (x.regs size * x.regs size + x.regs size * x.regs size) :=
       hfit.of_le (by dsimp [N]; omega)
-    ram_eval [a, d, N, h1, h3, hN, h2N, one, three, cursor, written, heap, stride, size, dst,
+    ram_eval [a, d, N, h1, hN, h2N, one, three, cursor, written, heap, stride, size, dst,
       Fin.mk.injEq, two_mul]
   obtain ⟨y, he, hy, hend⟩ := ExecWithin.loop_invariant I
     (fun y => p - y.regs cursor) hbody ha
