@@ -143,6 +143,56 @@ def PromoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : M
     PromoteStepGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       PromoteStepPre U V w₀ n_max h_space w d1.1 d1.2 d2 s := Iff.rfl
 
+/-- Execute promotion using only readback and individual state equations. Keeping the five
+intermediate states abstract prevents equality checking from evaluating the packed writes or
+`removeLastTailItemProg`; the invariant proof supplies their semantic effects separately. -/
+private theorem promoteStepProg_clientState {U V w n_max h_space base b k : ℕ}
+    (s s₁ s₂ s₃ s₄ s₅ : Memory.State)
+    (t_u t_top p_new q_u v_u q_top v_top : ℕ)
+    (hres_tu : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space
+        (base, gmTailPtrBase n_max +
+          (b * tailCapPerBucket n_max + (slabSize n_max - 1 - k)))) = t_u)
+    (hres_ttop : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space
+        (base, gmTailPtrBase n_max +
+          (b * tailCapPerBucket n_max + (slabSize n_max + (slabSize n_max - 1 - k))))) = t_top)
+    (hres_p : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space (base, 0)) = p_new)
+    (hres_qu : (Memory.spec 0).clientResult s
+      (readQuotProg U w n_max h_space (base, n_max - 1 - t_u)) = q_u)
+    (hres_vu : (Memory.spec 0).clientResult s
+      (readValProg U V w n_max h_space (base, n_max - 1 - t_u)) = v_u)
+    (hres_qtop : (Memory.spec 0).clientResult s
+      (readQuotProg U w n_max h_space (base, n_max - 1 - t_top)) = q_top)
+    (hres_vtop : (Memory.spec 0).clientResult s
+      (readValProg U V w n_max h_space (base, n_max - 1 - t_top)) = v_top)
+    (hs1 : (Memory.spec 0).clientState s
+      (writeQuotProg U w n_max h_space ((base, n_max - 1 - t_u), q_top)) = s₁)
+    (hs2 : (Memory.spec 0).clientState s₁
+      (writeValProg U V w n_max h_space ((base, n_max - 1 - t_u), v_top)) = s₂)
+    (hs3 : (Memory.spec 0).clientState s₂ (removeLastTailItemProg U V w n_max h_space (base, b)) = s₃)
+    (hs4 : (Memory.spec 0).clientState s₃
+      (writeQuotProg U w n_max h_space ((base, p_new * slabSize n_max + k), q_u)) = s₄)
+    (hs5 : (Memory.spec 0).clientState s₄
+      (writeValProg U V w n_max h_space ((base, p_new * slabSize n_max + k), v_u)) = s₅) : (Memory.spec 0).clientState s
+        (promoteStepProg U V w n_max h_space ((base, b), k)) = s₅ := by
+  simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
+    readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
+  rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_tu,
+    StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_ttop,
+    StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
+    StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qu,
+    StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vu,
+    StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qtop,
+    StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vtop]
+  rw [StateTransitionSpec.clientState_bind, hs1,
+    StateTransitionSpec.clientState_bind, hs2,
+    StateTransitionSpec.clientState_bind, hs3,
+    StateTransitionSpec.clientState_bind, hs4,
+    StateTransitionSpec.clientState_bind, hs5, StateTransitionSpec.clientState_pure]
+
 /-- Under `PromoteStepInv U V w n_max h_space base b k s` (`k < slabSize n_max`,
 `gm (gmRIdx b) = 2 * slabSize n_max - k`), `promoteStepProg` returns `k + 1` in `memoryCost = 66`
 (`memoryCost_promoteStepProg`). It preserves `frontier`, `lmAt`, and memory outside
@@ -270,22 +320,10 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
       p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
       readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
     repeat rw [StateTransitionSpec.clientResult_bind]
-    rfl
-  have hst : s' = s₅ := by
-    change (Memory.spec 0).clientState s
-      (promoteStepProg U V w n_max h_space ((base, b), k)) = s₅
-    simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
-      p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
-      readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
-    rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_tu,
-      StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_ttop,
-      StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
-      StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qu,
-      StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vu,
-      StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qtop,
-      StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vtop]
-    repeat rw [StateTransitionSpec.clientState_bind]
-    rfl
+    exact StateTransitionSpec.clientResult_pure _ _
+  have hst : s' = s₅ :=
+    promoteStepProg_clientState s s₁ s₂ s₃ s₄ s₅ t_u t_top p_new q_u v_u q_top v_top
+      hres_tu hres_ttop hres_p hres_qu hres_vu hres_qtop hres_vtop rfl rfl rfl rfl rfl
   rw [hst]
   refine ⟨hres, by rw [hf5, hf4, hf3, hf2, hf1], ?_,
     by rw [hq5, hq4, hq3, hgm2, hq2, hq1],
