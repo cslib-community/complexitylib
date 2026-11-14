@@ -66,6 +66,8 @@ silently dropped.
 * `Cslib.SQL.Expr.toOption_filterRows`, `Cslib.SQL.Expr.evalRow_eq_ok_iff`: what `WHERE` and a
   `SELECT` list compute when they succeed, and when they do.
 * `Cslib.SQL.Expr.mem_of_filterRows_eq_ok`: `WHERE` keeps some of its input rows.
+* `Cslib.SQL.Query.eval_join_eq_ok_of_forall`: a join whose predicate succeeds on every pair
+  returns the joined pairs on which it is `TRUE`.
 * `Cslib.SQL.Query.eval_ok_or_divisionByZero`: type soundness.
 * `Cslib.SQL.Query.eval_ne_typeMismatch`, `Cslib.SQL.Query.conforms_of_eval_eq_ok`: a well-typed
   query never raises a type error, and its rows have its types.
@@ -318,6 +320,24 @@ theorem eval_distinct (q : Query S n) :
 
 end Eval
 
+/-- When the join predicate `θ` succeeds on every pair of input rows, the join succeeds and
+returns the joined rows of the pairs on which `θ` is `TRUE`, in the order of `rs ×ˢ ss`. -/
+theorem eval_join_eq_ok_of_forall {D : Database S} {θ : Expr (n + m)} {q₁ : Query S n}
+    {q₂ : Query S m} {rs : List (Row n)} {ss : List (Row m)} (h₁ : q₁.eval D = .ok rs)
+    (h₂ : q₂.eval D = .ok ss)
+    (hθ : ∀ r ∈ rs, ∀ s ∈ ss, ∃ t, θ.evalTruth (Fin.append r s) = .ok t) :
+    (join θ q₁ q₂).eval D =
+      .ok (((rs ×ˢ ss).filter fun (r, s) => (θ.evalTruth (Fin.append r s)).toOption = some .true)
+        |>.map fun (r, s) => Fin.append r s) := by
+  have hall : ∀ t ∈ Row.product rs ss, (θ.evalTruth t).toOption.isSome := by
+    intro t ht
+    obtain ⟨r, hr, s, hs, rfl⟩ := Row.mem_product.mp ht
+    obtain ⟨u, hu⟩ := hθ r hr s hs
+    simp [hu]
+  rw [eval_join, h₁, h₂, Except.ok_bind, Except.ok_bind, ← Except.toOption_eq_some_iff,
+    Expr.toOption_filterRows, ite_eq_left hall, Row.product, List.filter_map]
+  rfl
+
 /-! ### Typing and safety -/
 
 /-- The typing context of the query's result rows, if the query is well-typed: `WHERE` and `ON`
@@ -439,17 +459,9 @@ theorem eval_ok_or_divisionByZero {D : Database S} (hD : D.Conforms) {q : Query 
           refine .inr ⟨by simp [eval_project, hrs, h, hd], ?_⟩
           simp only [divSafe, Bool.and_eq_false_iff, decide_eq_false_iff_not, not_forall]
           exact .inl ⟨i, by simp [hi]⟩
-      · refine .inl ⟨ds, by simp [eval_project, hrs, h], fun d hd => ?_⟩
-        have h' := congrArg Except.toOption h
-        rw [Except.toOption_mapM] at h'
-        split_ifs at h' with hall
-        · simp only [Except.toOption_ok, Option.some.injEq] at h'
-          obtain ⟨r, hr, hrd⟩ := List.mem_filterMap.mp (h' ▸ hd)
-          rcases Expr.evalRow_ok_or_divisionByZero (hconf r hr) hes with ⟨d', hd', hd'Δ⟩ | ⟨hd', -⟩
-          · rw [hd', Except.toOption_ok, Option.some.injEq] at hrd
-            exact hrd ▸ hd'Δ
-          · simp [hd'] at hrd
-        · simp at h'
+      · refine .inl ⟨ds, by simp [eval_project, hrs, h], fun d hd i => ?_⟩
+        obtain ⟨r, hr, hrd⟩ := Except.exists_mem_eq_ok_of_mapM_eq_ok h hd
+        exact Expr.hasType_of_eval_eq_ok (hconf r hr) (hes i) (Expr.evalRow_eq_ok_iff.mp hrd i)
     · exact .inr ⟨by simp [eval_project, he], by simp [divSafe, hs]⟩
   | join θ q₁ q₂ ih₁ ih₂ =>
     obtain ⟨Γ₁, Γ₂, h₁, h₂, hθ, rfl⟩ := typeOf_join_eq_some.mp hq
