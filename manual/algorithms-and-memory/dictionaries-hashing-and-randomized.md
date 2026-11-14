@@ -13,6 +13,30 @@ Classic B-trees are pure Lean data structures with `TimeM` node-visit and `FreeM
 
 The [examples](../../CslibFrontierTests/BTreeInsert.lean) include a root split at `t = 2`, bulk loading at `t = 2` and `t = 3`, and a client that builds a well-formed map by repeated insertion. The [query](../../CslibFrontierTests/BTreeQuery.lean), [erasure](../../CslibFrontierTests/BTreeErase.lean), [cost](../../CslibFrontierTests/BTreeCost.lean) and [comparison](../../CslibFrontierTests/BTreeComparisons.lean) examples check the other operations and exact visit/comparison counts. Erasure comparison bounds, binary in-node search, search comparison lower bounds, a node-access oracle model and B+-trees are not formalized.
 
+## Prime modulus collisions
+
+Import `CslibFrontier.Foundations.NumberTheory.PrimeCollisionWindow` for
+`Nat.closedPrimes lo hi`, the primes in the **closed** interval `[lo,hi]`.
+`Nat.exists_closedPrimes_collision_bound` states: for every real `δ > 0`, there
+is `C > 0` such that, for all `M ≥ 2` and natural `L ≥ C * (Nat.log2 M)^2`,
+both `[3,L]` and `[L,2L]` contain primes. For each fixed distinct `a,b ≤ M`,
+the fraction of those primes satisfying `Nat.ModEq p a b` is at most `δ`.
+The constant is independent of `M,L,a,b`; this is a pairwise guarantee.
+`Nat.exists_ceil_closedPrimes_collision_bound` supplies the natural choice
+`L = ⌈C * (Nat.log2 M)^2⌉₊`. Apply these theorems with a proof that `δ > 0`.
+
+The finite fraction is the collision probability under uniform choice **among
+primes** in the chosen window. Uniform integers in the interval have a different
+law. These results provide no efficient prime sampler or runtime guarantee.
+They give a quantified interpretation of Goldreich's April 2007 draft Exercise
+9.7 (PDF64/printed446), whose `L = poly(log M)` does not specify an error
+parameter or degree. Source inventory admission awaits a human maintainer check.
+The [checked ordinary-import clients](../../CslibFrontierTests/PrimeCollisionWindow.lean)
+include `M=2`, difference one, reversed arguments and `a=0,b=21,L=7`.
+For that last example the fractions are `2/3` on `{3,5,7}` and `1/3` on
+`{7,11,13}`; it checks the included lower endpoint `7` without asserting that
+the conservative quadratic threshold holds for this small example.
+
 ## Hash families and dictionaries
 
 For pure cuckoo tables, import `CslibFrontier.DataStructure.Dictionary.CuckooHashing.Basic`
