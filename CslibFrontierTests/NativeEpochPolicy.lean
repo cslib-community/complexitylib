@@ -141,7 +141,8 @@ theorem admissible : SelectionPolicy.Admissible oracle policy := by
     | none => simp
     | some x =>
       rcases x with ⟨⟨⟩, u⟩
-      simp [SelectionPolicy.available, SelectionPolicy.proposals, oracle]
+      simp [SelectionPolicy.available, AdaptiveSelection.proposedSets,
+        SelectionPolicy.proposals, oracle]
 
 /-- Certified deadline success is derived from the actual one-response policy,
 not supplied as an admission hypothesis. -/
@@ -151,6 +152,7 @@ theorem success_probability : SelectionPolicy.successProbability oracle policy c
   simp only [AdaptiveSelection.historyExpectation]
   rw [SelectionPolicy.law_mean _ _ [] _ (by simp)]
   norm_num [policy, Distribution.mean_pure, oracle, pair_mean, SelectionPolicy.success,
+    SelectionPolicy.CertifiedOutput, SelectionPolicy.recordResource,
     PartialCover.Instance.covered, PartialCover.Instance.cost, coverInstance,
     AdaptiveSelection.accruedBill, SelectionPolicy.latency]
 

@@ -41,6 +41,12 @@ namespace Cslib.Probability.StochasticOracle.AdaptiveSelection
 open Finset PartialCover MeasureTheory
 variable {E J Ω : Type*} [DecidableEq E] [DecidableEq J]
 
+/-- All proposed candidate sets available for buffering and final extraction,
+including candidates rejected by local retention. -/
+@[expose] def proposedSets (proposal : List Ω → Ω → List (Finset J)) : List Ω → Finset J
+  | [] => ∅
+  | x :: h => (proposal h x).foldr (· ∪ ·) ∅ ∪ proposedSets proposal h
+
 /-- History-dependent proposal decoder; responses may also contain auxiliary data. -/
 @[expose] def selected (I : Instance E J) (ρ : ℝ)
     (proposal : List Ω → Ω → List (Finset J)) : List Ω → Finset J
@@ -66,6 +72,16 @@ theorem selected_bound (I : Instance E J) (ρ : ℝ)
   induction h with
   | nil => simp [selected, Instance.cost, Instance.covered]
   | cons x h ih => exact I.retain_bound (proposal h x) _ ih
+
+/-- Local retention can return only candidates present in actual proposals. -/
+theorem selected_subset_proposedSets (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J)) (h : List Ω) :
+    selected I ρ proposal h ⊆ proposedSets proposal h := by
+  induction h with
+  | nil => simp [selected, proposedSets]
+  | cons x h ih =>
+    apply (I.retain_subset ρ _ _).trans
+    exact union_subset (ih.trans subset_union_right) subset_union_left
 
 /-- The number of elements actually left uncovered by the retained family. -/
 @[expose] def residual (I : Instance E J) (ρ : ℝ)
@@ -216,11 +232,39 @@ those proposals. This is the information available to a selection-only policy. -
   | [] => ∅
   | x :: h => I.covered ((proposal h x).foldr (· ∪ ·) ∅) ∪ revealed I proposal h
 
+/-- Coverage of all buffered candidates is exactly the revealed element family. -/
+theorem covered_proposedSets (I : Instance E J)
+    (proposal : List Ω → Ω → List (Finset J)) (h : List Ω) :
+    I.covered (proposedSets proposal h) = revealed I proposal h := by
+  induction h with
+  | nil => simp [proposedSets, revealed, Instance.covered]
+  | cons x h ih =>
+    simpa only [proposedSets, revealed, Instance.covered_union] using
+      (congrArg (fun C => I.covered ((proposal h x).foldr (· ∪ ·) ∅) ∪ C) ih)
+
 open scoped Classical in
 /-- A turn makes revealed progress exactly when its proposals reveal a new element. -/
 @[expose] def reveals (I : Instance E J)
     (proposal : List Ω → Ω → List (Finset J)) (h : List Ω) (x : Ω) : Bool :=
   decide ((revealed I proposal (x :: h) \ revealed I proposal h).Nonempty)
+
+/-- One actual response preserves the revealed-cardinality/count invariant when
+its newly revealed element family satisfies the local size cap. -/
+theorem revealed_card_le_cons (I : Instance E J)
+    (proposal : List Ω → Ω → List (Finset J)) (b : ℕ) (h : List Ω) (x : Ω)
+    (hb : (revealed I proposal (x :: h) \ revealed I proposal h).card ≤ b)
+    (ih : (revealed I proposal h).card ≤ b * count (reveals I proposal) h) :
+    (revealed I proposal (x :: h)).card ≤ b * count (reveals I proposal) (x :: h) := by
+  classical
+  have hm : revealed I proposal h ⊆ revealed I proposal (x :: h) := subset_union_right
+  have he := card_sdiff_add_card_eq_card hm
+  by_cases hx : reveals I proposal h x = true
+  · simp only [count, hx, ite_true, Nat.mul_add, Nat.mul_one]
+    omega
+  · have hz : (revealed I proposal (x :: h) \ revealed I proposal h).card = 0 := by
+      simpa only [reveals, decide_eq_true_eq, not_nonempty_iff_eq_empty, card_eq_zero] using hx
+    simpa only [count, hx, Bool.false_eq_true, ite_false, Nat.add_zero] using
+      (show (revealed I proposal (x :: h)).card ≤ b * count (reveals I proposal) h by omega)
 
 /-- Local cardinality caps on newly proposed elements imply a pathwise productive
 count requirement for every transcript. No desired aggregate progress bound is assumed. -/
@@ -229,22 +273,9 @@ theorem revealed_card_le (I : Instance E J)
     (hb : ∀ h x, (revealed I proposal (x :: h) \ revealed I proposal h).card ≤ b)
     (h : List Ω) :
     (revealed I proposal h).card ≤ b * count (reveals I proposal) h := by
-  classical
   induction h with
   | nil => simp [revealed, count]
-  | cons x h ih =>
-    have hm : revealed I proposal h ⊆ revealed I proposal (x :: h) := subset_union_right
-    have he := card_sdiff_add_card_eq_card hm
-    by_cases hx : reveals I proposal h x = true
-    · simp only [count, hx, ite_true, Nat.mul_add, Nat.mul_one]
-      have := hb h x
-      omega
-    · have hz : (revealed I proposal (x :: h) \ revealed I proposal h).card = 0 := by
-        simpa only [reveals, decide_eq_true_eq, not_nonempty_iff_eq_empty, card_eq_zero]
-          using hx
-      simpa only [count, hx, Bool.false_eq_true, ite_false, Nat.add_zero] using
-        (show (revealed I proposal (x :: h)).card ≤
-          b * count (reveals I proposal) h by omega)
+  | cons x h ih => exact revealed_card_le_cons I proposal b h x (hb h x) ih
 
 open scoped Classical in
 /-- The universal finite revealed-cover probability bound, under the local cap
@@ -341,6 +372,15 @@ Stopping is represented by setting the bill to zero after retained completion. -
 @[expose] def accruedBill (bill : List Ω → Ω → ℝ) : List Ω → ℝ
   | [] => 0
   | x :: h => accruedBill bill h + bill h x
+
+/-- Real accrued indicator charges are exactly the actual integer event count. -/
+theorem accrued_indicator_eq_count (f : List Ω → Ω → Bool) (h : List Ω) :
+    accruedBill (fun h x => if f h x then (1 : ℝ) else 0) h = count f h := by
+  induction h with
+  | nil => simp [accruedBill, count]
+  | cons x h ih =>
+    simp only [accruedBill, count, ih, Nat.cast_add]
+    split_ifs <;> simp
 
 /-- Nonnegative realized charges give a nonnegative accrued bill. -/
 theorem accruedBill_nonneg (bill : List Ω → Ω → ℝ)

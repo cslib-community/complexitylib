@@ -121,7 +121,8 @@ theorem early_actual : successProbability oracle early toy 1 2 1 = (1 / 4 : ℝ)
     expectedCost oracle early 1 = (1 / 2 : ℝ) := by
   norm_num [successProbability, expectedCost, historyExpectation, law, early, oracle,
     Distribution.mean_bind, Distribution.mean_map, Function.comp_def, pair_mean,
-    Distribution.mean_pure, success, available, SelectionPolicy.proposals, Instance.covered,
+    Distribution.mean_pure, success, CertifiedOutput, available, AdaptiveSelection.proposedSets,
+    SelectionPolicy.proposals, Instance.covered,
     Instance.cost, toy, accruedBill, bill, latency]
 
 /-- The source lower cost is derived for the random policy, rather than supplied
@@ -158,7 +159,8 @@ theorem early_deadline : successProbability oracle early toy 1 1 2 = (1 / 8 : �
   constructor
   · norm_num [successProbability, historyExpectation, law, early, oracle,
       Distribution.mean_bind, Distribution.mean_map, Function.comp_def, pair_mean,
-      Distribution.mean_pure, success, available, SelectionPolicy.proposals, Instance.covered,
+      Distribution.mean_pure, success, CertifiedOutput, available, AdaptiveSelection.proposedSets,
+      SelectionPolicy.proposals, Instance.covered,
       Instance.cost, toy, accruedBill, bill, latency]
   · have h := deadline_probability_le oracle early toy early_admissible 1 1 2
       (by intro k hk; simp [toy]; omega) ⟨1 / 2, by norm_num, by norm_num⟩
@@ -210,7 +212,8 @@ theorem buffered_actual : successProbability bufferedOracle buffered bufferedIns
     selected bufferedInstance 1 (SelectionPolicy.proposals bufferedOracle) [some ((), ())] = ∅ := by
   norm_num [successProbability, historyExpectation, law, buffered, bufferedOracle,
     Distribution.mean_bind, Distribution.mean_map, Function.comp_def, Distribution.mean_pure,
-    success, available, SelectionPolicy.proposals, Instance.covered, Instance.cost,
+    success, CertifiedOutput, available, AdaptiveSelection.proposedSets,
+    SelectionPolicy.proposals, Instance.covered, Instance.cost,
     bufferedInstance, accruedBill, bill, latency, selected, Instance.retain, Instance.Certified]
 
 /-- Final extraction may itself be randomized, without changing the oracle law. -/
@@ -232,7 +235,8 @@ theorem randomizedOutput_actual : successProbability oracle randomizedOutput toy
     (1 / 8 : ℝ) := by
   norm_num [successProbability, historyExpectation, law, randomizedOutput, early, oracle,
     Distribution.mean_bind, Distribution.mean_map, Function.comp_def, pair_mean,
-    Distribution.mean_pure, success, available, SelectionPolicy.proposals, Instance.covered,
+    Distribution.mean_pure, success, CertifiedOutput, available, AdaptiveSelection.proposedSets,
+    SelectionPolicy.proposals, Instance.covered,
     Instance.cost, toy, accruedBill, bill, latency]
 
 /-- The non-retaining buffered example also satisfies universal local limitations. -/

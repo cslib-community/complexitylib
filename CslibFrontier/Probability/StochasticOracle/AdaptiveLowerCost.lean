@@ -23,12 +23,49 @@ Each history includes the selected batch before its responses. The hypotheses
 are unnormalized conditional inequalities, multiplied by history probability;
 thus null histories need no division or arbitrary conditional-law convention.
 Neither progress nor costs are assumed independent between turns.
+
+## Main results
+
+* `marginal_cost_mul_le`: common marginal accounting for real and extended nonnegative costs.
+* `marginal_lower_cost`: the real marginal bound after division by positive `p`.
+* `conditional_lower_cost`: derive the bound from finite conditional-history partitions.
 -/
 
 public section
 noncomputable section
 namespace Cslib.Probability.StochasticOracle
 open Finset Cslib.Optimization.OneConstraint
+
+/-- Marginal progress and invoice envelopes imply the cost inequality before
+division. This common ordered-semiring argument covers real and extended costs. -/
+theorem marginal_cost_mul_le {ι S : Type*} [Fintype ι] [CommSemiring S]
+    [PartialOrder S] [IsOrderedRing S]
+    (issued progress bill : ι → S) (required p c : S) (hp : 0 ≤ p) (hc : 0 ≤ c)
+    (hcount : required ≤ ∑ t, progress t)
+    (hprogress : ∀ t, progress t ≤ p * issued t)
+    (hbill : ∀ t, c * issued t ≤ bill t) :
+    required * c ≤ (∑ t, bill t) * p := by
+  have hg : ∑ t, progress t ≤ p * ∑ t, issued t := by
+    simpa only [Finset.mul_sum] using Finset.sum_le_sum (fun t _ => hprogress t)
+  have hb : c * ∑ t, issued t ≤ ∑ t, bill t := by
+    simpa only [Finset.mul_sum] using Finset.sum_le_sum (fun t _ => hbill t)
+  calc
+    required * c ≤ (p * ∑ t, issued t) * c :=
+      mul_le_mul_of_nonneg_right (hcount.trans hg) hc
+    _ = p * (c * ∑ t, issued t) := by ac_rfl
+    _ ≤ p * ∑ t, bill t := mul_le_mul_of_nonneg_left hb hp
+    _ = (∑ t, bill t) * p := mul_comm _ _
+
+/-- Aggregate real marginal progress, issued-call and invoice inequalities
+without manufacturing an artificial probability space. -/
+theorem marginal_lower_cost {ι : Type*} [Fintype ι]
+    (issued progress bill : ι → ℝ) (required p c : ℝ) (hp : 0 < p) (hc : 0 ≤ c)
+    (hcount : required ≤ ∑ t, progress t)
+    (hprogress : ∀ t, progress t ≤ p * issued t)
+    (hbill : ∀ t, c * issued t ≤ bill t) :
+    required * c / p ≤ ∑ t, bill t :=
+  (div_le_iff₀ hp).mpr
+    (marginal_cost_mul_le issued progress bill required p c hp.le hc hcount hprogress hbill)
 
 open scoped Classical in
 /-- The universal lower-cost accounting step. `issued` is the reached-turn indicator,
@@ -74,13 +111,9 @@ theorem conditional_lower_cost
       ∑ t, w.mean (progress t) := by
     rw [← hsum, ← Distribution.mean_mul]
     exact sum_le_sum fun ω _ => mul_le_mul_of_nonneg_left (hcount ω) (w.nonneg ω)
-  have hg' := sum_le_sum (fun t (_ : t ∈ (univ : Finset (Fin u))) => hg t)
-  have hb' := sum_le_sum (fun t (_ : t ∈ (univ : Finset (Fin u))) => hb t)
-  rw [← mul_sum] at hg' hb'
-  rw [hsum, div_le_iff₀ hp]
   have hη' := mul_le_mul_of_nonneg_left hη hr
-  have hchain : η * r ≤ p * ∑ t, w.mean (issued t) := by nlinarith
-  have := mul_le_mul_of_nonneg_left hchain hc
-  nlinarith
+  rw [hsum]
+  exact marginal_lower_cost (fun t => w.mean (issued t)) (fun t => w.mean (progress t))
+    (fun t => w.mean (bill t)) (η * r) p c hp hc (by nlinarith) hg hb
 
 end Cslib.Probability.StochasticOracle

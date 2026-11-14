@@ -25,6 +25,9 @@ namespace Cslib.Probability.StochasticOracle.SelectionPolicy
 /-- Full records retain the chosen batch and its response; `none` is a halt. -/
 abbrev Record (B R : Type) := Option (B × R)
 
+/-- Whether a record is an issued call, rather than a halt token. -/
+@[expose] def issued {B R : Type} (_ : List (Record B R)) (x : Record B R) : Bool := x.isSome
+
 /-- Decode proposals from an issued call; a halt supplies no proposals. -/
 @[expose] def recordProposals {B R J : Type}
     (propose : List (Record B R) → B → R → List (Finset J))

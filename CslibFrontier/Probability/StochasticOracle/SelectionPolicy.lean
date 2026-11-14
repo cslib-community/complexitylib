@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Output
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveLowerCost
 
@@ -86,13 +86,9 @@ further oracle call or information: every later record is the same halt token. -
 @[expose] def latency (O : Oracle B R J) (h : List (Record B R)) : Record B R → ℝ :=
   recordResource O.duration h
 
-/-- Whether a record is an issued call, rather than a halt token. -/
-@[expose] def issued (_ : List (Record B R)) (x : Record B R) : Bool := x.isSome
-
 /-- Every proposed set is available for buffering and final extraction. -/
-@[expose] def available (O : Oracle B R J) : List (Record B R) → Finset J
-  | [] => ∅
-  | x :: h => (proposals O h x).foldr (· ∪ ·) ∅ ∪ available O h
+@[expose] def available (O : Oracle B R J) (h : List (Record B R)) : Finset J :=
+  AdaptiveSelection.proposedSets (proposals O) h
 
 /-- Selection-only admissibility constrains only supported transcripts and outputs.
 It permits arbitrary output extraction and no local dual-certification requirement. -/
@@ -108,10 +104,10 @@ no physical time. For a finite alphabet this is the a.s. physical deadline condi
 /-- Actual success probability conditional on the terminal transcript, including
 randomized output, full coverage, its certificate, and physical availability by D. -/
 @[expose] def success (O : Oracle B R J) (π : Policy B R J) (I : Instance E J)
-    (ρ D : ℝ) (h : List (Record B R)) : ℝ :=
-  (π.output h).mean fun C =>
-    if I.covered C = I.ground ∧ I.cost C ≤ ρ * ∑ e ∈ I.ground, I.dual e ∧
-      accruedBill (latency O) h ≤ D then 1 else 0
+    (ρ D : ℝ) (h : List (Record B R)) : ℝ := by
+  classical
+  exact (π.output h).mean fun C =>
+    if CertifiedOutput I ρ D O.duration h C then 1 else 0
 
 /-- Actual probability of randomized certified output by D after at most u calls.
 The history law is constructed from the policy and the fixed oracle. -/
@@ -156,12 +152,8 @@ theorem active_of_call (O : Oracle B R J) (π : Policy B R J)
 omit [Fintype B] [Fintype J] in
 /-- Revealed coverage includes all buffered proposals, not only retained ones. -/
 theorem covered_available (O : Oracle B R J) (I : Instance E J) (h : List (Record B R)) :
-    I.covered (available O h) = revealed I (proposals O) h := by
-  induction h with
-  | nil => simp [available, revealed, Instance.covered]
-  | cons x h ih =>
-    simpa only [available, revealed, Instance.covered_union] using
-      (congrArg (fun C => I.covered ((proposals O h x).foldr (· ∪ ·) ∅) ∪ C) ih)
+    I.covered (available O h) = revealed I (proposals O) h :=
+  AdaptiveSelection.covered_proposedSets I (proposals O) h
 
 /-- Source per-selected-batch lower limitations for one arbitrary policy. All
 conditions concern positive-mass selections at supported histories before halt. -/
@@ -190,8 +182,8 @@ algorithms alone. This predicate contains only the source's local envelopes. -/
 
 omit [Fintype B] [Fintype J] in
 theorem reveals_none (O : Oracle B R J) (I : Instance E J)
-    (h : List (Record B R)) : reveals I (proposals O) h none = false := by
-  simp [reveals, revealed, proposals, Instance.covered]
+    (h : List (Record B R)) : reveals I (proposals O) h none = false :=
+  record_reveals_none O.proposed I h
 
 /-- Local source envelopes give the actual conditional unnormalized progress/cost
 inequalities, including randomized halt decisions. No division on null selections. -/
@@ -247,9 +239,6 @@ theorem revealed_card_le_supported (O : Oracle B R J) (π : Policy B R J) (I : I
   induction hh with
   | nil => simp [revealed, count]
   | @cons h x hh hx ih =>
-    have hm : revealed I (proposals O) h ⊆ revealed I (proposals O) (x :: h) :=
-      subset_union_right
-    have he := card_sdiff_add_card_eq_card hm
     have hcap : (revealed I (proposals O) (x :: h) \ revealed I (proposals O) h).card ≤ b := by
       cases x with
       | none => simp [revealed, proposals, Instance.covered]
@@ -260,14 +249,7 @@ theorem revealed_card_le_supported (O : Oracle B R J) (π : Policy B R J) (I : I
         exact H.coverage h hh hs a
           (pos_of_mul_pos_left hx ((O.respond h a).nonneg x)) x
           (pos_of_mul_pos_right hx ((π.choose h).nonneg (some a)))
-    by_cases hr : reveals I (proposals O) h x = true
-    · simp only [count, hr, ite_true, Nat.mul_add, Nat.mul_one]
-      omega
-    · have hz : (revealed I (proposals O) (x :: h) \ revealed I (proposals O) h).card = 0 := by
-        simpa only [reveals, decide_eq_true_eq, not_nonempty_iff_eq_empty, card_eq_zero] using hr
-      simpa only [count, hr, Bool.false_eq_true, ite_false, Nat.add_zero] using
-        (show (revealed I (proposals O) (x :: h)).card ≤
-          b * count (reveals I (proposals O)) h by omega)
+    exact revealed_card_le_cons I (proposals O) b h x hcap ih
 
 /-- Selection-only successful output forces the required number of revealed-progress
 turns, derived from actual proposals rather than an assumed count bridge. -/
@@ -285,8 +267,7 @@ theorem success_le_count_tail (O : Oracle B R J) (π : Policy B R J) (I : Instan
   · simp [hw]
   · apply mul_le_mul_of_nonneg_left _ ((π.output h).nonneg C)
     dsimp only
-    by_cases hs : I.covered C = I.ground ∧ I.cost C ≤ ρ * ∑ e ∈ I.ground, I.dual e ∧
-        accruedBill (latency O) h ≤ D
+    by_cases hs : CertifiedOutput I ρ D O.duration h C
     · have hsub := hA h hh C (lt_of_le_of_ne ((π.output h).nonneg C) (Ne.symm hw))
       have hc : I.ground ⊆ revealed I (proposals O) h := by
         rw [← covered_available O I, ← hs.1]
@@ -299,17 +280,6 @@ theorem success_le_count_tail (O : Oracle B R J) (π : Policy B R J) (I : Instan
       simp [hs, ht]
     · simp only [hs, ite_false]
       split_ifs <;> norm_num
-
-omit [Fintype B] [Fintype R] in
-/-- Real accrued indicator charges are the actual integer progress counts. -/
-theorem accrued_indicator_eq_count (f : List (Record B R) → Record B R → Bool)
-    (h : List (Record B R)) :
-    accruedBill (fun h x => if f h x then (1 : ℝ) else 0) h = count f h := by
-  induction h with
-  | nil => simp [accruedBill, count]
-  | cons x h ih =>
-    simp only [accruedBill, count, ih, Nat.cast_add]
-    split_ifs <;> simp
 
 omit [DecidableEq J] in
 /-- Randomized certified-output success is an actual probability in [0,1]. -/
@@ -336,6 +306,7 @@ theorem success_eq_zero_of_late (O : Oracle B R J) (π : Policy B R J) (I : Inst
     (ρ D : ℝ) (h : List (Record B R)) (hh : ¬accruedBill (latency O) h ≤ D) :
     success O π I ρ D h = 0 := by
   classical
-  simp [success, Distribution.mean, hh]
+  change ¬accruedBill (recordResource O.duration) h ≤ D at hh
+  simp [success, CertifiedOutput, Distribution.mean, hh]
 
 end Cslib.Probability.StochasticOracle.SelectionPolicy

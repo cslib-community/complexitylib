@@ -939,8 +939,9 @@ For universal comparisons, import
 fixes conditional responses, all valid proposed sets, token charges and physical
 durations. An arbitrary `Policy` supplies randomized batch-or-halt choices and a
 randomized terminal output kernel. `law` samples the selected batch then its response;
-halt is absorbing and carries no extra oracle information. `Admissible` requires only
-that each supported final output use previously proposed sets. It allows buffering
+halt is absorbing and carries no extra oracle information. `Admissible` requires
+each supported final output, including failed ones, to use previously proposed sets.
+It allows buffering
 locally uncertified proposals and extracting a certified subset later; it imposes no
 local retention algorithm. `successProbability` integrates the actual conditional
 randomized output's coverage/certificate/deadline indicator. `expectedCost` charges
@@ -955,8 +956,41 @@ binomial tail with `v = min(u,floor(D/ℓ))`. Output provenance and the size cap
 the success-to-revealed-count bridge. Supported latency lower bounds prove that a
 successful deadline path has no issued call after that prefix; a halt cannot restart.
 The progress comparison permits arbitrary full-history response correlations.
-The existing `conditional_lower_cost` aggregates the derived marginal tables; no
+The shared `marginal_lower_cost` aggregates the actual derived marginals directly; no
 aggregate expected-cost lower bound is a hypothesis.
+
+For arbitrary discrete competitors and the source's weaker successful-only provenance,
+import `CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost`.
+The shared `policyLaw` executes an arbitrary PMF choice of batch or halt, followed by
+the fixed conditional response law. `outputLaw` then samples the returned family from
+the actual transcript; no retention algorithm is imposed on the competitor. The same
+`CertifiedOutput` predicate checks coverage, the dual weight certificate and accrued
+physical duration in both representations. `policyLaw_toPMF` in the optional finite-table
+bridge identifies the existing finite policy law with this shared execution at every
+history. The retaining upper policy is a specialization of the same dispatcher.
+
+`SelectionPolicy.Discrete.LowerBounds` constrains only supported issued batches before
+halt: revealed-progress probability, newly revealed cardinality and conditional invoice
+mean. Nonnegative realized charges may be unbounded. Its provenance field applies only
+when an actually sampled output is counted as a certified success; failed fabricated
+masks remain allowed. `success_count` derives the required revealed-progress threshold
+from coverage and the size cap, using all actual proposals, including locally rejected
+ones. `lower_cost` proves that the actual extended nonnegative invoice expectation is
+at least `eta * r * c / p` for positive `p` and the supplied achieved success level.
+There is no integrability or finite-expected-bill premise: the common ordered-semiring
+calculation `marginal_cost_mul_le` works directly for extended expectations, including
+infinity, and also supplies the real finite-table accounting theorem.
+
+The checked [discrete lower-cost client](../../CslibFrontierTests/StochasticOracleDiscreteLowerCost.lean)
+buffers a bundle that local retention rejects and randomly extracts its cheap certified
+singleton. It can halt before querying and return an expensive fabricated failed mask;
+that mask really occurs on a supported history and violates all-output provenance.
+With geometric response metadata and invoice `x + 1`, actual success is `1/4`, actual
+expected bill is one, and the theorem supplies the nonzero `1/2` lower bound. A second
+invoice `2^x` satisfies the same source contracts but has infinite actual expected bill.
+This extends the finite-horizon **token lower bound** to arbitrary discrete semantic
+competitors. The necessary lower-latency/binomial deadline bound for that broader class
+and native representation remain separate obligations.
 
 `retainingPolicy` constructs an admissible upper policy from a randomized batch
 selector; `UpperBounds` contains only its supported source contracts.
