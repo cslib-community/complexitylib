@@ -1484,6 +1484,11 @@ Emil L. Post. "A Variant of a Recursively Unsolvable Problem." *Bulletin of the 
 
 Ariel D. Procaccia and Moshe Tennenholtz. "Approximate Mechanism Design without Money." *ACM Transactions on Economics and Computation* 1(4), Article 18 (18:1–18:26), 2013 (preliminary version in EC 2009). https://doi.org/10.1145/2542174.2542175 . Author-hosted TEAC copy inspected on 2026-11-11 at https://procaccia.info/wp-content/uploads/2020/03/facility.pdf : checked Section 3 (p. 18:7: randomized facility-location model, strategyproofness, group strategyproofness in the weak sense with strong group strategyproofness noted in passing, social cost, approximation ratio) and Section 3.1 (pp. 18:7–18:8: median optimality on `ℝ` with `med(x)` choosing `x_{(n-1)/2}` for even `n`, and weak group strategyproofness of fixed `k`-th order statistics attributed to [moulin80](#moulin80)). Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md).
 
+<a id="qruov2026"></a>
+## qruov2026
+
+Hiroki Furue, Yasuhiko Ikematsu, Fumitaka Hoshino, Tsuyoshi Takagi, Renma Sugai, Hiroshi Amagasa, Naofumi Homma, Rei Ueno, Kosuke Sakata, Haruhisa Kosuge, Kimihiro Yamakoshi, Koha Kinjo, Rika Akiyama, Satoshi Nakamura, Shingo Orihara and Yuto Kawahara. *QR-UOV: Round-3 Specification*. NIST Post-Quantum Cryptography Additional Digital Signature Schemes project, August 31, 2026. [Official PDF](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/qruov_specifications.pdf), SHA-256 `23100e20c4b442c6e30ee449def82158c7b6ac5e4eb5c77869587075ddba9958`. Checked on 2026-11-13: §3.2, Theorem 1 and its proof (printed p. 13: the multiplication-matrix symmetrizer and its construction from a nonzero linear functional); §4.1, Proposition 1 (printed p. 16) and the block pull-back construction (printed p. 17); and Tables 1–3 (printed p. 22: `q = 127`, the degree-3 modulus `x³ - x - 1`, and `W = diag(J₁, J₂)`). The current field-extension milestone proves only the irreducible degree-3 functional construction and exact stated matrix. It does not cover Theorem 1 for arbitrary reducible quotient rings, the block pull-back, QR-UOV algorithms, distributions, rank-failure analysis, or the security theorem.
+
 <a id="radhakrishnan97"></a>
 ## radhakrishnan97
 

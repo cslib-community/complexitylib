@@ -876,6 +876,29 @@ not construct the symmetrizer `W`, the structured MQ map, the pull-back bijectio
 verification, rank-failure estimates, or the QROM reduction; those remain obligations of the
 [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
+### Field-extension multiplication symmetrizers
+
+For the field-extension part of QR-UOV's polynomial-matrix representation, import
+[`MultiplicationForm.lean`](../../CslibFrontier/Foundations/LinearAlgebra/MultiplicationForm.lean).
+Given a nonzero linear functional `φ : E →ₗ[K] K` on a commutative field extension,
+`Algebra.mulForm φ` is the pairing `(x, y) ↦ φ (x * y)`. `Algebra.mulForm_nondegenerate` proves
+that it is nondegenerate, `Algebra.isUnit_mulForm_toMatrix` makes its Gram matrix invertible in
+every finite basis, and `Algebra.mulForm_toMatrix_mul_leftMulMatrix_isSymm` and
+`Algebra.transpose_leftMulMatrix_mul_mulForm_toMatrix` give the regular-representation symmetry
+and transpose-intertwining laws. This is the field case of the construction in
+[QR-UOV §3.2, Theorem 1, printed p. 13](../sources.md#qruov2026); the proof uses inverses in `E`
+and does not establish the source's stronger assertion for arbitrary reducible polynomial
+quotients.
+
+The exact balanced security-level-I coefficient client is
+[`QRUOV/SLIField.lean`](../../CslibFrontier/Crypto/Primitives/QRUOV/SLIField.lean). It proves that
+`x³ - x - 1` is irreducible over `ZMod 127`, uses the power basis and coefficient-zero functional,
+and computes the Gram matrix as `diag(J₁, J₂)` from Table 3 (printed p. 22). The generator's
+regular-representation matrix is also evaluated explicitly, fixing the source's column convention.
+This is algebraic infrastructure only: there is no QR-UOV block pull-back, public-key distribution,
+key generation, signing, verification, rank-failure estimate, QROM game, asymptotic security
+reduction, or concrete parameter-set advantage bound.
+
 ### Canonical upper-triangular quadratic representatives
 
 Import [`Matrix/UpperTriangularQuadratic.lean`](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/UpperTriangularQuadratic.lean)
