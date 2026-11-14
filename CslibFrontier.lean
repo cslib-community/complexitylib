@@ -6389,6 +6389,7 @@ public import CslibFrontier.Languages.SQL.QueryLaws
 public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
 public import CslibFrontier.Languages.SQL.Schema
+public import CslibFrontier.Languages.SQL.Simplify
 public import CslibFrontier.Languages.SQL.Truth
 public import CslibFrontier.Languages.SQL.Typing
 public import CslibFrontier.Languages.SQL.Value

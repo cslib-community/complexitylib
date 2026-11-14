@@ -32,7 +32,7 @@ show for each condition a concrete instance on which the law fails without it.
   table moves into it with the projection substituted (`Query.select_project`, the projection safe),
   and push into either input of a join (`Query.select_join_left`, `Query.select_join_right`, the
   predicate and the join predicate safe); a `WHERE` over a cross join is an inner join
-  (`Query.select_join_true`).
+  (`Query.select_join_true`), and `WHERE TRUE` is the identity (`Query.select_true`).
 * Projections: fusion by substitution (`Query.project_project`, the inner projection safe) and
   `SELECT *` (`Query.project_col`).
 * `UNION ALL`: `WHERE` and `SELECT` lists distribute over it (`Query.select_unionAll`,
@@ -58,6 +58,7 @@ table or into a join is explicit substitution or renaming.
 * `Cslib.SQL.Query.select_project`: selection through a projection.
 * `Cslib.SQL.Query.select_join_left`, `Cslib.SQL.Query.select_join_right`,
   `Cslib.SQL.Query.select_join_true`: predicate pushdown into joins.
+* `Cslib.SQL.Query.select_true`: `WHERE TRUE` keeps every row.
 * `Cslib.SQL.Query.project_project`, `Cslib.SQL.Query.project_col`: projection fusion and
   `SELECT *`.
 * `Cslib.SQL.Query.select_unionAll`, `Cslib.SQL.Query.project_unionAll`,
@@ -334,6 +335,12 @@ theorem select_join_true (θ : Expr (n + m)) (q₁ : Query S n) (q₂ : Query S 
     rcases q₁.eval D with e | rs
     · rfl
     rcases q₂.eval D with e | ss <;> rfl
+
+/-- `WHERE TRUE` keeps every row. -/
+theorem select_true (q : Query S n) : Equiv .ordered (select (lit (.bool true)) q) q :=
+  Equiv.of_eval_eq fun D _ => by
+    simp only [eval_select, Expr.filterRows_true]
+    rcases q.eval D with e | rs <;> rfl
 
 /-! ### Projections -/
 
