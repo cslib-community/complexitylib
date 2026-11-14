@@ -144,6 +144,8 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
   FAEST challenge decoding is tracked in [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); BAVC, VOLE reconstruction, protocol correctness and QROM security remain.
 - **SQIsign foundations** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Extend its `B_{p,∞}` presentation with maximal orders and ideals, finite-field and elliptic-curve arithmetic, isogenies and Deuring, protocol algorithms, failure analysis, distribution switches, assumptions and security reductions.
 
+- **SDitH foundations**: [#5212](https://github.com/cslib-community/cslib-frontier/issues/5212) is the completed bounded binary-RSD milestone. Seed expansion, the PIOP, commitments, grinding, signing and verification, SD/RSD hardness, and EUF-CMA/QROM security remain under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
 - **Quantum-secure cryptography**: Define uniform quantum-efficient distinguishers and computational indistinguishability with quantum side information, and justify security reductions for concrete constructions in that model.
