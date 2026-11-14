@@ -44,6 +44,8 @@ the Kővári–Sós–Turán bound.
 * `Nat.descFactorial_mul_pow_le`, `Nat.choose_mul_pow_le`, `Nat.choose_mul_sub_mul_pow_le`,
   `Nat.two_mul_pred_pow_le`, `Nat.two_pow_mul_choose_sub_le`: power comparisons and the
   block-avoidance binomial estimate.
+* `Nat.choose_le_two_pow_mul_choose_sub`: shrinking the ground set by `d` scales `U.choose k` by at
+  most `2 ^ k * (U - d).choose k` when `2 * d + k ≤ U + 1`.
 -/
 
 public section
@@ -245,5 +247,16 @@ theorem two_pow_mul_choose_sub_le {b m : ℕ} (hb : 1 ≤ b) (r : ℕ) :
     _ ≤ 2 ^ r * ((b * m).choose (b * r) * (b - 1) ^ (b * r)) := by gcongr
     _ = (b * m).choose (b * r) * (2 ^ r * (b - 1) ^ (b * r)) := by ring
     _ ≤ (b * m).choose (b * r) * b ^ (b * r) := by gcongr
+
+/-- Shrinking `U` by `d` (`k ≤ U - d`, `2 * d + k ≤ U + 1`) multiplies `choose · k` by `≤ 2 ^ k`. -/
+theorem choose_le_two_pow_mul_choose_sub {U d k : ℕ} (hk : k ≤ U - d) (h : 2 * d + k ≤ U + 1) :
+    U.choose k ≤ 2 ^ k * (U - d).choose k := by
+  refine Nat.le_of_mul_le_mul_left (c := (U - d + 1 - k) ^ k) ?_ (Nat.pow_pos (by omega))
+  calc (U - d + 1 - k) ^ k * U.choose k
+      ≤ (U - d).choose k * (U + 1 - k) ^ k :=
+        Nat.pow_mul_choose_le_choose_mul_pow (d := U - d) (m := U) (s := k) (Nat.sub_le U d)
+    _ ≤ (U - d).choose k * (2 * (U - d + 1 - k)) ^ k :=
+        Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) k)
+    _ = (U - d + 1 - k) ^ k * (2 ^ k * (U - d).choose k) := by rw [Nat.mul_pow]; ring
 
 end Nat

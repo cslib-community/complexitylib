@@ -33,6 +33,8 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
 * `Nat.centralBinom_sq_mul_le`: `C(2m, m)² (2m + 1) ≤ 16 ^ m`.
 * `Cslib.two_pow_succ_le_centralBinom`: `2 ^ (B + 1) ≤ B.centralBinom` for `B ≥ 3`.
 * `Cslib.choose_half_sq_mul_le`: `C(n, ⌊n/2⌋)² (n + 1) ≤ 4 ^ n`.
+* `Cslib.choose_le_choose_of_le_of_le_half`: `C(n, k) ≤ C(n, a)` for `k ≤ a ≤ n / 2`, binomial
+  coefficients below half increase.
 * `Cslib.ten_mul_card_filter_card_le_le`: few sets are much larger than half.
 * `Cslib.four_mul_two_pow_le_mul_choose_sub`: `4 · 2 ^ n ≤ 5 (n + 1) C(n, ⌈n/2⌉ - s)` when
   `1 ≤ s` and `100 s² ≤ n + 1`, a binomial coefficient near the middle is large.
@@ -189,7 +191,7 @@ theorem ten_mul_card_filter_card_le_le (n t : ℕ) (h : 100 * (t + 1) ^ 2 ≤ n 
       omega
 
 /-- Below `n / 2`, the binomial coefficients `C(n, k)` increase with `k`. -/
-private theorem choose_le_choose_of_le_of_le_half {n k a : ℕ} (hka : k ≤ a) (ha : a ≤ n / 2) :
+theorem choose_le_choose_of_le_of_le_half {n k a : ℕ} (hka : k ≤ a) (ha : a ≤ n / 2) :
     n.choose k ≤ n.choose a := by
   induction hka using Nat.decreasingInduction with
   | self => exact le_rfl

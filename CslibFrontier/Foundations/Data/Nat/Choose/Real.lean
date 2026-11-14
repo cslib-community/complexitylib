@@ -11,7 +11,9 @@ public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Choose.Sum
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
+import CslibFrontier.Foundations.Data.Nat.Choose
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Data.Nat.Choose.Central
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -40,6 +42,10 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
 * `Cslib.mul_rpow_le_of_two_pow_le_sum_choose_sq`: the rearranged size lower bound.
+* `Cslib.div_pow_le_choose`, `Cslib.mul_logb_div_le_logb_choose`,
+  `Cslib.logb_choose_le_mul_logb_exp_mul_div`, `Cslib.logb_add_choose_le`,
+  `Cslib.logb_choose_sub_logb_choose_sub_le`: power and base-2 logarithm bounds for individual
+  binomial coefficients and binomial differences.
 * `Real.exists_one_le_and_mul_pow_le_pow`: a polynomial is eventually below an exponential with base
   `r > 1`.
 
@@ -256,6 +262,57 @@ theorem mul_rpow_le_of_two_pow_le_sum_choose_sq {m q e : ℕ} (heq : e ≤ q)
       ≤ e / Real.exp 1 * (Real.exp 1 * q / e) :=
         mul_le_mul_of_nonneg_left hp (by positivity)
     _ = q := by field_simp
+
+/-- Real-division form of `Nat.choose_mul_pow_le` at `a = k`: `((N : ℝ) / k) ^ k ≤ N.choose k`. -/
+theorem div_pow_le_choose {N k : ℕ} (hk : k ≤ N) : ((N : ℝ) / (k : ℝ)) ^ k ≤ (N.choose k : ℝ) := by
+  rcases Nat.eq_zero_or_pos k with rfl | hpos
+  · simp
+  · rw [div_pow, div_le_iff₀ (pow_pos (by exact_mod_cast hpos) k)]
+    exact_mod_cast (by simpa [Nat.choose_self] using Nat.choose_mul_pow_le hk k)
+
+/-- Base-2 logarithmic form of `div_pow_le_choose` for `1 ≤ k ≤ N`. -/
+theorem mul_logb_div_le_logb_choose {N k : ℕ} (hk₀ : 1 ≤ k) (hk : k ≤ N) :
+    (k : ℝ) * Real.logb 2 ((N : ℝ) / (k : ℝ)) ≤ Real.logb 2 (N.choose k) := by
+  have hk_pos : (0 : ℝ) < (k : ℝ) := by exact_mod_cast hk₀
+  have hN_pos : (0 : ℝ) < (N : ℝ) := lt_of_lt_of_le hk_pos (by exact_mod_cast hk)
+  simpa [Real.logb_pow] using Real.logb_le_logb_of_le (by norm_num : (1 : ℝ) < 2)
+    (pow_pos (div_pos hN_pos hk_pos) k) (div_pow_le_choose hk)
+
+/-- Base-2 logarithmic form of `Nat.choose_le_exp_mul_div_pow` for `k ≤ N`. -/
+theorem logb_choose_le_mul_logb_exp_mul_div {N k : ℕ} (hk : k ≤ N) :
+    Real.logb 2 (N.choose k) ≤ (k : ℝ) * Real.logb 2 (Real.exp 1 * (N : ℝ) / (k : ℝ)) := by
+  simpa [Real.logb_pow] using Real.logb_le_logb_of_le (by norm_num : (1 : ℝ) < 2)
+    (by exact_mod_cast Nat.choose_pos hk) (Nat.choose_le_exp_mul_div_pow N k)
+
+/-- Base-2 logarithm of `(n + m).choose m` for `1 ≤ m ≤ n` ([LiLiangYuZhou2023], Section 5.2,
+p. 25 / PDF p. 26): `log₂ C(n + m, m) ≤ 3 * m + m * log₂ (n / m)`. -/
+theorem logb_add_choose_le {n m : ℕ} (hm₀ : 1 ≤ m) (hmn : m ≤ n) :
+    Real.logb 2 ((n + m).choose m) ≤ 3 * (m : ℝ) + (m : ℝ) * Real.logb 2 ((n : ℝ) / (m : ℝ)) := by
+  have hm_pos : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm₀
+  have hn_pos : (0 : ℝ) < (n : ℝ) := lt_of_lt_of_le hm_pos (by exact_mod_cast hmn)
+  have h1 := logb_choose_le_mul_logb_exp_mul_div (Nat.le_add_left m n)
+  have hnm : ((n + m : ℕ) : ℝ) ≤ 2 * (n : ℝ) := by
+    push_cast; linarith [show (m : ℝ) ≤ n by exact_mod_cast hmn]
+  have h2 := Real.logb_le_logb_of_le (by norm_num : (1 : ℝ) < 2) (by positivity)
+    (show Real.exp 1 * ((n + m : ℕ) : ℝ) / (m : ℝ) ≤ 8 * ((n : ℝ) / (m : ℝ)) by
+      rw [← mul_div_assoc]; exact div_le_div_of_nonneg_right
+        (by nlinarith [Real.exp_pos 1, Real.exp_one_lt_d9]) hm_pos.le)
+  rw [show (8 : ℝ) * ((n : ℝ) / (m : ℝ)) = (2 : ℝ) ^ (3 : ℕ) * ((n : ℝ) / (m : ℝ)) by ring,
+    Real.logb_mul (by positivity) (div_pos hn_pos hm_pos).ne', Real.logb_pow,
+    Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)] at h2; nlinarith
+
+/-- Logarithmic form of `choose_le_two_pow_mul_choose_sub` ([LiLiangYuZhou2023], Section 5.2,
+pp. 24–25 / PDF pp. 25–26): `log₂ C(U, k) - log₂ C(U - d, k) ≤ k`. -/
+theorem logb_choose_sub_logb_choose_sub_le {U d k : ℕ} (hk : k ≤ U - d) (h : 2 * d + k ≤ U + 1) :
+    Real.logb 2 (U.choose k) - Real.logb 2 ((U - d).choose k) ≤ (k : ℝ) := by
+  have hp1 : (0 : ℝ) < (U.choose k : ℝ) := by
+    exact_mod_cast Nat.choose_pos (hk.trans (Nat.sub_le U d))
+  have hp2 : (0 : ℝ) < ((U - d).choose k : ℝ) := by exact_mod_cast Nat.choose_pos hk
+  have hlog := Real.logb_le_logb_of_le (by norm_num : (1 : ℝ) < 2) hp1
+    (show (U.choose k : ℝ) ≤ (2 : ℝ) ^ k * ((U - d).choose k : ℝ) by
+      exact_mod_cast Nat.choose_le_two_pow_mul_choose_sub hk h)
+  rw [Real.logb_mul (by positivity) hp2.ne', Real.logb_pow,
+    Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2), mul_one] at hlog; linarith
 
 end Cslib
 

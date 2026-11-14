@@ -12,6 +12,7 @@ public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.InformationTheory.Coding.PrefixFree
 import CslibFrontier.Foundations.Data.Nat.Bits
+import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -35,20 +36,30 @@ together with two basic binary prefix-free codes in `Cslib.BitString`:
 * `Cslib.BitString.finIdxBits`: fixed-width `⌈log₂ K⌉`-bit binary encoding of `Fin K`.
 * `Cslib.BitString.eliasGamma`, `Cslib.BitString.decodeEliasGamma`: little-endian-suffix variant of
   the Elias gamma code [Elias1975] of length `2 * ⌊log₂ m⌋ + 1` and its left inverse on `m ≥ 1`.
+* `Cslib.BitString.encodeFintype`, `Cslib.BitString.encodeMemFinset`,
+  `Cslib.BitString.encodeRestr`: canonical binary encodings for finite types, membership, and
+  restricted maps.
 
 ## Main results
 
 * `InformationTheory.IsPrefixFree.bind_append`,
+  `Cslib.BitString.prefix_append_of_length_eq`,
+  `Cslib.BitString.prefix_append_of_isPrefixFree`,
   `Cslib.BitString.isPrefixFree_biUnion_append`,
   `Cslib.BitString.isPrefixFree_image_append`,
   `Cslib.BitString.isPrefixFree_prod_append`,
   `Cslib.BitString.injOn_append`,
   `Cslib.BitString.injOn_prod_append`: sequential dependent concatenation of prefix-free codes
-  remains prefix-free and uniquely decomposable.
+  remains prefix-free and uniquely decomposable; equal-length or prefix-free heads preserve prefix
+  relations on tails.
 * `Cslib.BitString.finIdxBits_injective`,
   `Cslib.BitString.isPrefixFree_range_finIdxBits`,
   `Cslib.BitString.clog_two_lt_logb_add_one`: fixed-width index code properties and ceiling slack
   `(Nat.clog 2 K : ℝ) < Real.logb 2 K + 1`.
+* `Cslib.BitString.encodeFintype`, `Cslib.BitString.encodeMemFinset`,
+  `Cslib.BitString.encodeRestr`: canonical binary encodings, exact lengths, and injectivity for
+  finite types, subsets, and restricted maps (`encodeFintype_injective`, `encodeMemFinset_inj`,
+  `encodeRestr_inj`).
 * `Cslib.BitString.decodeEliasGamma_eliasGamma`,
   `Cslib.BitString.injOn_eliasGamma`,
   `Cslib.BitString.isPrefixFree_range_eliasGamma`,
@@ -85,6 +96,13 @@ open InformationTheory
 
 /-! ### Self-delimiting and prefix-free combinators -/
 
+/-- Equal-length prefixes of equal or prefix-related concatenations must be equal,
+leaving a prefix relation on the tails. -/
+theorem prefix_append_of_length_eq {α : Type*} {u₁ u₂ v₁ v₂ : List α}
+    (hlen : u₁.length = u₂.length) (hp : u₁ ++ v₁ <+: u₂ ++ v₂) : u₁ = u₂ ∧ v₁ <+: v₂ := by
+  obtain ⟨w, hw⟩ := hp; rw [List.append_assoc] at hw
+  obtain ⟨rfl, hw'⟩ := List.append_inj hw hlen; exact ⟨rfl, ⟨w, hw'⟩⟩
+
 /-- Equal concatenations with prefixes drawn from a prefix-free set have equal prefix and suffix. -/
 theorem append_inj_of_isPrefixFree {ι : Type*} {S : Set (List ι)}
     (hS : IsPrefixFree S) {u₁ u₂ v₁ v₂ : List ι}
@@ -96,6 +114,16 @@ theorem append_inj_of_isPrefixFree {ι : Type*} {S : Set (List ι)}
     · exact (hS u₂ hu₂ u₁ hu₁ ⟨t, hu₁'.symm⟩).symm
   subst hu
   exact ⟨rfl, List.append_cancel_left heq⟩
+
+/-- A prefix of concatenations whose heads are drawn from a prefix-free set forces
+equal heads and a prefix relation on the tails. -/
+theorem prefix_append_of_isPrefixFree {α : Type*} {S : Set (List α)}
+    (hpf : IsPrefixFree S) {u₁ u₂ v₁ v₂ : List α}
+    (hu₁ : u₁ ∈ S) (hu₂ : u₂ ∈ S) (hp : u₁ ++ v₁ <+: u₂ ++ v₂) : u₁ = u₂ ∧ v₁ <+: v₂ := by
+  obtain ⟨w, hw⟩ := hp
+  rw [List.append_assoc] at hw
+  obtain ⟨rfl, hw'⟩ := append_inj_of_isPrefixFree hpf hu₁ hu₂ hw
+  exact ⟨rfl, ⟨w, hw'⟩⟩
 
 /-- Finite `Finset.biUnion` form of `IsPrefixFree.bind_append`. -/
 theorem isPrefixFree_biUnion_append {ι : Type*} [DecidableEq ι]
@@ -315,5 +343,54 @@ theorem isPrefixFree_range_eliasGamma : IsPrefixFree (Set.range eliasGamma) := b
 /-- `eliasGamma '' {m : ℕ | 1 ≤ m}` is prefix-free. -/
 theorem isPrefixFree_eliasGamma : IsPrefixFree (eliasGamma '' {m : ℕ | 1 ≤ m}) :=
   isPrefixFree_range_eliasGamma.anti (Set.image_subset_range _ _)
+
+/-! ### Fixed-width encodings of finite structures -/
+
+/-- Fixed-width binary encoding of a finite type `α` via `finIdxBits`. -/
+noncomputable def encodeFintype {α : Type*} [Fintype α] (x : α) : List Bool :=
+  finIdxBits (Fintype.card α) (Fintype.equivFin α x)
+
+@[simp] theorem length_encodeFintype {α : Type*} [Fintype α] (x : α) :
+    (encodeFintype x).length = Nat.clog 2 (Fintype.card α) := length_finIdxBits (Fintype.card α) _
+
+theorem encodeFintype_injective {α : Type*} [Fintype α] :
+    Function.Injective (encodeFintype (α := α)) :=
+  (finIdxBits_injective (Fintype.card α)).comp (Fintype.equivFin α).injective
+
+open Classical in
+/-- Fixed-width encoding of an element `x ∈ F` of a bounded finite set `F` (`card F ≤ K`). -/
+noncomputable def encodeMemFinset {β : Type*} (F : Finset β) (K : ℕ) (x : β) : List Bool :=
+  if h : x ∈ F ∧ F.card ≤ K ∧ 0 < K then
+    have ⟨_, hcard, _⟩ := h
+    finIdxBits K (Fin.castLE ((Fintype.card_coe F).trans_le hcard) (Fintype.equivFin ↥F ⟨x, h.1⟩))
+  else List.replicate (Nat.clog 2 K) false
+
+@[simp] theorem length_encodeMemFinset {β : Type*} (F : Finset β) (K : ℕ) (x : β) :
+    (encodeMemFinset F K x).length = Nat.clog 2 K := by
+  classical simp only [encodeMemFinset]; split_ifs <;> simp
+
+theorem encodeMemFinset_inj {β : Type*} {F : Finset β} {K : ℕ} {x₁ x₂ : β}
+    (hx₁ : x₁ ∈ F) (hx₂ : x₂ ∈ F) (hcard : F.card ≤ K)
+    (heq : encodeMemFinset F K x₁ = encodeMemFinset F K x₂) : x₁ = x₂ := by
+  classical
+  have hK : 0 < K := (Finset.card_pos.mpr ⟨x₁, hx₁⟩).trans_le hcard
+  have h1 : x₁ ∈ F ∧ F.card ≤ K ∧ 0 < K := ⟨hx₁, hcard, hK⟩
+  have h2 : x₂ ∈ F ∧ F.card ≤ K ∧ 0 < K := ⟨hx₂, hcard, hK⟩
+  simp only [encodeMemFinset, h1, h2] at heq
+  exact congrArg Subtype.val ((Fintype.equivFin ↥F).injective
+    ((Fin.castLE_injective _) (finIdxBits_injective K heq)))
+
+open Classical in
+/-- Fixed-width encoding of a function on a finite subset `S : Finset α` with codomain `β`. -/
+noncomputable def encodeRestr {α β : Type*} [Fintype β] (S : Finset α) (f : α → β) :
+    List Bool := encodeFintype (fun x : ↥S => f x.val)
+
+@[simp] theorem length_encodeRestr {α β : Type*} [Fintype β] (S : Finset α) (f : α → β) :
+    (encodeRestr S f).length = Nat.clog 2 (Fintype.card β ^ S.card) := by
+  classical rw [encodeRestr, length_encodeFintype, Fintype.card_fun, Fintype.card_coe]
+
+theorem encodeRestr_inj {α β : Type*} [Fintype β] {S₁ S₂ : Finset α} {f₁ f₂ : α → β}
+    (hS : S₁ = S₂) (heq : encodeRestr S₁ f₁ = encodeRestr S₂ f₂) : ∀ x ∈ S₁, f₁ x = f₂ x := by
+  classical subst hS; intro x hx; exact congrFun (encodeFintype_injective heq) ⟨x, hx⟩
 
 end Cslib.BitString
