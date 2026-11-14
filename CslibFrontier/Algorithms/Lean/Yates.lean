@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.TimeM.Loops
 public import CslibFrontier.Foundations.BooleanAnalysis.SubsetZeta
 public import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Foundations.Data.Nat.Bitwise.Carry
 
 /-!
 # Yates's algorithm on tables of size `2 ^ n`
@@ -51,6 +52,9 @@ individual entries alone does not suffice: the zeta transform of the all-ones ta
 
 ## Main results
 
+* `Cslib.Algorithms.Lean.Yates.eq_of_maskSet_eq`, `maskSet_add`, `add_eq_of_maskSet_union`:
+  below `2 ^ n` a number is determined by its set, and adding numbers with disjoint sets takes the
+  union.
 * `Cslib.Algorithms.Lean.Yates.getElem_ret_transformM`: correctness of the passes.
 * `Cslib.Algorithms.Lean.Yates.getElem_ret_zetaM`, `getElem_ret_zetaM_maskIndex`: the fast zeta
   transform computes `subsetZeta`.
@@ -122,6 +126,38 @@ theorem equivFin_symm_eq_decide_mem_maskSet {n : ℕ} (k : Fin (2 ^ n)) :
   funext i
   rw [BitString.equivFin_symm_apply]
   cases h : (k : ℕ).testBit i <;> simp [h]
+
+/-- Below `2 ^ n`, a number is determined by its set. -/
+theorem eq_of_maskSet_eq {n x y : ℕ} (hx : x < 2 ^ n) (hy : y < 2 ^ n)
+    (h : maskSet n x = maskSet n y) : x = y := by
+  have := congrArg maskIndex h
+  rwa [maskIndex_maskSet ⟨x, hx⟩, maskIndex_maskSet ⟨y, hy⟩, Fin.mk.injEq] at this
+
+/-- **Adding numbers with disjoint sets** below `2 ^ n` takes the union of the sets and stays
+below `2 ^ n`. -/
+theorem maskSet_add {n x y : ℕ} (hx : x < 2 ^ n) (hy : y < 2 ^ n)
+    (h : Disjoint (maskSet n x) (maskSet n y)) :
+    x + y < 2 ^ n ∧ maskSet n (x + y) = maskSet n x ∪ maskSet n y := by
+  have hand : x &&& y = 0 := by
+    refine Nat.eq_of_testBit_eq fun i => ?_
+    rw [Nat.testBit_and, Nat.zero_testBit, Bool.and_eq_false_iff]
+    by_cases hi : i < n
+    · by_contra hc
+      push Not at hc
+      have h1 : (⟨i, hi⟩ : Fin n) ∈ maskSet n x := mem_maskSet.mpr (by simpa using hc.1)
+      exact disjoint_left.mp h h1 (mem_maskSet.mpr (by simpa using hc.2))
+    · exact Or.inl (Nat.testBit_eq_false_of_lt
+        (hx.trans_le (Nat.pow_le_pow_right (by norm_num) (by omega))))
+  rw [Nat.add_eq_or_of_and_eq_zero hand]
+  refine ⟨Nat.or_lt_two_pow hx hy, ?_⟩
+  ext i
+  simp only [mem_maskSet, Nat.testBit_or, Bool.or_eq_true, mem_union]
+
+/-- If the sets of `x` and `y` partition the set of `z`, all below `2 ^ n`, then `x + y = z`. -/
+theorem add_eq_of_maskSet_union {n x y z : ℕ} (hx : x < 2 ^ n) (hy : y < 2 ^ n)
+    (hz : z < 2 ^ n) (h : Disjoint (maskSet n x) (maskSet n y))
+    (hu : maskSet n x ∪ maskSet n y = maskSet n z) : x + y = z :=
+  eq_of_maskSet_eq (maskSet_add hx hy h).1 hz ((maskSet_add hx hy h).2.trans hu)
 
 /-- Every table represents the function reading the cell of each set. -/
 theorem getElem_eq_maskIndex_maskSet {α : Type*} {n : ℕ} (t : Vector α (2 ^ n)) (k : ℕ)

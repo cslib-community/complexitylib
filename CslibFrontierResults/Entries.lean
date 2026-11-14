@@ -27,6 +27,7 @@ import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.Lean.TrimmedYates
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -4817,6 +4818,24 @@ register_result "kosaraju-scc" where
     order at exact cost 3 * (|vs| + ∑ v, |adj v|) for duplicate-free vertex lists covering V, \
     plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
     array steps are counted as unit-cost operations."
+
+register_result "integer-3sum-via-subset-convolution-timem" where
+  title := "Hashing reduction from integer 3SUM to selected entries of ranked subset convolution"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 2.3",
+      locator := "Section 2.2, pp. 6-9" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.exists_add_eq_of_mem_ret_threeSumM,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.time_threeSumM,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.miss_le,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.average_miss_le
+  ]
+  scope := "TimeM unit-cost model with the random prime and seeds as inputs: one-sided error, \
+    exact cost for given random choices, and the miss probability over uniform seeds and a \
+    uniform prime of [2^d, 2^(d+1)) as explicit counts. The paper's parameter choices, expected \
+    running time and Corollary 2.4's exponent are not formalized."
 
 register_result "selected-entries-subset-convolution-timem" where
   title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
