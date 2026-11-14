@@ -264,6 +264,12 @@ The result keeps the nested branch-sensitive time bound and supplies a separate 
 it does not charge exhaustive search on the simulation branch. All five supplied certificates
 may have independent space bounds.
 
+`Diagonal.exists_computableInO_sizeLength_le` constructs either horizon comparison from
+a unary clock certificate and a certificate for the tested word. Bound the tested word by
+the input length plus one, its computation by twice the encoded input length, and the
+comparison square and clock time by constant multiples of the common test budget.
+The clock and tested-word certificates retain their independent space bounds.
+
 The [polynomial](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicTime.lean)
 and [exponential](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicExponentialTime.lean)
 clients retain their distinct unary-clock constructions and arithmetic estimates, while this

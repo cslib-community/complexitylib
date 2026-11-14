@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import Mathlib.Tactic.Ring
 
 /-!
@@ -22,6 +24,8 @@ charges only the branch taken; the space witness is independent of that time bou
 
 ## Main results
 
+* `Cslib.Complexity.Diagonal.exists_computableInO_sizeLength_le`: construct a horizon comparison
+  from an independently bounded unary clock.
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyVerifier`: assemble a verifier from
   certificates for its tests, acceptance simulation and exhaustive search.
 -/
@@ -31,6 +35,52 @@ public section
 namespace Cslib.Complexity.Diagonal
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
+
+/-- Construct a horizon comparison from a unary clock certificate. The tested word may
+be the input or its one-bit extension. Only its time and length bounds are needed; its
+space bound and the clock's space bound remain independent. -/
+theorem exists_computableInO_sizeLength_le
+    {z : List Bool × List Bool → List Bool} {E C T S Sz : List Bool × List Bool → ℕ}
+    {M K : ℕ}
+    (hz : ComputableInO z (encPair encBits encBits) encBits
+      (fun p => 2 * (encPair encBits encBits p).length) Sz)
+    (hE : ComputableInO E (encPair encBits encBits) encUnary T S)
+    (hzlen : ∀ p, (z p).length ≤ p.1.length + 1)
+    (hC : ∀ p, (encPair encBits encBits p).length + 1 ≤ C p)
+    (hQ : ∀ p, (2 * (encPair encBits encBits p).length + 4 + E p) ^ 2 ≤ M * C p)
+    (hT : ∀ p, T p ≤ K * C p) :
+    ∃ S', ComputableInO (fun p => decide (Nat.size (z p).length ≤ E p))
+      (encPair encBits encBits) encBool C S' := by
+  have hsz : ComputableInO (fun z : List Bool => Nat.size z.length) encBits encUnary
+      (fun z => (z.length + 1) ^ 2 + (encNat z.length).length)
+      (fun z => z.length + 1 + (encNat z.length).length) :=
+    (ComputableInO.lengthUnary.comp ((ComputableInO.lengthNat.mono 1
+      (T' := fun z : List Bool => (z.length + 1) ^ 2) (S' := fun z => z.length + 1)
+      (fun z => by nlinarith) fun z => by omega).of_enc_eq (encC := encBits)
+      (g := fun z : List Bool => encNat z.length) fun _ => rfl)).of_enc_eq fun z => by
+        simp [encNat_apply, Nat.size_eq_bits_len]
+  have h := ComputableInO.unaryLe.comp ((hsz.comp hz).prod hE)
+  refine ⟨_, h.mono_time (T' := C) (8 + 4 * M + K) (fun p => ?_)⟩
+  have hn : p.1.length ≤ (encPair encBits encBits p).length := by
+    simp only [length_encPair, encBits_apply]
+    omega
+  have hl := hzlen p
+  have hc := hC p
+  have hq := hQ p
+  have ht := hT p
+  have hs := Nat.size_le.mpr (Nat.lt_two_pow_self (n := (z p).length))
+  have he := Universal.length_encNat_le (z p).length
+  have hsquare : ((z p).length + 1) ^ 2 ≤
+      (2 * (encPair encBits encBits p).length + 4 + E p) ^ 2 :=
+    Nat.pow_le_pow_left (by omega) 2
+  have hcompare : (2 * Nat.size (z p).length + 1 + E p + 1) ^ 2 ≤
+      (2 * (encPair encBits encBits p).length + 4 + E p) ^ 2 :=
+    Nat.pow_le_pow_left (by omega) 2
+  simp only [Function.comp_apply, length_encPair (enc₁ := encUnary) (enc₂ := encUnary),
+    encUnary_apply, List.length_replicate] at ⊢
+  have hscale : (8 + 4 * M + K) * (C p + 1) =
+      8 * C p + 4 * (M * C p) + K * C p + (8 + 4 * M + K) := by ring
+  omega
 
 /-- Compose the lazy verifier without replacing branch costs by their worst case.
 The caller supplies three tests at cost `C`, an acceptance simulation at cost `B`, and
