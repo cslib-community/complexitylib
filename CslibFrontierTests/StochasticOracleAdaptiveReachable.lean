@@ -301,7 +301,7 @@ theorem early_output :
     simp [Instance.covered, toy]
   have hr0 : residualProcess toy 1 proposals 0 ω = 1 := by
     rw [residualProcess]
-    simp only [responseHistory, List.ofFn_zero, List.reverse_nil,
+    simp only [responseHistory, Cslib.Probability.PMF.seqHistory_zero,
       AdaptiveSelection.residual, selected_eq]
     simp [Instance.covered, toy]
   have hk : cappedTime toy 1 proposals 2 ω = 1 := by
@@ -320,15 +320,19 @@ theorem early_output :
       rw [hz, hr0] at hzero
       omega
   refine ⟨hk, ?_, ?_⟩
-  · simp [stoppedOutput, hk, responseHistory, selected_eq, ω]
-  · simp [physicalDuration, hk, responseHistory, accruedBill, duration, ω]
+  · rw [stoppedOutput, hk]
+    simp [responseHistory, selected_eq]
+  · rw [physicalDuration, hk]
+    simp [responseHistory, accruedBill, duration]
 
 /-- The zero turn budget has no hidden response or latency charge. -/
 example (ω : ℕ → Option Bool) : cappedTime toy 1 proposals 0 ω = 0 ∧
     physicalDuration toy 1 proposals duration 0 ω = 0 := by
   have h := cappedTime_le toy 1 proposals 0 ω
   have hz : cappedTime toy 1 proposals 0 ω = 0 := by omega
-  simp [hz, physicalDuration, responseHistory, accruedBill]
+  refine ⟨hz, ?_⟩
+  rw [physicalDuration, hz]
+  simp [responseHistory, accruedBill]
 
 /-- Certain supported productivity gives a unit stopping-mean bound; no
 independence assumption or stopping-time expectation is supplied. -/

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
+public import CslibFrontier.Probability.PMF.SequentialHistory
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 import Mathlib.MeasureTheory.OuterMeasure.BorelCantelli
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
@@ -42,11 +43,11 @@ variable {Ω : Type*}
 
 /-- Newest-first history after the first `n` responses of an infinite trajectory. -/
 @[expose] def responseHistory (ω : ℕ → Ω) (n : ℕ) : List Ω :=
-  (List.ofFn fun i : Fin n => ω i).reverse
+  PMF.seqHistory fun i : Fin n => ω i
 
 /-- Decode all coordinates of a finite prefix into a newest-first history. -/
 @[expose] def prefixHistory (n : ℕ) (x : (i : Finset.Iic n) → Ω) : List Ω :=
-  (List.ofFn fun i : Fin (n + 1) => x ⟨i, by simpa using Nat.le_of_lt_succ i.isLt⟩).reverse
+  PMF.seqHistory fun i : Fin (n + 1) => x ⟨i, by simpa using Nat.le_of_lt_succ i.isLt⟩
 
 /-- The finite-prefix decoder agrees with the infinite-path observable. -/
 theorem prefixHistory_restrict (ω : ℕ → Ω) (n : ℕ) :
@@ -55,8 +56,9 @@ theorem prefixHistory_restrict (ω : ℕ → Ω) (n : ℕ) :
 /-- The next response is prepended, matching the finite execution convention. -/
 theorem responseHistory_succ (ω : ℕ → Ω) (n : ℕ) :
     responseHistory ω (n + 1) = ω n :: responseHistory ω n := by
-  simp only [responseHistory, List.ofFn_succ_last, List.reverse_append,
-    List.reverse_singleton, Fin.val_last, Fin.val_castSucc, List.singleton_append]
+  change PMF.seqHistory (fun i : Fin (n + 1) => ω i) = ω n :: responseHistory ω n
+  rw [← Fin.snoc_init_self (fun i : Fin (n + 1) => ω i), PMF.seqHistory_snoc]
+  rfl
 
 variable [Fintype Ω] [MeasurableSpace Ω] [MeasurableSingletonClass Ω]
 

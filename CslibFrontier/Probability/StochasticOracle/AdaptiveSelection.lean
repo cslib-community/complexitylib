@@ -105,6 +105,17 @@ theorem residual_mono (I : Instance E J) (ρ : ℝ)
   obtain ⟨j, hj, he⟩ := mem_biUnion.mp he
   exact mem_biUnion.mpr ⟨j, retain_mono I ρ _ _ hj, he⟩
 
+/-- Once retained coverage is complete, every subsequent response is productive,
+as required by the stopped-success convention. -/
+theorem productive_of_complete (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J)) (a : ℕ) (h : List Ω)
+    (hc : I.covered (selected I ρ proposal h) = I.ground) (x : Ω) :
+    productive I ρ proposal a h x = true := by
+  have hz : residual I ρ proposal h = 0 := by simp [residual, hc]
+  simp only [productive, decide_eq_true_eq]
+  have := residual_mono I ρ proposal h x
+  omega
+
 /-- Each productive turn subtracts `a`, with natural subtraction handling the final
 short turn and the artificial successes after completion. -/
 theorem residual_le (I : Instance E J) (ρ : ℝ)
