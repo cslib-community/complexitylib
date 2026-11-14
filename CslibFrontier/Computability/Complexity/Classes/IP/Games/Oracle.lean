@@ -393,9 +393,7 @@ private theorem computableInPolyTime_extractHistory {γ : Type} {encIn : γ ↪ 
       have hstLen : (encSt st).length =
           2 * st.rem.length + 1 + 2 * (Interaction.encHistory st.hist).length + 1 + 1 := by
         change (encExtractState st).length = _
-        simp only [encExtractState_apply, encExtractStateFields, length_encPair,
-          encBits_apply, encBool_apply, List.length_singleton, Nat.add_assoc]
-      omega)
+        enc_len [encExtractState_apply, encExtractStateFields, List.length_singleton, Nat.add_assoc])
   exact encExtractState_hist_polyTime hspec.1
 
 private theorem foldl_extractStep_false (t k : ℕ) (rem : List Bool) (hist : Interaction.History) :
@@ -1564,8 +1562,7 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
       obtain ⟨hj, hp⟩ := hinv
       set n := (enc ac.1).length
       have hnAC : n ≤ (encAC ac).length := by
-        simp only [encAC, length_encPair, n]
-        omega
+        enc_len [encAC, n]
       have h1 : 1 ≤ ((encAC ac).length + 1) ^ D := Nat.one_le_pow _ _ (Nat.succ_pos _)
       have hpow1 : (n + 1) ^ d₁ ≤ ((encAC ac).length + 1) ^ D :=
         (Nat.pow_le_pow_left (by omega) _).trans

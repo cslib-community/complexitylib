@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Vertex covers
@@ -361,8 +362,7 @@ theorem isVerifier :
     (fun x => by
       have := x.graph.length_vertices_le_encGraph
       rw [encVertexCoverInstance_apply]
-      simp only [Polynomial.eval_X, length_encPair]
-      omega)
+      enc_len [Polynomial.eval_X])
     fun x l hl _ => ?_
   simp only [Bool.and_eq_true, decide_eq_true_eq, isCover_eq_true_iff, List.mem_toFinset,
     List.toFinset_card_of_nodup hl, and_comm]

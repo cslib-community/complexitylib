@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Hamiltonian paths and cycles
@@ -486,8 +487,7 @@ end Graph
 private theorem length_vertices_le_encPath (x : PathInstance) :
     x.graph.vertices.length ≤ (encPathInstance x).length := by
   refine x.graph.length_vertices_le_encGraph.trans ?_
-  simp only [encPathInstance_apply, length_encPair]
-  omega
+  enc_len [encPathInstance_apply]
 
 /-- The endpoint and edge checks of the path verifiers are polynomial-time for a polynomial-time
 edge test `r`. -/

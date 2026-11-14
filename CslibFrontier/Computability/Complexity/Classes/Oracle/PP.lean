@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import Mathlib.Data.Nat.Bitwise
 import Cslib.Foundations.Data.Polynomial.Monotone
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Polynomial time with a `PP` oracle
@@ -301,8 +302,7 @@ theorem isOraclePPTOn_search {input : α ↪ List Bool} {u : α → List Bool} {
       have := Nat.one_le_two_pow (n := s.2)
       omega)
     rw [← Nat.size_eq_bits_len] at hsize
-    simp only [length_encPair, encNat_apply, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [encNat_apply]
   have hNpoly : PolyBounded (fun a => (input a).length) N :=
     hN.polyBounded_length.mono fun _ => by simp [encUnary_apply]
   exact (IsOraclePPTOn.iterateWith_spec'

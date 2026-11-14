@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Exhaustive-search reductions
@@ -159,8 +160,7 @@ private theorem exists_search_length_bounds {f : α × ℕ → β} {ν : α → 
       (encPair encA encNat (a, k)).length ≤ 2 * (encA a).length + ν a + 2 := by
     have := length_encNat_mono hk
     rw [hrounds] at this
-    simp only [length_encPair]
-    omega
+    enc_len
   have hν' : PolyBounded (fun a => (encA a).length) ν := by
     simpa only [encUnary_apply, List.length_replicate] using hν.polyBounded_length
   obtain ⟨cf, df, hf_len⟩ := hf.polyBounded_length.exists_le

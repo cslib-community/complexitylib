@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Streaming first-match search on Boolean words
@@ -302,8 +303,7 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
         (runPrefix test p j)).length ≤ B p := by
     have h := length_prefix_le (encC := encC) test p j hj
     apply h.trans
-    simp only [B, size, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [B, size]
   have hrun := IndexFold.computableInO cn ci cv R Q B
     (hR) (hQ)
     (fun p j hj => by
@@ -319,8 +319,7 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
   let workspace := fun p : C × ℕ => cn.space p + (size p + ci.space p) +
     (stateSize p + (p.2 + 2)) + stateSize p + (p.2 + 1)
   have hn : PolyBounded size (fun p : C × ℕ => p.2) := PolyBounded.self.mono fun p => by
-    simp only [size, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [size]
   have hB : PolyBounded size B := (PolyBounded.const 10).mul
     (PolyBounded.self.add (PolyBounded.const 1))
   have hci : ci.IsPolynomial := NativeCertificate.prod_isPolynomial _ _
@@ -399,8 +398,7 @@ theorem exists_computableInO_of_bounds {test : C × List Bool → Bool}
   have hstate (p : C × ℕ) (j : ℕ) (hj : j ≤ 2 ^ p.2) :
       (encState (runPrefix test p j)).length ≤ B p := by
     apply (length_prefix_le (encC := encC) test p j hj).trans
-    simp only [B, size, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [B, size]
   have hvisit (p : C × ℕ) (j : ℕ) :
       (BooleanFold.visitCertificate (stepCertificate ct)).time (runPrefix test p j) ≤
           glueT (runPrefix test p j) + ct.time (p.1, Cslib.BitString.lowBits p.2 j) ∧
@@ -455,8 +453,7 @@ theorem exists_computableInO {test : C × List Bool → Bool}
   let B := fun p : C × ℕ => 2 * (encC p.1).length + 3 * p.2 + 1
   have hlen (p : C × ℕ) (w : List Bool) (hw : w.length = p.2) :
       (encTestInput encC (p.1, w)).length ≤ B p := by
-    simp only [length_encPair, length_enc_words, hw, B]
-    omega
+    enc_len [length_enc_words, hw, B]
   obtain ⟨a, b, ht⟩ := hct.1.exists_le
   obtain ⟨c, d, hs⟩ := hct.2.exists_le
   obtain ⟨overhead, ho, h⟩ := exists_computableInO_of_bounds ct
@@ -466,8 +463,7 @@ theorem exists_computableInO {test : C × List Bool → Bool}
     (fun p w hw => (hs _).trans (Nat.mul_le_mul_left c
       (Nat.pow_le_pow_left (Nat.add_le_add_right (hlen p w hw) 1) d)))
   have hB : PolyBounded size B := (PolyBounded.self.mul (.const 3)).mono fun p => by
-    simp only [size, B, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [size, B]
   exact ⟨_, _, ho.add (NativeCertificate.polyBounded_pow_of_polyBounded hB a b),
     ho.add (NativeCertificate.polyBounded_pow_of_polyBounded hB c d), h⟩
 

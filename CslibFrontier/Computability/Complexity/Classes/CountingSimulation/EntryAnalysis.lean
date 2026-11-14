@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
 import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ShapeBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Theorem D.1 for entry procedures: the resource analysis
@@ -79,8 +80,7 @@ theorem length_parts_le_encInput (P : ℕ) (fl : List ℕ) (r : ℕ) (G : Descri
     P + fl.length + (encNat r).length + (DescribedNetwork.encDescribed encT G).length ≤
       (encInput encT (P, fl, r, G)).length := by
   have h := length_le_length_encList encNat fl
-  simp only [encInput, length_encPair, encUnary_apply, List.length_replicate] at h ⊢
-  omega
+  enc_len [encInput] at h ⊢
 
 /-- **Guarded roots are on the schedule**, for every constant `C ≥ 1` with precision at most
 `C m (⌊log₂ m⌋ + 1)`. -/
@@ -198,8 +198,7 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
     rw [length_encSum]
     simp only [Sum.elim_inl]
     have h1 := G.length_vertex_le (encT := encT) hu
-    simp only [DescribedNetwork.encVertex, length_encPair] at h1
-    omega
+    enc_len [DescribedNetwork.encVertex] at h1
   obtain ⟨hc, hv, hf⟩ := (FastContraction.Reach.shape (x₀ := x₀) rfl rfl (wf_rootCall hg)
     hy).length_le_pow entry rfl rfl rfl (show m + 1 ≤ n + 1 by omega)
     (show P + 1 ≤ n + 1 by omega) hV (show fl.length ≤ 32 * (n + 1) ^ 2 by omega)

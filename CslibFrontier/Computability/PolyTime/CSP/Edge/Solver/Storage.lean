@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Stack
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Full framed storage of the running edge-CSP solver
@@ -51,9 +52,7 @@ theorem InputGood.encoded_le {F : CSP Table ℕ} {D : ℕ} {input : EdgeForest.I
   have hlen : (encList encBool input.labels).length = 3 * (incidenceList input.body).length := by
     rw [hbits]
     simp [length_encList, encBool_apply, List.map_map, Function.comp_def, Nat.mul_comm]
-  simp only [EdgeForest.encInput_apply, EdgeForest.encInputFields, length_encPair, hlen,
-    inputBudget]
-  omega
+  enc_len [EdgeForest.encInput_apply, EdgeForest.encInputFields, hlen, inputBudget]
 
 private theorem cycle_budget {F G : CSP Table ℕ} {D : ℕ} (f : OccurrenceLabeling G Bool)
     (w : Walk G) (good : InputGood F D ⟨G, buffer f⟩)
@@ -81,8 +80,7 @@ theorem Stack.frame_encoded_le {F : CSP Table ℕ} {D : ℕ} {input : EdgeForest
     rcases List.mem_cons.mp hf with rfl | hf
     · have hp := parents.current.encoded_le hF
       have hw := cycle_budget f w parents.current blossom hF
-      simp only [encFrame_apply, encFrameFields, length_encPair, frameBudget]
-      omega
+      enc_len [encFrame_apply, encFrameFields, frameBudget]
     · exact ih frame hf
 
 /-- Full encoded storage of every actual running stack, including all tags and unary clocks. -/
@@ -123,8 +121,6 @@ theorem StateGood.encoded_le {F : CSP Table ℕ} {D : ℕ} {state : State}
             Nat.mul_comm]
         rw [hl]
         omega
-  simp only [encState_apply, encStateFields, length_encPair, encUnary_apply,
-    List.length_replicate, stateBudget]
-  omega
+  enc_len [encState_apply, encStateFields, stateBudget]
 
 end Cslib.Complexity.CSP.EdgeSolver.Program

@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.LinearPrim
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 import CslibFrontier.Foundations.Data.Nat.Doubling
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The slowdown lemma for two-quantifier alternating time
@@ -110,8 +111,7 @@ theorem SigmaTwoTIME_subset_NTIME {t t' τ : ℕ → ℕ} (ht : TimeConstructibl
       (ComputableInO.of_linear (ComputableInDegree.of_dropFrame fun _ => rfl))
   have hB := setOf_exists_mem_NTIME (t := id) (C := 5) hℓ hW fun z v hv => by
     have := length_dropFrame_le z
-    simp only [length_encPair, encBits_apply, id_eq] at hv ⊢
-    omega
+    enc_len [id_eq] at hv ⊢
   -- the universal block is decided deterministically within `t'`
   have hdec := computableInO_indicator_of_mem_DTIME (hN hB)
   have hV₂ := (hdec.of_encIn_eq (encD := encPair encBits encBits)

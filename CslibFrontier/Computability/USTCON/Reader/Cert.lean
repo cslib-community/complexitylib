@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.USTCON.Reader.Encode
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import CslibFrontier.Tactic.Space
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The read machine for undirected connectivity within linear work space
@@ -163,8 +164,7 @@ private theorem pairFalse_inSpace :
   (budget_prod (of_inO (ComputableInO.of_eq (f := id) fun _ => rfl))
     (budget_const (encB := encBool) false (.refl _))).weaken
     (.of_le fun x => by
-      simp only [stepBudget, encStepIn, length_encPair, encBool_apply, List.length_singleton]
-      omega)
+      enc_len [stepBudget, encStepIn, List.length_singleton])
 
 /-- Evaluating a step-input function on `(x, false)`. -/
 private theorem onTuple {β : Type} {encB : β ↪ List Bool} {f : Tuple × Bool → β}

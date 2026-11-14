@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Kilian
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Succinctness of Kilian's protocol
@@ -253,7 +254,6 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     · simp [kilianRespond, hn]
   have hchallenges : (encList encBits ρs).length ≤ n * (2 * V.coins x + 1) :=
     (length_encList_le _ _ (b := V.coins x) fun ρ hρ => (hρs ρ hρ).le).trans (by rw [hn])
-  simp only [encKilianView_apply, encKilianClaim_apply, length_encPair, encBits_apply, hk]
-  omega
+  enc_len [encKilianView_apply, encKilianClaim_apply, hk]
 
 end Cslib.Crypto

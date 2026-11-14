@@ -546,8 +546,7 @@ theorem isPPTOn_run_signingPairOracle (M : MACScheme) {adversary : Forger}
   have htagLen := hlen (caller.2, request.2) tag htag
   simp only [encBits_apply, length_encPair] at htagLen
   refine ⟨trivial, by lia, ?_⟩
-  simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply]
-  lia
+  enc_len
 
 private theorem computableInPolyTime_sufPost (M : MACScheme) :
     ComputableInPolyTime
@@ -851,9 +850,7 @@ theorem isPPTOn_run_oneTimeSigningPairOracle (M : MACScheme) {adversary : Forger
     simp only [encBits_apply, length_encPair] at htagLen
     refine ⟨trivial, by lia, ?_⟩
     rw [List.isEmpty_iff.mp hempty]
-    simp only [encList_cons, encList_nil, List.length_append, List.length_nil, length_frame,
-      length_encPair, encBits_apply]
-    lia
+    enc_len
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst result
     exact ⟨trivial, by simp, by lia⟩
@@ -1933,8 +1930,7 @@ theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMAC
   have htag_le : tag.length ≤ c * (2 * caller.2.length + request.2.length + 3) ^ d :=
     htagLen.trans hpow
   refine ⟨trivial, by dsimp only; omega, ?_⟩
-  simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply]
-  omega
+  enc_len
 
 /-- Run the complete nonce-based MAC SUF-CMA experiment on its unary security parameter for any
 oracle-PPT forger. -/

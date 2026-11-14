@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Data.List.Nodup
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Finite reference-frame structure and storage
@@ -269,8 +270,7 @@ theorem length_encFrame_le {I : FixedRotationInput} (hI : Valid I) {K : ℕ} (hK
     have ha' := hbit _ ha
     have hb' := hbit _ hb
     dsimp only [Segment.source, Segment.target, Segment.endpoints] at ha' hb'
-    simp only [encSegment, length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [encSegment, List.length_singleton]
   have hsegments := length_encList_le encSegment (frame I).segments hsegment
   have hseglen : (frame I).segments.length ≤ 3 * K := by
     simpa only [frame, length_subdivide] using Nat.mul_le_mul_left 3 hm

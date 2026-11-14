@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Original-input bounds for sparse rotation queries
@@ -40,8 +41,7 @@ theorem scopes_add_constraints_le {Rel V : Type} (encRel : Rel ↪ List Bool) (e
         2 * (encConstraint encRel encV c).length + 1 + (encCSP encRel encV F).length := by
       simp only [encCSP, length_encList, List.map_cons, List.sum_cons]
     rw [he]
-    simp only [encConstraint_apply, length_encPair, List.map_cons, List.sum_cons, List.length_cons]
-    omega
+    enc_len [encConstraint_apply, List.map_cons, List.sum_cons]
 
 /-- Dense incidence vertices and listed occurrences are each bounded by original encoded size. -/
 theorem incidence_sizes_le {Rel V : Type} [DecidableEq V]

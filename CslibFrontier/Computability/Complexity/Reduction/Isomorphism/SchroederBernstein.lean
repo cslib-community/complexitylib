@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Polynomial-time Cantor–Schröder–Bernstein
@@ -334,8 +335,7 @@ private theorem computableInPolyTime_stop :
       (computableInPolyTime_step pf pf' pg pg')
       (PolyBounded.of_forall_le 5 1 fun a => by nlinarith) fun a i _ => ?_
     have := length_step_iterate_le (f' := f') (g' := g') hf hg i (a, false, true)
-    simp only [length_encPair, encBool_apply, List.length_singleton] at this ⊢
-    omega
+    enc_len [List.length_singleton] at this ⊢
   have h := ComputableInPolyTime.snd' (ComputableInPolyTime.snd' hloop)
   refine h.of_enc_eq fun a => ?_
   rw [stop, ← step_iterate]

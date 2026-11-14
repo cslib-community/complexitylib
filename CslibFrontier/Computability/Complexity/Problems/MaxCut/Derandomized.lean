@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Polynomial-time certificate for deterministic conditional-expectations `MaxCut`
@@ -98,12 +99,8 @@ private theorem length_encPartialCut_assignVertex_le (edges : List WeightedEdge)
   have hv_len : (encNat v).length ≤ (encList encNat (distinctVertices edges)).length :=
     SizedListEncoding.length_elem_le (distinctVertices edges) v hv
   cases b
-  · simp only [assignVertex, Bool.false_eq_true, ite_false, encPartialCut_apply,
-      encPartialCutFields, length_encPair, encList_cons, List.length_append, length_frame]
-    omega
-  · simp only [assignVertex, ite_true, encPartialCut_apply, encPartialCutFields,
-      length_encPair, encList_cons, List.length_append, length_frame]
-    omega
+  · enc_len [assignVertex, Bool.false_eq_true, ite_false, encPartialCut_apply, encPartialCutFields]
+  · enc_len [assignVertex, ite_true, encPartialCut_apply, encPartialCutFields]
 
 /-- Computing `derandomizedCutState` is polynomial-time via
 `PolyTimeGreedyInput.computableInPolyTime_run_nat`. -/

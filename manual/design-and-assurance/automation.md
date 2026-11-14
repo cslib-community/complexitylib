@@ -473,6 +473,13 @@ pairs, leaf encodings, framed list constructors, local encodings, locations, sca
 diagnostics. This proves encoding arithmetic; it does not construct a computation or resource
 certificate.
 
+When replacing a consecutive `simp only [length_encPair, encUnary_apply, …]` and `omega`
+proof, keep any additional unfolding or arithmetic lemmas as arguments to `enc_len` and preserve
+the original location. For example, a local record equation still belongs in
+`enc_len [encInstance_apply]`; the tactic does not discover that equation. Keep nonlinear
+monotonicity steps outside this replacement, and validate the importing clients after adding
+the tactic import.
+
 By default only the current goal is expanded. Supply a local encoding lemma explicitly with
 `enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`
 when expansion of every hypothesis is useful. Each call handles its original goal: if expansion

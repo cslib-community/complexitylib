@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Poly
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Word-RAM list outputs give Turing-machine polynomial time
@@ -274,8 +275,7 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
       omega
     have hjL : j * (2 * W a + 1) ≤ (parkedOutput L (s a)).length * (2 * W a + 1) :=
       Nat.mul_le_mul_right _ (by rw [hlenEq]; exact hj)
-    simp only [length_encPair, List.nil_append, bound]
-    omega
+    enc_len [List.nil_append, bound]
 
 end Read
 

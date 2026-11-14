@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinato
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OLoops
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Size-sensitive reductions, summed disjoint-instance lists, and live-workspace accumulation
@@ -442,8 +443,7 @@ theorem length_encCappedNatAcc_le_of_le_two_pow {acc : CappedNatAcc} {k : ℕ}
   have ht : (encNat acc.total).length ≤ k + 1 :=
     hpow ▸ length_encNat_mono (htot.trans hcap)
   rw [encCappedNatAcc_apply]
-  simp only [encCappedNatAccFields, length_encPair]
-  omega
+  enc_len [encCappedNatAccFields]
 
 open ComputableInPolyTime in
 @[fun_prop]
@@ -681,8 +681,7 @@ theorem exists_computableInO_foldl (r : DisjointBatchReduction encA encB μA μB
       have hp : (encPair encD encB
           (((r.toBatch a).items.take i).foldl (fun s b => combine s (g b)) (init a),
             (r.toBatch a).items[i])).length ≤ pairBound a := by
-        simp only [length_encPair, pairBound]
-        omega
+        enc_len [pairBound]
       have hsg := hsg_mem a hmem
       have htg := le_listMax (f := Tg) hmem
       have hpow := Nat.pow_le_pow_left (Nat.add_le_add_right (Nat.add_le_add hp hsg) 1) dc
@@ -696,8 +695,7 @@ theorem exists_computableInO_foldl (r : DisjointBatchReduction encA encB μA μB
       have hp : (encPair encD encB
           (((r.toBatch a).items.take i).foldl (fun s b => combine s (g b)) (init a),
             (r.toBatch a).items[i])).length ≤ pairBound a := by
-        simp only [length_encPair, pairBound]
-        omega
+        enc_len [pairBound]
       have hsg := hsg_mem a hmem
       have hpow := Nat.pow_le_pow_left (Nat.add_le_add_right (Nat.add_le_add hp hsg) 1) dc
       dsimp only [Q]
@@ -757,16 +755,14 @@ theorem decidableInExpTime_or (r : DisjointBatchReduction encA encB μA μB)
         length_le_encList_of_mem encB hmem
       have htg := le_listMax (f := t) hmem
       dsimp only [R]
-      simp only [length_encPair, encBool_apply, List.length_singleton]
-      omega)
+      enc_len [List.length_singleton])
     (fun a i hi => by
       have hmem := List.getElem_mem hi
       have hblen : (encB (r.toBatch a).items[i]).length ≤ listLen a :=
         length_le_encList_of_mem encB hmem
       have htg := le_listMax (f := t) hmem
       dsimp only [R]
-      simp only [length_encPair, encBool_apply, List.length_singleton]
-      omega)
+      enc_len [List.length_singleton])
     (fun _ _ _ => by simp)
   have hfold_eq (xs : List β) (acc : Bool) :
       xs.foldl (fun s b => s || g b) acc = (acc || xs.any g) := by
@@ -1275,19 +1271,15 @@ private theorem topNode_encLength_le (S : StackAccumulationSpec encA encK encS e
   cases hstk : st.stack with
   | nil =>
     have hctx_le : (encK st.ctx).length ≤ (encStackSearchState encK encS encD st).length := by
-      simp only [encStackSearchState_apply, length_encPair]
-      omega
-    simp only [topNode, hstk, List.headD_nil, encStackNodeInput_apply, length_encPair]
-    omega
+      enc_len [encStackSearchState_apply]
+    enc_len [topNode, hstk, List.headD_nil, encStackNodeInput_apply]
   | cons hd tl =>
     have hhd : (encS hd).length ≤ (encList encS (hd :: tl)).length :=
       length_le_encList_of_mem encS (List.mem_cons_self ..)
     have hpair : 2 * (encK st.ctx).length + (encList encS (hd :: tl)).length ≤
         (encStackSearchState encK encS encD st).length := by
-      simp only [encStackSearchState_apply, hstk, length_encPair]
-      omega
-    simp only [topNode, hstk, List.headD_cons, encStackNodeInput_apply, length_encPair]
-    omega
+      enc_len [encStackSearchState_apply, hstk]
+    enc_len [topNode, hstk, List.headD_cons, encStackNodeInput_apply]
 
 private theorem stack_exp_absorb {A_ov B_ov R_cnt leafMax Cp : ℝ} {K₀ K₁ M scale offset k e : ℕ}
     {δ : ℝ} (hδ : 0 ≤ δ) {μ L leafLen : ℕ} {E : ℕ}
@@ -1746,8 +1738,7 @@ theorem exists_computableInO_cappedSum_of_stack
     have hle : (encCappedNatAcc ((S.step countB)^[S.rounds a] (S.initState a)).acc).length ≤
         (encStackSearchState encK encS encCappedNatAcc
           ((S.step countB)^[S.rounds a] (S.initState a))).length := by
-      simp only [encStackSearchState_apply, length_encPair]
-      omega
+      enc_len [encStackSearchState_apply]
     exact hle.trans hst
   let Space (a : α) : ℕ := Space₀ a + ((encCappedNatAcc (S.run countB a)).length + 1) ^ dtot
   have hSpaceUpper : PolyBounded (fun a => (encA a).length)

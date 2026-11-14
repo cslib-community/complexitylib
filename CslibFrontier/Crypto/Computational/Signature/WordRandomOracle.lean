@@ -17,6 +17,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native word forgers in the typed random-oracle signature world
@@ -228,9 +229,7 @@ theorem callBounded_savedCoinForger {k : ℕ} {Control : Type}
       apply (Nat.min_le_left _ _).trans
       apply Nat.mul_le_mul_left c
       apply Nat.pow_le_pow_left
-      simp only [length_encPair, encUnary_apply,
-        List.length_replicate, encBits_apply] at *
-      omega
+      enc_len at *
     · exact .pure _ _
   exact ⟨htotal.of_le (fun q => by cases q <;> simp [signingCost]),
     htotal.of_le (fun q => by cases q <;> simp [hashCost])⟩

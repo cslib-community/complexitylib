@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Probabilistic.Oracle.Replay
 public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Computability.Probabilistic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Saved coins independent of a generated auxiliary input
@@ -69,8 +70,7 @@ theorem IsOraclePPT.exists_savedCoins_of_keyGen {Operation Key β : Type}
         c * (2 * n + 2 + keyC * (n + 1) ^ keyD) ^ d := by
     apply Nat.mul_le_mul_left c
     apply Nat.pow_le_pow_left
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-    omega
+    enc_len
   refine ⟨k, Control, hfinite, machine, c, d, keyC, keyD, ?_, hefficient, hbound, ?_⟩
   · intro n keys hkeys'
     have hk := hkeys n keys hkeys'

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Encoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Serialized leveled public-key sizes
@@ -68,7 +69,6 @@ theorem length_encPublicKey_le (depth width pkBound ctBound : ℕ)
         depth * (2 * (width * (2 * ctBound + 1)) + 1) :=
     (Turing.MultiTapeTM.length_encList_le (encList encBits) links hlink_enc).trans
       (Nat.mul_le_mul_right _ hlinks_len)
-  simp only [encPublicKey, length_encPair, publicKeyLengthBound]
-  omega
+  enc_len [encPublicKey, publicKeyLengthBound]
 
 end Cslib.Crypto.Homomorphic.Leveled

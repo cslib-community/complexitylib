@@ -106,9 +106,7 @@ theorem framed_row_length_le {r : AffineEquation ℕ} {ell : ℕ} (hw : r.vars.l
   have hl := length_encList_le encNat r.vars hb
   have hv : (encList encNat r.vars).length ≤ 4 * (2 * ell + 1) :=
     hl.trans (Nat.mul_le_mul_right _ hw)
-  simp only [encAffineEquation_apply, encAffineEquationFields, length_encPair, encBool_apply,
-    List.length_singleton]
-  omega
+  enc_len [encAffineEquation_apply, encAffineEquationFields, List.length_singleton]
 
 /-- The entire sparse system encoding, including equation and list framing. -/
 theorem length_encoding_compileFrame_le {F : Frame} (hF : BoundedEndpoints F) :

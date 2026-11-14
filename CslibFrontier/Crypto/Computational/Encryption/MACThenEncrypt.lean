@@ -28,6 +28,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # MAC-then-Encrypt Composition and Chosen-Ciphertext Counterexample
@@ -1174,8 +1175,7 @@ theorem prfMAC_pair_length
   have htagLen : (prfOracle family km.length km msg).length = n := by
     simp only [prfOracle, hmsg, hkmLen, ↓reduceIte]
     rw [hlen km msg (by rw [hmsg, hkmLen]), hkmLen]
-  simp only [length_encPair, encBits_apply, hmsg, htagLen]
-  omega
+  enc_len [hmsg, htagLen]
 
 /-- Concrete MAC-then-Encrypt counterexample cipher instantiated on
 `(prfCipher family).extendCipher` and `prfMAC family` with plaintext-tag length schedule

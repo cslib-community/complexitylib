@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Deterministic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Explicit-time intrinsically halting oracle realizations
@@ -1095,9 +1096,7 @@ theorem isOraclePPT (ht : PolyBounded (fun p : ℕ × ℕ => p.1 + p.2) (Functio
   refine IsOraclePPTOn.isOraclePPT (h.on.isOraclePPTOn ?_)
   refine ht.comp (g := fun input : ℕ × List Bool => (input.1, input.2.length)) ?_
   refine PolyBounded.of_forall_le 1 1 fun input => ?_
-  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply, pow_one,
-    one_mul]
-  omega
+  enc_len [pow_one, one_mul]
 
 end ComputesOracleInTime
 
@@ -1119,8 +1118,7 @@ theorem isOraclePPT_iff_exists_polyBounded_computesOracleInTime
     refine hcomp.mono fun input => (hle input).trans ?_
     have hsize : (encPair encUnary encBits input).length + 1 ≤
         2 * (input.1 + input.2.length + 1) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     calc c * ((encPair encUnary encBits input).length + 1) ^ d
         ≤ c * (2 * (input.1 + input.2.length + 1)) ^ d :=
           Nat.mul_le_mul_left c (Nat.pow_le_pow_left hsize d)

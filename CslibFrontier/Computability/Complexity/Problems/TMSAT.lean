@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # TMSAT is NP-complete
@@ -151,9 +152,7 @@ theorem verifier_eq_true_iff (q : TMSATInstance × List Bool) :
 /-- The witness length is at most the length of the encoded instance, since it is written in
 unary. -/
 theorem witnessLength_le (a : TMSATInstance) : a.witnessLength ≤ (encTMSATInstance a).length := by
-  simp only [encTMSATInstance_apply, encTMSATInstanceFields, length_encPair, encUnary_apply,
-    List.length_replicate]
-  omega
+  enc_len [encTMSATInstance_apply, encTMSATInstanceFields]
 
 /-- `TMSAT.verifier` verifies `TMSAT` with certificates as long as the encoded instance. -/
 theorem isVerifier : IsVerifier encTMSATInstance Polynomial.X verifier TMSAT :=

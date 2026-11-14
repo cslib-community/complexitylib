@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The Time-Bounded Kolmogorov Complexity Problem (`MINKT`)
@@ -124,19 +125,16 @@ theorem enc_apply (i : Instance) :
 
 /-- The unary size parameter `i.size` is at most the encoded instance length `(enc i).length`. -/
 theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [enc_apply]
 
 /-- The unary time parameter `i.time` is at most the encoded instance length `(enc i).length`. -/
 theorem time_le_length_enc (i : Instance) : i.time ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [enc_apply]
 
 /-- The target string length `i.string.length` is at most the encoded instance length
 `(enc i).length`. -/
 theorem length_string_le_length_enc (i : Instance) : i.string.length ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [enc_apply]
 
 /-- An instance `i` belongs to `MINKT` iff `timeBoundedAt i.time i.string ≤ i.size`. -/
 theorem mem_iff {i : Instance} :

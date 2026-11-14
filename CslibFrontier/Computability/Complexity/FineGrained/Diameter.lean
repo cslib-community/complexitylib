@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Orthogonal vectors hardness of diameter two versus three
@@ -716,9 +717,7 @@ private theorem foldl_parseStep_le (s : ParseState) (l : List Bool) :
 /-- The length of an encoded parser state. -/
 private theorem length_encParseState (s : ParseState) :
     (encParseState s).length = 43 + 2 * Nat.size s.1.2 + Nat.size s.2 := by
-  simp only [length_encPair, encBool_apply, encNat_apply, Nat.size_eq_bits_len,
-    List.length_singleton]
-  omega
+  enc_len [encNat_apply, Nat.size_eq_bits_len, List.length_singleton]
 
 /-- The parser state after `j` bits holds numbers at most `j`. -/
 private theorem length_encParseState_streamState_le (x : List Bool) (j : ℕ) :

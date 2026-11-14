@@ -23,6 +23,7 @@ import Cslib.Foundations.Data.Polynomial.Monotone
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Algebra.Ring.Parity
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Closure of PP under polynomial-time truth-table reductions
@@ -320,8 +321,7 @@ theorem truthTable_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     · have : ¬ 0 < g₀ (a, i) := fun h => hi ((hAg₀ (a, i)).mpr h)
       dsimp [g]; omega
     · refine (hp (a, i)).trans (pow_le_pow_right₀ (by omega) (Polynomial.eval_mono _ ?_))
-      simp only [length_encPair, encUnary_apply, List.length_replicate]
-      omega
+      enc_len
   unfold ppTruthTableGap
   rw [← add_sum_erase univ _ (mem_univ v), hv_ofFn]
   have hrest_lower : -(∑ w ∈ univ.erase v, ppWordWeight M r g a w) ≤

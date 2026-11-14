@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.TreeEval.Ary.Packed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native decoding of a raw packed register
@@ -174,8 +175,7 @@ theorem decode_inSpace :
       simp [length_encList, List.map_map, Function.comp_def, encBool_apply, Nat.mul_comm]
     simp only [encWork, length_encPair, Nat.zero_add, List.nil_append] at ⊢
     rw [hout]
-    simp only [length_encPair] at hl
-    omega
+    enc_len at hl
   have hloop := ComputableInSpace.iterate (hn.of_enc_eq fun _ => rfl) hinit step_inSpace
     (Q := fun q => 16 * ((encArgs q).length + 1))
     (B := fun q => 16 * ((encArgs q).length + 1)) hstate hstate

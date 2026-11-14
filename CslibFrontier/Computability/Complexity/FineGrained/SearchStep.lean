@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bo
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Resources of one step of a stack search with a leaf oracle
@@ -80,8 +81,7 @@ theorem exists_computableInO_searchStep {σ ν γ : Type} {encS : σ ↪ List Bo
         4 ^ D * ((encS x).length + (encG c).length + 1) ^ D := by
     rw [← mul_pow]
     refine Nat.pow_le_pow_left ?_ D
-    simp only [length_encPair]
-    omega
+    enc_len
   refine ⟨D, h.mono (4 ^ D + 5) (fun x => ?_) (fun x => ?_)⟩ <;>
   · simp only [Function.comp_apply]
     have hp := hpair_le x (g (top x))

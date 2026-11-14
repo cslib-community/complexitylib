@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # ETH Hardness of Partial-Function MCSP (`PartialMCSP`)
@@ -1791,9 +1792,7 @@ private theorem computableInO_twoPow :
         4 * 2 ^ m + 4 := by
     have := Nat.pow_le_pow_right two_pos (Nat.min_le_right i m)
     rw [List.take_replicate, foldl_double_replicate, one_mul]
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
-      List.length_singleton]
-    omega
+    enc_len [List.length_singleton]
   have hfold := ComputableInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
     (step := fun n _ => n + n) hlist (ComputableInO.const 1) hstep
     (R := fun m => 4 * 2 ^ m + 4) (Q := fun m => 4 * 2 ^ m + 4) (B := fun m => 2 ^ m)

@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.BitString.List
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Public-coin games with polynomially many rounds
@@ -93,10 +94,7 @@ theorem transcriptLength_le_length_encAMShape (g : List (AMMove × ℕ)) :
   | nil => simp [transcriptLength]
   | cons x g ih =>
     obtain ⟨m, n⟩ := x
-    simp only [transcriptLength, List.map_cons, List.sum_cons, encAMShape, encList_cons,
-      List.length_append, length_frame, length_encPair, encUnary_apply,
-      List.length_replicate] at ih ⊢
-    omega
+    enc_len [transcriptLength, List.map_cons, List.sum_cons, encAMShape] at ih ⊢
 
 /-- Evaluating a fixed polynomial shape `G` at unary `n` is polynomial-time. -/
 theorem computableInPolyTime_evalShape (G : List (AMMove × Polynomial ℕ)) :

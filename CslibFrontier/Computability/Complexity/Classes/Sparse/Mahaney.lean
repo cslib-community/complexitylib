@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.EraseDupsBy
 import Cslib.Foundations.Data.Polynomial.Monotone
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Mahaney's theorem
@@ -393,9 +394,7 @@ theorem length_encCNF_disj_le {φ : CNF ℕ} {a b : List (Literal ℕ)} (ha : �
     obtain ⟨l, hl, m, hm, rfl⟩ := hc
     have h₁ := length_encNat_le_of_mem_vars (ha l hl)
     have h₂ := length_encNat_le_of_mem_vars (hb m hm)
-    simp only [encList_cons, encList_nil, List.append_nil, List.length_append, length_frame,
-      length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [List.append_nil, List.length_singleton]
   have hcross := length_encList_le _ _ hclause
   have hlen : (a.flatMap fun l => b.map fun m => [l, m]).length = a.length * b.length := by
     simp [List.length_flatMap, List.sum_replicate, List.map_const']

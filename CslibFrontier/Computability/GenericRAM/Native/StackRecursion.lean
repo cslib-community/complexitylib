@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 import CslibFrontier.Tactic.OptionMatch
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Depth-first recursion with an explicit stack
@@ -546,8 +547,7 @@ private theorem length_pending_le {σ : State X A Y} {x : X} (hx : σ.2.1 = some
   rcases σ with ⟨st, r, v⟩
   simp only at hx
   subst hx
-  simp only [length_encPair, encOption_some, List.length_cons]
-  omega
+  enc_len
 
 /-- **The cost of one step**: a polynomial in the state length, plus the leaf certificate at a
 pending leaf. -/

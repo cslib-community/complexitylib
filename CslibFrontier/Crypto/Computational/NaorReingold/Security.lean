@@ -35,6 +35,7 @@ import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.StatisticalDistance.Product
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Computational security of the Naor–Reingold PRF from DDH
@@ -583,8 +584,7 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
         (encNat (F.order d)).length ≤ cO * ((ddhCallerEncoding F caller).length + 1) ^ eO := by
       refine (hO d).trans ?_
       have hd_le : (F.encDesc d).length ≤ (ddhCallerEncoding F caller).length := by
-        simp only [d, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
-        lia
+        enc_len [d, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply]
       exact Nat.mul_le_mul_left cO (Nat.pow_le_pow_left (by lia) eO)
     have hinput_le :
         (encPair F.encDesc
@@ -595,11 +595,8 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
       have hcaller :
           2 * (F.encDesc d).length + 2 * u.length + 2 * v.length + 2 * w.length ≤
           (ddhCallerEncoding F caller).length := by
-        simp only [d, u, v, w, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply,
-          length_encPair, encBits_apply]
-        lia
-      simp only [length_encPair, encBits_apply]
-      lia
+        enc_len [d, u, v, w, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply]
+      enc_len
     dsimp only [pairBound]
     rw [hpolyB_def]
     exact (hR (d, u, v, w, σ, τ)).trans
@@ -722,10 +719,8 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
             2 * (F.encDesc caller.1.1.groupParameters).length +
               8 * (encList encNat caller.2).length ≤
             8 * (ddhCallerEncoding F caller).length := by
-          simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
-          lia
-        simp only [encBits_apply, length_encPair, List.length_drop]
-        lia
+          enc_len [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply]
+        enc_len [List.length_drop]
       have hgrowth' :
           (naorReingoldCacheEncoding cache').length ≤
             (naorReingoldCacheEncoding cache).length +

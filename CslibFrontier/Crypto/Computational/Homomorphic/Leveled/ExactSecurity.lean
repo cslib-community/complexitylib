@@ -22,6 +22,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Exact hybrid loss for Gentry Theorem 4, modular index sampling, and overhead bounds
@@ -562,8 +563,7 @@ theorem length_activeLinkState_le (depth width pkBound : ℕ)
   let keyPairLen := 2 * pkBound + 1 + width
   have hpair (k : List Bool × List Bool) (hk : k.1.length ≤ pkBound ∧ k.2.length ≤ width) :
       (encPair encBits encBits k).length ≤ keyPairLen := by
-    simp only [length_encPair, encBits_apply, keyPairLen]
-    omega
+    enc_len [keyPairLen]
   have hbefore_len :
       (encList (encPair encBits encBits) before).length ≤
         before.length * (2 * keyPairLen + 1) :=
@@ -1418,8 +1418,7 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   have hkg_len (n keys) (hkeys : keys ∈ (ProbComp.eval (E.keyGen n)).support) :
       keys.1.length + keys.2.length ≤ c_kg * (n + 1) ^ d_kg := by
     have hlen := hkey_len n keys hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hlen
-    omega
+    enc_len at hlen
   obtain ⟨c_enc, d_enc, evalEncrypt, hevalEncrypt, _, henc_law, henc_len⟩ :=
     hencrypt.exists_total_seeded_evaluator_with_length
   obtain ⟨c_ch, d_ch, evalChoose, hevalChoose, _, hchoose_law, hchoose_len⟩ :=
@@ -1459,9 +1458,7 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
     change pk.length ≤ pkBound n at hpk
     have hin : (encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1 ≤
         2 * n + 2 * pkBound n + 5 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
-        encBool_apply, List.length_singleton]
-      omega
+      enc_len [List.length_singleton]
     have hbound : c_enc *
         ((encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1) ^ d_enc ≤
         ctBound n := Nat.mul_le_mul_left c_enc (Nat.pow_le_pow_left hin d_enc)
@@ -1491,16 +1488,14 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   · intro n pk' hpk'
     change pk'.length ≤ pubLen n at hpk'
     have hin : (encPair encUnary encBits (n, pk')).length + 1 ≤ 2 * n + pubLen n + 2 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     have hch_le :
         c_ch * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch ≤ advChooseBudget n :=
       Nat.mul_le_mul_left c_ch (Nat.pow_le_pow_left hin d_ch)
     refine ⟨hchoose_law (n, pk') (advChooseBudget n) hch_le, fun choice hchoice => ?_⟩
     have hchoice2 : choice.2.length ≤
         (encPair (encPair encBool encBool) encBits choice).length := by
-      simp only [length_encPair, encBool_apply, List.length_singleton, encBits_apply]
-      omega
+      enc_len [List.length_singleton]
     exact (hchoice2.trans (hchoose_len (n, pk') choice hchoice)).trans hch_le
   · intro n state ct' hstate hct'
     change state.length ≤ advChooseBudget n at hstate
@@ -1508,8 +1503,7 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
     apply hguess_law (n, state, ct') (advGuessBudget n)
     have hin : (encPair encUnary (encPair encBits encBits) (n, state, ct')).length + 1 ≤
         2 * n + 2 * advChooseBudget n + ctBound n + 4 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     exact Nat.mul_le_mul_left c_gu (Nat.pow_le_pow_left hin d_gu)
   · exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
   · have hgu : PolynomiallyBounded advGuessBudget := by

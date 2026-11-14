@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.Layered
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Encoded sizes of layered Boolean circuits
@@ -41,8 +42,7 @@ theorem length_encNode (node : Node) :
     (encNode node).length =
       10 + 2 * (encNat node.code.2.1).length + (encNat node.code.2.2).length := by
   change (encPair (encPair encBool encBool) (encPair encNat encNat) node.code).length = _
-  simp only [length_encPair, encBool_apply, List.length_singleton]
-  omega
+  enc_len [List.length_singleton]
 
 /-- Valid references have logarithmic binary encodings; the bound also covers constants. -/
 theorem length_encNode_le {node : Node} {width : ℕ} (h : node.Valid width) :

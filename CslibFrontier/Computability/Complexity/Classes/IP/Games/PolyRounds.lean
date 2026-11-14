@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.AffineHash
 import CslibFrontier.Foundations.Data.BitString.List
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Private-coin games with polynomially many rounds and `IP[k(n)] ⊆ AM[k(n) + 2]`
@@ -180,10 +181,7 @@ theorem transcriptLength_le_length_encIPShape (g : List (IPMove × ℕ)) :
   | nil => simp [transcriptLength]
   | cons x g ih =>
     obtain ⟨m, n⟩ := x
-    simp only [transcriptLength, List.map_cons, List.sum_cons, encIPShape, encList_cons,
-      List.length_append, length_frame, length_encPair, encUnary_apply,
-      List.length_replicate] at ih ⊢
-    omega
+    enc_len [transcriptLength, List.map_cons, List.sum_cons, encIPShape] at ih ⊢
 
 /-- Evaluating a fixed polynomial private-coin shape `G` at unary `n` is polynomial-time. -/
 theorem computableInPolyTime_evalShape (G : List (IPMove × Polynomial ℕ)) :
@@ -1241,10 +1239,7 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
         | cons y ys ih =>
           obtain ⟨m, n⟩ := y
           have hm1 : (encAMMove m).length = 1 := by cases m <;> rfl
-          simp only [encAMShape, encList_cons, List.length_append, length_frame, length_encPair,
-            hm1, encUnary_apply, List.length_replicate, List.length_cons, AMGame.transcriptLength,
-            List.map_cons, List.sum_cons] at ih ⊢
-          omega
+          enc_len [encAMShape, hm1, AMGame.transcriptLength, List.map_cons, List.sum_cons] at ih ⊢
       have hOptLen : (encOption encUnary st.pending).length ≤ 1 + st.pending.getD 0 := by
         cases st.pending with
         | none => simp
