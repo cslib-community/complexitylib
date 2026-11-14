@@ -12,6 +12,7 @@ import CslibFrontier.Probability.MarkovChain.RotationMap
 import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
+import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -31,6 +32,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Complexity.Problems.SharpCycle
+import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Completeness
 
 import CslibFrontier.Computability.QueryComplexity.AdjacentPair
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
@@ -561,6 +563,21 @@ register_result "reingold" where
     row-major adjacency matrix (encUSTCON). One native machine halts on and decides every \
     encoded instance of length L within c·(⌊log₂ L⌋ + 1) work cells; malformed inputs are \
     unconstrained. The reduction-defined SL = L corollary is not part of this entry."
+
+register_result "strongly-connected-nl-complete" where
+  title := "Strongly connected digraphs are NL-complete"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 4, Exercise 4",
+      locator := "Web draft 2007-01-08, printed p. 89; PDF p. 105" }
+  ]
+  theorems := [Cslib.Complexity.StronglyConnected.logSpaceComplete]
+  scope := "Digraphs on Fin n with loops allowed, encoded by encDigraph: a unary header 1^n 0 \
+    and the row-major adjacency matrix (the encSTCON layout without s and t); the empty digraph \
+    is strongly connected. Native visited-cell NL: membership by one nondeterministic counter \
+    program that guesses a path for every ordered pair, every branch halting; hardness by a \
+    native logspace many-one reduction from STCON adding arcs v → s and t → v. Completeness for \
+    the draft's ever-non-blank space class needs the measure bridge of draft Theorem 4.16."
 
 register_result "primes" where
   title := "Agrawal–Kayal–Saxena: PRIMES is in P"
@@ -5761,7 +5778,6 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
 
-
 register_result "bilinear-finite-field-fingerprint" where
   title := "Two-vector matrix identity fingerprint"
   topic := "randomized verification"
@@ -5920,3 +5936,20 @@ register_result "goldreich-expander-visit-count" where
     times, factorial moments, integer tails and strict half-visits for every positive \
     L. The source strict integer bound requires 1<=m<=L and rho+eta^2>0; alpha*L needs \
     an integer convention. No sampler/runtime claim."
+
+register_result "tally-np-exp-nexp" where
+  title := "Easy tally NP collapses EXP and NEXP"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 23",
+      locator := "2007 public draft, printed p. 64 / PDF p. 80" },
+    { paper := HartmanisImmermanSewelson1985, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.EXP_eq_NEXP_of_tally,
+    Cslib.Complexity.E_eq_NE_of_tally,
+    Cslib.Complexity.expPaddedNPEasy_of_tally
+  ]
+  scope := "(∀ L ∈ TALLY, L ∈ NP encBits → L ∈ P encBits) → EXP enc = NEXP enc and E enc = NE enc \
+    for every encoding enc; TALLY is the set of bit-languages of all-true words. Only this \
+    direction of Hartmanis–Immerman–Sewelson is proved."
