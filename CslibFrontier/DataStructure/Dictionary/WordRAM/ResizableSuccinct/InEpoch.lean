@@ -26,7 +26,8 @@ It establishes:
    `11 = 5 + 6` bounds the quotient-bit slack (5 from Feistel quotient/val vs `optBits` and
    6 from `quotientBits U N ≤ quotientBits U n + 6` via `N ≤ 4 * n`), and `1344 = 16 * 84`
    bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
-   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening, e.g. to ≤ 680, remains open in #3167).
+   `logLogFactor N ≤ 4 * logLogFactor n` (the static footprint formula constant is 1355;
+   ≤ 680 is the T59 §5.3 window-shift constant for operational dynamic windows in M3b).
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.

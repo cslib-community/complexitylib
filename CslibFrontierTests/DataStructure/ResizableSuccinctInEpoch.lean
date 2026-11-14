@@ -13,13 +13,22 @@ public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.P
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.Compaction
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.WindowOps
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.ResizableSuccinct.MetaSync
+public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
+public import CslibFrontier.DataStructure.Dictionary.FeistelQuotient
+public import CslibFrontier.DataStructure.Dictionary.SuccinctBucket
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctLayout
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctHash
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabOps
+public import CslibFrontier.Foundations.FieldTheory.Finite.Trinomial
 public import CslibFrontier.Computability.WordRAM.Resizable.Basic
 
 public section
 
+open Cslib
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.WordRAM.Resizable
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.Dynamic
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
@@ -45,6 +54,8 @@ This test suite covers both concrete evaluations and symbolic specifications:
 8. Symbolic physical-to-dense slot mapping of `denseOfPhysGenProg` (Test 9).
 9. Module client verification: `WinGrowRightPre` safety precondition construction (Test 10).
 10. Module client verification: `realizesBounded_winGrowRightGen` verification (Test 11).
+11. Concrete non-empty $n = 1$ `CompactedRep` representation witness (Test 12).
+12. Concrete evaluation of `reconstructKeyAt` on slot 0 returning key 0 (Test 13).
 -/
 
 /-- Test 1 (Concrete evaluation): Space bound calculation for positive active epoch size
@@ -227,3 +238,584 @@ theorem test_winGrowRight_realizesBounded_module_client :
       (WordEncoding.encode (α := (CompParams × ℕ) × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       WinGrowRightPre (fun _ _ => 0) :=
   realizesBounded_winGrowRightGen
+
+def testOneMem (a : ℕ) : ℕ :=
+  if a < 8 then
+    match a with
+    | 0 => 1
+    | 1 => 1
+    | 2 => 64
+    | 3 => 1
+    | 4 => 1
+    | 5 => 1
+    | 6 => 1
+    | _ => 0
+  else if h : a < 27 then
+    RuntimeReducedKWise.mkHashParams 64 (epochQBits 2 1) (epochHashB 1)
+      (totalMicroBits 1) 3 ⟨a - 8, by omega⟩
+  else if h : 27 ≤ a ∧ a < 63 then
+    mkCompParams 2 2 64 1 ⟨a - 27, by omega⟩
+  else if a = 232 then 64
+  else if a = 233 then 1
+  else if a = 260 then 1
+  else 0
+
+/-- Concrete 0-register machine state with frontier 270 and `testOneMem`. -/
+def testXOne : RData 0 := ⟨fun _ => 0, testOneMem, 270⟩
+
+/-- Abstract dictionary state with key 0 mapped to value 0. -/
+def s_abs_one : Dictionary.State 2 :=
+  Function.update (empty 2) ⟨0, by decide⟩ (some 0)
+
+/-- Quotient hash seed for `U = 2, N = 1`. -/
+def θ_one : QuotHashSeed 2 1 :=
+  (⟨0, by decide⟩, fun _ => ⟨0, Nat.two_pow_pos _⟩)
+
+/-- Reference fixed-capacity memory state for `n = 1`. -/
+def testFixMem (a : ℕ) : ℕ :=
+  if a = 14 then 1
+  else if a = 41 then 1
+  else 0
+
+/-- Reference fixed-capacity machine state. -/
+def testSFix : Memory.State := ⟨testFixMem, 100⟩
+
+theorem test_rootHeaderValid_one :
+    RootHeaderValid 2 2 64 1 1 0 0 testOneMem := by
+  refine ⟨by decide, by decide, by decide, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  all_goals decide
+
+theorem test_epochParamsStored_one :
+    EpochParamsStored 2 2 64 1 0 testOneMem := by
+  refine ⟨fun ⟨i, hi⟩ => ?_, fun ⟨i, hi⟩ => ?_⟩
+  · unfold testOneMem offHashParams; dsimp only
+    split_ifs with h1 h2 <;> try omega
+    congr 1; apply Fin.ext; dsimp only; omega
+  · unfold testOneMem offCompParams; dsimp only
+    split_ifs with h1 h2 h3 <;> try omega
+    congr 1; apply Fin.ext; dsimp only; omega
+
+theorem h_step : reducedTrinomialStep (qBits 2 1) (hashB 1) (totalMicroBits 1) = 0 := by
+  unfold reducedTrinomialStep reducedTargetBits trinomialStepAux
+  decide
+
+theorem h_step_epoch :
+    reducedTrinomialStep (epochQBits 2 1) (epochHashB 1) (totalMicroBits 1) = 0 :=
+  h_step
+
+theorem h_tabWords : ReducedKWise.tableWords 64 (qBits 2 1) (hashB 1) (totalMicroBits 1) = 1 := by
+  unfold ReducedKWise.tableWords reducedTableWords
+  rw [h_step]
+  decide
+
+theorem h_tabBase :
+    ReducedKWise.tabBase (0 + epochHdrWords) (qBits 2 1) (hashB 1)
+      (totalMicroBits 1) 3 = 232 := by
+  unfold ReducedKWise.tabBase ReducedKWise.seedWords epochHdrWords
+  rw [h_step]
+  decide
+
+theorem test_clmul_1_1 : clmul 1 1 = 1 := by
+  rw [clmul_step]
+  change (if 1 &&& 1 = 1 then 1 else 0) ^^^ (clmul 1 0 <<< 1) = 1
+  rw [clmul_zero_right]
+  decide
+
+theorem test_tableRep_one :
+    ReducedKWise.TableRep (0 + epochHdrWords) 64 (qBits 2 1) (hashB 1) (totalMicroBits 1) 3
+      testOneMem := by
+  refine ⟨?_, ?_⟩
+  · intro wIdx hwIdx
+    rw [h_tabWords] at hwIdx
+    have : wIdx = 0 := by omega
+    subst this
+    rw [h_tabBase, h_step]
+    unfold reducedPackShift reducedChunkBits
+    decide
+  · intro idx hidx
+    rw [h_step] at hidx
+    have : idx < 4 := hidx
+    rw [h_tabBase, h_step]
+    interval_cases idx
+    · change getLimb (2 * reducedChunkBits 0) (testOneMem 232) 0 = clmul 0 0
+      rw [clmul_zero_left]
+      unfold getLimb reducedChunkBits; decide
+    · change getLimb (2 * reducedChunkBits 0) (testOneMem 232) 1 = clmul 0 1
+      rw [clmul_zero_left]
+      unfold getLimb reducedChunkBits; decide
+    · change getLimb (2 * reducedChunkBits 0) (testOneMem 232) 2 = clmul 1 0
+      rw [clmul_zero_right]
+      unfold getLimb reducedChunkBits; decide
+    · change getLimb (2 * reducedChunkBits 0) (testOneMem 232) 3 = clmul 1 1
+      rw [test_clmul_1_1]
+      unfold getLimb reducedChunkBits; decide
+
+theorem test_seedRep_one :
+    ReducedKWise.SeedRep (0 + epochHdrWords) (qBits 2 1) (hashB 1) (totalMicroBits 1) 3
+      θ_one testOneMem := by
+  refine ⟨rfl, fun j m => ?_⟩
+  dsimp only [θ_one, getLimb]
+  rw [Nat.zero_shiftRight, Nat.zero_and]
+  have hj : (j : ℕ) < 3 := j.isLt
+  have hlimbs :
+      reducedLimbCount (reducedTrinomialStep (qBits 2 1) (hashB 1) (totalMicroBits 1)) = 2 := by
+    rw [h_step]; decide
+  have hm_lt := m.isLt
+  have hm : (m : ℕ) < 2 := by omega
+  have hprod :
+      reducedLimbCount (reducedTrinomialStep (qBits 2 1) (hashB 1) (totalMicroBits 1)) * (j : ℕ) =
+        2 * (j : ℕ) := by
+    rw [hlimbs]
+  have ha_ge : 226 ≤ 0 + epochHdrWords + 1 +
+      ((m : ℕ) +
+        reducedLimbCount (reducedTrinomialStep (qBits 2 1) (hashB 1) (totalMicroBits 1)) *
+          (j : ℕ)) := by
+    unfold epochHdrWords; omega
+  have ha_le : 0 + epochHdrWords + 1 +
+      ((m : ℕ) +
+        reducedLimbCount (reducedTrinomialStep (qBits 2 1) (hashB 1) (totalMicroBits 1)) *
+          (j : ℕ)) ≤ 231 := by
+    unfold epochHdrWords
+    omega
+  unfold testOneMem
+  split_ifs with h1 h2 h3 h4 h4_2 h5 <;> try omega
+
+theorem test_hashRep_one :
+    ReducedKWise.Rep (0 + epochHdrWords) 64 (qBits 2 1) (hashB 1) (totalMicroBits 1) 3
+      θ_one testOneMem :=
+  ⟨test_tableRep_one, test_seedRep_one⟩
+
+theorem hoff1 : offCompGM 2 64 1 = 260 := by
+  unfold offCompGM offCompLM lmSubWords totalMicroBuckets
+    effBucketPosBits effBucketCap numMicroPerBucket totalMicroBits microBits
+    Dynamic.logLogFactor epochHdrWords
+    epochHashSpace ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+    reducedTrinomialStep reducedTargetBits trinomialStepAux
+  decide
+
+theorem hoff2 : offGM 2 2 (ghostW 64) 1 (epochHashSpace 2 (ghostW 64) 1) = 41 := by
+  unfold offGM ghostW epochHashSpace offLM lmSubWords totalMicroBuckets
+    effBucketPosBits effBucketCap numMicroPerBucket totalMicroBits microBits Dynamic.logLogFactor
+    offVal offQuot bucketBits quotientBits valBits
+    ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+    reducedTrinomialStep reducedTargetBits trinomialStepAux
+  decide
+
+theorem h_qb : quotientBits 2 1 = 1 := by
+  unfold quotientBits keyBits bucketBits; decide
+
+theorem h_vb : valBits 2 = 1 := by
+  unfold valBits; decide
+
+theorem h_llf : logLogFactor 1 = 1 := by
+  unfold logLogFactor; decide
+
+theorem h_ehb : epochHashB 1 = 1 := by
+  unfold epochHashB totalMicroBits microBits logLogFactor; decide
+
+theorem h_eqb : epochQBits 2 1 = 1 := by
+  unfold epochQBits; decide
+
+theorem h_bb : bucketBits 1 = 0 := by
+  unfold bucketBits; decide
+
+theorem h_items : offCompItems 2 64 1 = 267 := by
+  unfold offCompItems offDenseToTail offTailToDense offCompGM offCompLM lmSubWords totalMicroBuckets
+    effBucketPosBits effBucketCap numMicroPerBucket totalMicroBits microBits
+    epochHdrWords epochHashSpace ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+    reducedTrinomialStep reducedTargetBits maxTailItems globalMetaLen
+    globalMetaVarLen globalPtrBits numBuckets
+  rw [h_ehb, h_eqb, h_bb, h_llf]
+  unfold trinomialStepAux packedWords
+  decide
+
+theorem test_quot : compQuotAt 267 2 2 64 1 1 testOneMem 0 = 0 := by
+  unfold compQuotAt
+  rw [h_qb, h_vb]
+  dsimp only
+  unfold readBitSlice wOffQ bOffQ wordOffset bitOffset
+  decide
+
+theorem test_val : compValAt 267 2 2 64 1 1 testOneMem 0 = 0 := by
+  unfold compValAt
+  rw [h_qb, h_vb]
+  dsimp only
+  unfold readBitSlice wOffV bOffV wOffQ bOffQ wordOffset bitOffset
+  decide
+
+theorem test_fix_quot :
+    quotAt 0 2 (ghostW 64) 1 (epochHashSpace 2 (ghostW 64) 1) testFixMem 0 = 0 := by
+  unfold quotAt offQuot readPacked readBitSlice wordOffset bitOffset ghostW epochHashSpace
+    ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+    reducedTrinomialStep reducedTargetBits trinomialStepAux
+    quotientBits bucketBits keyBits testFixMem
+  decide
+
+theorem test_fix_val :
+    valAt 0 2 2 (ghostW 64) 1 (epochHashSpace 2 (ghostW 64) 1) testFixMem 0 = 0 := by
+  unfold valAt offVal offQuot packedWords readPacked readBitSlice wordOffset bitOffset
+    ghostW epochHashSpace
+    ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+    reducedTrinomialStep reducedTargetBits trinomialStepAux
+    valBits quotientBits bucketBits keyBits testFixMem
+  decide
+
+theorem test_gm_eq :
+    compGmAt 0 2 64 1 testOneMem =
+      gmAt 0 2 2 (ghostW 64) 1 (epochHashSpace 2 (ghostW 64) 1) testFixMem := by
+  funext idx
+  unfold compGmAt gmAt globalPtrBits
+  rw [hoff1, hoff2]
+  have hgml : globalMetaLen 1 = 4 := by
+    unfold globalMetaLen globalMetaVarLen bucketBits; decide
+  split_ifs with h1 <;> try rfl
+  rw [hgml] at h1
+  interval_cases idx <;> decide
+
+theorem test_lm_eq :
+    compLmAt 0 2 64 1 testOneMem =
+      lmAt 0 2 2 (ghostW 64) 1 (epochHashSpace 2 (ghostW 64) 1) testFixMem := by
+  funext ⟨c, idx⟩
+  have htmb : totalMicroBuckets 1 = 1 := by
+    unfold totalMicroBuckets totalMicroBits microBits bucketBits logLogFactor; decide
+  unfold compLmAt lmAt effBucketPosBits
+  rw [htmb]
+  dsimp only
+  split_ifs with h1 <;> try rfl
+  rcases h1 with ⟨hc, hidx⟩
+  have : idx = 0 := by omega
+  subst this
+  interval_cases c <;>
+    { unfold offCompLMSub offLMSub offCompLM offLM epochHdrWords epochHashSpace ghostW
+        lmSubWords totalMicroBuckets effBucketCap numMicroPerBucket totalMicroBits microBits
+        logLogFactor ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+        reducedTrinomialStep reducedTargetBits trinomialStepAux
+        offVal offQuot packedWords quotientBits valBits bucketBits
+        readPacked readBitSlice wordOffset bitOffset testOneMem testFixMem
+      decide }
+
+theorem test_td_lt (mem : ℕ → ℕ) (i : ℕ) :
+    compTDAt 0 2 64 1 mem i < max (maxTailItems 1) 1 := by
+  have hm : maxTailItems 1 = 0 := by
+    unfold maxTailItems numBuckets tailCapPerBucket bucketBits; decide
+  unfold compTDAt
+  rw [hm]
+  have : ¬(i < 0) := by omega
+  simp [this]
+
+theorem test_dt_lt (mem : ℕ → ℕ) (i : ℕ) :
+    compDTAt 0 2 64 1 mem i < max (maxTailItems 1) 1 := by
+  have hm : maxTailItems 1 = 0 := by
+    unfold maxTailItems numBuckets tailCapPerBucket bucketBits; decide
+  unfold compDTAt
+  rw [hm]
+  have : ¬(i < 0) := by omega
+  simp [this]
+
+theorem test_phys (b : ℕ) (dt : ℕ → ℕ) : physByBase 1 b dt 0 = 0 := by
+  have hbb : bucketBits 1 = 0 := by decide
+  unfold physByBase
+  rw [hbb]
+  rfl
+
+theorem test_tot : totalSlots 1 (compGmAt 0 2 64 1 testOneMem) = 1 := by
+  unfold totalSlots bucketBits
+  unfold compGmAt globalPtrBits; rw [hoff1]
+  unfold globalMetaLen globalMetaVarLen; decide
+
+theorem test_windowCoupled :
+    WindowCoupled 0 (0 + offCompItems 2 64 1) 2 2 64 1
+      (compGmAt 0 2 64 1 testOneMem 0 * slabSize 1)
+      (if bucketBits 1 = 0 then 0 else compGmAt 0 2 64 1 testOneMem 1)
+      (epochTotalSlots 1 (compGmAt 0 2 64 1 testOneMem))
+      testSFix ⟨testOneMem, 270⟩ := by
+  refine ⟨test_gm_eq, test_lm_eq, ?_, test_td_lt testOneMem, test_dt_lt testOneMem, ?_, ?_⟩
+  · unfold bucketBits
+    exact windowInv_zero _ _ _ _
+  · intro d hd
+    have hslots : epochTotalSlots 1 (compGmAt 0 2 64 1 testOneMem) = 1 := test_tot
+    rw [hslots] at hd ⊢
+    have : d = 0 := by omega
+    subst this
+    dsimp only [testSFix]
+    rw [test_phys, Nat.zero_add, h_items, test_quot, test_fix_quot]
+  · intro d hd
+    have hslots : epochTotalSlots 1 (compGmAt 0 2 64 1 testOneMem) = 1 := test_tot
+    rw [hslots] at hd ⊢
+    have : d = 0 := by omega
+    subst this
+    dsimp only [testSFix]
+    rw [test_phys, Nat.zero_add, h_items, test_val, test_fix_val]
+
+theorem test_fixedCoupled_one :
+    FixedCoupled 0 (0 + offCompItems 2 64 1) 2 2 64 1 testSFix ⟨testOneMem, 270⟩ :=
+  test_windowCoupled
+
+theorem feistelReconstruct_zero (h1 : ℕ → ℕ) (bucket q : ℕ) :
+    feistelReconstruct 0 h1 bucket q = q := by
+  unfold feistelReconstruct
+  rw [pow_zero, Nat.mod_one, Nat.mod_one]
+  change q * 1 + 0 = q
+  omega
+
+theorem feistel_at_one (h1 : ℕ → ℕ) (b q : ℕ) :
+    feistelReconstruct (bucketBits 1) h1 b q = q := by
+  have : bucketBits 1 = 0 := by decide
+  rw [this]
+  exact feistelReconstruct_zero h1 b q
+
+theorem test_bucketMap_0_0 :
+    bucketMapOfState 2 1 (hValOfSeed 2 1 θ_one) s_abs_one 0 0 = some 0 := by
+  unfold bucketMapOfState
+  simp only [feistel_at_one]
+  split_ifs with hcond
+  · unfold s_abs_one; rfl
+  · exfalso; apply hcond
+    refine ⟨by decide, by decide, by decide⟩
+
+theorem test_bucketMap_ne_zero (q : ℕ) (hq : q ≠ 0) :
+    bucketMapOfState 2 1 (hValOfSeed 2 1 θ_one) s_abs_one 0 q = none := by
+  unfold bucketMapOfState
+  simp only [feistel_at_one]
+  split_ifs with hcond
+  · have : q = 1 := by omega
+    subst this
+    unfold s_abs_one
+    rfl
+  · rfl
+
+theorem test_fits_hash (i : Fin 19) :
+    Fits 64 (RuntimeReducedKWise.mkHashParams 64 (epochQBits 2 1) (epochHashB 1)
+      (totalMicroBits 1) 3 i) := by
+  apply RuntimeReducedKWise.fits_mkHashParams (w := 64) (w₀ := epochQBits 2 1) (b := epochHashB 1)
+    (b' := totalMicroBits 1) (k := 3) (hashBase := 0) (scratchBase := 0)
+  · decide
+  · decide
+  · decide
+  · rw [h_step_epoch]; decide
+  · unfold ReducedKWise.space ReducedKWise.tableWords ReducedKWise.seedWords
+    rw [h_step_epoch]; decide
+  · decide
+
+theorem test_fits_comp (i : Fin 36) :
+    Fits 64 (mkCompParams 2 2 64 1 i) := by
+  apply fits_mkCompParams (U := 2) (V := 2) (w := 64) (N := 1) (metaBase := 0)
+  · decide
+  · decide
+  · decide
+  · decide
+  · rw [h_items]; decide
+
+theorem test_dictStateInv_one :
+    DictStateInv 2 2 (ghostW 64) 1 0 θ_one s_abs_one testSFix := by
+  have hsf_mem : testSFix.mem = testFixMem := rfl
+  have hhs : hashSpace 2 (ghostW 64) 1 = epochHashSpace 2 (ghostW 64) 1 := rfl
+  have hnb : numBuckets 1 = 1 := by
+    unfold numBuckets bucketBits; decide
+  have hbb : bucketBits 1 = 0 := by decide
+  have hmpb : numMicroPerBucket 1 = 1 := by decide
+  have heff : effBucketCap 1 = 4 := by
+    unfold effBucketCap; decide
+  have hbc : bCount 1 (gmAt 0 2 2 (ghostW 64) 1
+      (hashSpace 2 (ghostW 64) 1) testFixMem) 0 = 1 := by
+    rw [hhs]
+    unfold bCount gmAt globalPtrBits; rw [hoff2]
+    unfold globalMetaLen globalMetaVarLen; decide
+  have hslot : slotOf 1 (gmAt 0 2 2 (ghostW 64) 1
+      (hashSpace 2 (ghostW 64) 1) testFixMem) 0 0 = 0 := by
+    rw [hhs]
+    unfold slotOf gmAt globalPtrBits; rw [hoff2]
+    unfold globalMetaLen globalMetaVarLen; decide
+  refine ⟨⟨fun _ _ => [0], ?_⟩, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+    · refine ⟨fun _ => ?_, fun hb => by rw [hbb] at hb; omega,
+        fun hb => by rw [hbb] at hb; omega,
+        fun hb => by rw [hbb] at hb; omega,
+        fun hb => by rw [hbb] at hb; omega⟩
+      rw [hsf_mem]
+      have : gmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem 0 = 1 := by
+        rw [hhs]
+        unfold gmAt globalPtrBits; rw [hoff2]
+        unfold globalMetaLen globalMetaVarLen; decide
+      omega
+    · refine ⟨fun b hb m hm => ?_,
+        fun b hb m₁ hm₁ m₂ hm₂ j hj₁ hj₂ => by rw [hmpb] at hm₁ hm₂; omega⟩
+      have : b = 0 := by rw [hnb] at hb; omega
+      subst this
+      have : m = 0 := by rw [hmpb] at hm; omega
+      subst this
+      rw [hsf_mem]
+      have h_head :
+          lmHead 1 (lmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem) 0 0 = 1 := by
+        rw [hhs]
+        unfold lmHead lmAt effBucketPosBits offLMSub offLM epochHashSpace ghostW
+          lmSubWords totalMicroBuckets effBucketCap numMicroPerBucket totalMicroBits microBits
+          logLogFactor ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+          reducedTrinomialStep reducedTargetBits trinomialStepAux
+          offVal offQuot packedWords quotientBits valBits bucketBits
+          readPacked readBitSlice wordOffset bitOffset testFixMem
+        decide
+      have h_prev :
+          lmPrev 1 (lmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem) 0 0 = 0 := by
+        rw [hhs]
+        unfold lmPrev lmAt effBucketPosBits offLMSub offLM epochHashSpace ghostW
+          lmSubWords totalMicroBuckets effBucketCap numMicroPerBucket totalMicroBits microBits
+          logLogFactor ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+          reducedTrinomialStep reducedTargetBits trinomialStepAux
+          offVal offQuot packedWords quotientBits valBits bucketBits
+          readPacked readBitSlice wordOffset bitOffset testFixMem
+        decide
+      have h_next :
+          lmNext 1 (lmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem) 0 0 = 0 := by
+        rw [hhs]
+        unfold lmNext lmAt effBucketPosBits offLMSub offLM epochHashSpace ghostW
+          lmSubWords totalMicroBuckets effBucketCap numMicroPerBucket totalMicroBits microBits
+          logLogFactor ReducedKWise.space ReducedKWise.seedWords ReducedKWise.tableWords
+          reducedTrinomialStep reducedTargetBits trinomialStepAux
+          offVal offQuot packedWords quotientBits valBits bucketBits
+          readPacked readBitSlice wordOffset bitOffset testFixMem
+        decide
+      refine ⟨by rw [h_head]; rfl, by omega, by decide, h_prev, h_next, trivial⟩
+    · intro b hb m hm j
+      have : b = 0 := by rw [hnb] at hb; omega
+      subst this
+      have : m = 0 := by rw [hmpb] at hm; omega
+      subst this
+      rw [hsf_mem]
+      simp only [List.mem_singleton]
+      constructor
+      · rintro rfl
+        have hlt := mOfSeed_lt 2 1 θ_one (quotAt 0 2 (ghostW 64) 1
+            (hashSpace 2 (ghostW 64) 1) testFixMem
+            (slotOf 1 (gmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem)
+              0 0))
+        rw [hmpb] at hlt
+        have hm0 : mOfSeed 2 1 θ_one (quotAt 0 2 (ghostW 64) 1
+            (hashSpace 2 (ghostW 64) 1) testFixMem
+            (slotOf 1 (gmAt 0 2 2 (ghostW 64) 1 (hashSpace 2 (ghostW 64) 1) testFixMem)
+              0 0)) = 0 := by omega
+        exact ⟨by omega, by omega, hm0⟩
+      · rintro ⟨hj, _, _⟩
+        omega
+    · intro b hb j₁ hj₁ j₂ hj₂ _
+      have : b = 0 := by rw [hnb] at hb; omega
+      subst this
+      rw [hsf_mem] at hj₁ hj₂
+      omega
+    · intro b hb j hj
+      have : b = 0 := by rw [hnb] at hb; omega
+      subst this
+      rw [hsf_mem] at hj ⊢
+      have : j = 0 := by omega
+      subst this
+      rw [hslot, hhs, test_fix_quot, test_fix_val]
+      exact test_bucketMap_0_0
+    · intro b hb q
+      have : b = 0 := by rw [hnb] at hb; omega
+      subst this
+      rw [hsf_mem]
+      constructor
+      · intro hisSome
+        refine ⟨0, by omega, ?_⟩
+        rw [hslot, hhs, test_fix_quot]
+        by_cases hq0 : q = 0
+        · exact hq0.symm
+        · exfalso
+          rw [test_bucketMap_ne_zero q hq0] at hisSome
+          cases hisSome
+      · rintro ⟨j, hj, hq_eq⟩
+        have hj0 : j = 0 := by omega
+        subst hj0
+        rw [hslot, hhs, test_fix_quot] at hq_eq
+        subst hq_eq
+        rw [test_bucketMap_0_0]
+        rfl
+  · have htot : totalSlots 1 (gmAt 0 2 2 (ghostW 64) 1
+        (hashSpace 2 (ghostW 64) 1) testFixMem) = 1 := by
+      rw [hhs]
+      unfold totalSlots bucketBits
+      unfold gmAt globalPtrBits; rw [hoff2]
+      unfold globalMetaLen globalMetaVarLen; decide
+    rw [hsf_mem, htot]
+    unfold s_abs_one
+    decide
+
+theorem test_compactedSplitRep_one :
+    CompactedSplitRep 0 (0 + offCompItems 2 64 1) 2 2 64 1 1 0 θ_one s_abs_one
+      ⟨testOneMem, 270⟩ := by
+  refine ⟨test_rootHeaderValid_one, test_epochParamsStored_one, test_hashRep_one, ?_, ?_,
+    ⟨testSFix, ?_, ?_, test_fixedCoupled_one⟩⟩
+  · unfold s_abs_one; decide
+  · intro u v hsome
+    unfold s_abs_one at hsome
+    fin_cases u
+    · rw [Function.update_self] at hsome
+      cases hsome
+      decide
+    · rw [Function.update_of_ne (by decide)] at hsome
+      cases hsome
+  · exact test_dictStateInv_one
+  · have htot : totalSlots 1 (compGmAt 0 2 64 1 testOneMem) = 1 := test_tot
+    have hcard : (Dictionary.dom s_abs_one).card = 1 := by
+      unfold s_abs_one; decide
+    omega
+
+/-- Test 12 (Concrete non-empty witness): Genuine concrete resting state `CompactedRep`
+witness for $n = 1$ with zero uninstantiated hypotheses. -/
+theorem test_compactedRep_one_witness :
+    CompactedRep 2 2 64 1 1 0 0 s_abs_one testXOne := by
+  have hx : testXOne.Bounded 64 := by
+    refine ⟨⟨fun i => Fin.elim0 i, ?_⟩, by decide, ?_⟩
+    · intro a
+      change testOneMem a < 2 ^ 64
+      unfold testOneMem
+      split_ifs with h1 h2 h3 h4 h5 h6
+      · interval_cases a <;> decide
+      · exact test_fits_hash ⟨a - 8, by omega⟩
+      · exact test_fits_comp ⟨a - 27, by omega⟩
+      · subst h4; decide
+      · subst h5; decide
+      · subst h6; decide
+      · decide
+    · intro a ha
+      change testOneMem a = 0
+      unfold testOneMem
+      have h270 : 270 ≤ a := ha
+      have : a ≠ 0 := by omega
+      have : a ≠ 1 := by omega
+      have : a ≠ 2 := by omega
+      have : a ≠ 3 := by omega
+      have : a ≠ 4 := by omega
+      have : a ≠ 5 := by omega
+      have : a ≠ 6 := by omega
+      have : a ≠ 7 := by omega
+      have : ¬(a < 8) := by omega
+      have : ¬(a < 27) := by omega
+      have : ¬(27 ≤ a ∧ a < 63) := by omega
+      have : a ≠ 232 := by omega
+      have : a ≠ 233 := by omega
+      have : a ≠ 260 := by omega
+      split_ifs
+      rfl
+  have hfr : testXOne.frontier = 0 + compactedEpochWords 2 2 64 1 1 := by
+    unfold testXOne compactedEpochWords compactedItemWords
+    rw [Nat.zero_add, h_items]
+    decide
+  have hepoch : EpochValid 2 1 1 := Or.inr ⟨by decide, by decide, by decide, by decide⟩
+  exact compactedRep_of_split hx hfr hepoch test_compactedSplitRep_one
+
+/-- Test 13 (Concrete evaluation): Genuine concrete evaluation of `reconstructKeyAt` and
+`compValAt` on live slot 0 of the concrete $n = 1$ state yielding key 0 and value 0. -/
+theorem test_reconstructKeyAt_concrete_eval :
+    reconstructKeyAt 0 (0 + offCompItems 2 64 1) 2 2 64 1 1 θ_one testOneMem 0 = 0 ∧
+    compValAt (0 + offCompItems 2 64 1) 2 2 64 1 1 testOneMem 0 = 0 := by
+  refine ⟨?_, ?_⟩
+  · unfold reconstructKeyAt
+    have hbb : bucketBits 1 = 0 := by decide
+    rw [hbb, feistelReconstruct_zero]
+    change compQuotAt (0 + offCompItems 2 64 1) 2 2 64 1 1 testOneMem 0 = 0
+    rw [Nat.zero_add, h_items]
+    exact test_quot
+  · rw [Nat.zero_add, h_items]
+    exact test_val
+
