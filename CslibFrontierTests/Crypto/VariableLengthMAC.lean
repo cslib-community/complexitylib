@@ -3,7 +3,10 @@ Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
-import CslibFrontier.Crypto.Protocols.MAC.VariableLength
+
+module
+
+public import CslibFrontier.Crypto.Protocols.MAC.VariableLength
 
 /-!
 # Tests for the blockwise variable-length MAC
@@ -11,6 +14,9 @@ import CslibFrontier.Crypto.Protocols.MAC.VariableLength
 Concrete evaluations of the block encoding and API checks for
 `CslibFrontier.Crypto.Protocols.MAC.VariableLength`.
 -/
+
+public section
+
 namespace Cslib.Crypto.VariableLengthMACTests
 open Cslib.Crypto Cslib.Crypto.BlockwiseMAC
 
@@ -115,5 +121,15 @@ example (M : MACScheme) (hw : ∀ᶠ n in Filter.atTop, 3 ≤ fieldWidth (M.msgL
   ⟨M.not_blockwiseEUFCMA_noIndexEncoder hw,
     M.not_blockwiseEUFCMA_noLengthEncoder hw,
     M.not_blockwiseEUFCMA_noIdentifierEncoder hw⟩
+
+open Probability Turing.MultiTapeTM in
+/-- Concrete strict oracle-PPT certificates for the three 2-query attack forgers. -/
+example (M : MACScheme) :
+    IsOraclePPT encForgerOutput (M.swapBlocksAdversary.toForger fun n _ => n) ∧
+      IsOraclePPT encForgerOutput (M.truncateAdversary.toForger fun n _ => n) ∧
+      IsOraclePPT encForgerOutput (M.mixBlocksAdversary.toForger fun n _ => n) :=
+  ⟨M.isOraclePPT_toForger_swapBlocksAdversary (by fun_prop),
+    M.isOraclePPT_toForger_truncateAdversary (by fun_prop),
+    M.isOraclePPT_toForger_mixBlocksAdversary (by fun_prop)⟩
 
 end Cslib.Crypto.VariableLengthMACTests

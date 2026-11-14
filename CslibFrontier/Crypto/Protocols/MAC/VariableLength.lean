@@ -101,7 +101,7 @@ identically with `blockwiseSimulator`.
 * [J. Katz and Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -111,13 +111,13 @@ open scoped NNReal ENNReal
 namespace BlockwiseMAC
 
 /-- The width `L / 4` of each field of an `L`-bit block input. -/
-def fieldWidth (L : ℕ) : ℕ := L / 4
+@[expose] def fieldWidth (L : ℕ) : ℕ := L / 4
 
 /-- The number of `w`-bit blocks, rounded up, in a `len`-bit message. -/
-def blockCount (w len : ℕ) : ℕ := (len + w - 1) / w
+@[expose] def blockCount (w len : ℕ) : ℕ := (len + w - 1) / w
 
 /-- Block `i` (counting from `0`) of `m`, padded with zeros to exactly `w` bits. -/
-def messageBlock (w : ℕ) (m : List Bool) (i : ℕ) : List Bool :=
+@[expose] def messageBlock (w : ℕ) (m : List Bool) (i : ℕ) : List Bool :=
   (m.drop (i * w) ++ List.replicate w false).take w
 
 /-- A block encoder takes a field width, an input length, an identifier, a message length, a
@@ -125,26 +125,28 @@ block index and a block, and returns an input for the fixed-length MAC. -/
 abbrev Encoder : Type := ℕ → ℕ → List Bool → ℕ → ℕ → List Bool → List Bool
 
 /-- The encoder of the construction: identifier, length, index, block, then zero padding. -/
-def fullEncoder (w L : ℕ) (r : List Bool) (len idx : ℕ) (block : List Bool) : List Bool :=
+@[expose] def fullEncoder (w L : ℕ) (r : List Bool) (len idx : ℕ) (block : List Bool) : List Bool :=
   r ++ BitString.lowBits w len ++ BitString.lowBits w idx ++ block ++
     List.replicate (L - 4 * w) false
 
 /-- Insecure variant that omits the identifier. -/
-def noIdentifierEncoder (w L : ℕ) (_r : List Bool) (len idx : ℕ) (block : List Bool) :
+@[expose] def noIdentifierEncoder (w L : ℕ) (_r : List Bool) (len idx : ℕ) (block : List Bool) :
     List Bool :=
   BitString.lowBits w len ++ BitString.lowBits w idx ++ block ++ List.replicate (L - 3 * w) false
 
 /-- Insecure variant that omits the message length. -/
-def noLengthEncoder (w L : ℕ) (r : List Bool) (_len idx : ℕ) (block : List Bool) : List Bool :=
+@[expose] def noLengthEncoder (w L : ℕ) (r : List Bool) (_len idx : ℕ) (block : List Bool) :
+    List Bool :=
   r ++ BitString.lowBits w idx ++ block ++ List.replicate (L - 3 * w) false
 
 /-- Insecure variant that omits the block index. -/
-def noIndexEncoder (w L : ℕ) (r : List Bool) (len _idx : ℕ) (block : List Bool) : List Bool :=
+@[expose] def noIndexEncoder (w L : ℕ) (r : List Bool) (len _idx : ℕ) (block : List Bool) :
+    List Bool :=
   r ++ BitString.lowBits w len ++ block ++ List.replicate (L - 3 * w) false
 
 /-- The fixed-length inputs that encoder `E` assigns to `m` under identifier `r`, one per block,
 with indices starting at `1`. The list is empty unless `0 < |m| < 2 ^ w`. -/
-def blockInputs (E : Encoder) (L : ℕ) (r m : List Bool) : List (List Bool) :=
+@[expose] def blockInputs (E : Encoder) (L : ℕ) (r m : List Bool) : List (List Bool) :=
   if 0 < m.length ∧ m.length < 2 ^ fieldWidth L then
     (List.range (blockCount (fieldWidth L) m.length)).map fun i =>
       E (fieldWidth L) L r m.length (i + 1) (messageBlock (fieldWidth L) m i)
