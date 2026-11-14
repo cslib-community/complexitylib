@@ -18,13 +18,14 @@ public import CslibFrontier.Foundations.Data.BitString.Support.Weight
 # Native circuit sampler for HQC supports
 
 This module composes the existing multiply-high candidate circuit and descending collision circuit,
-then turns the corrected word array into the indicator vector used by HQC. Applying the generic
-reversible sampler gives a native elementary quantum circuit whose measured output law is exactly
-`sampleSupport2` mapped through `BitString.indicatorVector`.
+then turns the corrected word array into the indicator vector used by HQC. Under `count ≤ n` and
+`n < 2 ^ bits`, applying the generic reversible sampler gives a native elementary quantum circuit
+whose measured output law is exactly `sampleSupport2` mapped through
+`BitString.indicatorVector`.
 
 The finite-width law retains the source algorithm's non-dyadic bias. There is no abort branch:
-under `count ≤ n`, every output has weight `count`, while the statistical discrepancy from the
-ideal fixed-weight law is bounded by
+under `count ≤ n` and `n < 2 ^ bits`, every output has weight `count`, while the statistical
+discrepancy from the ideal fixed-weight law is bounded by
 `1 - (supportLowerDensity width n 0 count).toReal`. The online qubit, gate, query, and encoded-code
 bounds below do not charge the offline generator program or replace the separate XOF analysis.
 
@@ -36,6 +37,8 @@ bounds below do not charge the offline generator program or replace the separate
   specialization used to expose a nonzero collision.
 
 ## Main results
+
+The semantic and distributional results below assume `count ≤ n` and `n < 2 ^ bits`.
 
 * `Cslib.Crypto.HQC.eval_supportSamplerCircuit`: exact deterministic circuit semantics.
 * `Cslib.Crypto.HQC.samplerDist_supportSamplerCircuit`: exact measured `sampleSupport2` law.
