@@ -10,9 +10,9 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.PH
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Extension
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.TrackedRun
 
 /-!
 # Collapses of the polynomial hierarchy
@@ -66,6 +66,7 @@ collapse `PH` (`Cslib.Complexity.PH_eq_SigmaP_of_PiP_encBits_eq_SigmaP`,
 
 ## References
 
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft 2007][AroraBarak07]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 * [O. Goldreich, *Computational Complexity: A Conceptual Perspective*][Goldreich2007DraftR2]
 * [L. Stockmeyer, *The polynomial-time hierarchy*][Stockmeyer1976]
@@ -210,39 +211,6 @@ theorem PH_eq_SigmaP_of_SigmaP_succ_subset_SigmaP {k : ℕ}
       (PiP_subset_SigmaP_succ k).trans (h encB)
 
 /-! ### Raw-word transfer and fixed-domain collapses -/
-
-/-- **Extension of a polynomial-time Boolean function to all words.** A Boolean function computable
-in polynomial time on `enc` extends to a Boolean function computable in polynomial time on `encBits`
-that agrees with it on every codeword `enc a`. -/
-theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.exists_bool_extension
-    {f : α → Bool} (hf : ComputableInPolyTime f enc encBool) :
-    ∃ g : List Bool → Bool, ComputableInPolyTime g encBits encBool ∧ ∀ a, g (enc a) = f a := by
-  obtain ⟨t, _, ht, -, k, State, hfin, tm, htm⟩ := hf
-  obtain ⟨p, hp⟩ :=
-    (PolyBounded.of_polynomiallyBounded (List.length (α := Bool)) ht).exists_polynomial
-  refine ⟨fun w => decide ((trackedRun tm (w, p.eval w.length)).1.output = [true]), ?_,
-    fun a => ?_⟩
-  · have hsteps : ComputableInPolyTime (fun w : List Bool => p.eval w.length) encBits encUnary :=
-      (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length encBits)
-    have hrun := (computableInPolyTime_trackedRun tm).comp (ComputableInPolyTime.id'.prod hsteps)
-    exact ComputableInPolyTime.decide_eq'
-      (ComputableInPolyTime.finiteCfg_output.comp (.fst' hrun)) (.const [true])
-  · dsimp only
-    rw [(trackedAgrees_trackedRun tm (enc a) (p.eval (enc a).length)).output,
-      ((htm a).runFrom_of_le (hp (enc a))).2]
-    cases f a <;> rfl
-
-/-- **Extension of a pair verifier to raw bit words.** A Boolean function computable in polynomial
-time on `encPair enc encBits` extends to one computable in polynomial time on
-`encPair encBits encBits` that agrees with it on `(enc a, w)`. -/
-theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.exists_pair_bool_extension
-    {V : α × List Bool → Bool} (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
-    ∃ W : List Bool × List Bool → Bool,
-      ComputableInPolyTime W (encPair encBits encBits) encBool ∧
-        ∀ a w, W (enc a, w) = V (a, w) := by
-  obtain ⟨g, hg, hagree⟩ := hV.exists_bool_extension
-  exact ⟨fun x => g (encPair encBits encBits x),
-    hg.comp (ComputableInPolyTime.of_eq fun _ => rfl), fun a w => hagree (a, w)⟩
 
 /-- Pulling a raw-word `Σₖ` language on `encBits` back along `enc` gives a `Σₖ` problem on
 `enc`. -/

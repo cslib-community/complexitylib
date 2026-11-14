@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
+import CslibFrontier.Computability.Complexity.Problems.TMSigmaSAT
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 
 /-! Clients of the complete-language collapse bridge, fixed-domain (`encBits`) polynomial-hierarchy
@@ -73,3 +74,7 @@ example (h : PH encBits = NP encBits) : PHComplete encCNF ThreeSAT :=
 example : (∃ (β : Type) (encB : β ↪ List Bool) (B : Set β), PHComplete encB B) ↔
     ∃ k, PH encBits = SigmaP k encBits :=
   exists_phComplete_iff_exists_PH_encBits_eq_SigmaP
+
+example : (∃ (β : Type) (encB : β ↪ List Bool) (B : Set β), PHComplete encB B) ↔
+    ∃ k, 1 ≤ k ∧ PiP k encBits = SigmaP k encBits :=
+  exists_phComplete_iff_exists_PiP_encBits_eq_SigmaP
