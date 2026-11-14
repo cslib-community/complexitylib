@@ -18,6 +18,7 @@ may forget hidden state; neither injectivity nor termination is required.
 ## Main results
 
 * `stateLaw_map`: exact one-step simulations transport finite-horizon state laws.
+* `stateLaw_map_pure`: a one-step invariant observation stays constant at every horizon.
 -/
 
 public section
@@ -36,5 +37,16 @@ theorem stateLaw_map (stepS : S → PMF S) (stepT : T → PMF T) (f : S → T)
     rw [stateLaw, PMF.map_bind, stateLaw, ← ih, PMF.bind_map]
     simp only [hstep]
     rfl
+
+/-- An observation unchanged by every supported transition stays equal to its
+initial value throughout the finite state laws. -/
+theorem stateLaw_map_pure (step : S → PMF S) (f : S → T)
+    (h : ∀ s, (step s).map f = PMF.pure (f s)) (n : ℕ) (s : S) :
+    (stateLaw step n s).map f = PMF.pure (f s) := by
+  induction n with
+  | zero => simp [stateLaw]
+  | succ n ih =>
+    simp only [stateLaw, PMF.map_bind, h]
+    exact ih
 
 end Cslib.Probability.ObservedProcess

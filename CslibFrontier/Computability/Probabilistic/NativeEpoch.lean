@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Probabilistic.NativeInterface
 public import CslibFrontier.Probability.PMF.StoppedProcess.Boundary
 import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
+import CslibFrontier.Probability.PMF.ObservedProcess.Map
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
 
@@ -166,15 +167,6 @@ theorem silent_memory (phase : Phase k Control Operation Private input) :
       simp [silentStep, StoppedProcess.beforeBoundary, boundary, phaseStep, dispatch,
         checkpointMemory, worldOf]
 
-private theorem silent_clock_memory (fuel : ℕ) (phase : Phase k Control Operation Private input) :
-    (ObservedProcess.stateLaw (silentStep machine env) fuel phase).map checkpointMemory =
-      PMF.pure (checkpointMemory phase) := by
-  induction fuel with
-  | zero => simp [ObservedProcess.stateLaw]
-  | succ fuel ih =>
-    simp only [ObservedProcess.stateLaw, PMF.map_bind, silent_memory]
-    exact ih
-
 /-- Every actual reached next-query/halting checkpoint retains exactly the
 previous oracle state and bill/duration history. -/
 theorem seek_memory (world : World k Control Operation Private input)
@@ -183,7 +175,8 @@ theorem seek_memory (world : World k Control Operation Private input)
     checkpointMemory phase = world.memory := by
   obtain ⟨_, fuel, hf⟩ := (seek_support machine env world phase).mp h
   have hm := (PMF.mem_support_map_iff checkpointMemory _ _).mpr ⟨phase, hf, rfl⟩
-  rw [silent_clock_memory, PMF.mem_support_pure_iff] at hm
+  rw [ObservedProcess.stateLaw_map_pure (silentStep machine env) checkpointMemory
+    (silent_memory machine env), PMF.mem_support_pure_iff] at hm
   exact hm
 
 /-- Actual terminal-law disintegration through the first query or halt.
