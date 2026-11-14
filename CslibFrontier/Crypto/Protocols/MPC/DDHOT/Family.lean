@@ -32,6 +32,10 @@ computationally indistinguishable from the output of the exact-sampling simulato
 This is a step towards [BonehShoup2023], Theorem 23.7 (p. 1058), not the cited result: the
 theorem asks for efficient simulators, and these simulators are not shown to be PPT (see the
 comparison below). Its reduction to DDH is the certified part.
+`CslibFrontier/Crypto/Protocols/MPC/DDHOT/Simulators.lean` gives PPT simulator families that run
+the same algorithms on exponents drawn with `sampleExp`, and proves the statement for them
+(`Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTStandaloneSemiHonestSecure`); the other differences
+listed below remain.
 
 The security games run against a two-stage distinguisher `DDHOTDistinguisher`, which plays the
 role of the environment `Z` in the source: given the security parameter `n` and group parameters
@@ -532,9 +536,10 @@ theorem isPPT_ddhOTReceiverToDDHDistinguisher {A : F.DDHOTDistinguisher {1}} (hA
 /-- A step towards [BonehShoup2023], Theorem 23.7, not the cited result: `F.DDH setup` implies
 that the real runs of DDH oblivious transfer are indistinguishable from the ideal runs with the
 exact-sampling simulators `ddhOTSenderSim` and `ddhOTReceiverSim`. The theorem also asks the
-simulators to be efficient, and these sample exact uniform exponents and are not shown to be PPT.
-The only premise is `F.DDH setup`; the reduction is certified by
-`isPPT_ddhOTReceiverToDDHDistinguisher`. -/
+simulators to be efficient, and these sample exact uniform exponents and are not shown to be PPT;
+`DDH.ddhOTStandaloneSemiHonestSecure` in `CslibFrontier/Crypto/Protocols/MPC/DDHOT/Simulators.lean`
+replaces them by PPT simulator families. The only premise is `F.DDH setup`; the reduction is
+certified by `isPPT_ddhOTReceiverToDDHDistinguisher`. -/
 theorem DDH.ddhOTRealIdealIndistinguishable_exactSim {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} (hDDH : F.DDH setup) :
     F.ddhOTRealIdealIndistinguishable setup (fun _ d => ddhOTSenderSim (F.generator d) (F.order d))

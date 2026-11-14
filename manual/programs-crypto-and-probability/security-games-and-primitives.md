@@ -1467,9 +1467,32 @@ the idealization collision error relative to `blockModeIdealExperiment` by `K ^ 
 queried blocks (`advantage_idealExperiment_ctrReduction_le`), and specializes to the modular-addition
 counter `ctrModCounter` whenever per-query length `ℓ ≤ 2 ^ n` (`ctrModCounter_injOn`,
 `ctrModCounter_injective_left`, `advantage_ctrCpaGame_ctrModCounter_randomFunction_le`,
-`advantage_ctrCpaGame_ctrModCounter_le`). The reduction is concrete (`ProbOracleComp`); no native
-multitape PPT statement is made. Concrete `BitString 8` evaluations and non-vacuous bounds are in
+`advantage_ctrCpaGame_ctrModCounter_le`). These typed reductions carry no efficiency certificate.
+Concrete `BitString 8` evaluations and non-vacuous bounds are in
 [`CslibFrontierTests/Crypto/CTRMode.lean`](../../CslibFrontierTests/Crypto/CTRMode.lean).
+
+The uniform statement is in
+[`Encryption/CTRMode/Uniform.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode/Uniform.lean)
+(Boneh–Shoup v0.6, §5.4.2 and Theorem 5.3 [bs23][bs23]). `ctrWordEncrypt` is randomized counter
+mode with `n`-bit blocks at parameter `n` for a word-level family, an instance of the random-IV
+stream envelope `ivStreamEncrypt`
+([`Encryption/IVStream.lean`](../../CslibFrontier/Crypto/Computational/Encryption/IVStream.lean)),
+with certified honest algorithms
+(`isPPTOn_ctrWordEncrypt`, `computableInPolyTime_ctrWordDecrypt`) and correctness
+(`ctrWordDecrypt_ctrWordEncrypt`). The reduction `ctrToPrfDistinguisher` is the shared random-IV
+stream reduction `ivStreamToPrfDistinguisher`
+([`Encryption/IVStream/Reduction.lean`](../../CslibFrontier/Crypto/Computational/Encryption/IVStream/Reduction.lean))
+with one PRF query per counter block. Its certificate `isOraclePPT_ctrToPrfDistinguisher` and its
+real- and ideal-game identities are instances of the shared ones
+(`isOraclePPT_ivStreamToPrfDistinguisher`, `eval_prfRealGame_ivStreamToPrfDistinguisher`,
+`eval_prfIdealGame_ivStreamToPrfDistinguisher`).
+`advantage_ctrWordCPAGame_le` reuses the typed collision bound above, and
+`PseudorandomFunction.indcpa_ctrWordEncrypt` proves `SymmetricINDCPAOn blockPairValid` from
+`PseudorandomFunction family` alone. `SymmetricINDCPAOn`
+([`Encryption/SymmetricCPA.lean`](../../CslibFrontier/Crypto/Computational/Encryption/SymmetricCPA.lean))
+is the many-query left-or-right game of Attack Game 5.2 with a challenge-pair predicate;
+`SymmetricCipher.INDCPA` is its `n`-bit case (`SymmetricCipher.indcpa_iff`). Examples are in
+[`CslibFrontierTests/Crypto/CTRModeUniform.lean`](../../CslibFrontierTests/Crypto/CTRModeUniform.lean).
 
 For the chosen-plaintext security of random-IV OFB mode, import
 [`Encryption/OFBMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode.lean)

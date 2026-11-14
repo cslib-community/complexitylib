@@ -50,7 +50,11 @@ instantiated on the canonical modular counter schedule `ctrModCounter` when `ℓ
    (`advantage_ctrCpaGame_le`, and `advantage_ctrCpaGame_ctrModCounter_le` for `ctrModCounter`).
 
 The PRF experiments are the concrete ones of `Cslib.Crypto.PRF` ([BonehShoup2023], Chapter 4). The
-reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is made.
+reductions here are typed `ProbOracleComp` programs without an efficiency certificate. The uniform
+statement, with a certified word-level reduction and the asymptotic theorem
+`PseudorandomFunction.indcpa_ctrWordEncrypt`, is in
+`CslibFrontier/Crypto/Computational/Encryption/CTRMode/Uniform.lean`, which reuses
+`advantage_idealExperiment_ctrReduction_le`.
 
 ## Main definitions
 
