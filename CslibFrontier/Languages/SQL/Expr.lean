@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
+-- `Fin.append_comp_castAdd` and `Fin.append_comp_natAdd`
+import Cslib.Computability.Circuit.Composition
 
 /-!
 # Resolved SQL expressions
@@ -187,18 +189,12 @@ theorem eval_subst {σ : Fin n → Expr m} {r : Row m} {d : Row n}
 /-- An expression over the left input of a join reads the left part of the joined row. -/
 theorem eval_rename_castAdd (e : Expr n) (r : Row n) (s : Row m) :
     (e.rename (Fin.castAdd m)).eval (Fin.append r s) = e.eval r := by
-  rw [eval_rename]
-  congr 1
-  funext i
-  exact Fin.append_left r s i
+  rw [eval_rename, Fin.append_comp_castAdd]
 
 /-- An expression over the right input of a join reads the right part of the joined row. -/
 theorem eval_rename_natAdd (e : Expr m) (r : Row n) (s : Row m) :
     (e.rename (Fin.natAdd n)).eval (Fin.append r s) = e.eval s := by
-  rw [eval_rename]
-  congr 1
-  funext i
-  exact Fin.append_right r s i
+  rw [eval_rename, Fin.append_comp_natAdd]
 
 /-- Evaluation depends on the substituted expressions only through their observations: if `σ i`
 and `σ' i` succeed together with the same result, so do `e.subst σ` and `e.subst σ'`. -/
