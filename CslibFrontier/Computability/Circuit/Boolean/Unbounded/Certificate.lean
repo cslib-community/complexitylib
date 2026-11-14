@@ -802,7 +802,7 @@ private theorem computableInPolyTime_overrideGates
       (encList (Circuit.encGate encOp)) := by
   simp only [overrideGates, overrideGate_eq]
   refine ComputableInPolyTime.mapWithInput
-    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.zipIdx _)).comp hg) ?_
+    (((ComputableInPolyTime.zipIdx _)).comp hg) ?_
   have hp := ComputableInPolyTime.id'
     (encIn := encPair encIn (encPair (Circuit.encGate encOp) encUnary))
   have hcl := hc.comp hp.fst'

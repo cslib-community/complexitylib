@@ -4,8 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+module
+-- upstream: local-only (test driver)
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 
 /-! Unary indexed enumeration of lists, including empty and repeated entries. -/
 
@@ -25,7 +29,7 @@ example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
     ComputableInPolyTime (fun x => let values := list x; values.zipIdx)
       input (encList (encPair enc encUnary)) := by
   fail_if_success (clear hlist; fun_prop)
-  exact .of_tidy (by polytime)
+  fun_prop
 
 -- Framing supplies the length for any element encoding, without an element decoder.
 example {α : Type} (enc : α ↪ List Bool) :
@@ -44,5 +48,18 @@ example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
     ComputableInPolyTime (fun x => (list x).length) input encUnary := by
   fail_if_success (clear hlist; fun_prop)
   fun_prop
+
+-- Computed replacement retains the original list encoding and unary index convention.
+example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
+    (list : Input → List α) (index : Input → ℕ) (value : Input → α)
+    (hlist : ComputableInPolyTime list input (encList enc))
+    (hindex : ComputableInPolyTime index input encUnary)
+    (hvalue : ComputableInPolyTime value input enc) :
+    ComputableInPolyTime (fun x => (list x).set (index x) (value x))
+      input (encList enc) := by
+  fun_prop
+
+example : ([false, false] : List Bool).set 1 true = [false, true] := rfl
+example : ([false, false] : List Bool).set 2 true = [false, false] := rfl
 
 end CslibFrontierTests.ListZipIdx

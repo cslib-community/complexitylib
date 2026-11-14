@@ -159,7 +159,7 @@ private theorem blackConstraints_polyTime [Finite Rel] (encRel : Rel ↪ List Bo
     ComputableInPolyTime (blackConstraints arity sem) (encCSP encRel encNat)
       (encCSP encTable encNat) := by
   have ht : ComputableInPolyTime (differenceTable arity sem) encRel encTable := .of_finite _
-  have hz := ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.zipIdx
+  have hz := (ComputableInPolyTime.zipIdx
     (encConstraint encRel encNat))
   have hscope := blackScope_polyTime encRel
   unfold blackConstraints encCSP
@@ -185,7 +185,7 @@ private theorem whiteConstraints_polyTime :
   have hz : ComputableInPolyTime (fun p : ℕ × List (List ℕ) => p.2.zipIdx)
       (encPair encUnary (encList (encList encNat)))
       (encList (encPair (encList encNat) encUnary)) :=
-    .of_tidy ((ComputableTidilyInPolyTime.zipIdx (encList encNat)).comp (by fun_prop))
+    ((ComputableInPolyTime.zipIdx (encList encNat)).comp (by fun_prop))
   unfold whiteConstraints
   apply ComputableInPolyTime.flatMapWithInput hz
   have hp := auxiliaryPrefix_polyTime.comp
