@@ -182,6 +182,7 @@ import CslibFrontier.Crypto.Computational.SIS.Ajtai
 import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
+import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
@@ -5249,8 +5250,31 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     advantages are two-world differences (twice HHK17's). The proof composes the T and U-notbot \
     hops directly instead of through OW-PCA; roIndCcaGame draws both real (H) and ideal challenge \
     keys from the arbitrary sampler S.sampleKey (uniform sampleKey recovers HHK17 §2.2 Def. 2.4 / \
-    Fig. 4). Concrete bound only: no security parameter and no running-time certificate for the \
-    reduction. FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
+    Fig. 4). Concrete bound for one scheme: no security parameter and no running-time certificate \
+    for the reduction; the asymptotic word-level theorem is \
+    fujisaki-okamoto-notbot-word-rom-ind-cca. FO^⊥ is registered separately as \
+    fujisaki-okamoto-bot-ind-cca."
+
+register_result "fujisaki-okamoto-notbot-word-rom-ind-cca" where
+  title := "ROM IND-CCA security of the word-level FO-notbot KEM from IND-CPA of the PKE family"
+  topic := "cryptography"
+  sources := [
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
+      locator := "§3.1 and §3.2.2 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.INDCPA.romINDCCA
+  ]
+  scope := "Asymptotic: for a word-level PKE family that is IND-CPA secure against uniform strict \
+    PPT adversaries (challenge messages in its message space), efficient, with ciphertexts in its \
+    ciphertext space, δ-correct and γ-spread with δ, 2^{-γ} and 2^{-msgLen} negligible, and a \
+    polynomial-time key length, the domain-separated FO-notbot KEM is IND-CCA secure in the random \
+    oracle model against uniform strict oracle PPT adversaries with any number of decapsulation \
+    queries. The proof applies IND-CPA to the explicit reduction romCpaReductionWord, certified \
+    uniform strict PPT, through the typed bridge to the concrete bound \
+    fujisaki-okamoto-notbot-ind-cca. The game answers out-of-domain oracle requests with the empty \
+    word; advantages are two-world differences (twice HHK17's). FO^⊥ is not covered at the word \
+    level."
 
 register_result "fujisaki-okamoto-bot-ind-cca" where
   title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"

@@ -1296,8 +1296,13 @@ properties of the family. `WordPKE.IsEfficient.exists_typedAdversary` turns each
 adversary into a typed adversary at each parameter (`WordPKE.savedCoinAdversary`, a replay of its
 saved coins) with polynomially many `G` and `H` queries; when the ciphertexts fit, the word game is
 its typed `Scheme.roIndCcaGame`, and the advantage of `romCpaReductionWord` is the typed
-`cpaAdvantage` of `Scheme.romCpaReduction`. Proving `ROMINDCCA` from IND-CPA of the family remains
-for #5293.
+`cpaAdvantage` of `Scheme.romCpaReduction`.
+[`FujisakiOkamoto/WordSecurity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordSecurity.lean)
+proves the asymptotic theorem `WordPKE.INDCPA.romINDCCA`: IND-CPA security of an efficient family
+whose ciphertexts fit, which is `δ`-correct and `γ`-spread with `δ`, `2^{-γ}` and `2^{-msgLen}`
+negligible, implies `ROMINDCCA`. Its proof applies `INDCPA` to `romCpaReductionWord A` through
+`isPPT_romCpaReductionWord` and bounds the rest with `Scheme.indCcaRomAdvantage_le`. `FO^⊥` has no
+word-level theorem yet.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
