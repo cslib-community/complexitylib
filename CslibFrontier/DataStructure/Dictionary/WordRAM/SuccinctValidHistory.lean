@@ -321,7 +321,9 @@ theorem validProg_gmPushSlab {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {s : M
       (gmPushSlabProg U V w n_max h_space d) := by
   obtain ⟨hq_idx_lt, h0_lt, htop_idx_lt, hownB_lt, hownS_lt, hbel_lt, habv_lt, hdir_lt, -, -⟩ :=
     gmPushSlab_bounds (V := V) (h_space := h_space) ⟨hslab, hb, hp_lt, hb_pos⟩
-  simp only [gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+  dsimp only [gmPushSlabProg, gmPushSlabGenProg]
+  simp only [ite_dirSlabs_mk]
+  simp only [readGMGenProg_mk, writeGMGenProg_mk,
     p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   refine validProg_bind (validProg_readGM hw hq_idx_lt) ?_
   refine validProg_bind (validProg_readGM hw h0_lt) ?_
@@ -366,7 +368,9 @@ theorem validProg_gmRelinkMovedSlab {U V w n_max h_space : ℕ} {d : (ℕ × ℕ
       (gmRelinkMovedSlabProg U V w n_max h_space d) := by
   obtain ⟨hownB_last_lt, hownS_last_lt, hq_last_lt, hdir_lt, -, htop_lt⟩ :=
     gmRelinkMovedSlab_bounds hb_pos hpre
-  simp only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+  dsimp only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg]
+  simp only [ite_dirSlabs_mk]
+  simp only [readGMGenProg_mk, writeGMGenProg_mk,
     p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   refine validProg_bind (validProg_readGM hw hownB_last_lt) ?_
   refine validProg_bind (validProg_readGM hw hownS_last_lt) ?_

@@ -51,7 +51,11 @@ implementation; the corresponding `_mk` equation connects it to the curried inte
 Effect and admissibility proofs can simplify with the packed definition and its parameter
 projection equations and the called operations’ `_mk` equations before applying the existing
 operation specifications. For micro-chain loops, use `boundedWhile_microStepGenProg_mk` to
-transport the loop guard and step together.
+transport the loop guard and step together. For slab-directory conditionals, replace the whole
+`if` using the private `ite_dirSlabs_mk` equality before simplifying parameter projections, as in
+`SuccinctSlabPool` and its admissibility clients in `SuccinctValidHistory`. This also specializes
+the hidden decision instance; simplifying only the proposition can leave an instance that
+`rw` or `split_ifs` cannot type-check at their transparency level.
 
 ### FKS two-level perfect hashing (static, abstract cost model)
 
