@@ -46,7 +46,7 @@ def flatten(table, prefix=''):
         if isinstance(value, dict):
             yield from flatten(value, key)
         else:
-            yield key.removeprefix('weak.'), value
+            yield key, value
 
 for name, value in flatten(options):
     flags.append(f'-D{name}={str(value).lower()}')
