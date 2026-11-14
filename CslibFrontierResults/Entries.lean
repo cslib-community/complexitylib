@@ -1338,6 +1338,7 @@ register_result "rompel-uowhf" where
   topic := "cryptography"
   sources := [
     { paper := Rompel1990, theorem := unverified, locator := unverified },
+    { paper := Shoup2000, theorem := unverified, locator := unverified },
     { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 26" }
   ]
   theorems := [
@@ -1350,8 +1351,10 @@ register_result "rompel-uowhf" where
     AdversaryInaccessibleEntropyFamily), and hence every uniform one-way function on bit strings, \
     gives a target collision-resistant keyed hash family on all bit strings against uniform \
     strict PPT adversaries that commit to a target before seeing the key. `rompelHash` is secure \
-    for every shrinking collision grid. Each one-bit step takes a fresh subkey, so keys are \
-    polynomial but not as compact as the source's O(|y| log t) bound. Asymptotic security."
+    for every shrinking collision grid; amplification yields `(Nat.log 2 n + 1)`-bit shrinkage \
+    and Shoup's XOR-masking composition yields shared `O(|y| log t)` keys satisfying \
+    `rompelCompression_keyLen_le` (one key shared across candidates because \
+    `rompelCompressionInverter` only simulates keys at `goodIdx n`). Asymptotic security."
 
 register_result "resolution" where
   title := "Haken: pigeonhole formulas require long resolution proofs"

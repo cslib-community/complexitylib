@@ -4482,6 +4482,7 @@ public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.Basic
 public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.OneWay
 public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.Repetition
+public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.ShoupComposition
 public import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 public import CslibFrontier.Crypto.Computational.IndexedSignature
 public import CslibFrontier.Crypto.Computational.IndexedSignature.Counter

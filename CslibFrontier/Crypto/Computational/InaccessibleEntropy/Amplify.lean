@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
@@ -22,29 +23,34 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
-# Gap amplification and candidate grid for 1-bit shrinking collision resistance
+# Gap amplification and candidate grid for logarithmic-bit shrinking collision resistance
 
 Combining parallel repetition (`Repetition.lean`, Lemma 5.3), two-universal input hashing, and
-1-bit shrinking output hashing (`EntropyReduction.lean`, Lemmas 5.4 and 5.5), this module
-formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp. 30–31):
+$(\lfloor \log_2 n \rfloor + 1)$-bit shrinking output hashing (`EntropyReduction.lean`, Lemmas 5.4
+and 5.5), this module formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1
+(pp. 30–31):
 
-1. **Concrete parameter schedule** (`ampSlack`, `ampReps`, `ampGridCount`): from any
+1. **Concrete parameter schedule** (`ampSlack`, `ampReps`, `ampGridCount`, `ampShrinkLen`): from any
    `AdversaryInaccessibleEntropyFamily` $F$ (`[HHRVW2020]`, Definition 3.9, p. 15) with input width
    $n_0(n)$ and gap denominator $D(n) \ge 1$, set
    $$\Delta(n) = 3 (n + 2) D(n) (n_0(n) + 1)^2, \qquad
      t(n) = 6 D(n) \Delta(n), \qquad
-     \kappa(n) = 6 D(n) (n_0(n) + 1) + 3.$$
+     \kappa(n) = 6 D(n) (n_0(n) + 1) + 3,$$
+   and logarithmic output shrinkage $s(n) = \lfloor \log_2 n \rfloor + 1$ (`ampShrinkLen n`).
    None of these schedules or evaluators mention any accessible-set family. At security parameters
    $n \ge N_0$ where $H(Z \mid F_0(Z)) - \mathbb{E}[\log_2 |L_A(Z)|] \ge 1 / D(n)$, repeating
    $t(n)$ times amplifies the expected entropy gap to at least $6 \Delta(n)$, while the Hoeffding
-   exponent $2 \Delta(n)^2 / (t(n) \cdot n_0(n)^2)$ exceeds $n + 2$.
+   exponent $2 \Delta(n)^2 / (t(n) \cdot n_0(n)^2)$ exceeds $n + 2$, and the output-hash factor
+   $2^{s(n)} \le 2(n + 1)$ leaves total error $(4 n + 6) \cdot 2^{-n}$ negligible.
 2. **Uniform polynomial-time candidate grid** (`ShrinkingCollisionGrid`): because the real entropy
    $k_0(n) = H(Z \mid F_0(Z))$ need not be efficiently computable and the accessible-set family
    $L_A$ may depend on the collision-finder, the grid exposes $\kappa(n)$ uniformly polynomial-time
    candidates $F_3^{(q \cdot \Delta(n))}$ ($0 \le q < \kappa(n)$), all sharing the same input width
-   `inLen n` and output width `outLen n` with `outLen n + 1 = inLen n` and `n + 1 ≤ outLen n`.
+   `inLen n`, output width `outLen n`, and shrinkage `shrinkLen n ≥ 1` with
+   `outLen n + shrinkLen n = inLen n` and `n + 1 ≤ outLen n`.
 3. **Adversary-dependent collision-resistant candidate on random inputs**
-   (`AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
+   (`AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid_log`,
+   `AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
    `InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
    `OneWay.exists_shrinkingCollisionGrid`): because neither `shrunkHashEscapeInverter` nor
    `repEscapeInverter` reads the candidate index, each uniform strict-PPT adversary `B` against the
@@ -52,18 +58,21 @@ formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp
    3.9 to $A_0(B)$ yields a witnessing family $L_{A_0(B)}$ whose mean $a_0(n)$ places
    $q^*_B(n) = \lfloor t(n) a_0(n) / \Delta(n) \rfloor_+ + 3 < \kappa(n)$ inside
    $[t a_0 + 2 \Delta, t k_0 - 3 \Delta]$, making candidate $q^*_B(n)$ collision-resistant on random
-   inputs against `B`. Target shifts, length-increasing cascades, and $\kappa(n)$-way concatenation
-   for target collision resistance and Rompel's signature theorem build on `ShrinkingCollisionGrid`
-   in `CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision` and
+   inputs against `B`. Target shifts, Shoup-masked cascades, and $\kappa(n)$-way concatenation for
+   target collision resistance and Rompel's signature theorem build on `ShrinkingCollisionGrid` in
+   `CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision` and
    `CslibFrontier.Crypto.Computational.Rompel`.
 
 ## Main definitions
 
-* `Cslib.Crypto.ampSlack`, `Cslib.Crypto.ampReps`, `Cslib.Crypto.ampGridCount`: pure-`ℕ`
-  amplification and grid-size schedule for an `AdversaryInaccessibleEntropyFamily`.
-* `Cslib.Crypto.ShrinkingCollisionGrid`: uniform polynomial-time grid of strictly `1`-bit shrinking
-  candidates admitting an adversary-dependent collision-resistant candidate sequence on random
-  inputs.
+* `Cslib.Crypto.ampSlack`, `Cslib.Crypto.ampReps`, `Cslib.Crypto.ampGridCount`,
+  `Cslib.Crypto.ampShrinkLen`: pure-`ℕ` amplification, shrinkage, and grid-size schedule for an
+  `AdversaryInaccessibleEntropyFamily`.
+* `Cslib.Crypto.ShrinkingCollisionGrid`: uniform polynomial-time grid of shrinking candidates
+  (`shrinkLen n ≥ 1`) admitting an adversary-dependent collision-resistant candidate sequence on
+  random inputs.
+* `Cslib.Crypto.AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid_log`:
+  `log n`-bit shrinking grid witness (`shrinkLen n = Nat.log 2 n + 1`).
 
 ## Main results
 
@@ -105,9 +114,13 @@ Section 5.1.5, STEP 5, p. 31). -/
 @[expose] def ampGridCount (F : AdversaryInaccessibleEntropyFamily) (n : ℕ) : ℕ :=
   6 * F.denom n * (F.inLen n + 1) + 3
 
+/-- Logarithmic output shrinkage $\lfloor \log_2 n \rfloor + 1$ bits (`[HHRVW2020]`, Section 5.1.3,
+Lemma 5.5, p. 29, and Section 5.1.5, STEP 3, p. 31). Reuses `rompelTruncWidth`. -/
+@[expose] def ampShrinkLen (n : ℕ) : ℕ := rompelTruncWidth n
+
 /-- Effective repeated input bit width: equals `ampReps F n * F.inLen n` whenever `1 ≤ F.inLen n`
-(in particular for all `n ≥ N₀`), with a fallback `n + 2` when `F.inLen n = 0` so `1`-bit shrinkage
-holds unconditionally at every `n : ℕ`. -/
+(in particular for all `n ≥ N₀`), with a fallback `n + 2` when `F.inLen n = 0` so nontrivial
+shrinkage holds unconditionally at every `n : ℕ`. -/
 @[expose] def ampRepInLen (F : AdversaryInaccessibleEntropyFamily) (n : ℕ) : ℕ :=
   if F.inLen n = 0 then n + 2 else ampReps F n * F.inLen n
 
@@ -121,16 +134,19 @@ holds unconditionally at every `n : ℕ`. -/
   if F.inLen n = 0 then List.replicate (n + 2) false
   else repEvalWord (ampReps F n) (F.inLen n) (F.evalWord n) u
 
-/-- A uniform polynomial-time candidate grid of strictly `1`-bit shrinking hash functions
+/-- A uniform polynomial-time candidate grid of shrinking hash functions
 $F_3^{(n, q)} : \{0, 1\}^{\mathrm{inLen}(n)} \to \{0, 1\}^{\mathrm{outLen}(n)}$ ($0 \le q <
-\mathrm{gridCount}(n)$) such that every uniform strict-PPT adversary `B` has an in-range candidate
-sequence `goodIdx` (which may depend on `B`) that is collision-resistant on random inputs against
-`B` (`[HHRVW2020]`, Section 5.1.5, STEPS 1–3 and STEP 5, pp. 30–31). -/
+\mathrm{gridCount}(n)$) with shrinkage `shrinkLen n ≥ 1` such that every uniform strict-PPT
+adversary `B` has an in-range candidate sequence `goodIdx` (which may depend on `B`) that is
+collision-resistant on random inputs against `B` (`[HHRVW2020]`, Section 5.1.5, STEPS 1–3 and
+STEP 5, pp. 30–31). -/
 structure ShrinkingCollisionGrid where
   /-- Input bit width $N_3(n)$ shared by all candidates at security parameter $n$. -/
   inLen : ℕ → ℕ
-  /-- Output bit width $M_3(n) = N_3(n) - 1$ shared by all candidates at security parameter $n$. -/
+  /-- Output bit width $M_3(n) = N_3(n) - \mathrm{shrinkLen}(n)$ shared by all candidates. -/
   outLen : ℕ → ℕ
+  /-- Per-evaluation bit shrinkage $s(n) \ge 1$ shared by all candidates. -/
+  shrinkLen : ℕ → ℕ
   /-- Polynomially bounded number of candidate indices $\kappa(n) \ge 1$. -/
   gridCount : ℕ → ℕ
   /-- Uniform word-level evaluator `(n, q, raw) ↦ evalGrid n q raw`. -/
@@ -139,6 +155,8 @@ structure ShrinkingCollisionGrid where
   polyTime_inLen : ComputableInPolyTime inLen encUnary encUnary
   /-- Plain polynomial-time unary output-length certificate. -/
   polyTime_outLen : ComputableInPolyTime outLen encUnary encUnary
+  /-- Plain polynomial-time unary shrinkage-width certificate. -/
+  polyTime_shrinkLen : ComputableInPolyTime shrinkLen encUnary encUnary
   /-- Plain polynomial-time unary grid-count certificate. -/
   polyTime_gridCount : ComputableInPolyTime gridCount encUnary encUnary
   /-- Plain polynomial-time uniform grid-evaluation certificate. -/
@@ -147,10 +165,12 @@ structure ShrinkingCollisionGrid where
     (encPair encUnary (encPair encUnary encBits)) encBits
   /-- Nonempty candidate range at every security parameter. -/
   gridCount_pos : ∀ n, 1 ≤ gridCount n
+  /-- Strict positive shrinkage (`≥ 1` bit) at every security parameter. -/
+  shrinkLen_pos : ∀ n, 1 ≤ shrinkLen n
   /-- Nontrivial output length growing with the security parameter. -/
   le_outLen : ∀ n, n + 1 ≤ outLen n
-  /-- Strict `1`-bit shrinkage at every security parameter. -/
-  outLen_add_one : ∀ n, outLen n + 1 = inLen n
+  /-- Exact `shrinkLen n`-bit shrinkage at every security parameter. -/
+  outLen_add_shrink : ∀ n, outLen n + shrinkLen n = inLen n
   /-- Exact output length `outLen n` for every candidate and raw word. -/
   length_evalGrid : ∀ n q raw, (evalGrid n q raw).length = outLen n
   /-- Every uniform strict-PPT adversary `B` admits an in-range candidate sequence `goodIdx` that is
@@ -186,6 +206,20 @@ theorem computableInPolyTime_ampGridCount (F : AdversaryInaccessibleEntropyFamil
     ComputableInPolyTime (ampGridCount F) encUnary encUnary := by
   unfold ampGridCount
   fun_prop
+
+@[fun_prop]
+theorem computableInPolyTime_ampShrinkLen :
+    ComputableInPolyTime ampShrinkLen encUnary encUnary :=
+  computableInPolyTime_rompelTruncWidth
+
+theorem ampShrinkLen_pos (n : ℕ) : 1 ≤ ampShrinkLen n :=
+  Nat.succ_pos _
+
+theorem ampShrinkLen_le (n : ℕ) : ampShrinkLen n ≤ n + 1 :=
+  Nat.add_le_add_right (Nat.log_le_self 2 n) 1
+
+theorem two_pow_ampShrinkLen_le (n : ℕ) : 2 ^ ampShrinkLen n ≤ 2 * (n + 1) :=
+  two_pow_rompelTruncWidth_le n
 
 @[fun_prop]
 theorem computableInPolyTime_ampRepInLen (F : AdversaryInaccessibleEntropyFamily) :
@@ -237,14 +271,16 @@ private theorem le_ampRepInLen (F : AdversaryInaccessibleEntropyFamily) (n : ℕ
 private theorem computableInPolyTime_shrunkHashInLen_amp
     (F : AdversaryInaccessibleEntropyFamily) :
     ComputableInPolyTime
-      (fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
+      (fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n) (ampShrinkLen n))
+      encUnary encUnary := by
   unfold shrunkHashInLen outHashLen inputHashInLen inputHashOutLen
   fun_prop
 
 private theorem computableInPolyTime_shrunkHashOutLen_amp
     (F : AdversaryInaccessibleEntropyFamily) :
     ComputableInPolyTime
-      (fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
+      (fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n) (ampShrinkLen n))
+      encUnary encUnary := by
   unfold shrunkHashOutLen outHashLen inputHashInLen inputHashOutLen
   fun_prop
 
@@ -252,7 +288,7 @@ private theorem computableInPolyTime_shrunkHashEvalWord_amp
     (F : AdversaryInaccessibleEntropyFamily) :
     ComputableInPolyTime
       (fun ⟨n, q, raw⟩ => shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
-        (ampRepEvalWord F n) (q * ampSlack F n) raw)
+        (ampRepEvalWord F n) (q * ampSlack F n) (ampShrinkLen n) raw)
       (encPair encUnary (encPair encUnary encBits)) encBits := by
   fun_prop
 
@@ -334,19 +370,19 @@ private theorem amp_randomCollisionGame_succProbability_le
     Game.succProbability (ProbComp.eval
       (randomCollisionGame
         (fun k => shrunkHashEvalWord (ampRepInLen F k) (ampRepOutLen F k)
-          (ampRepEvalWord F k) (ampGoodIdx F accSet N₀ k * ampSlack F k))
-        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k)) B n)) ≤
+          (ampRepEvalWord F k) (ampGoodIdx F accSet N₀ k * ampSlack F k) (ampShrinkLen k))
+        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k) (ampShrinkLen k)) B n)) ≤
       (dyadicSize (ampReps F n) : ℝ≥0) *
         Game.succProbability (ProbComp.eval
           (accessibleEscapeGame F.evalWord F.inLen accSet
             (repEscapeInverter (ampReps F) F.inLen
               (shrunkHashEscapeInverter
                 (fun k => ampReps F k * F.inLen k)
-                (fun k => ampReps F k * F.outLen k) B)) n)) +
-      (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
+                (fun k => ampReps F k * F.outLen k) ampShrinkLen B)) n)) +
+      ((4 * n + 6 : ℕ) : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
   let n₁True (k : ℕ) : ℕ := ampReps F k * F.inLen k
   let m₁True (k : ℕ) : ℕ := ampReps F k * F.outLen k
-  let B₁ := shrunkHashEscapeInverter n₁True m₁True B
+  let B₁ := shrunkHashEscapeInverter n₁True m₁True ampShrinkLen B
   let w₀ := F.inLen n
   let m₀ := F.outLen n
   let D := F.denom n
@@ -375,30 +411,35 @@ private theorem amp_randomCollisionGame_succProbability_le
   have hgame_eq :
       randomCollisionGame
         (fun k => shrunkHashEvalWord (ampRepInLen F k) (ampRepOutLen F k)
-          (ampRepEvalWord F k) (ampGoodIdx F accSet N₀ k * ampSlack F k))
-        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k)) B n =
+          (ampRepEvalWord F k) (ampGoodIdx F accSet N₀ k * ampSlack F k) (ampShrinkLen k))
+        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k) (ampShrinkLen k)) B n =
       randomCollisionGame
         (fun k => shrunkHashEvalWord (n₁True k) (m₁True k)
           (repEvalWord (ampReps F k) (F.inLen k) (F.evalWord k))
-          (ampGoodIdx F accSet N₀ k * ampSlack F k))
-        (fun k => shrunkHashInLen (n₁True k) (m₁True k)) B n := by
+          (ampGoodIdx F accSet N₀ k * ampSlack F k) (ampShrinkLen k))
+        (fun k => shrunkHashInLen (n₁True k) (m₁True k) (ampShrinkLen k)) B n := by
     simp only [randomCollisionGame, hn₁_eq, hm₁_eq, heval₁_eq, t, w₀]
   let A_max : ℝ := (t : ℝ) * a₀ + (Δ : ℝ)
   let K_min : ℝ := (t : ℝ) * k₀ - (Δ : ℝ)
-  have hn₁True_pos : 1 ≤ n₁True n := by
-    have ht_pos : 1 ≤ t := by
-      have hslack := le_ampSlack F n
-      have hd := F.denom_pos n
-      dsimp only [t, ampReps]; nlinarith
-    exact Nat.mul_le_mul ht_pos hw₀_pos
+  have ht_ge : n + 2 ≤ t := by
+    have hslack := le_ampSlack F n
+    have hd := F.denom_pos n
+    dsimp only [t, ampReps]; nlinarith
+  have hs_le : ampShrinkLen n ≤ inputHashInLen (n₁True n) := by
+    have hn₁_ge : n + 2 ≤ n₁True n := by
+      calc n + 2 = (n + 2) * 1 := (Nat.mul_one _).symm
+        _ ≤ t * w₀ := Nat.mul_le_mul ht_ge hw₀_pos
+    have hlog := ampShrinkLen_le n
+    unfold inputHashInLen
+    nlinarith
   have hlen_rep (u : List Bool) (_ : u.length = n₁True n) :
       (repEvalWord t w₀ (F.evalWord n) u).length = m₁True n :=
     length_repEvalWord (F.length_evalWord n) u
   have hcoll := shrunkHash_randomCollision_le n₁True m₁True
-    (fun k => ampGoodIdx F accSet N₀ k * ampSlack F k)
+    (fun k => ampGoodIdx F accSet N₀ k * ampSlack F k) ampShrinkLen
     (fun k => repEvalWord (ampReps F k) (F.inLen k) (F.evalWord k))
     (fun k => repBitAccessibleSet (ampReps F k) (F.inLen k) (accSet k))
-    B n hn₁True_pos hlen_rep A_max K_min
+    B n hs_le hlen_rep A_max K_min
   have hrep_esc := repEscape_le_dyadicSize_mul_escape (ampReps F) F.inLen F.outLen F.evalWord
     accSet B₁ n (F.length_evalWord n)
   have hΔ_ge : (3 * (n + 2) : ℝ) ≤ (Δ : ℝ) := by exact_mod_cast le_ampSlack F n
@@ -440,55 +481,97 @@ private theorem amp_randomCollisionGame_succProbability_le
     Real.two_rpow_le_half_pow n (by rw [hmin_eq]; dsimp only [A_max]; linarith)
   have hpow_out : (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min) ≤ (1 / 2 : ℝ) ^ n :=
     Real.two_rpow_le_half_pow n (by rw [hmin_eq]; dsimp only [K_min]; linarith)
+  have hshrink_pow : (2 : ℝ) ^ ampShrinkLen n ≤ 2 * ((n : ℝ) + 1) := by
+    exact_mod_cast two_pow_ampShrinkLen_le n
+  have hout_term :
+      (2 : ℝ) ^ ampShrinkLen n * (((PMF.uniformOfFintype (BitString (n₁True n))).toOuterMeasure
+          {z | realSampleEntropy (wordToFinMap (n₁True n) (m₁True n)
+            (repEvalWord t w₀ (F.evalWord n))) z ≤ K_min}).toReal +
+        (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min)) ≤
+        4 * ((n : ℝ) + 1) * (1 / 2 : ℝ) ^ n := by
+    calc
+      (2 : ℝ) ^ ampShrinkLen n * (((PMF.uniformOfFintype (BitString (n₁True n))).toOuterMeasure
+            {z | realSampleEntropy (wordToFinMap (n₁True n) (m₁True n)
+              (repEvalWord t w₀ (F.evalWord n))) z ≤ K_min}).toReal +
+          (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min))
+        ≤ (2 * ((n : ℝ) + 1)) * ((1 / 2 : ℝ) ^ n + (1 / 2 : ℝ) ^ n) :=
+          mul_le_mul hshrink_pow (add_le_add htail_ent hpow_out) (by positivity) (by positivity)
+      _ = 4 * ((n : ℝ) + 1) * (1 / 2 : ℝ) ^ n := by ring
   rw [hgame_eq, ← NNReal.coe_le_coe]
   dsimp only [n₁True, m₁True, B₁, t, w₀, m₀, j₀, Δ]
-    at hcoll hrep_esc htail_acc htail_ent hpow_in hpow_out ⊢
-  push_cast at hcoll hrep_esc hpow_in hpow_out ⊢
-  linarith [hcoll, hrep_esc, htail_acc, htail_ent, hpow_in, hpow_out]
+    at hcoll hrep_esc htail_acc hpow_in hout_term ⊢
+  push_cast at hcoll hrep_esc hpow_in hout_term ⊢
+  linarith [hcoll, hrep_esc, htail_acc, hpow_in, hout_term]
 
 /-- **`[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1, STEPS 1–3 (pp. 30–31) from Definition
 3.9**: every `AdversaryInaccessibleEntropyFamily` yields a uniform polynomial-time
-`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates. -/
-theorem AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid
+`ShrinkingCollisionGrid` of strictly `(Nat.log 2 n + 1)`-bit shrinking hash candidates. -/
+theorem AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid_log
     (F : AdversaryInaccessibleEntropyFamily) :
-    Nonempty ShrinkingCollisionGrid := by
+    ∃ G : ShrinkingCollisionGrid, ∀ n, G.shrinkLen n = Nat.log 2 n + 1 := by
   refine ⟨{
-    inLen := fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)
-    outLen := fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)
+    inLen := fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n) (ampShrinkLen n)
+    outLen := fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n) (ampShrinkLen n)
+    shrinkLen := ampShrinkLen
     gridCount := ampGridCount F
     evalGrid := fun n q raw =>
       shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
-        (ampRepEvalWord F n) (q * ampSlack F n) raw
+        (ampRepEvalWord F n) (q * ampSlack F n) (ampShrinkLen n) raw
     polyTime_inLen := computableInPolyTime_shrunkHashInLen_amp F
     polyTime_outLen := computableInPolyTime_shrunkHashOutLen_amp F
+    polyTime_shrinkLen := computableInPolyTime_ampShrinkLen
     polyTime_gridCount := computableInPolyTime_ampGridCount F
     polyTime_evalGrid := computableInPolyTime_shrunkHashEvalWord_amp F
     gridCount_pos := fun n => by unfold ampGridCount; omega
+    shrinkLen_pos := ampShrinkLen_pos
     le_outLen := fun n => by
       have hn₁ : n + 2 ≤ ampRepInLen F n := le_ampRepInLen F n
-      have houtH : n + 1 ≤ outHashLen (ampRepInLen F n) := by
-        unfold outHashLen inputHashInLen; omega
+      have hs : ampShrinkLen n ≤ n + 1 := ampShrinkLen_le n
+      have hsum : n + 1 + ampShrinkLen n ≤ inputHashInLen (ampRepInLen F n) := by
+        unfold inputHashInLen; nlinarith
+      have houtH : n + 1 ≤ outHashLen (ampRepInLen F n) (ampShrinkLen n) := by
+        unfold outHashLen; omega
       unfold shrunkHashOutLen; omega
-    outLen_add_one := fun n =>
-      shrunkHashOutLen_add_one (by have := le_ampRepInLen F n; omega) (ampRepOutLen F n)
-    length_evalGrid := fun n q raw => length_shrunkHashEvalWord _ _ _ _ _
-    exists_good_candidate := fun B hB => ?_
-  }⟩
-  have hn₁True_poly : ComputableInPolyTime (fun k => ampReps F k * F.inLen k) encUnary encUnary :=
-    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_inLen
-  have hm₁True_poly : ComputableInPolyTime (fun k => ampReps F k * F.outLen k) encUnary encUnary :=
-    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_outLen
-  have hB₁_ppt := isPPT_shrunkHashEscapeInverter hn₁True_poly hm₁True_poly hB
-  have hB₀_ppt := isPPT_repEscapeInverter (computableInPolyTime_ampReps F) F.polyTime_inLen hB₁_ppt
-  obtain ⟨accSet, hself, _hsub, ⟨N₀, hN₀⟩, hesc_neg⟩ := F.exists_accessibleSet _ hB₀_ppt
-  refine ⟨ampGoodIdx F accSet N₀, ampGoodIdx_lt_ampGridCount F accSet hN₀, ?_⟩
-  have hdyad_pb : Cslib.PolynomiallyBounded (fun n => dyadicSize (ampReps F n)) :=
-    dyadicSize_polynomiallyBounded.comp (computableInPolyTime_ampReps F).polynomiallyBounded
-  have hgeom_neg : Negligible (fun n => (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
-    (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).const_mul 6
-  refine negligible_of_eventually_le ((hesc_neg.polynomiallyBounded_mul hdyad_pb).add hgeom_neg) ?_
-  filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
-  exact amp_randomCollisionGame_succProbability_le F accSet hself hN₀ B hn
+    outLen_add_shrink := fun n => shrunkHashOutLen_add_shrink (n₁ := ampRepInLen F n) (by
+      have hn₁ : n + 2 ≤ ampRepInLen F n := le_ampRepInLen F n
+      have hs : ampShrinkLen n ≤ n + 1 := ampShrinkLen_le n
+      unfold inputHashInLen; nlinarith) (ampRepOutLen F n)
+    length_evalGrid := fun _ _ _ => length_shrunkHashEvalWord _ _ _ _ _ _
+    exists_good_candidate := fun B hB => by
+      have hn₁True_poly :
+          ComputableInPolyTime (fun k => ampReps F k * F.inLen k) encUnary encUnary :=
+        ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_inLen
+      have hm₁True_poly :
+          ComputableInPolyTime (fun k => ampReps F k * F.outLen k) encUnary encUnary :=
+        ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_outLen
+      have hB₁_ppt := isPPT_shrunkHashEscapeInverter hn₁True_poly hm₁True_poly
+        computableInPolyTime_ampShrinkLen hB
+      have hB₀_ppt :=
+        isPPT_repEscapeInverter (computableInPolyTime_ampReps F) F.polyTime_inLen hB₁_ppt
+      obtain ⟨accSet, hself, _hsub, ⟨N₀, hN₀⟩, hesc_neg⟩ := F.exists_accessibleSet _ hB₀_ppt
+      refine ⟨ampGoodIdx F accSet N₀, ampGoodIdx_lt_ampGridCount F accSet hN₀, ?_⟩
+      have hdyad_pb : Cslib.PolynomiallyBounded (fun n => dyadicSize (ampReps F n)) :=
+        dyadicSize_polynomiallyBounded.comp (computableInPolyTime_ampReps F).polynomiallyBounded
+      have hcoeff_pb : Cslib.PolynomiallyBounded (fun n => 4 * n + 6) :=
+        (show ComputableInPolyTime (fun n : ℕ => 4 * n + 6) encUnary encUnary from
+          by fun_prop).polynomiallyBounded
+      have hgeom_neg : Negligible (fun n => ((4 * n + 6 : ℕ) : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
+        (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).polynomiallyBounded_mul
+          hcoeff_pb
+      refine negligible_of_eventually_le
+        ((hesc_neg.polynomiallyBounded_mul hdyad_pb).add hgeom_neg) ?_
+      filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
+      exact amp_randomCollisionGame_succProbability_le F accSet hself hN₀ B hn
+  }, fun _ => rfl⟩
+
+/-- **`[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1, STEPS 1–3 (pp. 30–31) from Definition
+3.9**: every `AdversaryInaccessibleEntropyFamily` yields a uniform polynomial-time
+`ShrinkingCollisionGrid` of strictly `(Nat.log 2 n + 1)`-bit shrinking hash candidates. -/
+theorem AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid
+    (F : AdversaryInaccessibleEntropyFamily) :
+    Nonempty ShrinkingCollisionGrid :=
+  let ⟨G, _⟩ := F.exists_shrinkingCollisionGrid_log
+  ⟨G⟩
 
 /-- Specialization of `AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid` to a fixed
 `InaccessibleEntropyFamily`. -/
@@ -498,9 +581,9 @@ theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : Inaccessibl
 
 /-- **`[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed with Section 5.1.5, Theorem 5.1,
 STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a uniform polynomial-time
-`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates admitting, for every uniform
-strict-PPT adversary `B`, an in-range candidate sequence that is collision-resistant on random
-inputs against `B`. -/
+`ShrinkingCollisionGrid` of `(Nat.log 2 n + 1)`-bit shrinking hash candidates admitting, for every
+uniform strict-PPT adversary `B`, an in-range candidate sequence that is collision-resistant on
+random inputs against `B`. -/
 theorem OneWay.exists_shrinkingCollisionGrid {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty ShrinkingCollisionGrid :=
   let ⟨F⟩ := hf.exists_inaccessibleEntropyFamily

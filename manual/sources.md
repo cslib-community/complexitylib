@@ -1674,6 +1674,11 @@ Alexander Shen, Vladimir A. Uspensky and Nikolay Vereshchagin. *Kolmogorov Compl
 
 Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Quantum Computing." *Quantum Information and Computation* 3(1), 84–92, 2003. https://doi.org/10.26421/QIC3.1-7 ; arXiv version (v2, titled "Both Toffoli and Controlled-NOT need little help to do universal quantum computation") https://arxiv.org/abs/quant-ph/0205115 . The arXiv v2 PDF was read on 2026-11-08 UTC for §2 (the notation `U[A]` for a gate on chosen qubits), §4 (Propositions 4.1 and 4.2, Definition 4.3, Lemmas 4.4 and 4.5, Algorithm 2, Theorem 4.6) and Figure 1. The library's controlled circuits, phase oracles, reflection about zero and plane rotation follow the proof of Lemma 4.5 in §4.2. With the Hadamard gate, `σ_z = H σ_x H` holds exactly, so §4.1 is not used. Journal pagination is taken from the bibliographic record.
 
+<a id="shoup00"></a>
+## shoup00
+
+Victor Shoup. "A Composition Theorem for Universal One-Way Hash Functions." *Advances in Cryptology – EUROCRYPT 2000*, LNCS 1807, 445–452, Springer, 2000. https://doi.org/10.1007/3-540-45539-6_31 ; preliminary version Cryptology ePrint Archive 1999/017 ( https://eprint.iacr.org/1999/017 ). Bibliographic metadata checked on 2026-11-14 UTC; the full primary 2000 text was not directly inspected, so the formalization implements the `O(|y| log t)` XOR-masking composition stated in [hhrvw20](#hhrvw20) Section 5.1.4 (Lemma 5.7, p. 30) and verifies the `2`-adic last-occurrence combinatorics, key-construction bijection, and reduction directly in Lean without claiming section, figure, or page locators inside Shoup's 2000 paper.
+
 <a id="shoup1990"></a>
 ## shoup1990
 
