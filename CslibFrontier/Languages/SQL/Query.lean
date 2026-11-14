@@ -58,6 +58,7 @@ silently dropped.
 * `Cslib.SQL.Expr.filterRows`, `Cslib.SQL.Expr.evalRow`: `WHERE` and `SELECT` lists on a list of
   rows and on one row.
 * `Cslib.SQL.Row.product`: the rows of a cross join.
+* `Cslib.SQL.Expr.eqCols`: the equijoin predicate `q₁.i = q₂.j` over a joined row.
 * `Cslib.SQL.Query.typeOf`: the typing context of a query's result.
 * `Cslib.SQL.Query.divSafe`, `Cslib.SQL.Query.IsSafe`: the decidable safety check.
 
@@ -66,6 +67,11 @@ silently dropped.
 * `Cslib.SQL.Expr.toOption_filterRows`, `Cslib.SQL.Expr.evalRow_eq_ok_iff`: what `WHERE` and a
   `SELECT` list compute when they succeed, and when they do.
 * `Cslib.SQL.Expr.mem_of_filterRows_eq_ok`: `WHERE` keeps some of its input rows.
+* `Cslib.SQL.Query.eval_join_eq_ok_of_forall`: a join whose predicate succeeds on every pair
+  returns the joined pairs on which it is `TRUE`.
+* `Cslib.SQL.Expr.evalTruth_eqCols_eq_ok_true_iff`, `Cslib.SQL.Expr.isSafePredicate_eqCols_iff`:
+  the equijoin predicate keeps the pairs with the same non-null key, and is safe exactly when the
+  key columns have the same type.
 * `Cslib.SQL.Query.eval_ok_or_divisionByZero`: type soundness.
 * `Cslib.SQL.Query.eval_ne_typeMismatch`, `Cslib.SQL.Query.conforms_of_eval_eq_ok`: a well-typed
   query never raises a type error, and its rows have its types.
@@ -252,6 +258,39 @@ private theorem evalRow_ok_or_divisionByZero {Γ : Fin n → SqlType} {Δ : Fin 
       exact .inr ⟨by rw [hd], i, hs⟩
   · exact .inl ⟨d, rfl, fun i => hasType_of_eval_eq_ok hr (hes i) (evalRow_eq_ok_iff.mp h i)⟩
 
+/-! ### Equijoin predicates -/
+
+/-- The equijoin predicate `q₁.i = q₂.j` over the joined row of an `n`-column left input and an
+`m`-column right input: column `i` of the left input (`Fin.castAdd m i`) equals column `j` of the
+right input (`Fin.natAdd n j`). -/
+def eqCols (i : Fin n) (j : Fin m) : Expr (n + m) :=
+  binary (.cmp .eq) (col (Fin.castAdd m i)) (col (Fin.natAdd n j))
+
+/-- The equijoin predicate on a joined row is the three-valued comparison of the two keys. -/
+theorem evalTruth_eqCols (i : Fin n) (j : Fin m) (r : Row n) (s : Row m) :
+    (eqCols i j).evalTruth (Fin.append r s) = CmpOp.eq.eval (r i) (s j) := by
+  simp only [evalTruth, eqCols, eval_binary, eval_col, Fin.append_left, Fin.append_right,
+    Except.ok_bind, evalBinOp]
+  rcases CmpOp.eq.eval (r i) (s j) with e | t
+  · rfl
+  · exact Datum.toTruth_toDatum t
+
+/-- The equijoin predicate keeps a pair of rows exactly when both keys are the same non-null
+value. -/
+theorem evalTruth_eqCols_eq_ok_true_iff {i : Fin n} {j : Fin m} {r : Row n} {s : Row m} :
+    (eqCols i j).evalTruth (Fin.append r s) = .ok .true ↔ ∃ v, r i = some v ∧ s j = some v := by
+  rw [evalTruth_eqCols, CmpOp.eval_eq_ok_true_iff]
+  cases r i <;> cases s j <;> simp [eq_comm]
+
+/-- The equijoin predicate is a safe predicate on the joined rows exactly when the two key
+columns have the same type. -/
+theorem isSafePredicate_eqCols_iff {Γ : Fin n → SqlType} {Δ : Fin m → SqlType} {i : Fin n}
+    {j : Fin m} : (eqCols i j).IsSafePredicate (Fin.append Γ Δ) ↔ Γ i = Δ j := by
+  simp only [IsSafePredicate, eqCols, typeOf, Fin.append_left, Fin.append_right, BinOp.typeOf,
+    divSafe, BinOp.isDivision, Bool.not_false, Bool.true_or, Bool.and_self, and_true,
+    Option.bind_eq_bind, Option.bind_some]
+  split_ifs with h <;> simp [h]
+
 end Expr
 
 /-! ### Queries -/
@@ -317,6 +356,24 @@ theorem eval_distinct (q : Query S n) :
     (distinct q).eval D = (do return (← q.eval D).dedup) := rfl
 
 end Eval
+
+/-- When the join predicate `θ` succeeds on every pair of input rows, the join succeeds and
+returns the joined rows of the pairs on which `θ` is `TRUE`, in the order of `rs ×ˢ ss`. -/
+theorem eval_join_eq_ok_of_forall {D : Database S} {θ : Expr (n + m)} {q₁ : Query S n}
+    {q₂ : Query S m} {rs : List (Row n)} {ss : List (Row m)} (h₁ : q₁.eval D = .ok rs)
+    (h₂ : q₂.eval D = .ok ss)
+    (hθ : ∀ r ∈ rs, ∀ s ∈ ss, ∃ t, θ.evalTruth (Fin.append r s) = .ok t) :
+    (join θ q₁ q₂).eval D =
+      .ok (((rs ×ˢ ss).filter fun (r, s) => (θ.evalTruth (Fin.append r s)).toOption = some .true)
+        |>.map fun (r, s) => Fin.append r s) := by
+  have hall : ∀ t ∈ Row.product rs ss, (θ.evalTruth t).toOption.isSome := by
+    intro t ht
+    obtain ⟨r, hr, s, hs, rfl⟩ := Row.mem_product.mp ht
+    obtain ⟨u, hu⟩ := hθ r hr s hs
+    simp [hu]
+  rw [eval_join, h₁, h₂, Except.ok_bind, Except.ok_bind, ← Except.toOption_eq_some_iff,
+    Expr.toOption_filterRows, ite_eq_left hall, Row.product, List.filter_map]
+  rfl
 
 /-! ### Typing and safety -/
 

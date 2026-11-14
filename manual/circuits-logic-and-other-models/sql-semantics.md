@@ -9,10 +9,13 @@ docstrings and [NOTICE](../../NOTICE) record what was taken and what changed. Ev
 the namespace `Cslib.SQL`.
 
 The layers present so far are values with `NULL`, three-valued logic, scalar operators including
-three-valued `IN`, resolved expressions over rows with typing, safety and equivalence, and
-bag-semantics queries over database schemas with typing, safety and three levels of equivalence.
-The proved query transformations and the simplifier are later milestones of #5282 and will extend
-this page.
+three-valued `IN`, resolved expressions over rows with typing, safety and equivalence,
+bag-semantics queries over database schemas with typing, safety and three levels of equivalence,
+and the theorem that an equijoin returns as many rows as the streaming library's join size of its
+keys. The proved query transformations and the simplifier are other milestone-1 PRs of #5282 and
+will extend this page. The [supported fragment](#supported-fragment-and-limitations) section lists
+what is not covered, and [differences from SQLite](#differences-from-sqlite) records where a
+common engine disagrees with the semantics.
 
 ## Values, `NULL` and errors
 
@@ -243,13 +246,54 @@ expression equivalence in the typing context of the input, which the input must 
 list-level facts behind these proofs, such as `EquivLevel.Rel.filterRows` for `WHERE` over related
 inputs, are public for proofs of further laws.
 
+## Equijoin row counts
+
+[JoinSize.lean](../../CslibFrontier/Languages/SQL/JoinSize.lean) connects query evaluation to the
+join size of the streaming library,
+`Cslib.Streaming.joinSize u v = ∑ₐ count a u · count a v`
+([Frequency.lean](../../CslibFrontier/Computability/Streaming/Frequency.lean)). The equijoin
+`q₁ JOIN q₂ ON q₁.i = q₂.j` is `join (Expr.eqCols i j) q₁ q₂`, where `Expr.eqCols i j` compares
+column `Fin.castAdd m i` with column `Fin.natAdd n j` of the joined row.
+
+`Query.length_eq_joinSize_filterMap_of_eval_join_eqCols_eq_ok` is the count: if `q₁` and `q₂`
+evaluate to `rs` and `ss` and the join succeeds, it returns
+`joinSize (rs.filterMap (· i)) (ss.filterMap (· j))` rows, with no hypothesis on the keys. A
+`NULL` key matches nothing, not even another `NULL`, so `filterMap` drops the `NULL` keys before
+counting; on non-null values `=` is `TRUE` exactly for equal values. Comparing keys as datums,
+with `NULL` equal to `NULL`, counts `joinSize (rs.map (· i)) (ss.map (· j))` instead, which is the
+same number when one input has no `NULL` key (`Query.eval_join_eqCols_length_eq_joinSize`).
+
+The join need not succeed: comparing an integer key with a text key is a type error, and the join
+fails as soon as both inputs have a row. `Query.eval_join_eqCols_length_eq_joinSize_filterMap`
+guarantees success, and so the count, when every key cell holds `NULL` or a value of one type
+`τ`; the key domain is then the non-null values of `τ`.
+
+On a conforming instance the typing hypothesis comes from the schema.
+`Query.eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf` takes well-typed inputs whose key
+columns have the same type, and `Query.eval_join_table_eqCols_length_eq_joinSize_filterMap` two
+tables whose key columns are declared with the same type; for tables, conformance and that
+declaration are the only hypotheses. `Expr.isSafePredicate_eqCols_iff` says that the equijoin
+predicate is safe exactly when the key types agree. The count reduces the join's evaluation to a
+filter over the pairs of input rows and applies
+`Cslib.Streaming.length_filter_product_eq_joinSize_filterMap`; success under the typing
+hypothesis comes from `Query.eval_join_eq_ok_of_forall`.
+
+The [tests](../../CslibFrontierTests/Languages/SQL/JoinSize.lean) check each count both by
+evaluation and through the theorem: keys `1, 1, 1, 2` against `1, 1, 3` give `6` rows, an empty
+input gives none, and keys `1, NULL, NULL, 2` against `NULL, 1, 1` give `2` rows where structural
+equality would count `4`. The null-safe join `ON l.k = r.k OR (l.k IS NULL AND r.k IS NULL)`
+returns those `4`. Keys `NULL, 1, NULL` against `1, 1` give `2` rows, and since the right input
+has no `NULL` key the structural count agrees.
+
 ## Working with the API
 
 Import `CslibFrontier.Languages.SQL.Scalar` for the operators,
-`CslibFrontier.Languages.SQL.Equiv` for expressions with typing and equivalence, or
-`CslibFrontier.Languages.SQL.QueryEquiv` for schemas, queries and query equivalence (each
-re-exports the layers below it, except name resolution in `CslibFrontier.Languages.SQL.Column`),
-and open `Cslib.SQL`. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
+`CslibFrontier.Languages.SQL.Equiv` for expressions with typing and equivalence,
+`CslibFrontier.Languages.SQL.QueryEquiv` for schemas, queries and query equivalence, or
+`CslibFrontier.Languages.SQL.JoinSize` for queries with the equijoin row counts, and open
+`Cslib.SQL`. Each re-exports the layers below it; name resolution
+(`CslibFrontier.Languages.SQL.Column`) comes with the schemas, and `JoinSize` does not include
+query equivalence. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
 example `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
 Use `rfl` rather than `decide` for results of type `Except`: Batteries derives
 `DecidableEq (Except ε α)` without exposing its body, so `decide` cannot evaluate it from another
@@ -269,6 +313,110 @@ general, rewrite with the evaluation equations (`Query.eval_select`, …), `Exce
 and `Expr.toOption_filterRows` or `Except.toOption_mapM`, which reduce a query's observation to
 list operations. The checked examples are in [Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
 [Scalar.lean](../../CslibFrontierTests/Languages/SQL/Scalar.lean),
-[Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean) and
-[Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean) under
-`CslibFrontierTests/Languages/SQL/`.
+[Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean),
+[Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean) and
+[JoinSize.lean](../../CslibFrontierTests/Languages/SQL/JoinSize.lean) under
+`CslibFrontierTests/Languages/SQL/`, and the [guide](https://www.cslib.io/cslib-frontier/guide/)
+has a chapter that builds a database, evaluates queries over it and applies the join-size
+theorem.
+
+## A downstream example
+
+A development that uses the semantics imports the layer it needs and states its facts about
+`Query.eval`. The following is the core of
+[the join-size tests](../../CslibFrontierTests/Languages/SQL/JoinSize.lean): a schema with two
+tables, an instance, an equijoin, its row count by evaluation, and the theorem for every
+conforming instance.
+
+```lean
+import CslibFrontier.Languages.SQL.JoinSize
+
+open Cslib.SQL Cslib.SQL.Query Cslib.Streaming
+
+inductive T where
+  | l
+  | r
+  deriving DecidableEq
+
+instance : Fintype T where
+  elems := {.l, .r}
+  complete t := by cases t <;> decide
+
+/-- `l(k int, tag text)` and `r(k int, tag text)`. -/
+abbrev S : DbSchema where
+  Table := T
+  arity _ := 2
+  columns
+    | .l => ![⟨some "l", "k", .int⟩, ⟨some "l", "tag", .text⟩]
+    | .r => ![⟨some "r", "k", .int⟩, ⟨some "r", "tag", .text⟩]
+
+abbrev row (k : ℤ) (tag : String) : Row 2 := ![some (.int k), some (.text tag)]
+
+abbrev D : Database S
+  | T.l => [row 1 "a", row 1 "b", row 1 "c", row 2 "d"]
+  | T.r => [row 1 "x", row 1 "y", row 3 "z"]
+
+/-- `l JOIN r ON l.k = r.k`. -/
+abbrev lr : Query S 4 := join (Expr.eqCols (0 : Fin 2) (0 : Fin 2)) (table T.l) (table T.r)
+
+example : D.Conforms := by decide
+example : (lr.eval D).toOption.map List.length = some 6 := by decide
+
+example (D' : Database S) (hD' : D'.Conforms) :
+    ∃ ts, lr.eval D' = .ok ts ∧
+      ts.length = joinSize ((D' T.l).filterMap (· 0)) ((D' T.r).filterMap (· 0)) :=
+  eval_join_table_eqCols_length_eq_joinSize_filterMap 0 0 hD' rfl
+```
+
+The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM
+l) WHERE k1 = 2` is ordered-equivalent to `SELECT tag, k + 1 FROM l WHERE k + 1 = 2`, the predicate
+moved below the projection by `Expr.subst`. The guard, that every projected expression is safe, is
+checked by `decide`. With the projection `tag, 100 / k` the guard fails, and an instance with a row
+whose key is `0` separates the two queries: the original divides by zero, while the rewritten query
+never evaluates `100 / 0` because the `WHERE` clause drops that row first.
+
+## Supported fragment and limitations
+
+The fragment covers:
+
+- values: unbounded integers, text compared by code points, booleans, and `NULL`;
+- scalar expressions: literals, typed `NULL`, column references by position, `NOT`, unary minus,
+  `IS [NOT] NULL`, `+ - * / %`, the six comparisons, `AND`, `OR`, text `||`, `[NOT] IN` over a
+  list of literals, and `CASE WHEN … THEN … ELSE … END`;
+- queries: tables, `WHERE`, `SELECT` lists, inner joins `ON θ` (including cross joins and
+  equijoins), `UNION ALL` and `DISTINCT`, over schemas whose tables are declared independently of
+  the data.
+
+Later milestones of #5282 are not formalized yet: subqueries (`IN`, `EXISTS`, scalar and
+correlated), outer joins, grouping and aggregates, `ORDER BY`, `LIMIT` and `OFFSET`, window
+functions, recursive queries, updates, decimals and casts, bounded integers, collations, dialect
+parameters, and a surface-SQL parser with a verified name-resolution pass. Column names are
+metadata resolved by `resolveColumn`; queries themselves are positional, so a translation from SQL
+text must resolve names first. `UNION` is `DISTINCT` of `UNION ALL`; `INTERSECT` and `EXCEPT` are
+not in the fragment. Set-semantics relational foundations and Yannakakis's algorithm belong to
+#4036.
+
+## Differences from SQLite
+
+The semantics follows standard SQL and PostgreSQL where engines differ. A differential run of 44
+queries in this fragment against SQLite 3.45.1, recorded in
+[#5335](https://github.com/cslib-community/cslib-frontier/pull/5335), agreed on 39 as bags of
+rows, including joins with duplicate and `NULL` keys, `NULL` in `WHERE`, `IN` and `NOT IN` (also
+with an empty list), `UNION ALL`, `DISTINCT` with `NULL` rows, integer division and remainder with
+negative operands, and text order. SQLite has no boolean type, so `TRUE` and `FALSE` are the
+integers `1` and `0` there; results were compared after mapping booleans to those integers. That
+run is evidence, not proof. The other five queries differ in three expected ways:
+
+- Division and remainder by zero give `NULL` in SQLite; here they fail with `divisionByZero`, as in
+  PostgreSQL.
+- SQLite compares values of different types and converts text to numbers in arithmetic; here
+  such an operation is a type error, and a well-typed query never raises one
+  (`Query.eval_ne_typeMismatch`).
+- SQLite reads an integer as a truth value in `WHERE`; here a predicate must be boolean.
+
+SQLite also resolves a column name that occurs twice in one derived table to the first such
+column, where standard SQL and PostgreSQL report an ambiguous reference; `resolveColumn` returns
+`ambiguousColumn`. Strict evaluation is a further difference from engines in general: SQL leaves
+the order of evaluation and short-circuiting to the implementation, an engine may skip a failing
+operand or row that this semantics evaluates, and the equivalences therefore require safety
+before they move or drop an evaluation.
