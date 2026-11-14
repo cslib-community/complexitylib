@@ -22,19 +22,18 @@ This file contains the whole model and no proofs:
 
 * `Model`: the data and the operations and predicates allowed on them.
 * `Layout`: the number of registers and of fields per record.
-* `State`: registers and records.
+* `State`, `State.Valid`: registers and records, and the states that make sense.
 * `Instr`, `Instr.effect`, `Instr.next`: the instructions and their meaning.
 * `step`, `Runs`, `Executes`: execution, charging one unit per instruction.
 
-Space is `State.heap.length`, the number of records ever created.
+Space is `State.heap.length`, the number of records.
 
 ## Differences from the source
 
 * Labels start at zero. Running past the last instruction is not a successful halt.
 * A new record's pointer fields are null. The source's *undefined* is kept for data only.
 * Equality of data is a predicate the `Model` may supply, not a separate instruction.
-* A pointer that specifies no record is treated like null: access through it does nothing.
-  `State.Valid` (see `Basic`) excludes such pointers, and execution preserves it.
+* Pointers are positions in the list of records, but no instruction takes or returns a position.
 
 Invariants are in `Basic`, data invariants in `Data` and `Renaming`, and symbols in `Symbols`.
 -/
@@ -49,7 +48,7 @@ structure Model where
   Value : Type
   /-- The content of every data field of a new record. -/
   undefined : Value
-  /-- Names of binary operations. -/
+  /-- Names of binary operations. A constant is an operation that ignores its operands. -/
   Op : Type
   /-- Names of binary predicates. -/
   Test : Type
@@ -73,11 +72,13 @@ structure Layout where
 abbrev Pointer := Option ℕ
 
 /-- A record. -/
-structure Node (M : Model) (L : Layout) where
+structure Record (M : Model) (L : Layout) where
   /-- Pointer fields. -/
   ptr : Fin L.ptrFields → Pointer
   /-- Data fields. -/
   data : Fin L.dataFields → M.Value
+
+variable {M : Model} {L : Layout}
 
 /-- A machine state. -/
 structure State (M : Model) (L : Layout) where
@@ -88,9 +89,18 @@ structure State (M : Model) (L : Layout) where
   /-- Data registers. -/
   data : Fin L.dataRegs → M.Value
   /-- All records, in order of creation. -/
-  heap : List (Node M L)
+  heap : List (Record M L)
 
-/-- Instructions. Below, `r` is a pointer register, `s` a data register and `f` a field. -/
+/-- A state is valid if every nonnull pointer in a register or in a record specifies a record.
+States are meant to be valid, and execution keeps them so (`Runs.valid` in `Basic`). In other
+states a pointer that specifies no record acts like null until a later `create` gives it one. -/
+def State.Valid (x : State M L) : Prop :=
+  (∀ r a, x.ptr r = some a → a < x.heap.length) ∧
+  ∀ n ∈ x.heap, ∀ f a, n.ptr f = some a → a < x.heap.length
+
+/-- Instructions. Below, `r` and `base` are pointer registers, `s` is a data register and `f` is
+a field; `f(base)` is field `f` of the record specified by `base`. As in the source, a load or
+store does nothing when `base` is null. -/
 inductive Instr (M : Model) (L : Layout) where
   /-- `r ← null`. -/
   | null (r : Fin L.ptrRegs)
@@ -119,15 +129,10 @@ inductive Instr (M : Model) (L : Layout) where
   /-- Cease execution. -/
   | halt
 
-variable {M : Model} {L : Layout}
-
 /-- A new record: null pointers and undefined data. -/
-def Node.blank : Node M L := ⟨fun _ => none, fun _ => M.undefined⟩
+def Record.blank : Record M L := ⟨fun _ => none, fun _ => M.undefined⟩
 
 namespace State
-
-/-- No records, null pointer registers and undefined data registers. -/
-def empty : State M L := ⟨0, fun _ => none, fun _ => M.undefined, []⟩
 
 /-- Place a pointer in register `r`. -/
 def setPtr (x : State M L) (r : Fin L.ptrRegs) (p : Pointer) : State M L :=
@@ -138,11 +143,11 @@ def setData (x : State M L) (s : Fin L.dataRegs) (v : M.Value) : State M L :=
   { x with data := Function.update x.data s v }
 
 /-- The record specified by the contents of `r`, if any. -/
-def deref (x : State M L) (r : Fin L.ptrRegs) : Option (Node M L) :=
+def deref (x : State M L) (r : Fin L.ptrRegs) : Option (Record M L) :=
   (x.ptr r).bind (x.heap[·]?)
 
 /-- Change the record specified by the contents of `r`, if any. -/
-def modify (x : State M L) (r : Fin L.ptrRegs) (g : Node M L → Node M L) : State M L :=
+def modify (x : State M L) (r : Fin L.ptrRegs) (g : Record M L → Record M L) : State M L :=
   match x.ptr r with
   | none => x
   | some a => { x with heap := x.heap.modify a g }
@@ -156,7 +161,8 @@ def Instr.effect (x : State M L) : Instr M L → State M L
   | .moveData s s' => x.setData s (x.data s')
   | .loadPtr r f base => (x.deref base).elim x fun n => x.setPtr r (n.ptr f)
   | .loadData s f base => (x.deref base).elim x fun n => x.setData s (n.data f)
-  | .storePtr f base r => x.modify base fun n => { n with ptr := Function.update n.ptr f (x.ptr r) }
+  | .storePtr f base r =>
+    x.modify base fun n => { n with ptr := Function.update n.ptr f (x.ptr r) }
   | .storeData f base s =>
     x.modify base fun n => { n with data := Function.update n.data f (x.data s) }
   | .op o s s₁ s₂ => x.setData s (M.evalOp o (x.data s₁) (x.data s₂))

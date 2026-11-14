@@ -63,7 +63,9 @@ labels are zero-based. `step` is undefined at `halt` and outside the program;
 `State.Valid` requires every nonnull pointer in a register or record to specify a
 record. It allows cycles, sharing and unreachable records. Applications supply valid
 input states, with preparation cost separate; `Runs.valid` preserves the hypothesis.
-A pointer that specifies no record is otherwise treated like null.
+Outside valid states a pointer that specifies no record acts like null until a
+later creation gives it one; `Instr.create_fresh` shows that in a valid state no
+register or record already holds the pointer that `create` returns.
 
 `Runs` reuses CSLib's `Relation.RelatesInSteps`; `Executes` also charges the final halt.
 Each instruction costs one unit, including a data primitive or a creation.

@@ -22,23 +22,21 @@ namespace Cslib.PointerMachine
 
 variable {M : Model} {L : Layout}
 
-/-- Every nonnull pointer in a register or in a record specifies a record. -/
-def State.Valid (x : State M L) : Prop :=
-  (∀ r a, x.ptr r = some a → a < x.heap.length) ∧
-  ∀ n ∈ x.heap, ∀ f a, n.ptr f = some a → a < x.heap.length
+/-- No records, null pointer registers and undefined data registers. -/
+def State.empty : State M L := ⟨0, fun _ => none, fun _ => M.undefined, []⟩
 
 /-- The empty state is valid. -/
 theorem State.empty_valid : (State.empty : State M L).Valid := by
   simp [State.Valid, State.empty]
 
 /-- A register specifies a record exactly when it holds the position of that record. -/
-theorem State.deref_eq_some {x : State M L} {r : Fin L.ptrRegs} {n : Node M L} :
+theorem State.deref_eq_some {x : State M L} {r : Fin L.ptrRegs} {n : Record M L} :
     x.deref r = some n ↔ ∃ a, x.ptr r = some a ∧ x.heap[a]? = some n := by
   simp [State.deref, Option.bind_eq_some_iff]
 
 /-- A record of a modified heap is an old record or the image of one. -/
-theorem State.mem_heap_modify {x : State M L} {r : Fin L.ptrRegs} {g : Node M L → Node M L}
-    {n : Node M L} (h : n ∈ (x.modify r g).heap) : n ∈ x.heap ∨ ∃ m ∈ x.heap, n = g m := by
+theorem State.mem_heap_modify {x : State M L} {r : Fin L.ptrRegs} {g : Record M L → Record M L}
+    {n : Record M L} (h : n ∈ (x.modify r g).heap) : n ∈ x.heap ∨ ∃ m ∈ x.heap, n = g m := by
   unfold State.modify at h
   split at h
   · exact .inl h
@@ -54,19 +52,19 @@ theorem State.mem_heap_modify {x : State M L} {r : Fin L.ptrRegs} {g : Node M L 
 
 /-- Modifying a record keeps the number of records. -/
 @[simp] theorem State.length_heap_modify {x : State M L} {r : Fin L.ptrRegs}
-    {g : Node M L → Node M L} : (x.modify r g).heap.length = x.heap.length := by
+    {g : Record M L → Record M L} : (x.modify r g).heap.length = x.heap.length := by
   unfold State.modify
   split <;> simp
 
 /-- Modifying a record keeps the pointer registers. -/
 @[simp] theorem State.ptr_modify {x : State M L} {r : Fin L.ptrRegs}
-    {g : Node M L → Node M L} : (x.modify r g).ptr = x.ptr := by
+    {g : Record M L → Record M L} : (x.modify r g).ptr = x.ptr := by
   unfold State.modify
   split <;> rfl
 
 /-- Modifying a record keeps the data registers. -/
 @[simp] theorem State.data_modify {x : State M L} {r : Fin L.ptrRegs}
-    {g : Node M L → Node M L} : (x.modify r g).data = x.data := by
+    {g : Record M L → Record M L} : (x.modify r g).data = x.data := by
   unfold State.modify
   split <;> rfl
 
@@ -149,10 +147,13 @@ theorem Instr.effect_provenance {i : Instr M L} {x : State M L} {r : Fin L.ptrRe
     try simp only [Function.update_apply] at ha
     grind
 
-/-- `create` returns a pointer that specified no record before. -/
-theorem Instr.create_fresh {x : State M L} {r : Fin L.ptrRegs} :
-    ((Instr.create r).effect x).ptr r = some x.heap.length ∧ x.heap[x.heap.length]? = none := by
-  simp [Instr.effect, State.setPtr]
+/-- In a valid state, `create` returns a pointer that no register or record held. -/
+theorem Instr.create_fresh {x : State M L} (hx : x.Valid) {r : Fin L.ptrRegs} :
+    ((Instr.create r).effect x).ptr r = some x.heap.length ∧
+      (∀ r', x.ptr r' ≠ some x.heap.length) ∧
+      ∀ n ∈ x.heap, ∀ f, n.ptr f ≠ some x.heap.length :=
+  ⟨by simp [Instr.effect, State.setPtr], fun r' h => lt_irrefl _ (hx.1 r' _ h),
+    fun n hn f h => lt_irrefl _ (hx.2 n hn f _ h)⟩
 
 /-- A step executes the current instruction, which is not a `halt`. -/
 theorem step_eq_some_iff {code : List (Instr M L)} {x y : State M L} :

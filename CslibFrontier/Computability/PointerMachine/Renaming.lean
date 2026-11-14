@@ -35,20 +35,20 @@ structure Model.Renaming (M : Model) where
   test : ∀ p a b, M.evalTest p (value a) (value b) = M.evalTest p a b
 
 /-- Rename the data fields of a record. -/
-def Node.rename (ρ : M.Renaming) (n : Node M L) : Node M L :=
+def Record.rename (ρ : M.Renaming) (n : Record M L) : Record M L :=
   { n with data := ρ.value ∘ n.data }
 
 /-- Rename all data of a state. -/
 def State.rename (ρ : M.Renaming) (x : State M L) : State M L :=
-  { x with data := ρ.value ∘ x.data, heap := x.heap.map (Node.rename ρ) }
+  { x with data := ρ.value ∘ x.data, heap := x.heap.map (Record.rename ρ) }
 
 /-- Instructions commute with renaming. -/
 theorem Instr.effect_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
     i.effect (x.rename ρ) = (i.effect x).rename ρ := by
-  have deref (r : Fin L.ptrRegs) : (x.rename ρ).deref r = (x.deref r).map (Node.rename ρ) := by
+  have deref (r : Fin L.ptrRegs) : (x.rename ρ).deref r = (x.deref r).map (Record.rename ρ) := by
     simp only [State.deref, State.rename]
     cases x.ptr r <;> simp
-  have modify (r : Fin L.ptrRegs) (g g' : Node M L → Node M L)
+  have modify (r : Fin L.ptrRegs) (g g' : Record M L → Record M L)
       (hg : ∀ n, g' (n.rename ρ) = (g n).rename ρ) :
       (x.rename ρ).modify r g' = (x.modify r g).rename ρ := by
     simp only [State.modify, State.rename]
@@ -65,16 +65,16 @@ theorem Instr.effect_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
     rw [deref]
     cases x.deref base with
     | none => rfl
-    | some n => simp [State.rename, State.setData, Node.rename, Function.comp_update]
+    | some n => simp [State.rename, State.setData, Record.rename, Function.comp_update]
   case storePtr f base r => exact modify base _ _ fun n => rfl
   case storeData f base s =>
     exact modify base _ _ fun n => by
-      simp [State.rename, Node.rename, Function.comp_update]
+      simp [State.rename, Record.rename, Function.comp_update]
   case op o s s₁ s₂ =>
     simp [State.rename, State.setData, Function.comp_update, ρ.op]
   case moveData s s' => simp [State.rename, State.setData, Function.comp_update]
   case create r =>
-    simp [State.rename, State.setPtr, Node.rename, Node.blank, Function.comp_def, ρ.undefined]
+    simp [State.rename, State.setPtr, Record.rename, Record.blank, Function.comp_def, ρ.undefined]
   all_goals rfl
 
 /-- Renaming does not change control flow. -/
