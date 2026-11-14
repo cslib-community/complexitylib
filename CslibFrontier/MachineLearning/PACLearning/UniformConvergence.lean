@@ -29,8 +29,8 @@ is the agnostic route to PAC learning: no concept of the class needs to fit the 
 
 The domain and label spaces are arbitrary measurable spaces. Each hypothesis needs a measurable
 misclassification set; `measurableSet_misclassified` supplies this for measurable hypotheses with
-`Bool` labels. Hoeffding's inequality is the library's finite-PMF form
-(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`), applied to the Bernoulli indicator of a
+`Bool` labels. Hoeffding's inequality is the library's finite-PMF form for `[0, 1]` scores
+(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge_card_mul`), applied to the Bernoulli indicator of a
 measurable event; the empirical error of a hypothesis is the relative frequency of its
 misclassification set. Uniform convergence for infinite classes of finite VC dimension is in
 `VCUniformConvergence.lean`.
@@ -128,11 +128,8 @@ theorem measure_pi_le_abs_card_filter_div_sub_measure (μ : Measure Z) [IsProbab
         m * ε ≤ |∑ i, score i (b i) - ∑ i : Fin m, ∑ a, (q a).toReal * score i a|} ≠ ⊤ :=
     Cslib.Probability.PMF.toOuterMeasure_ne_top _ _
   rw [ENNReal.le_ofReal_iff_toReal_le hne (by positivity)]
-  refine (Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge (fun _ : Fin m => q) score
-    (bound := 1) zero_le_one hscore (by positivity)).trans_eq ?_
-  congr 2
-  simp only [Fintype.card_fin, one_pow, mul_one]
-  field_simp
+  simpa only [Fintype.card_fin] using
+    Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge_card_mul (fun _ : Fin m => q) score hscore hε
 
 end Hoeffding
 

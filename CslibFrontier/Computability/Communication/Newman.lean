@@ -24,7 +24,7 @@ cost only a few more bits than public coins on finite inputs [Newman1991],
 [Kushilevitz and Nisan, Chapter 3][KushilevitzNisan1997]. Let a public-coin protocol `μ` solve
 `R` on `A × B` with error `ε`, sending at most `c` bits. Draw `2 ^ k` protocols from `μ`
 independently. On each pair of inputs the fraction of them that err is, by Hoeffding's inequality
-(`Cslib.Probability.PMF.pi_sum_ge_mean_add`), at least `ε + δ` with probability at most
+(`Cslib.Probability.PMF.pi_sum_ge_mean_add_card_mul`), at least `ε + δ` with probability at most
 `exp (-2 δ² 2 ^ k)`. If `|X| |Y| exp (-2 δ² 2 ^ k) < 1`, a union bound over the inputs leaves some
 choice of `2 ^ k` protocols in which, on every pair of inputs, fewer than a fraction `ε + δ` err.
 Alice then picks one of them with `k` private random bits, sends her choice, and both run it: a
@@ -82,9 +82,9 @@ private theorem pi_sum_err_ge_toReal_le [Finite X] [Finite Y] {μ : PublicCoin X
     rw [PublicCoin.errorProb, ← hev, PMF.toOuterMeasure_apply_toReal]
     refine sum_congr rfl fun s _ => ?_
     by_cases hs : s (x, y) <;> simp [hs]
-  have h := PMF.pi_sum_ge_mean_add (fun _ : BitString k => ν)
-    (fun _ s => if s (x, y) then (1 : ℝ) else 0) (bound := 1) (ε := 2 ^ k * δ) zero_le_one
-    (fun _ _ _ => by split_ifs <;> simp) (by positivity)
+  have h := PMF.pi_sum_ge_mean_add_card_mul (fun _ : BitString k => ν)
+    (fun _ s => if s (x, y) then (1 : ℝ) else 0) (fun _ _ _ => by split_ifs <;> simp) hδ
+  rw [hcard] at h
   refine le_trans (PMF.toOuterMeasure_toReal_mono _ ?_)
     (h.trans_eq ?_)
   · intro s hs
@@ -94,8 +94,8 @@ private theorem pi_sum_err_ge_toReal_le [Finite X] [Finite Y] {μ : PublicCoin X
       rw [sum_const, card_univ, nsmul_eq_mul, hcard]
       exact mul_le_mul_of_nonneg_left hmean (by positivity)
     linarith
-  · rw [hcard]
-    field_simp
+  · congr 1
+    ring
 
 open Classical in
 /-- By a union bound over `F = {q | q.1 ∈ A ∧ q.2 ∈ B}`, when `|X| |Y| exp (-2 δ² 2 ^ k) < 1`,

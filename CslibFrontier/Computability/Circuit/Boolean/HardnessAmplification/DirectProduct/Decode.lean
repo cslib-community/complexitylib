@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Probability.IID.FirstAccepted
 public import CslibFrontier.Probability.TupleSampler
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+import CslibFrontier.Foundations.Data.Finset.Markov
 
 /-!
 # Direct-product decoding
@@ -394,20 +396,13 @@ theorem card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U �
     push_cast [hca] at this
     exact this
   have hpow : ((N : ℝ) - c * a) ^ m ≤ N ^ m * Real.exp (-(m * (c * θ / N))) := by
-    have hbase : 0 ≤ 1 - c * a / (N : ℝ) := by
-      rw [sub_nonneg, div_le_one hN0]
-      exact_mod_cast hca
-    have heq : (N : ℝ) - c * a = N * (1 - c * a / N) := by field_simp
-    have hle : 1 - c * a / (N : ℝ) ≤ Real.exp (-(c * θ / N)) := by
-      have h2 : -(c * a / (N : ℝ)) ≤ -(c * θ / N) := by
-        rw [neg_le_neg_iff]
-        exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left ha hc0.le) hN0.le
-      exact (Real.one_sub_le_exp_neg _).trans (Real.exp_le_exp.2 h2)
-    rw [heq, mul_pow]
-    refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-    calc (1 - c * a / (N : ℝ)) ^ m ≤ Real.exp (-(c * θ / N)) ^ m :=
-          pow_le_pow_left₀ hbase hle m
-      _ = Real.exp (-(m * (c * θ / N))) := by rw [← Real.exp_nat_mul]; ring_nf
+    rw [show (N : ℝ) - c * a = N * (1 - c * a / N) by field_simp, mul_pow]
+    exact mul_le_mul_of_nonneg_left
+      (Real.one_sub_pow_le_exp ((div_le_one hN0).2 (by exact_mod_cast hca))
+        (mul_le_mul_of_nonneg_left
+          (div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left ha hc0.le) hN0.le)
+          (Nat.cast_nonneg m)))
+      (by positivity)
   have hE : (E : ℝ) ≤ B * N ^ m / a + N ^ m * Real.exp (-(m * (c * θ / N))) := by
     rw [div_add' _ _ _ ha0.ne', le_div_iff₀ ha0]
     nlinarith
@@ -597,11 +592,9 @@ theorem card_filter_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V) (f :
     exact sum_comm
   have hsum := sum_card_filter_dpDecode_ne_le C' f dflt P b₀ m hε hδ hε1 hδ1 hk hw hm hS hH
   have hmarkov : (#bad : ℝ) * (ε * n) ≤
-      ∑ v : Fin m → Trial U k, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) := by
-    calc (#bad : ℝ) * (ε * n) = ∑ v ∈ bad, ε * n := by rw [sum_const, nsmul_eq_mul]
-      _ ≤ ∑ v ∈ bad, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) :=
-          sum_le_sum fun v hv => (not_le.1 (mem_filter.1 hv).2).le
-      _ ≤ _ := sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ => by positivity
+      ∑ v : Fin m → Trial U k, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) :=
+    card_filter_mul_le_sum univ _ _ (fun _ _ => Nat.cast_nonneg _)
+      fun _ _ hv => (not_le.1 hv).le
   rw [hdouble] at hmarkov
   have hbad : (#bad : ℝ) ≤ N ^ m / 2 := by
     have h := hmarkov.trans hsum

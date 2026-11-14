@@ -161,7 +161,9 @@ statistic of i.i.d. samples from a measure into this setting, import
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
 almost everywhere measurable maps into finite types with
 `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
-Hoeffding's `pi_sum_abs_sub_mean_ge` in
+Hoeffding's `pi_sum_abs_sub_mean_ge` (and the `[0, 1]`-score forms
+`pi_sum_le_mean_sub_card_mul`, `pi_sum_ge_mean_add_card_mul`, and
+`pi_sum_abs_sub_mean_ge_card_mul` at deviation `card ι * γ` with exponent `-2 card ι γ²`) in
 [Concentration.lean](../../CslibFrontier/Probability/Concentration.lean) and the Chernoff lower
 tail `pi_sum_le_one_sub_mul` in [Chernoff.lean](../../CslibFrontier/Probability/Chernoff.lean). For
 a uniform draw on a finite group, import
