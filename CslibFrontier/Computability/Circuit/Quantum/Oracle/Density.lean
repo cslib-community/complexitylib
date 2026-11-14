@@ -136,9 +136,7 @@ theorem runDensityWithReference_apply (ρ) : F.runDensityWithReference n x H κ 
 theorem isDensityMatrix_runDensityWithReference {ρ} (hρ : IsDensityMatrix ρ) :
     IsDensityMatrix (F.runDensityWithReference n x H κ ρ) := by
   rw [runDensityWithReference_apply]
-  apply hρ.densityConj
-  rw [conjTranspose_kronecker, conjTranspose_one, ← mul_kronecker_mul,
-    matrix_isometry, one_mul, one_kronecker_one]
+  exact hρ.densityConj_kronecker (matrix_isometry _)
 
 /-- Local execution leaves the reference marginal unchanged, including for correlated inputs. -/
 theorem partialTraceLeft_runDensityWithReference (ρ) :

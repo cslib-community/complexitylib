@@ -304,6 +304,17 @@ generation, FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and reje
 average-case NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the
 still-developing FIPS 206 remain separate obligations.
 
+The source-faithful SLH-DSA WOTS+ digit preprocessing from FIPS 205 is in
+[`SLHDSA/WOTS/Digits.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/WOTS/Digits.lean), with
+edge checks in [`SLHDSAWOTSDigits.lean`](../../CslibFrontierTests/Crypto/SLHDSAWOTSDigits.lean)
+[fips205][fips205]. `base2b` is Algorithm 4's big-endian byte-to-base conversion. For the three
+standard values `n = 16, 24, 32`, `WOTS.digits` implements the common first seven lines of
+`wots_sign` and `wots_pkFromSig`: the `2n` base-16 message digits followed by the three complement
+checksum digits, including the specified four-bit left shift and two-byte encoding. This milestone
+does not define the WOTS+ hash chain, key generation, signing, public-key reconstruction, concrete
+FIPS 205 hash instantiations, or any security reduction; those remain obligations under the NIST
+post-quantum portfolio roadmap item.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
 For deterministic native key generation, import
@@ -771,6 +782,24 @@ zero and full weight, detect a comparison distribution with the wrong parity bas
 four-bit sample that an incorrect independent redraw of the third secret accepts but the shared
 law rejects. These are distribution definitions and exact finite laws, not assumptions that
 2-QCSD-P or 3-QCSD-PT are hard.
+
+Import [`Computational/HQC/DQCSD.lean`](../../CslibFrontier/Crypto/Computational/HQC/DQCSD.lean)
+to state that these exact source distributions are indistinguishable to the native quantum word
+tests above. `SyndromeSample.toWord` encodes the public block followed by the syndrome in `2n`
+bits. `TruncatedSyndromeSample.toWord` encodes both public blocks, the complete first syndrome,
+and the retained prefix of the second in `3n + (n - ell)` bits; both encodings are injective.
+`NativeQuantumTwoDQCSDP` and `NativeQuantumThreeDQCSDPT` are the resulting asymptotic assumptions,
+and their `of_within` theorems transfer concrete bounds with separate qubit, gate, and query
+budgets. The four `*_iff_*` theorems expose both source-named assumptions through the shared
+`NativeQuantum.IndistinguishableWithin` and
+`NativeQuantum.ComputationallyIndistinguishable` interfaces. The [checked
+client](../../CslibFrontierTests/Crypto/HQCDQCSD.lean) is an ordinary module that instantiates
+positive parameter families, checks both encodings and all four length contracts, runs the exact
+two-block words through the generic native game, exercises both concrete bridges, and consumes all
+four assumptions through those shared interfaces. This is original no-advice, no-useful-oracle
+packaging of the cited distributions: it proves no DQCSD hardness, does not bundle the
+specification's separate primitive-prime requirement, and adds no QROM, decoding-failure, or
+HQC-PKE/KEM security result.
 
 The word-source model assumes independence and uniformity; it does not establish them for an
 XOF. Positions use natural numbers, with checked 16-bit representability conditions for the
