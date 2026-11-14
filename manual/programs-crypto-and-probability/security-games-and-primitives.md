@@ -1298,7 +1298,7 @@ Fig. 8 does) and whose second stage runs `A` against the simulator and reports w
 queried to `G`. The one-wayness experiment of the challenge hop is `Scheme.simFilterOwExperiment`;
 `Scheme.succProbability_simFilterOwExperiment_le` bounds it by the reduction's `cpaAdvantage` plus
 `(qG + qH) / |M|`, and `RandomizedROAdversary.advantage_play_le` averages per-coin bounds over the
-adversary's coins. The IND-CCA theorem itself is
+adversary's coins. The concrete per-instance IND-CCA advantage bound is
 [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean):
 `Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
 PKE and `(qG, qH)` random-oracle queries for every coin value (decapsulation queries unbounded) by

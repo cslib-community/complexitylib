@@ -11,7 +11,7 @@ public import CslibFrontierTests.Crypto.FujisakiOkamoto
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
-# Tests for the ROM IND-CCA theorem of `FO-notbot`
+# Tests for the concrete ROM IND-CCA advantage bound of `FO-notbot`
 
 Exercises `Scheme.indCcaRomAdvantage_le` on two concrete schemes:
 1. `notBotScheme` (`identityPKE` with uniform `Fin 4` messages and `DeltaCorrect 0`; `identityPKE`

@@ -15,23 +15,25 @@ import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 
 /-!
-# ROM IND-CCA security of `FO-notbot`
+# Concrete ROM IND-CCA advantage bound for `FO-notbot`
 
-The domain-separated implicit-rejection transform `FO-notbot = U-notbot ∘ T` of
+`Scheme.indCcaRomAdvantage_le` is the concrete per-instance ROM IND-CCA advantage bound for the
+domain-separated implicit-rejection transform `FO-notbot = U-notbot ∘ T` of
 [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated 2 November 2021, §3.2.2,
-Fig. 12) is IND-CCA secure in the random oracle model when the underlying explicit-coin PKE is
-two-stage IND-CPA secure and `δ`-correct, and messages are uniform
-(`Scheme.indCcaRomAdvantage_le`). As in the source, no `γ`-spreadness is needed (§1.1.2 table and
-the text below it, p. 6; remark after the proof of Theorem 3.2, p. 13; `KEM-notbot` row of the §3.3
-table, p. 22). For a randomized adversary each of whose coin values makes at most `qG` queries to
-`G` and `qH` queries to `H` (and any number of decapsulation queries),
+Fig. 12), after Theorems 3.2 and 3.4 of that paper. It holds for one fixed finite scheme, with no
+security parameter and no running-time bound on the reduction `romCpaReduction A`; it is the step
+that the word-level asymptotic theorem for the `FO-notbot` family consumes. For uniform messages, a
+`δ`-correct explicit-coin PKE and a randomized adversary each of whose coin values makes at most
+`qG` queries to `G` and `qH` queries to `H` (and any number of decapsulation queries),
 
 `Adv^{IND-CCA}(A) ≤ 2 · Adv^{IND-CPA}(B) + (2 qH + 2 (qG + qH)) / |M| + 2 (qG + qH + 1) δ`,
 
 where `B = romCpaReduction A` is one two-stage IND-CPA adversary that draws its own challenge
-messages. The paper obtains its bound by composing Theorem 3.2 for `T` (IND-CPA to OW-PCA, §3.1)
-with Theorem 3.4 for `U-notbot` (§3.2.2); this proof composes the corresponding game hops
-directly:
+messages. As in the source, no `γ`-spreadness is needed (§1.1.2 table and the text below it, p. 6;
+remark after the proof of Theorem 3.2, p. 13; `KEM-notbot` row of the §3.3 table, p. 22). The paper
+obtains its bound by composing Theorem 3.2 for `T` (IND-CPA to OW-PCVA, §3.1, used in its OW-PCA
+form without spreadness from the remark on p. 13) with Theorem 3.4 for `U-notbot` (§3.2.2); this
+proof composes the corresponding game hops directly:
 
 1. `advantage_eagerIndCcaGame_eagerFbGame_le` (module `NotBot.Fallback`): replacing the
    implicit-rejection keys `H(true, s, ·)` by an independent table costs `qH / |M|` (game G1 of the
@@ -63,9 +65,10 @@ Fig. 4.
 
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_eagerIndCcaGame_coupledGame_le`: the
   eager IND-CCA game and the lazy coupled game differ by at most `qH / |M|`.
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le`: ROM IND-CCA security of
-  `FO-notbot` from two-stage IND-CPA security and `δ`-correctness, through the one reduction
-  `romCpaReduction A`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le`: the concrete
+  per-instance ROM IND-CCA advantage bound for `FO-notbot` (after HHK17 Theorems 3.2 and 3.4), in
+  terms of the two-stage IND-CPA advantage of the one reduction `romCpaReduction A` and
+  `δ`-correctness, for one fixed finite scheme and without running-time bounds on the reduction.
 
 ## References
 
@@ -103,11 +106,13 @@ theorem advantage_eagerIndCcaGame_coupledGame_le [Fintype M] [Nonempty M] [Finit
   refine (S.advantage_eagerIndCcaGame_eagerFbGame_le A hq hp b).trans (le_of_eq ?_)
   simp [div_eq_mul_inv]
 
-/-- **ROM IND-CCA security of `FO-notbot` from two-stage IND-CPA**
-([HofheinzHoevelmannsKiltz2017], Theorems 3.2 and 3.4, composed directly). Let the messages be
-uniform and the PKE `δ`-correct, and let every coin value of the randomized adversary `A` make at
-most `qG` queries to `G` and `qH` queries to `H` (decapsulation queries are unbounded). Then the
-single IND-CPA reduction `romCpaReduction A` satisfies
+/-- **Concrete ROM IND-CCA advantage bound for `FO-notbot`**, the per-instance step after
+[HofheinzHoevelmannsKiltz2017], Theorems 3.2 and 3.4 (composed directly), for one fixed finite
+scheme and without running-time bounds on `romCpaReduction A`; the word-level asymptotic theorem
+for the `FO-notbot` family consumes it. Let the messages be uniform and the PKE `δ`-correct, and
+let every coin value of the randomized adversary `A` make at most `qG` queries to `G` and `qH`
+queries to `H` (decapsulation queries are unbounded). Then the single IND-CPA reduction
+`romCpaReduction A` satisfies
 `Adv^{IND-CCA}(A) ≤ 2 · Adv^{IND-CPA}(romCpaReduction A) + (2 qH + 2 (qG + qH)) / |M|
   + 2 (qG + qH + 1) δ`.
 As in the source, the PKE need not be `γ`-spread (§1.1.2 table, p. 6; remark after the proof of
@@ -119,8 +124,7 @@ the hidden-bit normalization the bound reads
 Both the real key (via `H`) and the independent ideal challenge key in `roIndCcaGame` are drawn
 from the arbitrary key sampler `S.sampleKey : ProbComp K`; taking `S.sampleKey` uniform on `K`
 recovers the standard uniform-ideal-key experiment of [HofheinzHoevelmannsKiltz2017], §2.2,
-Def. 2.4 / Fig. 4. This is a concrete bound for one fixed scheme; it says nothing about the running
-time of the reduction. -/
+Def. 2.4 / Fig. 4. -/
 theorem indCcaRomAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : RandomizedROAdversary PK M R CT K) {qG qH : ℕ}
     (hq : A.QueryBounds qG qH) (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M)
