@@ -6,7 +6,8 @@ Authors: Christian Reitwiessner
 
 module
 
-import CslibFrontier.Probability.MarkovChain.RotationMapVisits
+import CslibFrontier.Probability.MarkovChain.RotationMap
+import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 
 /-!
 # Random walks on regular multigraphs: checked clients for Arora–Barak Exercise 7.9
@@ -57,6 +58,15 @@ example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) (N 
         Set.Icc ((1 - ε) * t / Fintype.card V) ((1 + ε) * t / Fintype.card V)} :=
   ((Filter.eventually_gt_atTop N).and (eventually_visits_mem_Icc hG u v hε)).exists
 
+/-- (b)(ii) written directly with the count of times `1, …, t` at which the walk is at `v`. -/
+example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ t in Filter.atTop, (1 - ε) * (Fintype.card D : ℝ) ^ t ≤
+      #{w : Fin t → D | ((#{i ∈ range t | G.walkAt (u, w) (i + 1) = v} : ℕ) : ℝ) ∈
+        Set.Icc ((1 - ε) * t / Fintype.card V) ((1 + ε) * t / Fintype.card V)} := by
+  filter_upwards [eventually_visits_mem_Icc hG u v hε] with t ht
+  convert ht using 4
+  rw [visits_eq]
+
 /-- (c): `E_u ≤ 10 n²`, and in fact `E_u = n` on a connected graph. -/
 example (u : V) : returnTime G.randomWalk u ≤ 10 * (Fintype.card V : ℝ≥0∞) ^ 2 :=
   returnTime_randomWalk_le_ten_mul_sq u
@@ -98,5 +108,9 @@ private theorem flip_connected : flip.toSimpleGraph.Connected := by
 /-- On a single edge, the expected return time is `2`. -/
 example : returnTime flip.randomWalk false = 2 := by
   rw [returnTime_randomWalk_eq_card_of_connected flip_connected]; rfl
+
+/-- On a single edge, a two-step walk from `false` visits `true` once (at time `1`). -/
+example : flip.visits false true (fun _ : Fin 2 => ()) = 1 := by
+  decide
 
 end CslibFrontierTests.RegularRandomWalk

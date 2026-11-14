@@ -7,8 +7,11 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import CslibFrontier.Probability.MarkovChain.RotationMap
-public import CslibFrontier.Foundations.Combinatorics.Expander.Spectrum
+public import CslibFrontier.Foundations.Combinatorics.Expander.SimpleGraph
+public import CslibFrontier.Foundations.Combinatorics.Expander.Walk
+public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
+import CslibFrontier.Foundations.Combinatorics.Expander.Harmonic
+import CslibFrontier.Foundations.Combinatorics.Expander.Spectrum
 import CslibFrontier.Foundations.Data.Finset.Expect
 import Mathlib.Analysis.InnerProductSpace.MeanErgodic
 
@@ -42,6 +45,7 @@ The proof has two steps.
 
 ## Main results
 
+* `Cslib.RotationMap.visits_eq`: the defining count of `visits`.
 * `Cslib.RotationMap.exists_abs_sum_walk_pow_le`: uniform Cesàro convergence.
 * `Cslib.RotationMap.eventually_visits_mem_Icc`: Arora and Barak, Exercise 7.9(b)(ii), for all
   large `t`; `Cslib.RotationMap.exists_visits_mem_Icc` is the existential form of the source.
@@ -61,15 +65,6 @@ open scoped BigOperators
 variable {V D : Type*} [Fintype V] [DecidableEq V] [Fintype D] [Nonempty D] {G : RotationMap V D}
 
 /-! ### The mean ergodic step -/
-
-omit [DecidableEq V] [Nonempty D] in
-/-- The walk operator does not increase the Euclidean norm. -/
-theorem norm_walkEuclidean_le (x : EuclideanSpace ℝ V) : ‖G.walkEuclidean x‖ ≤ ‖x‖ := by
-  rw [← WithLp.toLp_ofLp 2 x, walkEuclidean_toLp]
-  have h := mul_le_mul_of_nonneg_left (G.expect_walk_sq_le x.ofLp)
-    (Nat.cast_nonneg (α := ℝ) (Fintype.card V))
-  rw [card_mul_expect_sq, card_mul_expect_sq] at h
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h
 
 omit [Fintype V] [DecidableEq V] in
 /-- A function of absolute value at most `c` stays so under the walk operator. -/
@@ -93,7 +88,7 @@ theorem exists_abs_sum_walk_pow_le (hG : G.toSimpleGraph.Preconnected) {f : V �
   set W := LinearMap.toContinuousLinearMap G.walkEuclidean
   have hW : ‖W‖ ≤ 1 :=
     ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => by
-      rw [one_mul]; exact norm_walkEuclidean_le x
+      rw [one_mul]; exact G.norm_walkEuclidean_le x
   have hlim := W.tendsto_birkhoffAverage_orthogonalProjection hW (WithLp.toLp 2 f)
   have hproj : (W.eqLocus (1 : EuclideanSpace ℝ V →L[ℝ] EuclideanSpace ℝ V)
       ).orthogonalProjectionOnto (WithLp.toLp 2 f) = 0 := by
@@ -134,8 +129,14 @@ theorem exists_abs_sum_walk_pow_le (hG : G.toSimpleGraph.Preconnected) {f : V �
 /-! ### Visit counts and their moments -/
 
 /-- The number of visits to `v` at times `1, …, t` of the walk from `u` along the labels `k`. -/
-def visits (G : RotationMap V D) (u v : V) {t : ℕ} (k : Fin t → D) : ℕ :=
+@[expose] def visits (G : RotationMap V D) (u v : V) {t : ℕ} (k : Fin t → D) : ℕ :=
   #{i ∈ range t | G.walkAt (u, k) (i + 1) = v}
+
+omit [Fintype V] [Fintype D] [Nonempty D] in
+/-- The defining equation of `visits`: the count of times `1, …, t` at which the walk is at `v`. -/
+theorem visits_eq (u v : V) {t : ℕ} (k : Fin t → D) :
+    G.visits u v k = #{i ∈ range t | G.walkAt (u, k) (i + 1) = v} :=
+  rfl
 
 /-- The sum of `f` over the vertices at times `1, …, t` of a walk. -/
 private def visitSum (G : RotationMap V D) (f : V → ℝ) (u : V) {t : ℕ} (k : Fin t → D) : ℝ :=

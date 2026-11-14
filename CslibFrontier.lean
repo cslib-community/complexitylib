@@ -5386,6 +5386,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.TannerCode
 public import CslibFrontier.Foundations.Combinatorics.Expander.Tensor
 public import CslibFrontier.Foundations.Combinatorics.Expander.Tower
 public import CslibFrontier.Foundations.Combinatorics.Expander.TowerFamily
+public import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 public import CslibFrontier.Foundations.Combinatorics.Expander.Walk
 public import CslibFrontier.Foundations.Combinatorics.Expander.Zigzag
 public import CslibFrontier.Foundations.Combinatorics.FiniteCover
@@ -7014,7 +7015,6 @@ public import CslibFrontier.Probability.MarkovChain.Mixing
 public import CslibFrontier.Probability.MarkovChain.PathCoupling
 public import CslibFrontier.Probability.MarkovChain.RandomWalk
 public import CslibFrontier.Probability.MarkovChain.RotationMap
-public import CslibFrontier.Probability.MarkovChain.RotationMapVisits
 public import CslibFrontier.Probability.MedianOfMeans
 public import CslibFrontier.Probability.MedianTrick
 public import CslibFrontier.Probability.MinEntropy
