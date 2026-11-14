@@ -92,6 +92,15 @@ class Fixture(unittest.TestCase):
 @unittest.skipUnless(sys.platform == "linux" and hasattr(os, "fork"),
                      "Linux process states required")
 class ProcessStateTests(ProcessAssertions, unittest.TestCase):
+    def test_proc_stat_parser_handles_parentheses_and_non_utf8_command(self) -> None:
+        self.assertEqual(c._parse_proc_stat_state(b"123 (bad\xff)name) S 1 2 3"), "S")
+        self.assertIsNone(c._parse_proc_stat_state(b"123 malformed"))
+
+    def test_unreadable_proc_state_uses_conservative_presence_fallback(self) -> None:
+        with patch.object(Path, "read_bytes", side_effect=OSError("unreadable")):
+            self.assertEqual(c._process_state(os.getpid()), "?")
+            self.assertTrue(c._process_is_running(os.getpid()))
+
     def test_zombie_has_stopped_even_while_kill_zero_reports_it(self) -> None:
         pid = os.fork()
         if pid == 0:
@@ -621,11 +630,12 @@ theorem warnA : 1 = 2 := by sorry
         scope.write_text(json.dumps(["Demo/SlowA.lean", "Demo/SlowB.lean"]))
 
         captured_pids: list[int] = []
+        cancelled = threading.Event()
 
         def trigger_interrupt() -> None:
             deadline = time.monotonic() + 10.0
             pid_files = [self.root / "slowa.pid", self.root / "slowb.pid"]
-            while time.monotonic() < deadline:
+            while time.monotonic() < deadline and not cancelled.is_set():
                 pids = []
                 for pf in pid_files:
                     if pf.is_file():
@@ -635,22 +645,37 @@ theorem warnA : 1 = 2 := by sorry
                             pass
                 if len(pids) == 2:
                     captured_pids.extend(pids)
-                    break
-                time.sleep(0.02)
-            os.kill(os.getpid(), sig)
+                    if not cancelled.is_set():
+                        os.kill(os.getpid(), sig)
+                    return
+                cancelled.wait(0.02)
+            if not cancelled.is_set():
+                os.kill(os.getpid(), sig)
 
         watcher = threading.Thread(target=trigger_interrupt, daemon=True)
         watcher.start()
 
         started = time.monotonic()
-        with self.assertRaises(KeyboardInterrupt):
-            c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
-        elapsed = time.monotonic() - started
+        try:
+            with self.assertRaises(KeyboardInterrupt):
+                c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
+            elapsed = time.monotonic() - started
+        finally:
+            cancelled.set()
+            watcher.join(timeout=1)
+        self.assertFalse(watcher.is_alive(), "interrupt watcher should stop before the test exits")
 
         self.assertEqual(len(captured_pids), 2, "both lean child processes should have recorded PIDs")
         self.assertLess(elapsed, 6.0, f"interrupt cleanup took too long: {elapsed:.2f}s")
 
         self.assert_processes_stopped(captured_pids)
+
+    def test_interrupt_watcher_is_cancelled_after_early_failure(self) -> None:
+        with patch.object(c, "main", side_effect=RuntimeError("early failure")), \
+             patch.object(os, "kill") as kill, \
+             self.assertRaisesRegex(RuntimeError, "early failure"):
+            self._assert_interrupt_cleans_up_descendants(signal.SIGTERM)
+        kill.assert_not_called()
 
     @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
     def test_parallel_real_lake_sigint_cleans_up_descendant_process_tree(self) -> None:

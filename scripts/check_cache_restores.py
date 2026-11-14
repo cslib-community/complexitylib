@@ -226,6 +226,16 @@ def _descendant_pids(pid: int) -> list[int]:
     return descendants
 
 
+def _parse_proc_stat_state(stat: bytes) -> str | None:
+    """Parse the state field after `/proc/PID/stat`'s final parenthesized command name."""
+    rparen = stat.rfind(b")")
+    fields = stat[rparen + 1:].split() if rparen != -1 else []
+    state = fields[0] if fields else b""
+    if len(state) != 1 or not state.isascii():
+        return None
+    return chr(state[0])
+
+
 def _process_state(pid: int) -> str | None:
     """The Linux process-state letter for `pid`, `?` when it exists but the state is unavailable,
     or `None` when it no longer exists.
@@ -236,17 +246,15 @@ def _process_state(pid: int) -> str | None:
     """
     proc_root = Path("/proc")
     try:
-        stat_text = (proc_root / str(pid) / "stat").read_text()
+        stat = (proc_root / str(pid) / "stat").read_bytes()
     except FileNotFoundError:
         if proc_root.is_dir():
             return None
     except OSError:
         pass
     else:
-        rparen = stat_text.rfind(")")
-        fields = stat_text[rparen + 1:].split() if rparen != -1 else []
-        if fields:
-            return fields[0]
+        if state := _parse_proc_stat_state(stat):
+            return state
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
