@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
@@ -266,6 +267,7 @@ import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 import CslibFrontier.Probability.BilinearFingerprint
+import CslibFrontier.Probability.Extractor.LeftoverHash
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -5772,6 +5774,26 @@ register_result "bilinear-finite-field-fingerprint" where
     least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
     two. No runtime bound or general rank formula."
 
+register_result "random-walk-edge-hitting-time" where
+  title := "The random walk crosses an edge of a connected graph in expected time at most 2|E|"
+  topic := "randomized complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Exercise 6.19 (completing Proposition 6.13)",
+      locator := "February 2007 draft r3.pdf, PDF p. 56; printed p. 258" }
+  ]
+  theorems := [
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_of_adj,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_add_degree_le,
+    Cslib.Probability.MarkovChain.degree_mul_returnTime_randomWalk,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_dist_mul
+  ]
+  scope := "Finite simple graphs (Mathlib SimpleGraph) with the simple random walk as a \
+    MarkovChain; connectedness assumed. Expected hitting and return times are exact \
+    extended-real tail sums of the probabilities of avoiding the target, not finite-horizon \
+    approximations. Proves E_u[tau_v] + deg v <= 2|E| for every edge {u,v}, Kac's formula \
+    deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
+    bound and the log-space USTCON algorithm are not included."
+
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"
   topic := "pseudorandomness"
@@ -5805,6 +5827,20 @@ register_result "linear-space-ne-np" where
     cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
     cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
     polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
+
+register_result "arora-barak-draft-leftover-hash" where
+  title := "Draft leftover hash lemma with entropy k/delta"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 16.42; Chapter 16, Exercise 12",
+      locator := "January 8, 2007 draft; printed 308 / PDF 324; exercise printed 319 / PDF 335" }
+  ]
+  theorems := [Cslib.Probability.IsUniversalHash.isStrongExtractor_of_entropy_div,
+    Cslib.Probability.IsUniversalHash.isExtractor_append_of_entropy_div]
+  scope := "All n,k,t and positive delta. Uniform independent seed, distinct-input collision \
+    bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
+    sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
+    and large delta; no efficiency or short-seed assertion."
 
 register_result "goldreich-expander-visit-count" where
   title := "Expander-walk selected-time hitting and visit-count tails"

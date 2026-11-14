@@ -5156,6 +5156,7 @@ public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalRatPoly
+public import CslibFrontier.Foundations.Algebra.Quaternion.BpInfinity
 public import CslibFrontier.Foundations.Algebra.Shear
 public import CslibFrontier.Foundations.Algebra.Tropical
 public import CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse
@@ -7021,9 +7022,11 @@ public import CslibFrontier.Probability.MarkovChain.Coloring
 public import CslibFrontier.Probability.MarkovChain.Coloring.Count
 public import CslibFrontier.Probability.MarkovChain.Coloring.Ratio
 public import CslibFrontier.Probability.MarkovChain.Coupling
+public import CslibFrontier.Probability.MarkovChain.HittingTime
 public import CslibFrontier.Probability.MarkovChain.Metropolis
 public import CslibFrontier.Probability.MarkovChain.Mixing
 public import CslibFrontier.Probability.MarkovChain.PathCoupling
+public import CslibFrontier.Probability.MarkovChain.RandomWalk
 public import CslibFrontier.Probability.MedianOfMeans
 public import CslibFrontier.Probability.MedianTrick
 public import CslibFrontier.Probability.MinEntropy

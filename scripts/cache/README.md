@@ -82,7 +82,7 @@ timeouts remain optional. The helpers never remove Git locks; forced termination
 leave one behind.
 
 Lean CI and API docs call this helper with `--lean-action`, preserving the Mathlib URL
-handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
+handling that lean-action had: unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
@@ -91,8 +91,8 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI
-and the guide no longer run `leanprover/lean-action`: with every feature off it only
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
+the guide and API docs no longer run `leanprover/lean-action`: with every feature off it only
 reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
 miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
@@ -100,11 +100,14 @@ cache above.
 
 ## Hosted-runner disk space
 
-Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
-Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
-runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
-Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
-if it fails.
+Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to report available disk
+space. On GitHub-hosted Linux runners it removes the unused Android and .NET SDKs only when less
+than 100 GiB is available, or the free-space measurement is unavailable. This conservative
+headroom policy retains cleanup on constrained runners while avoiding several minutes of SDK
+deletion on larger runners that already have ample space; it is not an exact build-size estimate.
+Local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python, Node
+actions, repository and caches are retained. Cleanup is optional; all validation still runs if
+it fails.
 
 ## Merge-queue handoff
 
@@ -292,9 +295,14 @@ separate decision; the real MIT cold restore and recovery exercise remain tracke
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
 The MIT job verifies this run's artifact ID and producer revision before obtaining its upload
-password for the final step. It packs the inventory and files into an uncompressed USTAR package
-and sends `PUT /publish/<commit>` over HTTPS. curl retries transient failures; credentials travel
-through its stdin configuration rather than URLs or command-line arguments.
+password for the final step. It sends the complete SHA-256 inventory and mapping in a small
+USTAR probe to `PUT /publish/<commit>` over HTTPS, then uploads only missing archive payloads
+alongside that same complete metadata. The server rechecks every omitted retained object under
+its publication/GC lock before making the mapping visible. An old server's 415 triggers a full
+upload; a GC race's 412 triggers one full retry. See the
+[protocol and compatibility contract](../../tools/cache-origin/README.md#publication-contract).
+curl retries transient failures; credentials travel through its stdin configuration rather
+than URLs or command-line arguments.
 
 The handler validates the whole package before publishing anything, installs artifacts before
 the mapping and rejects conflicting existing keys even when the client omits conditional headers.
@@ -351,6 +359,13 @@ This PR does not complete repository-managed provisioning or automated upgrades.
 open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
+
+The HTTP publisher reports `CACHE_HTTP_PUBLICATION`: `mode` is `incremental`, `legacy-full`
+(old server), or `race-full` (GC removed an omitted object). `archives_sent` counts payloads in
+the final package; `request_body_bytes` lists every protocol package, including the probe and
+any full fallback. It excludes curl's automatic retransmissions and HTTP/TLS overhead. This
+measures transfer reduction, not archive preparation: the complete local staging directory
+and its digest verification are still required. A 409 remains a hard conflict, not a cache miss.
 
 ## Profile cache publication
 

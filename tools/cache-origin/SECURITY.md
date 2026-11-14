@@ -20,6 +20,12 @@ establish a trustworthy cache in either case; it is not part of this design. If 
 threat model becomes required, revisit authenticated provenance and reader verification together,
 rather than treating a server-side ledger as protection against a compromised writer.
 
+Incremental publication preserves this contract: the probe is an authenticated hint, and the
+commit checks the complete mapping/inventory and SHA-256 of every omitted retained object
+while holding the publication/GC lock. A missing object fails the commit before mapping
+installation. The probe creates no reservation, durable digest commitment or authorization to
+skip validation. Its response is not proof that an archive will remain available.
+
 ## If a publisher, origin or restored output is compromised
 
 Treat this as a cache incident across every propagation path. MIT outputs can enter a local
