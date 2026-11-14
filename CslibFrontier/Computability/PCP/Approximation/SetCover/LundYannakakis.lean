@@ -1522,10 +1522,6 @@ end Combinatorial
 
 section PolyTime
 
-private theorem unaryToNat {α : Type} {enc : α ↪ List Bool} {f : α → ℕ}
-    (hf : ComputableInPolyTime f enc encUnary) : ComputableInPolyTime f enc encNat :=
-  (of_tidy ComputableTidilyInPolyTime.unary_to_binary).comp hf
-
 private theorem computableInPolyTime_leftVertices {β γ : Type} (encC : (β → γ) ↪ List Bool) :
     ComputableInPolyTime (leftVertices (β := β) (γ := γ))
       (Graph.encoding encC) (encList encUnary) := by
@@ -1571,7 +1567,7 @@ private theorem computableInPolyTime_weightedGround {β γ : Type} (encC : (β �
   unfold weightedGround
   refine flatMapWithInput (unary_range' (length_list _ |>.comp (Graph.isPolyTime_edges id'))) ?_
   refine mapWithInput (const (encOut := encList encNat) (List.range G.size)) ?_
-  exact binary_pair' (unaryToNat ((snd _ _).comp (fst _ _))) (snd _ _)
+  exact binary_pair' (unary_to_binary.comp ((snd _ _).comp (fst _ _))) (snd _ _)
 
 private theorem computableInPolyTime_weightedLeftSet {β γ : Type} [Finite β] [Finite γ]
     (encC : (β → γ) ↪ List Bool) (fallback : γ) (G : PartitionGadget γ) (a : β) :
@@ -1579,7 +1575,7 @@ private theorem computableInPolyTime_weightedLeftSet {β γ : Type} [Finite β] 
       (encPair (Graph.encoding encC) encUnary) encWeightedSet := by
   unfold weightedLeftSet
   refine computableInPolyTime_weightedSetMk ?_
-    (unaryToNat (computableInPolyTime_degL encC))
+    (unary_to_binary.comp (computableInPolyTime_degL encC))
   refine flatMapWithInput (unary_range' (length_list _ |>.comp
     (Graph.isPolyTime_edges (fst _ _)))) ?_
   have hedge : ComputableInPolyTime
@@ -1607,7 +1603,7 @@ private theorem computableInPolyTime_weightedLeftSet {β γ : Type} [Finite β] 
             (Nat.pair q.2))
       (encPair (encPair (Graph.encoding encC) encUnary) encUnary) (encList encNat) := by
     refine mapWithInput hxs ?_
-    exact binary_pair' (unaryToNat ((snd _ _).comp (fst _ _))) (snd _ _)
+    exact binary_pair' (unary_to_binary.comp ((snd _ _).comp (fst _ _))) (snd _ _)
   simpa only [decide_eq_true_eq] using ite' hcond hbranch (const [])
 
 private theorem computableInPolyTime_weightedRightSet {β γ : Type}
@@ -1616,7 +1612,7 @@ private theorem computableInPolyTime_weightedRightSet {β γ : Type}
       (encPair (Graph.encoding encC) encUnary) encWeightedSet := by
   unfold weightedRightSet
   refine computableInPolyTime_weightedSetMk ?_
-    (unaryToNat (computableInPolyTime_degR encC))
+    (unary_to_binary.comp (computableInPolyTime_degR encC))
   refine flatMapWithInput (unary_range' (length_list _ |>.comp
     (Graph.isPolyTime_edges (fst _ _)))) ?_
   have hedge : ComputableInPolyTime
@@ -1635,7 +1631,7 @@ private theorem computableInPolyTime_weightedRightSet {β γ : Type}
       (encPair (encPair (Graph.encoding encC) encUnary) encUnary) (encList encNat) := by
     refine mapWithInput (const (encOut := encList encNat)
       ((List.range G.size).filter fun x => G.mem x b)) ?_
-    exact binary_pair' (unaryToNat ((snd _ _).comp (fst _ _))) (snd _ _)
+    exact binary_pair' (unary_to_binary.comp ((snd _ _).comp (fst _ _))) (snd _ _)
   simpa only [decide_eq_true_eq] using ite' hcond hbranch (const [])
 
 theorem computableInPolyTime_toWeightedSetCoverOf {β γ : Type} [Finite β] [Finite γ]
@@ -1675,8 +1671,8 @@ theorem computableInPolyTime_toWeightedSetCoverOf {β γ : Type} [Finite β] [Fi
       (listAppend' hL hR)
   have hm : ComputableInPolyTime (fun g : Graph (β → γ) => 2 * g.edges.length)
       (Graph.encoding encC) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_mul' (const 2).tidy
-      (unaryToNat ((length_list _).comp (Graph.isPolyTime_edges id'))).tidy)
+    binary_mul' (const 2)
+      (unary_to_binary.comp ((length_list _).comp (Graph.isPolyTime_edges id')))
   exact hW.prod hm
 
 private theorem computableInPolyTime_unweightedGround {β γ : Type}
@@ -1717,7 +1713,7 @@ private theorem computableInPolyTime_unweightedGround {β γ : Type}
       (fun q : (((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.1.2)
       (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encNat) encUnary)
         encUnary) encNat :=
-    unaryToNat ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
+    unary_to_binary.comp ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
   have hx : ComputableInPolyTime
       (fun q : (((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.2)
       (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encNat) encUnary)
@@ -1727,12 +1723,12 @@ private theorem computableInPolyTime_unweightedGround {β γ : Type}
       (fun q : (((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.2)
       (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encNat) encUnary)
         encUnary) encNat :=
-    unaryToNat ((snd _ _).comp (fst _ _))
+    unary_to_binary.comp ((snd _ _).comp (fst _ _))
   have hr2 : ComputableInPolyTime
       (fun q : (((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ => q.2)
       (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encNat) encUnary)
         encUnary) encNat :=
-    unaryToNat (snd _ _)
+    unary_to_binary.comp (snd _ _)
   exact binary_pair' (binary_pair' he hx) (binary_pair' hr1 hr2)
 
 private theorem computableInPolyTime_unweightedLeftSet {β γ : Type} [Finite β] [Finite γ]
@@ -1794,7 +1790,7 @@ private theorem computableInPolyTime_unweightedLeftSet {β γ : Type} [Finite β
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat ((snd _ _).comp ((fst _ _).comp (fst _ _)))
+      unary_to_binary.comp ((snd _ _).comp ((fst _ _).comp (fst _ _)))
     have hx : ComputableInPolyTime
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
@@ -1804,12 +1800,12 @@ private theorem computableInPolyTime_unweightedLeftSet {β γ : Type} [Finite β
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
+      unary_to_binary.comp ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
     have hr2 : ComputableInPolyTime
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat (snd _ _)
+      unary_to_binary.comp (snd _ _)
     exact binary_pair' (binary_pair' he hx) (binary_pair' hr1 hr2)
   simpa only [decide_eq_true_eq] using ite' hcond hbranch (const [])
 
@@ -1863,7 +1859,7 @@ private theorem computableInPolyTime_unweightedRightSet {β γ : Type}
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat ((snd _ _).comp ((fst _ _).comp (fst _ _)))
+      unary_to_binary.comp ((snd _ _).comp ((fst _ _).comp (fst _ _)))
     have hx : ComputableInPolyTime
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
@@ -1873,12 +1869,12 @@ private theorem computableInPolyTime_unweightedRightSet {β γ : Type}
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat (snd _ _)
+      unary_to_binary.comp (snd _ _)
     have hr2 : ComputableInPolyTime
         (fun q : ((((Graph (β → γ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.1.2)
         (encPair (encPair (encPair (encPair (encPair (Graph.encoding encC) encUnary) encUnary)
           encUnary) encNat) encUnary) encNat :=
-      unaryToNat ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
+      unary_to_binary.comp ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _))))
     exact binary_pair' (binary_pair' he hx) (binary_pair' hr1 hr2)
   simpa only [decide_eq_true_eq] using ite' hcond hbranch (const [])
 
@@ -1927,8 +1923,8 @@ theorem computableInPolyTime_toSetCoverOf {β γ : Type} [Finite β] [Finite γ]
       (listAppend' hL hR)
   have hm : ComputableInPolyTime (fun g : Graph (β → γ) => 2 * g.edges.length)
       (Graph.encoding encC) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_mul' (const 2).tidy
-      (unaryToNat ((length_list _).comp (Graph.isPolyTime_edges id'))).tidy)
+    binary_mul' (const 2)
+      (unary_to_binary.comp ((length_list _).comp (Graph.isPolyTime_edges id')))
   exact hS.prod hm
 
 end PolyTime

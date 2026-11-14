@@ -480,11 +480,10 @@ private theorem gapOpt_mem_PromiseP_of_approx {α : Type} {enc : α ↪ List Boo
   let decider : α × ℕ → Bool := fun x => decide (q * cost x.1 ≤ p * x.2)
   refine mem_PromiseP_iff.2 ⟨decider, ?_, fun ⟨x, k⟩ hx => ?_, fun ⟨x, k⟩ hx => ?_⟩
   · have hleft : ComputableInPolyTime (fun x : α × ℕ => q * cost x.1) (encPair enc encNat) encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.binary_mul' (const q).tidy
-        (hcost.comp (fst enc encNat)).tidy)
+      binary_mul' (const q) (hcost.comp (fst enc encNat))
     have hright : ComputableInPolyTime (fun x : α × ℕ => p * x.2) (encPair enc encNat) encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.binary_mul' (const p).tidy (snd enc encNat).tidy)
-    exact .of_tidy (ComputableTidilyInPolyTime.binary_le' hleft.tidy hright.tidy)
+      binary_mul' (const p) (snd enc encNat)
+    exact ComputableInPolyTime.binary_le' hleft hright
   · obtain ⟨hxV, hk⟩ := hyes x k hx
     simp only [decider, decide_eq_true_eq]
     have hreal : (q * cost x : ℝ) ≤ p * k := by
@@ -518,7 +517,7 @@ theorem gapSetCover_mem_PromiseP_of_approx {A : SetSystem → List ℕ} {ρ r : 
     (happrox : minSetCover.IsApprox (fun _ => ρ) A) :
     GapSetCover r ∈ PromiseP encSetCover := by
   have hcost : ComputableInPolyTime (fun S : SetSystem => (A S).length) encSetSystem encNat :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_to_binary).comp
+    ComputableInPolyTime.unary_to_binary.comp
       ((ComputableInPolyTime.length_list encNat).comp hA)
   exact gapOpt_mem_PromiseP_of_approx (Valid := SetSystem.Coverable) hρ0 hρ hcost
     (fun S hS => minSetCover.opt_le S (A S) hS (happrox S hS).1)
@@ -556,7 +555,7 @@ theorem gapWeightedSetCover_mem_PromiseP_of_approx {A : WeightedSetSystem → Li
     have hset : ComputableInPolyTime
         (fun q : WeightedSetSystem × ℕ => q.1.sets.getD q.2 ⟨[], 0⟩)
         (encPair encWeightedSetSystem encNat) encWeightedSet :=
-      .of_tidy (ComputableTidilyInPolyTime.listGetD_binary ⟨[], 0⟩ hlist.tidy hidx.tidy)
+      listGetD_binary ⟨[], 0⟩ hlist hidx
     exact computableInPolyTime_weightedSetWeight.comp hset
   have hcost : ComputableInPolyTime costList encWeightedSetSystem encNat :=
     (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_sum).comp hws
