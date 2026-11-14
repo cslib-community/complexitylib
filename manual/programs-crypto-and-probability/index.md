@@ -952,8 +952,9 @@ proves that the optimum equals the minimum cover size, and the readback `queried
 keeps the oracles with positive call counts in polynomial time.
 `P_eq_NP_of_selection_approx_const` combines this with `GapSetCover_npHard`: unless
 $\mathrm{P}=\mathrm{NP}$, no polynomial-time algorithm approximates the selection
-problem within any constant factor. Hardness on this subclass also rules out
-algorithms for any broader input class that contains it.
+problem within any constant factor. Transferring this hardness to a broader input
+class additionally requires a polynomial-time embedding preserving feasibility and
+approximation guarantees.
 
 The source states the sharper bound: no $(1-\varepsilon)\ln n$-approximation for any
 constant $\varepsilon>0$ unless $\mathrm{P}=\mathrm{NP}$, citing Dinur and Steurer (2014). That bound needs
