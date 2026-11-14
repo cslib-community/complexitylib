@@ -17,17 +17,29 @@ import CslibFrontier.Crypto.Negligible.Dyadic
 This module proves that the word-level `FO-notbot` KEM of
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame` is IND-CCA secure in the random
 oracle model when the underlying word-level PKE family is IND-CPA secure
-(`WordPKE.INDCPA.romINDCCA`). This is the asymptotic form of the composition of Theorems 3.2 and
-3.4 of [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated 2 November 2021,
-§3.1 and §3.2.2) for `FO-notbot = U-notbot ∘ T`.
+(`WordPKE.INDCPA.romINDCCA`). This is an asymptotic form of the `FO-notbot = U-notbot ∘ T` result
+of [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated 2 November 2021),
+which composes Theorem 3.2 (§3.1) and Theorem 3.4 (§3.2.2), with one premise more than the source
+needs (see below).
 
 **Assumptions.** `P.INDCPA` is the hardness assumption: IND-CPA security of the PKE family
 against uniform strict PPT adversaries, with challenge messages in its message space. The other
-premises are properties of the PKE family and the key length, as in Theorem 3.2: efficiency
-(`WordPKE.IsEfficient` and a polynomial-time `keyLen`), ciphertexts in the ciphertext space
-(`WordPKE.CiphertextFits`), `δ`-correctness and `γ`-spreadness at every parameter with `δ` and
+premises are properties of the PKE family and the key length: efficiency (`WordPKE.IsEfficient`
+and a polynomial-time `keyLen`), ciphertexts in the ciphertext space (`WordPKE.CiphertextFits`),
+`δ`-correctness at every parameter with `δ` negligible, `γ`-spreadness at every parameter with
 `2 ^ (-γ)` negligible, and a message space of size `2 ^ msgLen n` whose inverse is negligible.
 Nothing is assumed about the reduction.
+
+**Deviation: the `γ`-spreadness premise.** [HofheinzHoevelmannsKiltz2017] do not require `PKE` to
+be `γ`-spread for `FO-notbot`. The table of §1.1.2 (p. 6) lists no requirement for it, unlike the
+explicit-rejection variants. The remark after the proof of Theorem 3.2 (p. 13) says that the
+reduction to OW-PCA security, which is all that Theorem 3.4 uses, needs no spreadness. The
+`KEM-notbot` row of the bounds table of §3.3 (p. 22) has no `γ` term. This theorem assumes
+`γ`-spreadness because the concrete bound `Scheme.indCcaRomAdvantage_le` uses it in one step:
+step 3 of the challenge hop in `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge`
+bounds by `2 ^ (-γ)` per query the event that a cached coin `G(m)` re-encrypts a message to the
+challenge ciphertext. The source's proof avoids that step. The theorem is therefore weaker than
+the source by this premise; removing it is #5376.
 
 **Proof.** For an adversary `A` with `IsOraclePPT encBool A`, the typed bridge
 `WordPKE.IsEfficient.exists_typedAdversary` gives at each parameter a typed adversary with a
@@ -54,7 +66,8 @@ documented there.
 
 * [D. Hofheinz, K. Hövelmanns, E. Kiltz, *A Modular Analysis of the Fujisaki–Okamoto
   Transformation*][HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated
-  2 November 2021), Theorems 3.2 and 3.4.
+  2 November 2021), Theorems 3.2 and 3.4; the requirements table of §1.1.2 (p. 6) and the bounds
+  table of §3.3 (p. 22).
 -/
 
 public section
@@ -74,10 +87,15 @@ is `δ`-correct and `γ`-spread with `δ` and `2 ^ (-γ)` negligible and has mes
 IND-CPA secure, its `FO-notbot` KEM with keys of length `keyLen n` is IND-CCA secure in the random
 oracle model against uniform strict oracle PPT adversaries, with any number of decapsulation
 queries. The proof applies the IND-CPA assumption to the explicit reduction
-`romCpaReductionWord A`, certified by `IsEfficient.isPPT_romCpaReductionWord`. -/
+`romCpaReductionWord A`, certified by `IsEfficient.isPPT_romCpaReductionWord`.
+
+The `γ`-spreadness premise is stronger than the source: [HofheinzHoevelmannsKiltz2017] need no
+spreadness for `FO-notbot` (§1.1.2 table, p. 6; remark after the proof of Theorem 3.2, p. 13;
+§3.3 table, p. 22). It is assumed because one step of the concrete bound
+`Scheme.indCcaRomAdvantage_le` uses it (see the module docstring and #5376). -/
 theorem INDCPA.romINDCCA {P : WordPKE} {keyLen : ℕ → ℕ} (hcpa : P.INDCPA)
     (hP : P.IsEfficient) (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
-    (hfit : P.CiphertextFits) {δ : ℕ → ℝ≥0} (hδ : P.DeltaCorrect fun n => δ n)
+    (hfit : P.CiphertextFits) {δ : ℕ → ℝ≥0} (hδ : P.DeltaCorrect δ)
     (hδneg : Negligible δ) {γ : ℕ → ℝ} (hγ : P.GammaSpread γ)
     (hγneg : Negligible fun n => (2 : ℝ≥0) ^ (-γ n))
     (hmsg : Negligible fun n => ((2 : ℝ≥0) ^ P.msgLen n)⁻¹) :
@@ -103,7 +121,10 @@ theorem INDCPA.romINDCCA {P : WordPKE} {keyLen : ℕ → ℕ} (hcpa : P.INDCPA)
     refine hle.trans (le_of_eq ?_)
     simp only [finiteScheme_pke] at hadv ⊢
     rw [← hadv]
-    simp [cpa, NNReal.coe_rpow]
+    simp only [cpa, coe_nndist, Fintype.card_pi, Fintype.card_bool, Finset.prod_const,
+      Finset.card_univ, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_add, Nat.cast_one,
+      Nat.cast_mul, NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, NNReal.coe_natCast,
+      NNReal.coe_inv, NNReal.coe_pow, NNReal.coe_one, NNReal.coe_rpow]
     ring
   refine negligible_of_le ?_ hbound
   have h₁ : Negligible fun n => 2 * cpa n := hcpa'.const_mul 2

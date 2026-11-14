@@ -222,7 +222,7 @@ example (hcpa : identityPKE.INDCPA) {γ : ℕ → ℝ} (hγ : identityPKE.GammaS
     identityPKE.ROMINDCCA (fun n => n) :=
   hcpa.romINDCCA (δ := fun _ => 0) identityPKE_isEfficient
     (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
-    identityPKE_ciphertextFits (by simpa using identityPKE_deltaCorrect) Crypto.negligible_zero hγ
+    identityPKE_ciphertextFits identityPKE_deltaCorrect Crypto.negligible_zero hγ
     hγneg Crypto.negligible_inv_two_pow
 
 end CslibFrontierTests.Crypto.FujisakiOkamotoWord

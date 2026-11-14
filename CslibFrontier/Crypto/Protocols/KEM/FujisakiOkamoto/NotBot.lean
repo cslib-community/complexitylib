@@ -119,7 +119,10 @@ in front of the IND-CPA term is the same for both normalizations. Both the real 
 the independent ideal challenge key in `roIndCcaGame` are drawn from the arbitrary key sampler
 `S.sampleKey : ProbComp K`; taking `S.sampleKey` uniform on `K` recovers the standard
 uniform-ideal-key experiment of [HofheinzHoevelmannsKiltz2017], §2.2, Def. 2.4 / Fig. 4. This is a
-concrete bound for one fixed scheme; it says nothing about the running time of the reduction. -/
+concrete bound for one fixed scheme; it says nothing about the running time of the reduction. The
+`γ`-spreadness hypothesis goes beyond the source, which requires no spreadness for `FO-notbot`
+([HofheinzHoevelmannsKiltz2017], §1.1.2 table, p. 6, and §3.3 table, p. 22): it enters only
+through step 3 of the challenge hop `advantage_simGame_le`, and removing it is #5376. -/
 theorem indCcaRomAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : RandomizedROAdversary PK M R CT K) {qG qH : ℕ}
     (hq : A.QueryBounds qG qH) (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M)

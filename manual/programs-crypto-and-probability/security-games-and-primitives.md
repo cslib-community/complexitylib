@@ -1307,8 +1307,10 @@ its typed `Scheme.roIndCcaGame`, and the advantage of `romCpaReductionWord` is t
 proves the asymptotic theorem `WordPKE.INDCPA.romINDCCA`: IND-CPA security of an efficient family
 whose ciphertexts fit, which is `δ`-correct and `γ`-spread with `δ`, `2^{-γ}` and `2^{-msgLen}`
 negligible, implies `ROMINDCCA`. Its proof applies `INDCPA` to `romCpaReductionWord A` through
-`isPPT_romCpaReductionWord` and bounds the rest with `Scheme.indCcaRomAdvantage_le`. `FO^⊥` has no
-word-level theorem yet.
+`isPPT_romCpaReductionWord` and bounds the rest with `Scheme.indCcaRomAdvantage_le`. The
+`γ`-spreadness premise is stronger than HHK17, who require none for `FO-notbot`; it comes from one
+step of `Scheme.indCcaRomAdvantage_le`, and removing it is #5376. `FO^⊥` has no word-level theorem
+yet.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
