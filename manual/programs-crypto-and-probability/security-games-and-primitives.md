@@ -12,6 +12,8 @@ For native uniform quantum oracle-circuit families, [Game/Quantum.lean](../../Cs
 
 To quantify native quantum tests directly over word ensembles, import [Computational/Quantum.lean](../../CslibFrontier/Crypto/Computational/Quantum.lean). `NativeQuantum.test family n x` supplies `(1ⁿ, x)` as the classical input, starts every quantum-input qubit at zero, runs against the all-zero XOR oracle, and uses the first terminally measured output bit as the decision; an empty output rejects. `NativeQuantum.distinguishingGame X family n` first draws `x ← X n`, and `NativeQuantum.ComputationallyIndistinguishable X Y` requires negligible advantage for every native `UniformOracleCircuitFamily`. `SupportsLength` and `IndistinguishableWithin` expose the common challenge-length and separate qubit, gate and query bounds needed by `ComputationallyIndistinguishable.of_within`. The [checked ensemble client](../../CslibFrontierTests/Crypto/NativeQuantumIndistinguishability.lean) builds one growing family that reads the first challenge bit, proves an exact advantage of one on two point ensembles, and exercises the concrete bridge. This is a zero-advice, no-useful-oracle submodel: it does not supply QROM sampling, quantum advice, gate approximation or an equivalence with every QPPT convention.
 
+For a challenge that first draws a fair bit and then samples the corresponding word ensemble, import [Computational/Quantum/Mixture.lean](../../CslibFrontier/Crypto/Computational/Quantum/Mixture.lean). Write the mixture with the existing `(PMF.uniformOfFintype Bool).bind`; `SupportsLength.bind` propagates a common length cap. `IndistinguishableWithin.bind_uniformBool` averages the two branch bounds as `(ε false n budget + ε true n budget) / 2`, with the same native circuit and the same qubit, gate and query budget. `ComputationallyIndistinguishable.bind_uniformBool` gives the asymptotic closure. The [ordinary client](../../CslibFrontierTests/Crypto/NativeQuantumMixture.lean) checks an attained half-advantage, cancellation, zero/one-bit length caps and both fixed-parity HQC assumption interfaces. The mixture is part of challenge sampling; these results do not compile an HQC reduction, charge sampling as a circuit operation, or prove IND-CPA security. Native reduction generators, their static and generated description sizes, resource schedules and any sampling error remain the obligations of [#5281](https://github.com/cslib-community/cslib-frontier/issues/5281).
+
 For finite-source statistical bounds, import [StatisticalDistance/TotalVariation.lean](../../CslibFrontier/Probability/StatisticalDistance/TotalVariation.lean). `Cslib.Probability.closeTo_of_dist_le` turns a bound on the finite-PMF metric (half the L1 distance) into the existing all-event `CloseTo` relation with the same error. The bound is exact on finite types: `closeTo_coe_iff_dist_le` states `CloseTo μ ν ε ↔ dist μ ν ≤ ε` for an error `ε : ℝ≥0`, and `closeTo_iff_ofReal_dist_le` states `CloseTo μ ν ε ↔ ENNReal.ofReal (dist μ ν) ≤ ε` for `ε : ℝ≥0∞`; and `closeTo_iff_etvDist_le` relates `CloseTo` to Mathlib's total variation of `μ.toMeasure` and `ν.toMeasure` on any type with measurable singletons. Its `CloseTo.bind_left` law then handles arbitrary randomized continuations, including infinite output types. The import is pure probability and brings in no games, lattice protocols or native sampler certificates.
 
 For adaptive stateful replacement, import [Security/Oracle.lean](../../CslibFrontier/Computability/Interactive/Security/Oracle.lean). `OracleComp.IsCostBounded.closeTo_runWith` turns a program's existing cost bound `K` and per-call `CloseTo` bounds `cost q * ε` into a bound `K * ε` on the joint result and final state. The premise compares both handlers at every identical query and starting state, including unreachable states; no coupling or finite state space is assumed. Calls of cost zero can still update a shared cache, but their joint reply/state laws must agree statistically at error zero. Charging only signing calls therefore avoids paying for unchanged hash calls or private sampling. The checked adaptive client in [OracleStatistical.lean](../../CslibFrontierTests/OracleStatistical.lean) uses two repeated signing requests, answer-dependent repeated cache reads, and a concrete nonzero error bound while preserving the cache and signing log. This shared lemma does not itself complete the native Schnorr signing-game or key-generation transport in #581. When the two handlers keep different states, related by a probabilistic map (for example a cache and its completed table), use `OracleComp.closeTo_run_interpret_simulation` in [Simulation/CloseTo.lean](../../CslibFrontier/Languages/Probabilistic/Simulation/CloseTo.lean), of which `closeTo_runWith` is the identity case.
@@ -247,6 +249,7 @@ Plain-LWE bit encryption at modulus `2 ^ w` is formalized in [`LWE/Regev.lean`](
 Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR ePrint 2011/501, Sections 4–5) are in [`LWE/Trapdoor/Gadget.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean) and [`LWE/Trapdoor/Basic.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean) (re-exported by [`LWE/Trapdoor.lean`](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor.lean) and checked in [`CslibFrontierTests/Crypto/Computational/LWE/Trapdoor.lean`](../../CslibFrontierTests/Crypto/Computational/LWE/Trapdoor.lean)). `Gadget.lean` connects the power-of-two gadget matrix `gadgetMatrix w` (`G = I_ι ⊗ gᵀ`) to `GSW.bitCompose` and `GSW.powersOfTwo` (`gadgetMatrix_mulVec`, `vecMul_gadgetMatrix`), proves that binary decomposition is a right inverse, `G *ᵥ gadgetDecomp w u = u`, so `G` is primitive (`gadgetMatrix_mul_gadgetDecompMatrix`, `gadgetMatrix_surjective`), shows that `scalarBasis w` (`S_w`) has determinant `2 ^ w` (`det_scalarBasis`) and that the columns of `S_w` and of the block matrix `gadgetBasis w` (`S = I_ι ⊗ S_w`) lie in `Λ^⊥(gᵀ)` and `Λ^⊥(G)` respectively with entries at most `2` and squared column length at most `5` (`gadgetVector_vecMul_scalarBasis`, `gadgetMatrix_mul_gadgetBasis`, `sum_sq_scalarBasis_col_le_five`, `sum_sq_gadgetBasis_col_le_five`; Proposition 4.2), and proves that the iterative inversion of Section 4.1 recovers `s` from `sᵀ G + eᵀ` whenever `4 * |e p| < 2 ^ w` (`invertScalar_correct`, `invertGadget_gadgetLWE`). `Basic.lean` defines the tagged matrix `taggedMatrix w Abar R H = [Abar | H * G - Abar * R]` of Algorithm 1, proves the unrestricted tag identity `A * [R; I] = H * G` (`taggedMatrix_mul_trapdoorTransform`), and defines `IsHTagTrapdoor` requiring both `A * [R; I] = H * G` and an invertible tag `IsUnit H` as in Definition 5.2 (`isHTagTrapdoor_taggedMatrix`, `isHTagTrapdoor_untaggedMatrix`, `IsHTagTrapdoor.surjective`). It lifts binary gadget preimages to short preimages under `A` (`taggedMatrix_mulVec_invertSyndrome`) and lifts `S` to the kernel vectors `[R; I] * S` of `A`, the right-hand block of the basis in Lemma 5.3 (`taggedMatrix_mul_extendedGadgetBasis`). For Algorithm 2, it proves recovery of `s` whenever the projected error `e_1ᵀ R + e_2ᵀ` has every coordinate below `2 ^ w / 4` (`invertLWESecret_trapdoorLWE`), exact recovery of `(s, e)` when in addition every original error coordinate satisfies `2 * |e k| < 2 ^ w` (`invertLWE_trapdoorLWE`), and both from the entrywise bound `4 * (1 + |μ| * B_R) * B_e < 2 ^ w` (`invertLWE_trapdoorLWE_of_norm_bound`), the deterministic part of Theorem 5.4 with infinity-norm hypotheses. `genTrap` samples Algorithm 1 with centered-binomial `R` (`mem_support_genTrap`), and in the idealized hybrid `genTrapIdeal`, where `Abar * R` is replaced by a uniform block, the public matrix is exactly uniform for every tag (`eval_genTrapIdeal_eq_uniform`). Not formalized: the step from `genTrap` to `genTrapIdeal` (regularity or decision-LWE), so the near-uniformity of `A` in Theorem 5.1 is not proved; the basis property of `S_w` and the full basis of Lemma 5.3; the Gaussian-error claim of Theorem 5.4; non-power-of-two moduli; and discrete-Gaussian preimage sampling and delegation (Sections 5.4–5.5).
 
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
+[`MLDSA/Hint.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Hint.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
 [`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
 `power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
@@ -254,9 +257,12 @@ ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/C
 the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
 rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of the decomposition
 (`decompose_intCast_mul_add`) and stability of the high bits under `β`-short perturbations
-(`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+(`highBits_add_of_abs_lowBits_lt`). `makeHint` and `useHint` follow FIPS 204 Algorithms 39 and 40;
+`useHint_makeHint` proves Dilithium's short-correction recovery law, `useHint_injective` separates
+the two hint bits, and `useHint_lt` states NIST's proposed corrected strict output range.
+`signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (it does not yet use the available Power2Round layer, hints, byte
+function and mask sampler (it does not yet use the available Power2Round or hint layers, byte
 encodings or seed expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
@@ -265,7 +271,9 @@ self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
 formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
-signs, verifies, rejects a modified response and yields a self-target solution.
+signs, verifies, rejects a modified response and yields a self-target solution. The
+[hint client](../../CslibFrontierTests/Crypto/MLDSAHint.lean) covers both standardized `γ₂`
+families and positive, negative and wrap-around bucket adjustments.
 
 The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
 [`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
@@ -281,7 +289,20 @@ not injective, and the checked client exhibits the discarded high tree word. Thi
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
 nor does it prove classical or quantum security.
 
-Falcon's current checked layer is deliberately narrower than a security theorem. Import
+FIPS 202 SHAKE256 ([fips202][fips202]) is implemented in
+[`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) on top of the existing
+generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x` order, applies the
+standard's θ/ρ/π/χ/ι maps and 24 rounds, and exposes byte-aligned `Keccak.shake256` with the
+1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The byte and state views are proved
+inverse, and `take_shake256` proves prefix consistency for every pair of requested lengths. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/Keccak.lean) checks the official NIST
+0-bit and 1600-bit-message examples, absorption and squeezing across the 136-byte rate boundary,
+the inverse and prefix APIs, and the first Falcon-512 KAT's `salt || message` prefix. This is an
+executable specification, not a collision/preimage result, constant-time implementation or FIPS
+validation.
+
+Falcon's current checked layer ([falcon2020][falcon2020]) is deliberately narrower than a security
+theorem. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
 the NIST-selected Falcon Round 3 submission version 1.2's algebra after hashing and signature
 decoding: `Falcon.reconstructFirst` computes the centered representative of `c - s₂h`,
@@ -296,13 +317,15 @@ finite XOF output prefix; and `Falcon.verifyNistWithXof` injects exactly `salt +
 caller-supplied prefix function before invoking the algebraic verifier. The
 [ordinary-import client](../../CslibFrontierTests/Crypto/Falcon.lean) covers canonical and
 malformed encodings, salt/message layout, rejection sampling, boundary acceptance, and compact
-decoder/hash fixtures derived from the first official Falcon-512 NIST KAT.
+decoder/hash fixtures derived from the first official Falcon-512 NIST KAT. The SHAKE client above
+now checks the concrete 20-byte prefix used by that fixture.
 
-The dependency graph does not yet provide SHAKE-256/Keccak, so the supplied-prefix boundary is not
-a hash implementation and the full KAT is not verified end to end. Public-key decoding, NTRU key
-generation, FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law,
-average-case NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the
-still-developing FIPS 206 remain separate obligations.
+The Falcon frontend deliberately retains a finite XOF-prefix boundary: the concrete SHAKE function
+can supply any requested finite prefix, but the frontend does not choose a universally sufficient
+length for rejection sampling. Full KAT verification, public-key decoding, NTRU key generation,
+FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
+NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the still-developing
+FIPS 206 remain separate obligations.
 
 The source-faithful SLH-DSA WOTS+ digit preprocessing from FIPS 205 is in
 [`SLHDSA/WOTS/Digits.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/WOTS/Digits.lean), with
@@ -1449,6 +1472,8 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+[falcon2020]: ../sources.md#falcon2020
+[fips202]: ../sources.md#fips202
 [fips203]: ../sources.md#fips203
 [fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22

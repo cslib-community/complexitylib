@@ -126,8 +126,6 @@ CI_ONLY = {
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
-    "Save .lake after cache publication (experiment)":
-        "main pushes only; default-off CI cache experiment (#4972)",
     "Parallel-definition and duplicate-statement notices (advisory)":
         "advisory; never fails the job. Run `scripts/parallel_defs.py [--theorems]` to see it",
     "PR description names (advisory)":

@@ -12,7 +12,6 @@ import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Probability.KWiseIndependent.TugOfWar
 import CslibFrontier.Probability.KWiseIndependent.TugOfWarProduct
-import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Data.Int.Interval
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Tactic.Positivity
@@ -22,9 +21,11 @@ import Mathlib.Tactic.Positivity
 
 The **join size** of two relations with frequency vectors `f` and `g` on a common join attribute is
 the inner product `|F ⋈ G| = ∑ₐ fₐ gₐ`; for streams `u` and `v` of attribute values it is
-`Cslib.Streaming.joinSize u v = ∑ₐ count a u · count a v`. Its self-join `joinSize u u` is the
+`Cslib.Streaming.joinSize u v = ∑ₐ count a u · count a v`, the number of tuples in the equijoin
+(`Cslib.Streaming.length_filter_product_eq_joinSize`). Its self-join `joinSize u u` is the
 second frequency moment `F₂ u` (`Cslib.Streaming.joinSize_self`), and `joinSize u v ^ 2 ≤ F₂ u F₂ v`
-(`Cslib.Streaming.joinSize_sq_le`).
+(`Cslib.Streaming.joinSize_sq_le`). These are in `CslibFrontier.Computability.Streaming.Frequency`,
+which needs no probability.
 
 Alon, Gibbons, Matias and Szegedy [AlonGibbonsMatiasSzegedy1999, Section 4.3] estimate join sizes
 with **tug-of-war join signatures**: each relation keeps a tug-of-war counter
@@ -68,15 +69,12 @@ Chebyshev's constant failure probability.
 
 ## Main definitions
 
-* `Cslib.Streaming.joinSize`: the join size `∑ₐ count a u · count a v` of two streams.
 * `Cslib.Streaming.JoinState`: the memory of the join sketch.
 * `Cslib.Streaming.joinSketch`: the join sketch with given seeds.
 * `Cslib.Streaming.joinSketchRandom`: the randomized join sketch with uniform seeds.
 
 ## Main results
 
-* `Cslib.Streaming.joinSize_self`, `Cslib.Streaming.joinSize_comm`,
-  `Cslib.Streaming.joinSize_sq_le`: the self-join is `F₂`, and `|F ⋈ G|² ≤ F₂(F) F₂(G)`.
 * `Cslib.Streaming.joinSketch_state_left`, `Cslib.Streaming.joinSketch_state_right`,
   `Cslib.Streaming.run_joinSketch`: the counters are the AMS sketches of the two relations, and the
   answer is the median of means of their products.
@@ -104,47 +102,6 @@ open Finset Probability
 open scoped BigOperators
 
 variable {ι α Y : Type*}
-
-/-! ### Join sizes -/
-
-section JoinSize
-
-variable [DecidableEq α]
-
-/-- The **join size** `|F ⋈ G| = ∑ₐ count a u · count a v` of the relations whose join attribute
-values are listed by the streams `u` and `v`: the inner product of their frequency vectors. -/
-@[expose] def joinSize (u v : List α) : ℕ :=
-  ∑ a ∈ u.toFinset, u.count a * v.count a
-
-/-- The join size is the sum of `count a u · count a v` over any set of values containing those
-of `u`. -/
-theorem joinSize_eq_sum_of_subset {u v : List α} {T : Finset α} (hT : u.toFinset ⊆ T) :
-    joinSize u v = ∑ a ∈ T, u.count a * v.count a := by
-  unfold joinSize
-  refine Finset.sum_subset hT fun a _ ha => ?_
-  rw [List.mem_toFinset, ← List.count_eq_zero] at ha
-  rw [ha, zero_mul]
-
-theorem joinSize_comm (u v : List α) : joinSize u v = joinSize v u := by
-  rw [joinSize_eq_sum_of_subset (T := u.toFinset ∪ v.toFinset) subset_union_left,
-    joinSize_eq_sum_of_subset (T := u.toFinset ∪ v.toFinset) subset_union_right]
-  exact sum_congr rfl fun a _ => mul_comm _ _
-
-/-- The self-join size of a relation is its second frequency moment. -/
-theorem joinSize_self (u : List α) : joinSize u u = freqMoment 2 u := by
-  unfold joinSize freqMoment
-  exact sum_congr rfl fun a _ => (sq _).symm
-
-/-- **Join sizes are bounded by self-join sizes**: `|F ⋈ G|² ≤ F₂(F) F₂(G)`, by the
-Cauchy–Schwarz inequality. -/
-theorem joinSize_sq_le (u v : List α) :
-    joinSize u v ^ 2 ≤ freqMoment 2 u * freqMoment 2 v := by
-  have hT : u.toFinset ⊆ u.toFinset ∪ v.toFinset := subset_union_left
-  rw [joinSize_eq_sum_of_subset hT, freqMoment_eq_sum_of_subset two_ne_zero hT,
-    freqMoment_eq_sum_of_subset two_ne_zero subset_union_right]
-  exact sum_mul_sq_le_sq_mul_sq _ _ _
-
-end JoinSize
 
 /-! ### The join sketch -/
 

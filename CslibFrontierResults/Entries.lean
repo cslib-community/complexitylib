@@ -6,9 +6,13 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Foundations.Algebra.Group.HomomorphismTesting
 import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Probability.MarkovChain.RotationMap
+import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
+import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
+import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -5758,7 +5762,6 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
 
-
 register_result "bilinear-finite-field-fingerprint" where
   title := "Two-vector matrix identity fingerprint"
   topic := "randomized verification"
@@ -5816,6 +5819,23 @@ register_result "regular-random-walk-hitting-times" where
     label sequences of length 1000 n^3 avoid t. Part (b)(ii) (visit-count concentration) and \
     part (e) are not included."
 
+register_result "regular-random-walk-visit-concentration" where
+  title := "Visit counts of random walks on connected regular multigraphs concentrate around t/n"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 7, Exercise 9(b)(ii)",
+      locator := "2007-01-08 draft, printed p. 133; PDF p. 149" }
+  ]
+  theorems := [
+    Cslib.RotationMap.exists_visits_mem_Icc,
+    Cslib.RotationMap.eventually_visits_mem_Icc,
+    Cslib.RotationMap.exists_abs_sum_walk_pow_le
+  ]
+  scope := "Connected d-regular multigraphs presented by rotation maps; probability is the \
+    fraction of the d^t label sequences. For every u, v and eps > 0, for all large t, the \
+    number of visits to v at times 1..t lies in [(1-eps)t/n, (1+eps)t/n] with probability at \
+    least 1 - eps. No aperiodicity is assumed; no explicit rate in t is given."
+
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"
   topic := "pseudorandomness"
@@ -5832,6 +5852,22 @@ register_result "goldreich-expander-varying-density-hitting" where
     and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
+
+register_result "finite-abelian-homomorphism-testing" where
+  title := "Finite abelian homomorphism testing and plurality correction"
+  topic := "property testing"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.21(1)–(3)",
+      locator := "r5.pdf; PDF 69–70 / printed 451–452; rendered notation checked" }
+  ]
+  theorems := [Cslib.HomomorphismTesting.concentration,
+    Cslib.HomomorphismTesting.plurality_add, Cslib.HomomorphismTesting.closeness,
+    Cslib.HomomorphismTesting.distance_attained, Cslib.HomomorphismTesting.min_le_rejection]
+  scope := "Arbitrary finite additive commutative groups, including trivial groups. Uniform \
+    independent rejection epsilon and attained minimum normalized homomorphism \
+    disagreement delta. Every plurality has mass at least 1-2epsilon; below 1/6 it is \
+    a homomorphism with disagreement at most 2epsilon. Unconditionally epsilon >= \
+    min(1/6,delta/2). No efficiency or encoding claim."
 
 register_result "linear-space-ne-np" where
   title := "Book: linear space is not NP"
@@ -5863,3 +5899,41 @@ register_result "arora-barak-draft-leftover-hash" where
     bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
     sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
     and large delta; no efficiency or short-seed assertion."
+
+register_result "goldreich-expander-visit-count" where
+  title := "Expander-walk selected-time hitting and visit-count tails"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := Goldreich2007DraftR4, theorem := "Exercise 8.44",
+      locator := "March 2007 draft, printed p. 381 / PDF p. 117" }
+  ]
+  theorems := [
+    Cslib.RotationMap.dens_filter_selected_walkAt_mem_le,
+    Cslib.RotationMap.expect_choose_visitCount_le,
+    Cslib.RotationMap.dens_filter_visitCount_ge_le,
+    Cslib.RotationMap.dens_filter_visitCount_gt_le,
+    Cslib.RotationMap.dens_filter_visitCount_gt_lt,
+    Cslib.RotationMap.dens_filter_visitCount_half_lt
+  ]
+  scope := "Finite nonempty rotation map and ports; uniform initial vertex and independent \
+    ports. Length L=t+1 counts vertices, including time zero. Arbitrary selected \
+    times, factorial moments, integer tails and strict half-visits for every positive \
+    L. The source strict integer bound requires 1<=m<=L and rho+eta^2>0; alpha*L needs \
+    an integer convention. No sampler/runtime claim."
+
+register_result "tally-np-exp-nexp" where
+  title := "Easy tally NP collapses EXP and NEXP"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 23",
+      locator := "2007 public draft, printed p. 64 / PDF p. 80" },
+    { paper := HartmanisImmermanSewelson1985, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.EXP_eq_NEXP_of_tally,
+    Cslib.Complexity.E_eq_NE_of_tally,
+    Cslib.Complexity.expPaddedNPEasy_of_tally
+  ]
+  scope := "(∀ L ∈ TALLY, L ∈ NP encBits → L ∈ P encBits) → EXP enc = NEXP enc and E enc = NE enc \
+    for every encoding enc; TALLY is the set of bit-languages of all-true words. Only this \
+    direction of Hartmanis–Immerman–Sewelson is proved."

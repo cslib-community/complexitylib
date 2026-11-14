@@ -537,6 +537,14 @@ bound and linear cardinality bounds; this must not be mistaken for the encoded s
 runtime theorem in 9.19. Conversely, that remaining bridge does not invalidate the already
 proved class-level PCP theorem.
 
+The subsequent Exercise 9.21(1)–(3) now has its arbitrary finite abelian group endpoint in
+[HomomorphismTesting](../CslibFrontier/Foundations/Algebra/Group/HomomorphismTesting.lean).
+Its [exercise record](goldreich-2007-exercises.md) distinguishes this from the stronger Boolean
+Fourier result. Rendered r5 PDF 69–70 / printed 451–452 was independently inspected for the
+plurality definition, strict threshold and unconditional bound. The proof uses independent-vote
+collisions rather than the auxiliary graph in the guideline. This adds no encoding or runtime
+claim and does not change the historical numbered-result table.
+
 For zero knowledge, use the nonuniform OWF endpoint, not just
 `OneWay.exists_zkProof_of_npRelation`: the latter's generable-family guarantee
 is narrower. The full endpoint has a separate security parameter and polynomially bounded
@@ -734,3 +742,19 @@ background or of all its informal assertions is made.
 | Draft result | File / PDF page / printed page | Disposition and remaining endpoint |
 |---|---|---|
 | No numbered results | r6 / 137–144 / 645–652 | Scope note only; background problem definitions are outside this numbered-result audit. |
+
+## Exercise 8.44: visit counts
+
+March 2007 `r4.pdf`, PDF 117 / printed 381 (hash recorded in #4772).
+[VisitCount](../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean)
+proves selected-time hitting, factorial moments, integer tails and the half-visits example.
+Length `L=t+1` counts vertices, including the uniform initial vertex; independent uniform
+ports generate the edges of a finite nonempty rotation map, permitting loops and parallel edges.
+The strict displayed bound requires integer `m=αL`, `1≤m≤L` and `ρ+η²>0`.
+For empty W and zero expansion, universal strictness would assert `0<0`.
+The half-visits bound is strict for every positive L under `η<sqrt(ρ)`;
+integer division expresses strict majority for even and odd lengths.
+Unrestricted norm contraction replaces the guideline's unwanted `sqrt(1+η²)` factors.
+[Source qualification record](https://github.com/cslib-community/cslib-frontier/issues/4781#issuecomment-6868194625).
+[Ordinary-module clients](../CslibFrontierTests/ExpanderVisitCount.lean) exercise counts,
+selected times and boundaries. No sampler implementation or runtime follows. #4772 remains open.

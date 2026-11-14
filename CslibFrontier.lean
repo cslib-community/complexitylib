@@ -1690,6 +1690,15 @@ public import CslibFrontier.Computability.Circuit.Quantum.HadamardLayer
 public import CslibFrontier.Computability.Circuit.Quantum.Input
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Basic
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Code
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Boundary
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Circuit
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Handler
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.PointerWalk
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Program
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.ProgramSemantics
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Reference
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Request
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Controller.Resources
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Density
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Interaction
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.InteractionResources
@@ -2151,6 +2160,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Padding.Language
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Space
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
@@ -4487,6 +4497,7 @@ public import CslibFrontier.Crypto.Computational.LubyRackoff
 public import CslibFrontier.Crypto.Computational.MAC
 public import CslibFrontier.Crypto.Computational.MLDSA.Basic
 public import CslibFrontier.Crypto.Computational.MLDSA.Decompose
+public import CslibFrontier.Crypto.Computational.MLDSA.Hint
 public import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 public import CslibFrontier.Crypto.Computational.MerkleDamgard
 public import CslibFrontier.Crypto.Computational.MerkleSignature
@@ -4576,6 +4587,7 @@ public import CslibFrontier.Crypto.Computational.PseudorandomGenerator
 public import CslibFrontier.Crypto.Computational.PseudorandomPermutation
 public import CslibFrontier.Crypto.Computational.QuadraticResiduosity
 public import CslibFrontier.Crypto.Computational.Quantum
+public import CslibFrontier.Crypto.Computational.Quantum.Mixture
 public import CslibFrontier.Crypto.Computational.RSAAttacks
 public import CslibFrontier.Crypto.Computational.RSALeastSignificantBit
 public import CslibFrontier.Crypto.Computational.RSATrapdoor
@@ -4692,6 +4704,7 @@ public import CslibFrontier.Crypto.Primitives.HQC.SupportDensity
 public import CslibFrontier.Crypto.Primitives.HQC.SupportSampling
 public import CslibFrontier.Crypto.Primitives.HQC.Syndrome
 public import CslibFrontier.Crypto.Primitives.Hash.BlockCipherCompression
+public import CslibFrontier.Crypto.Primitives.Hash.Keccak
 public import CslibFrontier.Crypto.Primitives.Hash.Sponge
 public import CslibFrontier.Crypto.Primitives.IdealCipher.Compression
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
@@ -4721,6 +4734,7 @@ public import CslibFrontier.Crypto.Protocols.Cipher.FeistelNetworks
 public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.FAEST.Challenge
+public import CslibFrontier.Crypto.Protocols.FAEST.Conversion
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NoCheck
@@ -5146,6 +5160,7 @@ public import CslibFrontier.DataStructure.WordRAM.StateTransition
 public import CslibFrontier.Foundations.Algebra.DFT
 public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Algebra.GeometricTail
+public import CslibFrontier.Foundations.Algebra.Group.HomomorphismTesting
 public import CslibFrontier.Foundations.Algebra.Module.ZLattice.CoefficientFiber
 public import CslibFrontier.Foundations.Algebra.Negacyclic
 public import CslibFrontier.Foundations.Algebra.Polynomial.LagrangeInversion
@@ -5396,6 +5411,8 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.TannerCode
 public import CslibFrontier.Foundations.Combinatorics.Expander.Tensor
 public import CslibFrontier.Foundations.Combinatorics.Expander.Tower
 public import CslibFrontier.Foundations.Combinatorics.Expander.TowerFamily
+public import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
+public import CslibFrontier.Foundations.Combinatorics.Expander.Visits
 public import CslibFrontier.Foundations.Combinatorics.Expander.Walk
 public import CslibFrontier.Foundations.Combinatorics.Expander.Zigzag
 public import CslibFrontier.Foundations.Combinatorics.FiniteCover
@@ -6176,6 +6193,7 @@ public import CslibFrontier.Foundations.Quantum.DensityMatrix
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Isometry
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Linear
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Normalize
+public import CslibFrontier.Foundations.Quantum.DensityMatrix.Pure
 public import CslibFrontier.Foundations.Quantum.Fourier
 public import CslibFrontier.Foundations.Quantum.HadamardTransform
 public import CslibFrontier.Foundations.Quantum.Measurement
