@@ -44,7 +44,6 @@ import concurrent.futures
 import json
 import os
 from pathlib import Path
-import signal
 import subprocess
 import sys
 import tempfile
@@ -138,13 +137,15 @@ def available_cpus() -> int:
 def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> int:
     """Worker limit from `--jobs`, `CSLIB_FRONTIER_CACHE_AUDIT_JOBS`, or bounded CPU/thread cap."""
     if cli_jobs is not None:
-        jobs = cli_jobs
+        source, jobs = "--jobs", cli_jobs
     elif raw := env.get(JOBS_ENV, "").strip():
+        source = JOBS_ENV
         try:
             jobs = int(raw)
         except ValueError as error:
             raise ValueError(f"{JOBS_ENV} must be an integer >= 1, got {raw!r}") from error
     else:
+        source = "--jobs"
         jobs = min(DEFAULT_JOBS_CAP, available_cpus())
         if lean_threads := env.get("LEAN_NUM_THREADS", "").strip():
             try:
@@ -154,20 +155,12 @@ def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> i
             if parsed >= 1:
                 jobs = min(jobs, parsed)
     if jobs < 1:
-        raise ValueError(f"--jobs must be >= 1, got {jobs}")
+        raise ValueError(f"{source} must be >= 1, got {jobs}")
     return jobs
 
 
 def terminate_process(proc: subprocess.Popen) -> None:
-    """Terminate `proc` and, on POSIX, its session process group."""
-    if os.name != "nt":
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-            return
-        except ProcessLookupError:
-            return
-        except OSError:
-            pass
+    """Terminate `proc` without leaving children outside the caller's process group."""
     try:
         proc.kill()
     except OSError:
@@ -176,22 +169,29 @@ def terminate_process(proc: subprocess.Popen) -> None:
 
 def elaborate(root: Path, rel: str, env: Mapping[str, str] | None = None,
               active: set[subprocess.Popen] | None = None,
-              active_lock: threading.Lock | None = None) -> subprocess.CompletedProcess:
+              active_lock: threading.Lock | None = None,
+              stopping: threading.Event | None = None) -> subprocess.CompletedProcess:
     """Elaborate `rel` with its library's options, without writing build outputs."""
     base_env = os.environ if env is None else env
     parent = next((Path(value) for key in ("TMPDIR", "TEMP", "TMP")
                    if (value := base_env.get(key)) and Path(value).is_dir()), None)
+    cmd = ["lake", "-q", "lean", f"./{rel}"]
+    if active_lock is not None and stopping is not None:
+        with active_lock:
+            if stopping.is_set():
+                return subprocess.CompletedProcess(cmd, -15, "")
     # `lake lean` creates a temporary `--setup` file via `IO.FS.createTempFile` without removing
     # it; scoping temporary directories per invocation prevents `/tmp` growth across large audits.
     with tempfile.TemporaryDirectory(prefix="cslib-frontier-lean-", dir=parent) as tmpdir:
         run_env = {**base_env, "TMPDIR": tmpdir, "TEMP": tmpdir, "TMP": tmpdir}
-        cmd = ["lake", "-q", "lean", f"./{rel}"]
         with subprocess.Popen(cmd, cwd=root, env=run_env, text=True,
-                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                              start_new_session=(os.name != "nt")) as proc:
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
             if active is not None and active_lock is not None:
                 with active_lock:
-                    active.add(proc)
+                    if stopping is not None and stopping.is_set():
+                        terminate_process(proc)
+                    else:
+                        active.add(proc)
             try:
                 output, _ = proc.communicate()
             except BaseException:
@@ -259,8 +259,11 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     print_lock = threading.Lock() if workers > 1 else None
     active_procs: set[subprocess.Popen] | None = set() if workers > 1 else None
     active_lock = threading.Lock() if workers > 1 else None
+    stopping = threading.Event() if workers > 1 else None
 
     def run_one(index: int, rel: str) -> subprocess.CompletedProcess:
+        if stopping is not None and stopping.is_set():
+            return subprocess.CompletedProcess([], -15, "")
         if args.progress:
             line = (f"Cache-restore audit [{index + 1}/{len(files)}]: {rel} "
                     f"(elapsed {time.monotonic() - started:.1f}s)")
@@ -268,15 +271,17 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                 print(line, flush=True)
             else:
                 with print_lock:
-                    print(line, flush=True)
+                    if stopping is None or not stopping.is_set():
+                        print(line, flush=True)
         if workers == 1:
             return elaborate(root, rel)
         kwargs: dict[str, object] = {}
         if worker_env is not None:
             kwargs["env"] = worker_env
-        if active_procs is not None and active_lock is not None:
+        if active_procs is not None and active_lock is not None and stopping is not None:
             kwargs["active"] = active_procs
             kwargs["active_lock"] = active_lock
+            kwargs["stopping"] = stopping
         return elaborate(root, rel, **kwargs)
 
     if workers == 1:
@@ -307,8 +312,9 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                                               files[next_submit])] = next_submit
                     next_submit += 1
         except BaseException:
-            if active_procs is not None and active_lock is not None:
+            if active_procs is not None and active_lock is not None and stopping is not None:
                 with active_lock:
+                    stopping.set()
                     running = list(active_procs)
                 for proc in running:
                     terminate_process(proc)

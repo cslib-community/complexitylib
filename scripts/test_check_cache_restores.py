@@ -322,7 +322,8 @@ class MainTests(Fixture):
             err = io.StringIO()
             with patch.dict(os.environ, {c.JOBS_ENV: bad_env}), redirect_stderr(err):
                 self.assertEqual(c.main([], self.root), 1)
-            self.assertIn("Cannot audit restored sources", err.getvalue())
+            self.assertIn(c.JOBS_ENV, err.getvalue())
+            self.assertNotIn("--jobs must be", err.getvalue())
 
     def test_worker_env_bounds_lean_threads_and_cleans_temp_setup_dir(self) -> None:
         parent_tmp = tempfile.TemporaryDirectory()
@@ -331,7 +332,7 @@ class MainTests(Fixture):
         seen_lock = threading.Lock()
 
         class FakePopen:
-            def __init__(self_proc, cmd, *, cwd, env, text, stdout, stderr, start_new_session):
+            def __init__(self_proc, cmd, *, cwd, env, text, stdout, stderr):
                 tmpdir = Path(env["TMPDIR"])
                 self.assertTrue(tmpdir.is_dir())
                 self.assertEqual(tmpdir.parent, Path(parent_tmp.name))
