@@ -146,6 +146,10 @@ example : (select isAnn (select divZeroEq emp)).simplify =
 example : (select isOne (unionAll emp noDept)).simplify =
     unionAll (select isOne emp) (select (binary .and (unary .isNull (col 1)) isOne) emp) := rfl
 
+-- `WHERE` moves below `DISTINCT` and keeps moving, here into the left input of the join.
+example : (select (isAnn.rename (Fin.castAdd 2)) (distinct empDept)).simplify =
+    distinct (join (binary (.cmp .eq) (col 1) (col 2)) (select isAnn emp) dept) := rfl
+
 -- Projections fuse, and a projection that becomes `SELECT *` disappears.
 example : (project ![col 1, col 0] (project ![col 1, col 0] emp)).simplify = emp := rfl
 example : shape

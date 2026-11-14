@@ -321,6 +321,7 @@ condition passes; otherwise the node is left as it is:
 | `WHERE p` over a join moves into the input whose columns it reads | `p` and the join predicate safe |
 | `WHERE p` over a cross join that it cannot enter becomes the join predicate | none |
 | `WHERE p` over `UNION ALL` moves into both inputs | none |
+| `WHERE p` over `DISTINCT` moves below it | none |
 | `WHERE TRUE` is dropped | none |
 | a projection over a projection fuses | the inner projection safe |
 | a projection that becomes `SELECT *` is dropped | none |

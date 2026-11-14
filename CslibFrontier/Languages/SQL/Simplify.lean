@@ -58,9 +58,10 @@ the node in the typing context of the node's input, when that input is well-type
   the join predicate are safe (`Query.select_join_left`, `Query.select_join_right`, with the
   decidable `Expr.lowerLeft` and `Expr.lowerRight` recognizing such a predicate); over a cross join
   that it cannot enter it becomes the join predicate (`Query.select_join_true`); over `UNION ALL` it
-  is copied into both inputs (`Query.select_unionAll`). A moved predicate keeps moving down in the
-  same way, and where it stops it is simplified in the context it reached; `WHERE TRUE` is dropped
-  (`Query.select_true`). This is `Query.pushSelect`.
+  is copied into both inputs (`Query.select_unionAll`), and it moves below `DISTINCT`
+  (`Query.select_distinct`). A moved predicate keeps moving down in the same way, and where it
+  stops it is simplified in the context it reached; `WHERE TRUE` is dropped (`Query.select_true`).
+  This is `Query.pushSelect`.
 * A projection over a projection fuses by substitution when the inner one is safe
   (`Query.project_project`), and a projection that becomes `SELECT *` is dropped
   (`Query.project_col`). This is `Query.fuseProject`.
@@ -331,9 +332,9 @@ inputs are well-typed. -/
 
 /-- `WHERE p` over `q`, moved as far down as the guarded laws allow: merged into a `WHERE` below
 it when `p` is safe, moved below a safe projection with the projection substituted, into the
-input of a join that it reads when it and the join predicate are safe, or into both inputs of a
-`UNION ALL`, and made the predicate of a cross join that it cannot enter. Where it stops, it is
-simplified in place (`Query.simpSelect`). -/
+input of a join that it reads when it and the join predicate are safe, into both inputs of a
+`UNION ALL`, or below a `DISTINCT`, and made the predicate of a cross join that it cannot enter.
+Where it stops, it is simplified in place (`Query.simpSelect`). -/
 @[expose] def pushSelect : {n : ℕ} → Expr n → Query S n → Query S n
   | _, p, q@(table _) => simpSelect p q
   | _, p, select c q =>
@@ -361,7 +362,7 @@ simplified in place (`Query.simpSelect`). -/
       else simpSelect p (join θ q₁ q₂)
     | _, _ => simpSelect p (join θ q₁ q₂)
   | _, p, unionAll q₁ q₂ => unionAll (pushSelect p q₁) (pushSelect p q₂)
-  | _, p, distinct q => simpSelect p (distinct q)
+  | _, p, distinct q => distinct (pushSelect p q)
 
 /-- `SELECT es FROM q` with projections fused: over a safe projection, the two fuse by
 substitution, and the result fuses further down. Where it stops, it is simplified in place
@@ -480,7 +481,7 @@ theorem equiv_pushSelect (p : Expr n) (q : Query S n) :
     exact (select_unionAll p q₁ q₂).trans (Equiv.unionAll (ih₁ p) (ih₂ p))
   | distinct q ih =>
     rw [pushSelect]
-    exact equiv_simpSelect p _
+    exact (select_distinct p q).trans (Equiv.distinct (ih p))
 
 theorem equiv_fuseProject (es : Fin k → Expr n) (q : Query S n) :
     Equiv .ordered (project es q) (fuseProject es q) := by
