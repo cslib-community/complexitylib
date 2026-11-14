@@ -4,8 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Algorithms.Quantum.PeriodFinding
 import CslibFrontier.Foundations.Data.Nat.Totient
+import CslibFrontier.Foundations.Data.Rat.Approximation
+
+set_option linter.privateModule false
 
 /-! Exact quantum period finding: instances and failures of the exact-period promise, the
 quantum Fourier transform for `N = 2` (the Hadamard matrix), concrete outcome distributions and
@@ -134,5 +139,25 @@ example : (periodFindingOutcome (fun a : ZMod 8 => two5 ^ a.val)).toOuterMeasure
 example : 2 = Nat.totient 2 * (Nat.log 2 2 + 1) := by
   rw [Nat.totient_two, Nat.log_eq_one_iff'.mpr ⟨le_rfl, by norm_num⟩]
 example : 30 ≤ Nat.totient 30 * (Nat.log 2 30 + 1) := Nat.le_totient_mul_log_add_one 30
+
+/-! ### Uniqueness of rational approximation (Arora–Barak Chapter 20, Exercises 7 and 11) -/
+
+-- Two distinct fractions `1 / 3` and `2 / 5` with denominators at most `5` are separated by at
+-- least `1 / 25` (in fact `1 / 15`).
+example : (1 : ℝ) / (5 : ℝ) ^ 2 < |((1 / 3 : ℚ) : ℝ) - ((2 / 5 : ℚ) : ℝ)| :=
+  Rat.one_div_sq_lt_abs_sub_of_den_le_of_den_lt (N := 5) (q := 2 / 5) (r := 1 / 3)
+    (by norm_num) (by norm_num) (by norm_num) |> fun h => by rwa [abs_sub_comm] at h
+
+-- Exercise 20.7: any rational `q` with `q.den ≤ 6` within `1 / 72` of `2 / 5` equals `2 / 5`.
+example {q : ℚ} (hq : q.den ≤ 6) (h : |(2 / 5 : ℝ) - q| ≤ 1 / (2 * (6 : ℝ) ^ 2)) :
+    q = 2 / 5 :=
+  Rat.eq_of_den_lt_of_abs_sub_le (α := 2 / 5) (N := 6) hq (by norm_num) h (by norm_num)
+
+-- Exercise 20.11 (uniqueness): a coprime pair `(j, r)` with `0 < r ≤ 5` whose quotient lies within
+-- `< 1 / 50` of `3 / 5` is `(3, 5)`.
+example {j r : ℕ} (hr0 : 0 < r) (hr : r ≤ 5) (hcop : Nat.Coprime j r)
+    (h : |(3 / 5 : ℝ) - (j : ℝ) / r| < 1 / (2 * (5 : ℝ) ^ 2)) : j = 3 ∧ r = 5 :=
+  Rat.eq_of_coprime_of_abs_sub_div_lt (α := 3 / 5) hr0 hr (by decide) (by decide) hcop (by decide) h
+    (by norm_num)
 
 end CslibFrontierTests.QuantumPeriodFinding

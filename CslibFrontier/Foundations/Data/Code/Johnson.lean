@@ -48,8 +48,12 @@ a list size within the `q d n` of Theorem 7.3.1 (Exercise 7.7 states `2 q n`). A
 
 ## Main results
 
+* `Cslib.Code.card_mul_sub_le_of_le_card_of_card_inter_le`,
+  `Cslib.Code.card_mul_le_two_mul_of_le_card_of_card_inter_le`: double counting for families of
+  agreement sets with bounded pairwise intersections.
 * `Cslib.Code.card_filter_hammingDist_le_mul_le`: the Johnson bound, in agreement form.
-* `Cslib.Code.card_filter_hammingDist_le_le`: the Johnson bound on list sizes.
+* `Cslib.Code.card_filter_hammingDist_le_le`,
+  `Cslib.Code.card_filter_hammingDist_le_mul_le_two_mul`: the Johnson bound on list sizes.
 * `Cslib.Code.exists_listCode_listDecodes`: list decoding up to the Johnson radius.
 * `Cslib.Code.card_filter_hammingDist_le_mul_le_of_mul_le`,
   `Cslib.Code.card_filter_hammingDist_le_le_of_mul_le`: the q-ary Johnson bound.
@@ -109,6 +113,75 @@ private theorem card_mul_sq_le {κ : Type*} [DecidableEq ι] (L : Finset κ)
   rw [mul_pow, sq (#L), mul_assoc, Nat.mul_left_comm (Fintype.card ι) (#L)] at this
   exact Nat.le_of_mul_le_mul_left this hL0
 
+/-- **Double counting for agreement sets.** If each `c ∈ L` has a set `S c ⊆ ι` of size at least
+`a`, and distinct members of `L` meet in at most `t` elements, then
+`#L * (a ^ 2 - |ι| * t) ≤ |ι| * (a - t)`. -/
+theorem card_mul_sub_le_of_le_card_of_card_inter_le {κ : Type*} [DecidableEq ι] (L : Finset κ)
+    (S : κ → Finset ι) {a t : ℕ} (ha : ∀ c ∈ L, a ≤ #(S c))
+    (ht : ∀ c ∈ L, ∀ c' ∈ L, c ≠ c' → #(S c ∩ S c') ≤ t) :
+    #L * (a ^ 2 - Fintype.card ι * t) ≤ Fintype.card ι * (a - t) := by
+  classical
+  set n := Fintype.card ι
+  choose! B hBsub hBcard using fun c hc => exists_subset_card_eq (ha c hc)
+  have hinter : ∀ c ∈ L, ∀ c' ∈ L, c ≠ c' → #(B c ∩ B c') ≤ t := fun c hc c' hc' hne =>
+    (card_le_card (inter_subset_inter (hBsub c hc) (hBsub c' hc'))).trans (ht c hc c' hc' hne)
+  have key := card_mul_sq_le L B hBcard hinter
+  rcases le_or_gt (a ^ 2) (n * t) with h | h
+  · rw [Nat.sub_eq_zero_of_le h, mul_zero]
+    exact Nat.zero_le _
+  rcases Nat.eq_zero_or_pos #L with hL | hL
+  · rw [hL, zero_mul]
+    exact Nat.zero_le _
+  obtain ⟨c₀, hc₀⟩ := card_pos.1 hL
+  have han : a ≤ n := (ha c₀ hc₀).trans (card_le_univ (S c₀))
+  have hat : t ≤ a := by
+    have : n * t < n * a := h.trans_le (by rw [sq]; exact Nat.mul_le_mul_right a han)
+    exact (Nat.lt_of_mul_lt_mul_left this).le
+  zify [h.le, hat, Nat.one_le_iff_ne_zero.2 hL.ne'] at key ⊢
+  nlinarith
+
+/-- **Double counting for agreement sets, `2 * |ι| / a` form.** If each `c ∈ L` has a set
+`S c ⊆ ι` of size at least `a`, distinct members of `L` meet in at most `t` elements, and
+`2 * |ι| * t ≤ a ^ 2`, then `#L * a ≤ 2 * |ι|`. -/
+theorem card_mul_le_two_mul_of_le_card_of_card_inter_le {κ : Type*} [DecidableEq ι] (L : Finset κ)
+    (S : κ → Finset ι) {a t : ℕ} (ha : ∀ c ∈ L, a ≤ #(S c))
+    (ht : ∀ c ∈ L, ∀ c' ∈ L, c ≠ c' → #(S c ∩ S c') ≤ t)
+    (h2 : 2 * Fintype.card ι * t ≤ a ^ 2) :
+    #L * a ≤ 2 * Fintype.card ι := by
+  rcases Nat.eq_zero_or_pos a with rfl | ha0
+  · simp
+  have hsub := card_mul_sub_le_of_le_card_of_card_inter_le L S ha ht
+  have h2' : 2 * (Fintype.card ι * t) ≤ a ^ 2 := by linarith
+  have h1 : #L * a * a ≤ 2 * Fintype.card ι * a := by
+    calc #L * a * a = #L * a ^ 2 := by ring
+      _ ≤ #L * (2 * (a ^ 2 - Fintype.card ι * t)) := Nat.mul_le_mul_left _ (by omega)
+      _ = 2 * (#L * (a ^ 2 - Fintype.card ι * t)) := by ring
+      _ ≤ 2 * (Fintype.card ι * (a - t)) := Nat.mul_le_mul_left 2 hsub
+      _ ≤ 2 * (Fintype.card ι * a) := by gcongr; exact Nat.sub_le a t
+      _ = 2 * Fintype.card ι * a := by ring
+  exact Nat.le_of_mul_le_mul_right h1 ha0
+
+private theorem le_card_filter_eq_of_hammingDist_le {w : ι → α} {e : ℕ} {c : ι → α}
+    (hc : hammingDist c w ≤ e) :
+    Fintype.card ι - e ≤ #({i | c i = w i} : Finset ι) := by
+  have := card_filter_eq_add_hammingDist c w
+  omega
+
+private theorem card_inter_filter_eq_le_of_le_minDist [DecidableEq ι] {C : Finset (ι → α)} {d : ℕ}
+    (hd : (d : ℕ∞) ≤ minDist (C : Set (ι → α))) (w : ι → α) {c c' : ι → α}
+    (hc : c ∈ C) (hc' : c' ∈ C) (hne : c ≠ c') :
+    #(({i | c i = w i} : Finset ι) ∩ ({i | c' i = w i} : Finset ι)) ≤ Fintype.card ι - d := by
+  have hsub : ({i | c i = w i} : Finset ι) ∩ ({i | c' i = w i} : Finset ι) ⊆
+      ({i | c i = c' i} : Finset ι) := by
+    intro i hi
+    have h1 := (mem_filter.1 (mem_inter.1 hi).1).2
+    have h2 := (mem_filter.1 (mem_inter.1 hi).2).2
+    exact mem_filter.2 ⟨mem_univ i, h1.trans h2.symm⟩
+  have h1 := card_filter_eq_add_hammingDist c c'
+  have h2 := Nat.cast_le.1 (le_minDist_iff.1 hd c hc c' hc' hne)
+  have := card_le_card hsub
+  omega
+
 /-- **The Johnson bound**, in agreement form: for a code of length `n` and minimum distance at
 least `d`, the number `L` of codewords within distance `e` of a word `w` satisfies
 `L * ((n - e) ^ 2 - n * (n - d)) ≤ n * (d - e)`. It bounds `L` when `n * (n - d) < (n - e) ^ 2`
@@ -119,46 +192,10 @@ theorem card_filter_hammingDist_le_mul_le {C : Finset (ι → α)} {d : ℕ}
         ((Fintype.card ι - e) ^ 2 - Fintype.card ι * (Fintype.card ι - d)) ≤
       Fintype.card ι * (d - e) := by
   classical
-  set n := Fintype.card ι
-  set L : Finset (ι → α) := {c ∈ C | hammingDist c w ≤ e}
-  -- each codeword in the ball agrees with `w` on a set `B c` of exactly `n - e` coordinates
-  have hagree : ∀ c ∈ L, n - e ≤ #({i | c i = w i} : Finset ι) := by
-    intro c hc
-    have h1 := card_filter_eq_add_hammingDist c w
-    have h2 := (mem_filter.1 hc).2
-    omega
-  choose! B hBsub hBcard using fun c hc => exists_subset_card_eq (hagree c hc)
-  -- two distinct codewords agree on at most `n - d` coordinates
-  have hinter : ∀ c ∈ L, ∀ c' ∈ L, c ≠ c' → #(B c ∩ B c') ≤ n - d := by
-    intro c hc c' hc' hne
-    have hsub : B c ∩ B c' ⊆ ({i | c i = c' i} : Finset ι) := by
-      intro i hi
-      have h1 := (mem_filter.1 (hBsub c hc (mem_inter.1 hi).1)).2
-      have h2 := (mem_filter.1 (hBsub c' hc' (mem_inter.1 hi).2)).2
-      exact mem_filter.2 ⟨mem_univ i, h1.trans h2.symm⟩
-    have h1 := card_filter_eq_add_hammingDist c c'
-    have h2 := Nat.cast_le.1 (le_minDist_iff.1 hd c (mem_filter.1 hc).1 c' (mem_filter.1 hc').1 hne)
-    have := card_le_card hsub
-    omega
-  have key := card_mul_sq_le L B hBcard hinter
-  -- arithmetic, with `a = n - e` and `t = n - d`
-  have hmain : #L * ((n - e) ^ 2 - n * (n - d)) ≤ n * ((n - e) - (n - d)) := by
-    rcases le_or_gt ((n - e) ^ 2) (n * (n - d)) with h | h
-    · rw [Nat.sub_eq_zero_of_le h, mul_zero]
-      exact Nat.zero_le _
-    rcases Nat.eq_zero_or_pos #L with hL | hL
-    · rw [hL, zero_mul]
-      exact Nat.zero_le _
-    have ht : n - d ≤ n := Nat.sub_le _ _
-    have hat : n - d ≤ n - e := by
-      by_contra hlt
-      have : (n - e) ^ 2 ≤ (n - d) * (n - d) := by
-        rw [sq]
-        exact Nat.mul_le_mul (by omega) (by omega)
-      exact absurd h (not_lt.2 (this.trans (Nat.mul_le_mul_right _ ht)))
-    zify [h.le, hat, Nat.one_le_iff_ne_zero.2 hL.ne'] at key ⊢
-    nlinarith
-  exact hmain.trans (Nat.mul_le_mul_left _ (by omega))
+  exact (card_mul_sub_le_of_le_card_of_card_inter_le {c ∈ C | hammingDist c w ≤ e}
+    (fun c => {i | c i = w i}) (fun _ hc => le_card_filter_eq_of_hammingDist_le (mem_filter.1 hc).2)
+    (fun _ hc _ hc' => card_inter_filter_eq_le_of_le_minDist hd w
+      (mem_filter.1 hc).1 (mem_filter.1 hc').1)).trans (Nat.mul_le_mul_left _ (by omega))
 
 /-- **The Johnson bound** [Johnson1962]: if `n * (n - d) < (n - e) ^ 2`, that is if
 `e < n - √(n * (n - d))`, a Hamming ball of radius `e` contains at most `n * (d - e)` codewords of a
@@ -169,6 +206,18 @@ theorem card_filter_hammingDist_le_le {C : Finset (ι → α)} {d e : ℕ}
     #{c ∈ C | hammingDist c w ≤ e} ≤ Fintype.card ι * (d - e) :=
   (Nat.le_mul_of_pos_right _ (Nat.sub_pos_of_lt h)).trans
     (card_filter_hammingDist_le_mul_le hd w e)
+
+/-- **The Johnson bound, `2 * n / (n - e)` form**: if `2 * n * (n - d) ≤ (n - e) ^ 2`, the number
+`L` of codewords within distance `e` of a word `w` satisfies `L * (n - e) ≤ 2 * n`. -/
+theorem card_filter_hammingDist_le_mul_le_two_mul {C : Finset (ι → α)} {d e : ℕ}
+    (hd : (d : ℕ∞) ≤ minDist (C : Set (ι → α)))
+    (h : 2 * Fintype.card ι * (Fintype.card ι - d) ≤ (Fintype.card ι - e) ^ 2) (w : ι → α) :
+    #{c ∈ C | hammingDist c w ≤ e} * (Fintype.card ι - e) ≤ 2 * Fintype.card ι := by
+  classical
+  exact card_mul_le_two_mul_of_le_card_of_card_inter_le {c ∈ C | hammingDist c w ≤ e}
+    (fun c => {i | c i = w i}) (fun _ hc => le_card_filter_eq_of_hammingDist_le (mem_filter.1 hc).2)
+    (fun _ hc _ hc' => card_inter_filter_eq_le_of_le_minDist hd w
+      (mem_filter.1 hc).1 (mem_filter.1 hc').1) h
 
 /-- **List decoding up to the Johnson radius.** Let `enc` be an injective encoding of a finite
 nonempty set of messages whose codewords have minimum distance at least `d`. If

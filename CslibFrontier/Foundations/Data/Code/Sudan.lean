@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Foundations.Data.Code.ReedSolomon
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
+public import Mathlib.Analysis.Real.Sqrt
+import CslibFrontier.Foundations.Data.Code.Johnson
 
 /-!
 # Sudan's list decoder for Reed–Solomon codes
@@ -58,9 +60,16 @@ polynomials; no running time is formalized here.
 * `Cslib.Code.exists_mem_sudan_of_mem_reedSolomon`: list decoding of Reed–Solomon codes.
 * `Cslib.Code.ncard_sep_reedSolomon_mul_le`: few Reed–Solomon codewords have large agreement with
   a word.
+* `Cslib.Code.card_mul_le_two_mul_of_natDegree_le`,
+  `Cslib.Code.ncard_sep_natDegree_le_mul_le_two_mul`,
+  `Cslib.Code.ncard_sep_natDegree_le_le_two_div`,
+  `Cslib.Code.ncard_sep_natDegree_le_eval_le_two_div`: Johnson list-size bounds `2 * |ι| / a` and
+  `2 / ε` for degree-bounded polynomials ([Arora and Barak][AroraBarak07], Chapter 17, Exercise 9).
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, draft of
+  2007-01-08][AroraBarak07]
 * [M. Sudan, *Decoding of Reed Solomon codes beyond the error-correction bound*][Sudan1997]
 * [V. Guruswami, A. Rudra, M. Sudan, *Essential Coding Theory*]
   [GuruswamiRudraSudan2019]
@@ -150,5 +159,129 @@ theorem ncard_sep_reedSolomon_mul_le (hα : Function.Injective α) (hk : 2 ≤ k
         exact ⟨P, hP, rfl⟩
     _ ≤ (sudan α w k D : Set F[X]).ncard := Set.ncard_image_le (sudan α w k D).finite_toSet
     _ = #(sudan α w k D) := Set.ncard_coe_finset _
+
+/-! ### Johnson list-size bounds for degree-bounded polynomials -/
+
+private theorem card_inter_filter_eval_eq_le [DecidableEq ι] (hα : Function.Injective α)
+    (w : ι → F) {d : ℕ} {P Q : F[X]} (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d) (hne : P ≠ Q) :
+    #(({i | P.eval (α i) = w i} : Finset ι) ∩ ({i | Q.eval (α i) = w i} : Finset ι)) ≤ d := by
+  refine (card_le_card fun i hi => ?_).trans (card_filter_eval_eq_eval_le hα hP hQ hne)
+  simp only [mem_inter, mem_filter, mem_univ, true_and] at hi ⊢
+  exact hi.1.trans hi.2.symm
+
+/-- **The Johnson bound for degree-bounded polynomials**, in agreement form: if each `P ∈ L` has
+`natDegree ≤ d` and agrees with `w` at `a` or more of the distinct points `α i`, then
+`#L * (a ^ 2 - |ι| * d) ≤ |ι| * (a - d)`. -/
+theorem card_mul_sub_le_of_natDegree_le (hα : Function.Injective α) (L : Finset F[X])
+    (w : ι → F) {d a : ℕ} (hdeg : ∀ P ∈ L, P.natDegree ≤ d)
+    (hagree : ∀ P ∈ L, a ≤ #{i | P.eval (α i) = w i}) :
+    #L * (a ^ 2 - Fintype.card ι * d) ≤ Fintype.card ι * (a - d) := by
+  classical
+  exact card_mul_sub_le_of_le_card_of_card_inter_le L
+    (fun P => {i | P.eval (α i) = w i}) hagree fun P hP Q hQ hne =>
+      card_inter_filter_eval_eq_le hα w (hdeg P hP) (hdeg Q hQ) hne
+
+/-- **The Johnson bound for degree-bounded polynomials, `2 * |ι| / a` form**: if each `P ∈ L` has
+`natDegree ≤ d` and agrees with `w` at `a` or more of the distinct points `α i`, and
+`2 * |ι| * d ≤ a ^ 2`, then `#L * a ≤ 2 * |ι|`. -/
+theorem card_mul_le_two_mul_of_natDegree_le (hα : Function.Injective α) (L : Finset F[X])
+    (w : ι → F) {d a : ℕ} (hdeg : ∀ P ∈ L, P.natDegree ≤ d)
+    (hagree : ∀ P ∈ L, a ≤ #{i | P.eval (α i) = w i}) (h : 2 * Fintype.card ι * d ≤ a ^ 2) :
+    #L * a ≤ 2 * Fintype.card ι := by
+  classical
+  exact card_mul_le_two_mul_of_le_card_of_card_inter_le L
+    (fun P => {i | P.eval (α i) = w i}) hagree (fun P hP Q hQ hne =>
+      card_inter_filter_eval_eq_le hα w (hdeg P hP) (hdeg Q hQ) hne) h
+
+/-- Over any field `F`, when `d < a` and `α` is injective, only finitely many polynomials of
+`natDegree ≤ d` agree with `w` at `a` or more points: each such polynomial is determined by its
+agreement set `{i | P.eval (α i) = w i}`. -/
+theorem finite_sep_natDegree_le (hα : Function.Injective α) (w : ι → F) {d a : ℕ} (hda : d < a) :
+    {P : F[X] | P.natDegree ≤ d ∧ a ≤ #{i | P.eval (α i) = w i}}.Finite := by
+  classical
+  refine Set.Finite.of_injOn (f := fun P : F[X] => ({i | P.eval (α i) = w i} : Finset ι))
+    (fun _ _ => Set.mem_univ _) (fun P hP Q hQ hPQ => ?_) Set.finite_univ
+  change ({i | P.eval (α i) = w i} : Finset ι) = ({i | Q.eval (α i) = w i} : Finset ι) at hPQ
+  by_contra hne
+  have hsub : ({i | P.eval (α i) = w i} : Finset ι) ⊆
+      ({i | P.eval (α i) = Q.eval (α i)} : Finset ι) := by
+    intro i hi
+    have hiQ : i ∈ ({i | Q.eval (α i) = w i} : Finset ι) := hPQ ▸ hi
+    exact mem_filter.2 ⟨mem_univ i, (mem_filter.1 hi).2.trans (mem_filter.1 hiQ).2.symm⟩
+  have := hP.2.trans ((card_le_card hsub).trans (card_filter_eval_eq_eval_le hα hP.1 hQ.1 hne))
+  omega
+
+/-- **The Johnson bound for the set of degree-bounded polynomials**, `2 * |ι| / a` form: if
+`2 * |ι| * d < a ^ 2` (or `d < a` and `2 * |ι| * d ≤ a ^ 2`), the number `L` of polynomials of
+`natDegree ≤ d` that agree with `w` at `a` or more of the distinct points `α i` satisfies
+`L * a ≤ 2 * |ι|`. -/
+theorem ncard_sep_natDegree_le_mul_le_two_mul (hα : Function.Injective α) (w : ι → F) {d a : ℕ}
+    (hda : d < a) (h : 2 * Fintype.card ι * d ≤ a ^ 2) :
+    {P : F[X] | P.natDegree ≤ d ∧ a ≤ #{i | P.eval (α i) = w i}}.ncard * a ≤
+      2 * Fintype.card ι := by
+  have hfin := finite_sep_natDegree_le hα w hda
+  rw [Set.ncard_eq_toFinset_card _ hfin]
+  exact card_mul_le_two_mul_of_natDegree_le hα hfin.toFinset w
+    (fun P hP => (hfin.mem_toFinset.1 hP).1) (fun P hP => (hfin.mem_toFinset.1 hP).2) h
+
+/-- **Reed–Solomon list-size bound** ([Arora and Barak][AroraBarak07], Chapter 17, Exercise 9): for
+any `w : ι → F` on a nonempty finite set of distinct evaluation points `α : ι → F`, degree bound
+`d`, and `ε > 2 * √(d / |ι|)`, at most `2 / ε` polynomials of degree at most `d` agree with `w` on
+at least `ε * |ι|` points. -/
+theorem ncard_sep_natDegree_le_le_two_div [Nonempty ι] (hα : Function.Injective α) (w : ι → F)
+    (d : ℕ) {ε : ℝ} (hε : 2 * Real.sqrt ((d : ℝ) / Fintype.card ι) < ε) :
+    ({P : F[X] | P.natDegree ≤ d ∧
+      ε * Fintype.card ι ≤ #{i | P.eval (α i) = w i}}.ncard : ℝ) ≤ 2 / ε := by
+  set n := Fintype.card ι
+  have hn0 : 0 < n := Fintype.card_pos
+  have hnR : (0 : ℝ) < n := Nat.cast_pos.2 hn0
+  have hε0 : 0 < ε := lt_of_le_of_lt (by positivity) hε
+  set S : Set F[X] := {P : F[X] | P.natDegree ≤ d ∧ ε * n ≤ #{i | P.eval (α i) = w i}}
+  rcases S.eq_empty_or_nonempty with hS | ⟨P₀, hP₀⟩
+  · rw [hS, Set.ncard_empty, Nat.cast_zero]
+    positivity
+  set a := ⌈ε * n⌉₊
+  have han : a ≤ n := by
+    refine (Nat.ceil_le.2 hP₀.2).trans ?_
+    exact card_le_univ _
+  have haR : ε * n ≤ a := Nat.le_ceil _
+  have hsq : 4 * (n : ℝ) * d < (a : ℝ) ^ 2 := by
+    have h1 : (2 * Real.sqrt ((d : ℝ) / n)) ^ 2 < ε ^ 2 :=
+      sq_lt_sq.2 (by rwa [abs_of_nonneg (by positivity), abs_of_pos hε0])
+    rw [mul_pow, Real.sq_sqrt (by positivity)] at h1
+    have h2 : 4 * (n : ℝ) * d < (ε * n) ^ 2 := by
+      have := mul_lt_mul_of_pos_right h1 (sq_pos_of_pos hnR)
+      calc 4 * (n : ℝ) * d = 2 ^ 2 * ((d : ℝ) / n) * (n : ℝ) ^ 2 := by field_simp; ring
+        _ < ε ^ 2 * (n : ℝ) ^ 2 := this
+        _ = (ε * n) ^ 2 := by ring
+    exact h2.trans_le (pow_le_pow_left₀ (by positivity) haR 2)
+  have hsqN : 4 * n * d < a ^ 2 := by exact_mod_cast hsq
+  have hda : d < a := by
+    have hna : n * (4 * d) < n * a := by
+      have : 4 * n * d < n * a := hsqN.trans_le (by rw [sq]; exact Nat.mul_le_mul_right a han)
+      linarith
+    have : 4 * d < a := Nat.lt_of_mul_lt_mul_left hna
+    omega
+  have hsub : S ⊆ {P : F[X] | P.natDegree ≤ d ∧ a ≤ #{i | P.eval (α i) = w i}} :=
+    fun P hP => ⟨hP.1, Nat.ceil_le.2 hP.2⟩
+  have h2sq : 2 * Fintype.card ι * d ≤ a ^ 2 :=
+    (Nat.mul_le_mul_right d (Nat.mul_le_mul_right n (by decide : 2 ≤ 4))).trans hsqN.le
+  have hcard : S.ncard * a ≤ 2 * n :=
+    (Nat.mul_le_mul_right a (Set.ncard_le_ncard hsub (finite_sep_natDegree_le hα w hda))).trans
+      (ncard_sep_natDegree_le_mul_le_two_mul hα w hda h2sq)
+  have hcardR : (S.ncard : ℝ) * (ε * n) ≤ 2 * n :=
+    (mul_le_mul_of_nonneg_left haR (Nat.cast_nonneg _)).trans (by exact_mod_cast hcard)
+  rw [le_div_iff₀ hε0]
+  nlinarith
+
+/-- **Reed–Solomon list-size bound over a finite field** ([Arora and Barak][AroraBarak07],
+Chapter 17, Exercise 9): for any `f : F → F` over a finite field `F`, degree bound `d`, and
+`ε > 2 * √(d / |F|)`, at most `2 / ε` polynomials of degree at most `d` agree with `f` on at
+least `ε * |F|` inputs. -/
+theorem ncard_sep_natDegree_le_eval_le_two_div [Fintype F] (f : F → F) (d : ℕ) {ε : ℝ}
+    (hε : 2 * Real.sqrt ((d : ℝ) / Fintype.card F) < ε) :
+    ({P : F[X] | P.natDegree ≤ d ∧ ε * Fintype.card F ≤ #{x | P.eval x = f x}}.ncard : ℝ) ≤
+      2 / ε :=
+  ncard_sep_natDegree_le_le_two_div Function.injective_id f d hε
 
 end Cslib.Code
