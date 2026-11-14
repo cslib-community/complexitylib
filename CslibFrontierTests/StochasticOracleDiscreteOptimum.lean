@@ -145,15 +145,22 @@ private theorem bounds :
         Discrete.expectedCost (Discrete.retainingChoose toy 1 propose select) respond charge 1 ∧
       Discrete.expectedCost (Discrete.retainingChoose toy 1 propose select) respond charge 1 ≤
         2 := by
-  have hs := Discrete.optimalCost_sandwich toy propose respond charge duration allowed select
-    1 1 1 1 1 (by norm_num [toy])
-    threshold
+  have hs := Discrete.optimalCost_sandwich_ceilDiv toy propose respond charge duration allowed
+    propose
+    select
+    1 1 1 (by norm_num) (by norm_num)
     DiscreteRetention.half DiscreteRetention.half (by norm_num [DiscreteRetention.half])
     (by norm_num [DiscreteRetention.half]) 2 2 1 1 1 (1 / 2)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by rw [binomial_failure]; norm_num) (allowed_all _ _) upper
+    (by
+      change (1 / 2 : ℝ) ≤
+        1 - (ProbabilityTheory.binomial 1 DiscreteRetention.half).real (Set.Iio 1)
+      rw [binomial_failure]
+      norm_num) (allowed_all _ _)
+    (Discrete.retaining_admissible toy 1 1 propose select respond duration 1) upper
     (fun choose output _ hA => lower choose output hA)
-  norm_num [DiscreteRetention.half, ENNReal.ofReal_div_of_pos] at hs
+  norm_num [toy, Nat.ceilDiv_eq_add_pred_div, DiscreteRetention.half,
+    ENNReal.ofReal_div_of_pos] at hs
   exact hs
 
 -- The infimum ranges over every actual randomized competitor, not a supplied optimum certificate.

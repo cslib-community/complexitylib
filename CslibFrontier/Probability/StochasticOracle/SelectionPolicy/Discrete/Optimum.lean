@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Deadline
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Provenance
+public import Mathlib.Algebra.Order.Floor.Div
 import CslibFrontier.Probability.PMF.Event
 import Mathlib.Tactic
 
@@ -25,19 +27,26 @@ Feasibility contains successful-output provenance, the actual physical deadline
 and the actual success level. Source progress and resource envelopes are separate
 hypotheses in the derived bounds. The independent `allowed` predicate specifies
 the policy class, including opportunity-use restrictions where required; the
-constructed upper witness must belong to that class. This is the semantic PMF model; native
-realization of these policies remains a separate obligation.
+constructed upper witness must belong to that class. Its chosen retention decoder
+is independent of the oracle's complete proposal decoder used by lower bounds.
+Successful-only provenance against that complete decoder is a policy-admission
+condition and can be derived from supported-response decoder compatibility.
+This is the semantic PMF model; native
+realization of these policies remains a separate obligation. The chosen-retention
+decoder is deterministic on the recorded history and response. An operational
+randomized retainer needs a joint-law representation before using this decoder interface.
 
 ## Main definitions
 
-* `expectedCost`, `successProbability`: actual token and certified-output observations.
-* `DeadlineFeasible`, `Feasible`: resource and success feasibility without source envelopes.
+* `Feasible`: fixed-budget resource and success feasibility without source envelopes.
 * `feasibleCosts`, `optimalCost`: the chosen policy class at the externally fixed budget.
 * `retainingOutput`: the constructed upper policy's actual output.
 
 ## Main results
 
 * `le_optimalCost`, `optimalCost_sandwich`: derived universal lower and actual upper bounds.
+* `retaining_admissible_of_valid`: source provenance from per-response decoder compatibility.
+* `optimalCost_sandwich_ceilDiv`: the manuscript's ceiling-count specialization.
 * `matching_envelope_ratio`: the matching-envelope `1 / eta` comparison.
 * `optimalCost_eq_top_of_deadline_bound`: source-derived infeasibility.
 -/
@@ -48,32 +57,6 @@ namespace Cslib.Probability.StochasticOracle.SelectionPolicy.Discrete
 open AdaptiveSelection PartialCover MeasureTheory
 open scoped ENNReal
 variable {B R E J : Type} [DecidableEq E] [DecidableEq J]
-
-/-- Extended expectation of the actual accrued invoices over the fixed turn budget. -/
-@[expose] def expectedCost
-    (choose : List (Record B R) → PMF (Option B))
-    (respond : List (Record B R) → B → PMF R)
-    (charge : List (Record B R) → B → R → ℝ) (u : ℕ) : ℝ≥0∞ :=
-  ∑' h, PMF.seqProcess (responseStep (policyLaw choose respond)) u h *
-    ENNReal.ofReal (accruedBill (recordResource charge) (PMF.seqHistory h))
-
-/-- Probability of the actual randomized output meeting coverage, dual certification
-and the accounted physical deadline. -/
-@[expose] def successProbability (I : Instance E J)
-    (choose : List (Record B R) → PMF (Option B))
-    (respond : List (Record B R) → B → PMF R)
-    (output : List (Record B R) → PMF (Finset J))
-    (duration : List (Record B R) → B → R → ℝ) (u : ℕ) (ρ D : ℝ) : ℝ :=
-  ((outputLaw choose respond output u).toOuterMeasure
-    {z | CertifiedOutput I ρ D duration z.history z.returned}).toReal
-
-/-- Every supported prefix finishes its issued batches by the physical deadline. -/
-@[expose] def DeadlineFeasible
-    (choose : List (Record B R) → PMF (Option B))
-    (respond : List (Record B R) → B → PMF R)
-    (duration : List (Record B R) → B → R → ℝ) (u : ℕ) (D : ℝ) : Prop :=
-  ∀ t, t ≤ u → ∀ h ∈ (PMF.seqProcess (responseStep (policyLaw choose respond)) t).support,
-    accruedBill (recordResource duration) (PMF.seqHistory h) ≤ D
 
 /-- Fixed-budget feasible selection-only execution, independent of source lower bounds.
 Absorbing halt records pad policies that use fewer than `u` turns. -/
@@ -129,6 +112,24 @@ theorem retaining_admissible (I : Instance E J) (ρ D : ℝ)
   subst C
   exact selected_subset_proposedSets I ρ (recordProposals propose) _
 
+/-- A chosen retention decoder yields a selection-only output when each actual
+response emits candidates from the complete, possibly buffered proposal history. -/
+theorem retaining_admissible_of_valid (I : Instance E J) (ρ D : ℝ)
+    (all retained : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B)
+    (respond : List (Record B R) → B → PMF R)
+    (duration : List (Record B R) → B → R → ℝ) (u : ℕ)
+    (H : ProposalsValid (recordProposals all) (recordProposals retained)
+      (retainingLaw I ρ retained select respond) u) :
+    Admissible I all (retainingChoose I ρ retained select) respond
+      (retainingOutput I ρ retained) duration u ρ D := by
+  intro h hh C hC _
+  have he : C = selected I ρ (recordProposals retained) (PMF.seqHistory h) := by
+    simpa only [retainingOutput, PMF.support_pure, Set.mem_singleton_iff] using hC
+  subst C
+  exact selected_subset_proposedSets_of_valid I ρ (recordProposals all)
+    (recordProposals retained) (retainingLaw I ρ retained select respond) u H u le_rfl h hh
+
 section Bounds
 variable (I : Instance E J)
   (propose : List (Record B R) → B → R → List (Finset J))
@@ -183,76 +184,121 @@ theorem optimalCost_eq_top_of_deadline_bound (u b r : ℕ)
     exact (not_le_of_gt hη) (hf.2.2.trans hb)
   rw [optimalCost, he, sInf_empty]
 
-/-- Primitive upper-policy envelopes supply an actual feasible fixed-budget
-competitor; achieved success is derived from retained coverage and duration. -/
-theorem retaining_feasible (select : List (Record B R) → PMF B)
+/-- Primitive upper-policy envelopes and selection-only admission supply an
+actual feasible fixed-budget competitor. The chosen retention decoder can differ
+from the complete proposal decoder; success is derived from coverage and duration. -/
+theorem retaining_feasible
+    (retained : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B)
     (u a r : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
     (c ell ρ D η : ℝ) (hell : 0 ≤ ell) (hD : (u : ℝ) * ell ≤ D)
     (hη : η ≤ 1 - (ProbabilityTheory.binomial u p).real (Set.Iio r))
-    (H : UpperBounds I ρ propose select respond charge duration u a p c ell) :
-    Feasible I propose (retainingChoose I ρ propose select) respond (retainingOutput I ρ propose)
+    (hA : Admissible I propose (retainingChoose I ρ retained select) respond
+      (retainingOutput I ρ retained) duration u ρ D)
+    (H : UpperBounds I ρ retained select respond charge duration u a p c ell) :
+    Feasible I propose (retainingChoose I ρ retained select) respond (retainingOutput I ρ retained)
       duration u ρ D η := by
-  refine ⟨retaining_admissible I ρ D propose select respond duration u, ?_, ?_⟩
+  refine ⟨hA, ?_, ?_⟩
   · intro t ht h hh
-    apply (duration_bound I ρ propose select respond charge duration u a p c ell hell H
+    apply (duration_bound I ρ retained select respond charge duration u a p c ell hell H
       t ht h hh).2.trans
     exact (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr ht) hell).trans hD
-  · have hb := certified_success I ρ propose select respond charge duration u a r hr p c ell D
+  · have hb := certified_success I ρ retained select respond charge duration u a r hr p c ell D
       hell hD H
-    change η ≤ ((outputLaw (retainingChoose I ρ propose select) respond
-      (fun h => PMF.pure (selected I ρ (recordProposals propose) h)) u).toOuterMeasure
+    change η ≤ ((outputLaw (retainingChoose I ρ retained select) respond
+      (fun h => PMF.pure (selected I ρ (recordProposals retained) h)) u).toOuterMeasure
         {z | CertifiedOutput I ρ D duration z.history z.returned}).toReal
     rw [outputLaw_pure, PMF.toOuterMeasure_map_apply]
     exact hη.trans hb
 
 /-- Source token sandwich for the fixed-budget semantic infimum. Feasibility
 and the actual upper expected cost are constructed from primitive envelopes. -/
-theorem optimalCost_sandwich (select : List (Record B R) → PMF B)
+theorem optimalCost_sandwich
+    (retained : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B)
     (u a ra b rb : ℕ) (hra : I.ground.card ≤ a * ra)
     (hrb : ∀ k < rb, b * k < I.ground.card)
     (pL pU : Set.Icc (0 : ℝ) 1) (hpL : 0 < (pL : ℝ)) (hpU : 0 < (pU : ℝ))
     (cL cU ell ρ D η : ℝ) (hcL : 0 ≤ cL) (hcU : 0 ≤ cU) (hell : 0 ≤ ell)
     (hD : (u : ℝ) * ell ≤ D) (hη0 : 0 ≤ η)
     (hη : η ≤ 1 - (ProbabilityTheory.binomial u pL).real (Set.Iio ra))
-    (hAllowed : allowed (retainingChoose I ρ propose select) (retainingOutput I ρ propose))
-    (HU : UpperBounds I ρ propose select respond charge duration u a pL cU ell)
+    (hAllowed : allowed (retainingChoose I ρ retained select) (retainingOutput I ρ retained))
+    (hA : Admissible I propose (retainingChoose I ρ retained select) respond
+      (retainingOutput I ρ retained) duration u ρ D)
+    (HU : UpperBounds I ρ retained select respond charge duration u a pL cU ell)
     (HL : ∀ choose output, allowed choose output →
       Admissible I propose choose respond output duration u ρ D →
       LowerBounds I propose choose respond output charge duration u b pU cL ρ D) :
     ENNReal.ofReal (η * rb * cL / pU) ≤
         optimalCost I propose respond charge duration allowed u ρ D η ∧
       optimalCost I propose respond charge duration allowed u ρ D η ≤
-        expectedCost (retainingChoose I ρ propose select) respond charge u ∧
-      expectedCost (retainingChoose I ρ propose select) respond charge u ≤
+        expectedCost (retainingChoose I ρ retained select) respond charge u ∧
+      expectedCost (retainingChoose I ρ retained select) respond charge u ≤
         ENNReal.ofReal (cU * min (u : ℝ) ((ra : ℝ) / pL)) := by
   refine ⟨le_optimalCost I propose respond charge duration allowed u b rb hrb pU cL ρ D η
     hpU hcL hη0 HL, optimalCost_le I propose respond charge duration allowed u ρ D η _ _ hAllowed
-      (retaining_feasible I propose respond charge duration select u a ra hra pL cU ell ρ D η
-        hell hD hη HU), ?_⟩
-  exact cost_le_mean I ρ propose select respond charge duration u a ra hra pL hpL cU ell hcU HU
+      (retaining_feasible I propose respond charge duration retained select
+        u a ra hra pL cU ell ρ D η
+        hell hD hη hA HU), ?_⟩
+  exact cost_le_mean I ρ retained select respond charge duration u a ra hra pL hpL cU ell hcU HU
+
+/-- The source ceiling counts `ceil(n/a)` and `ceil(n/b)` need no separate
+cardinality/count certificates from the caller. -/
+theorem optimalCost_sandwich_ceilDiv
+    (retained : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B) (u a b : ℕ) (ha : 0 < a) (hb : 0 < b)
+    (pL pU : Set.Icc (0 : ℝ) 1) (hpL : 0 < (pL : ℝ)) (hpU : 0 < (pU : ℝ))
+    (cL cU ell ρ D η : ℝ) (hcL : 0 ≤ cL) (hcU : 0 ≤ cU) (hell : 0 ≤ ell)
+    (hD : (u : ℝ) * ell ≤ D) (hη0 : 0 ≤ η)
+    (hη : η ≤ 1 - (ProbabilityTheory.binomial u pL).real (Set.Iio (I.ground.card ⌈/⌉ a)))
+    (hAllowed : allowed (retainingChoose I ρ retained select) (retainingOutput I ρ retained))
+    (hA : Admissible I propose (retainingChoose I ρ retained select) respond
+      (retainingOutput I ρ retained) duration u ρ D)
+    (HU : UpperBounds I ρ retained select respond charge duration u a pL cU ell)
+    (HL : ∀ choose output, allowed choose output →
+      Admissible I propose choose respond output duration u ρ D →
+      LowerBounds I propose choose respond output charge duration u b pU cL ρ D) :
+    ENNReal.ofReal (η * (I.ground.card ⌈/⌉ b) * cL / pU) ≤
+        optimalCost I propose respond charge duration allowed u ρ D η ∧
+      optimalCost I propose respond charge duration allowed u ρ D η ≤
+        expectedCost (retainingChoose I ρ retained select) respond charge u ∧
+      expectedCost (retainingChoose I ρ retained select) respond charge u ≤
+        ENNReal.ofReal (cU * min (u : ℝ) ((I.ground.card ⌈/⌉ a : ℕ) / pL)) := by
+  apply optimalCost_sandwich I propose respond charge duration allowed retained select
+    u a (I.ground.card ⌈/⌉ a) b (I.ground.card ⌈/⌉ b) ?_ ?_
+    pL pU hpL hpU cL cU ell ρ D η hcL hcU hell hD hη0 hη hAllowed hA HU HL
+  · exact (ceilDiv_le_iff_le_mul ha).mp le_rfl
+  · intro k hk
+    exact lt_of_not_ge (fun h => (not_le_of_gt hk) ((ceilDiv_le_iff_le_mul hb).mpr h))
 
 /-- Matching progress, coverage and token envelopes give the source `1 / eta`
 comparison with the infimum over every feasible actual discrete competitor. -/
-theorem matching_envelope_ratio (select : List (Record B R) → PMF B)
+theorem matching_envelope_ratio
+    (retained : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B)
     (u a r : ℕ) (hra : I.ground.card ≤ a * r)
     (hrb : ∀ k < r, a * k < I.ground.card)
     (p : Set.Icc (0 : ℝ) 1) (hp : 0 < (p : ℝ))
     (c ell ρ D η : ℝ) (hc : 0 ≤ c) (hell : 0 ≤ ell)
     (hD : (u : ℝ) * ell ≤ D) (hη : 0 < η)
     (hηU : η ≤ 1 - (ProbabilityTheory.binomial u p).real (Set.Iio r))
-    (hAllowed : allowed (retainingChoose I ρ propose select) (retainingOutput I ρ propose))
-    (HU : UpperBounds I ρ propose select respond charge duration u a p c ell)
+    (hAllowed : allowed (retainingChoose I ρ retained select) (retainingOutput I ρ retained))
+    (hA : Admissible I propose (retainingChoose I ρ retained select) respond
+      (retainingOutput I ρ retained) duration u ρ D)
+    (HU : UpperBounds I ρ retained select respond charge duration u a p c ell)
     (HL : ∀ choose output, allowed choose output →
       Admissible I propose choose respond output duration u ρ D →
       LowerBounds I propose choose respond output charge duration u a p c ρ D) :
     optimalCost I propose respond charge duration allowed u ρ D η ≤
-        expectedCost (retainingChoose I ρ propose select) respond charge u ∧
-      expectedCost (retainingChoose I ρ propose select) respond charge u ≤
+        expectedCost (retainingChoose I ρ retained select) respond charge u ∧
+      expectedCost (retainingChoose I ρ retained select) respond charge u ≤
         ENNReal.ofReal (1 / η) * optimalCost I propose respond charge duration allowed u ρ D η := by
-  have hs := optimalCost_sandwich I propose respond charge duration allowed select
-    u a r a r hra hrb p p hp hp c c ell ρ D η hc hc hell hD hη.le hηU hAllowed HU HL
+  have hs := optimalCost_sandwich I propose respond charge duration allowed retained
+    select
+    u a r a r hra hrb p p hp hp c c ell ρ D η hc hc hell hD hη.le hηU
+    hAllowed hA HU HL
   refine ⟨hs.2.1, ?_⟩
-  have hu : expectedCost (retainingChoose I ρ propose select) respond charge u ≤
+  have hu : expectedCost (retainingChoose I ρ retained select) respond charge u ≤
       ENNReal.ofReal (c * ((r : ℝ) / p)) := hs.2.2.trans
         (ENNReal.ofReal_le_ofReal (mul_le_mul_of_nonneg_left (min_le_right _ _) hc))
   have he : ENNReal.ofReal (c * ((r : ℝ) / p)) =

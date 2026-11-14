@@ -150,9 +150,7 @@ theorem lower_cost (u b r : ℕ) (hr : ∀ k < r, b * k < I.ground.card)
     (H : LowerBounds I propose choose respond output charge duration u b p c ρ D)
     (hη : ENNReal.ofReal η ≤ (outputLaw choose respond output u).toOuterMeasure
       {z | CertifiedOutput I ρ D duration z.history z.returned}) :
-    ENNReal.ofReal (η * r * c / p) ≤
-      ∑' h, PMF.seqProcess (responseStep (policyLaw choose respond)) u h *
-        ENNReal.ofReal (accruedBill (recordResource charge) (PMF.seqHistory h)) := by
+    ENNReal.ofReal (η * r * c / p) ≤ expectedCost choose respond charge u := by
   classical
   let K := policyLaw choose respond
   let μ := fun t => PMF.seqProcess (responseStep K) t

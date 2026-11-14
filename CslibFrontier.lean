@@ -6481,6 +6481,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discr
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.FiniteTable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.HistoryExpectation
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Prefix
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Provenance
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle

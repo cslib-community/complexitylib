@@ -26,6 +26,7 @@ These interfaces assume no token-cost or latency envelope.
 
 * `Outcome`, `outputLaw`: actual execution and randomized extraction.
 * `Admissible`: successful-only provenance, independent of source envelopes.
+* `expectedCost`, `successProbability`, `DeadlineFeasible`: actual resource/output observations.
 * `ProgressBounds`: local progress/size limits and successful-only provenance.
 
 ## Main results
@@ -56,6 +57,32 @@ structure Outcome (B R J : Type) where
     (output : List (Record B R) → PMF (Finset J)) (u : ℕ) : PMF (Outcome B R J) :=
   (PMF.seqProcess (responseStep (policyLaw choose respond)) u).bind fun h =>
     (output (PMF.seqHistory h)).map fun C => ⟨PMF.seqHistory h, C⟩
+
+/-- Extended expectation of the actual accrued invoices over the fixed turn budget. -/
+@[expose] def expectedCost
+    (choose : List (Record B R) → PMF (Option B))
+    (respond : List (Record B R) → B → PMF R)
+    (charge : List (Record B R) → B → R → ℝ) (u : ℕ) : ℝ≥0∞ :=
+  ∑' h, PMF.seqProcess (responseStep (policyLaw choose respond)) u h *
+    ENNReal.ofReal (accruedBill (recordResource charge) (PMF.seqHistory h))
+
+/-- Probability of the actual randomized output meeting coverage, dual certification
+and the accounted physical deadline. -/
+@[expose] def successProbability (I : Instance E J)
+    (choose : List (Record B R) → PMF (Option B))
+    (respond : List (Record B R) → B → PMF R)
+    (output : List (Record B R) → PMF (Finset J))
+    (duration : List (Record B R) → B → R → ℝ) (u : ℕ) (ρ D : ℝ) : ℝ :=
+  ((outputLaw choose respond output u).toOuterMeasure
+    {z | CertifiedOutput I ρ D duration z.history z.returned}).toReal
+
+/-- Every supported prefix finishes its issued batches by the physical deadline. -/
+@[expose] def DeadlineFeasible
+    (choose : List (Record B R) → PMF (Option B))
+    (respond : List (Record B R) → B → PMF R)
+    (duration : List (Record B R) → B → R → ℝ) (u : ℕ) (D : ℝ) : Prop :=
+  ∀ t, t ≤ u → ∀ h ∈ (PMF.seqProcess (responseStep (policyLaw choose respond)) t).support,
+    accruedBill (recordResource duration) (PMF.seqHistory h) ≤ D
 
 omit [DecidableEq J] in
 /-- Deterministic final extraction preserves the actual joint transcript/output law. -/

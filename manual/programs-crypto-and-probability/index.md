@@ -978,7 +978,7 @@ aggregate expected-cost lower bound is a hypothesis.
 
 For arbitrary discrete competitors and the source's weaker successful-only provenance,
 import `CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Competitor` for
-execution and progress, `...Discrete.LowerCost` for tokens, or `...Discrete.Deadline` for
+execution, actual observations and progress, `...Discrete.LowerCost` for tokens, or `...Discrete.Deadline` for
 physical deadlines.
 The shared `policyLaw` executes an arbitrary PMF choice of batch or halt, followed by
 the fixed conditional response law. `outputLaw` then samples the returned family from
@@ -1047,9 +1047,22 @@ all finite budgets.
 
 `le_optimalCost` derives the universal lower bound from primitive limitations on the allowed
 admissible competitors. `optimalCost_sandwich` constructs the retaining witness's feasibility
-and actual expected-cost upper bound; the caller must establish that the witness belongs to
-the chosen policy class. `matching_envelope_ratio` gives the `1/eta` comparison under matching
-envelopes. `optimalCost_eq_top_of_deadline_bound` derives infeasibility from the necessary
+and actual expected-cost upper bound; the caller establishes that the witness belongs to
+the chosen policy class and has successful-only provenance. The upper policy's chosen
+retention decoder is separate from the complete oracle-proposal decoder used by all lower
+competitors. Use
+[`AdaptiveSelection/Provenance.lean`](../../CslibFrontier/Probability/StochasticOracle/AdaptiveSelection/Provenance.lean)
+for per-response `ProposalsValid` compatibility: newly emitted retention candidates must
+occur somewhere in the actual proposal history. This permits candidates buffered from an
+earlier response. `retaining_admissible_of_valid` derives the upper witness's provenance
+from that local contract. Direct successful-only admission remains available when failed
+paths do not satisfy the stronger compatibility condition. The retention decoder is
+deterministic on recorded history and response. Representing operational random retention
+decisions as recorded metadata requires a proof that the actual joint law is preserved.
+`optimalCost_sandwich_ceilDiv` supplies the source counts `ceil(n/a)` and `ceil(n/b)`
+from the positive per-turn size bounds, using Mathlib's ceiling division. Callers need no
+separate cardinality/count certificates. `matching_envelope_ratio` gives the `1/eta`
+comparison under matching envelopes. `optimalCost_eq_top_of_deadline_bound` derives infeasibility from the necessary
 binomial deadline bound, independently of token-cost envelopes. The accounted-duration and
 native-model boundaries above still apply.
 
@@ -1061,6 +1074,14 @@ one-half has value infinity. Restricting the same source to policies that halt b
 also gives infinity at target one-half, checking that the specified class changes the infimum.
 This is a semantic optimum; equality with an infimum over native PTM implementations requires
 a separate representation argument.
+
+The [chosen-retention client](../../CslibFrontierTests/StochasticOracleChosenRetention.lean)
+checks why the decoder distinction matters. A raw response lists a weight-one singleton
+before a weight-two full cover, with unit dual prices. Processing both retains the singleton
+and then rejects the full cover against the remaining dual charge. Choosing only the full
+cover completes immediately. Its provenance is checked against both raw proposals, and the
+sandwich derives optimum two for the complete raw-proposal problem. A separate compatibility
+check retains a candidate on a later response after buffering it earlier.
 
 `retainingPolicy` constructs an admissible upper policy from a randomized batch
 selector; `UpperBounds` contains only its supported source contracts.
