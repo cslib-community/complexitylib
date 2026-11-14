@@ -29,7 +29,7 @@ Exercises `CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive` on:
   and perfect HVZK for the OR composition of two Sigma protocols.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.SigmaInteractiveBridge
 
