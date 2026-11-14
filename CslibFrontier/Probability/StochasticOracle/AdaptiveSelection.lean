@@ -342,6 +342,20 @@ Stopping is represented by setting the bill to zero after retained completion. -
   | [] => 0
   | x :: h => accruedBill bill h + bill h x
 
+/-- Nonnegative realized charges give a nonnegative accrued bill. -/
+theorem accruedBill_nonneg (bill : List Ω → Ω → ℝ)
+    (hb : ∀ h x, 0 ≤ bill h x) (h : List Ω) : 0 ≤ accruedBill bill h := by
+  induction h with
+  | nil => exact le_refl 0
+  | cons x h ih => exact add_nonneg ih (hb h x)
+
+/-- Stop response-dependent charges once the retained family covers the ground. -/
+@[expose] def stoppedBill {E J : Type*} [DecidableEq E] [DecidableEq J]
+    (I : PartialCover.Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J)) (charge : List Ω → Ω → ℝ)
+    (h : List Ω) (x : Ω) : ℝ :=
+  if I.covered (selected I ρ proposal h) = I.ground then 0 else charge h x
+
 /-- The finite expected-cost recursion equals expectation of actual accumulated
 response-dependent bills, using their conditional means under the execution law.
 This is the tower-property bridge, allowing arbitrary bill/response correlation. -/

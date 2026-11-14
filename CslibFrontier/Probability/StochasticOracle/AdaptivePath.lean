@@ -248,13 +248,6 @@ theorem ae_eventually_complete {Ω : Type} [Fintype Ω]
   filter_upwards [ae_eventually_notMem hs] with ω hω
   simpa only [s, Set.mem_ofPred_eq, not_not] using hω
 
-/-- Stop response-dependent charges once the retained family covers the ground. -/
-@[expose] def stoppedBill {E J : Type*} [DecidableEq E] [DecidableEq J]
-    (I : PartialCover.Instance E J) (ρ : ℝ)
-    (proposal : List Ω → Ω → List (Finset J)) (charge : List Ω → Ω → ℝ)
-    (h : List Ω) (x : Ω) : ℝ :=
-  if I.covered (selected I ρ proposal h) = I.ground then 0 else charge h x
-
 /-- Actual nonnegative extended total bill: the monotone limit of accrued bills.
 For nonnegative charges this retains infinity on divergent trajectories. -/
 @[expose] def totalBill (bill : List Ω → Ω → ℝ) (ω : ℕ → Ω) : ℝ≥0∞ :=
@@ -279,13 +272,6 @@ theorem totalBill_eq_tsum (bill : List Ω → Ω → ℝ) (hbn : ∀ h x, 0 ≤ 
   congr 1
   funext n
   exact ENNReal.ofReal_sum_of_nonneg fun t _ => hbn _ _
-
-omit [Fintype Ω] [MeasurableSpace Ω] [MeasurableSingletonClass Ω] in
-private theorem accruedBill_nonneg (bill : List Ω → Ω → ℝ)
-    (hb : ∀ h x, 0 ≤ bill h x) (h : List Ω) : 0 ≤ accruedBill bill h := by
-  induction h with
-  | nil => exact le_refl 0
-  | cons x h ih => exact add_nonneg ih (hb h x)
 
 /-- Each finite cylinder bill is integrable, without a global bill bound. -/
 theorem integrable_accruedBill
