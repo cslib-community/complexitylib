@@ -1507,9 +1507,24 @@ bounds the distance from `blockModeIdealExperiment` by `K * (K + ℓ) / 2^n` usi
 `toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
 the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
 `advantage_ofbCpaGame_randomFunction_le` gives `2 * K * (K + ℓ) / 2^n` for a uniform random
-function. The reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is made.
-Concrete checks are in
+function. These typed reductions carry no efficiency certificate. Concrete checks are in
 [`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
+
+The uniform statement is in
+[`Encryption/OFBMode/Uniform.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode/Uniform.lean)
+(Boneh–Shoup v0.6, Exercise 5.15(b) [bs23][bs23]), parallel to the CTR one. `ofbWordEncrypt` is
+OFB mode with `n`-bit blocks for a word-level family, with each chain value truncated to `n` bits
+so that encryption is polynomial-time on every key (`isPPTOn_ofbWordEncrypt`,
+`computableInPolyTime_ofbWordDecrypt`, `ofbWordDecrypt_ofbWordEncrypt`). The reduction
+`ofbToPrfDistinguisher` is the shared stream reduction `ivStreamToPrfDistinguisher` of the CTR
+paragraph, querying its oracle on each chain value. Its certificate
+`isOraclePPT_ofbToPrfDistinguisher` and its real- and ideal-game identities are instances of the
+shared ones. Through `blockModeWordAdversary`
+([`Encryption/BlockModeWord.lean`](../../CslibFrontier/Crypto/Computational/Encryption/BlockModeWord.lean))
+it matches `ofbReduction`, so `advantage_ofbWordCPAGame_le` reuses the chain bound above, and
+`PseudorandomFunction.indcpa_ofbWordEncrypt` proves `SymmetricINDCPAOn blockPairValid` from
+`PseudorandomFunction family` alone. Examples are in
+[`CslibFrontierTests/Crypto/OFBModeUniform.lean`](../../CslibFrontierTests/Crypto/OFBModeUniform.lean).
 
 For hash functions built from a fixed permutation or block cipher, import
 [`Hash/Sponge.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Sponge.lean) and
