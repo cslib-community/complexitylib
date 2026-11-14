@@ -2243,6 +2243,38 @@ that its actual state starts with the separated product and that each public
 history retains all information available to the policy. The theorem does not
 establish a common response kernel for arbitrary native competitors by itself.
 
+The iterated discrete model is available from
+`CslibFrontier.Probability.PMF.Interaction.Process`. Its `Policy.choose` returns
+both the query and updated private storage, so fresh selection-time coins can be
+retained. `Source.step` sees the complete history, source-private state and query;
+local policy processing sees the complete reply. `initialLaw` actually samples the
+two private states separately, and `law` runs the existing hidden-state process
+from those samples. No desired posterior factorization is supplied as a premise.
+
+`law_factorization` derives the full actual state law at every finite horizon;
+`histories_law` identifies its complete query/reply history with the explicit
+sequential process. `source_posterior` then shows that, at each supported actual
+history, the remaining source law is `Source.filter` of that history, uniformly
+over policies. The filter retains persistent source state and uses the same
+source transition throughout. The one-step update proof is shared with
+`queryResponse_update_disintegrate`, rather than repeated inside the induction.
+
+The [iterated client](../../CslibFrontierTests/InteractionProcess.lean) starts from
+independent actual private states. It proves reachability of a two-turn adaptive
+history, then derives source probability one-third under both fair and deterministic
+private query policies. A separate check starts with deterministic policy storage
+and verifies that an actual fresh selection coin is retained in the next private
+state. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.InteractionFilter CslibFrontierTests.InteractionProcess
+```
+
+These are finite discrete private interactions. Relating their separated transition
+to arbitrary native silent execution and its stopping/source-epoch observations
+remains a further proof obligation; the model alone does not supply that native
+representation or the common-oracle optimum.
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches

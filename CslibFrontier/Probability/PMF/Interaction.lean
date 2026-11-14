@@ -34,7 +34,8 @@ application must establish the product invariant at each reached prefix.
 * `queryResponse_disintegrate`: explicit independent conditional private states.
 * `conditionalSnd_queryResponse`: posterior factorization at a supported observation.
 * `conditionalSnd_queryResponse_source`: policy-independent remaining source law.
-* `conditionalSnd_queryResponse_update`: product preservation after local random processing.
+* `queryResponse_update_disintegrate`, `conditionalSnd_queryResponse_update`:
+  product preservation after local random processing.
 -/
 
 public section
@@ -92,6 +93,27 @@ theorem conditionalSnd_queryResponse_source (policy : PMF (A × C))
   simp only [PMF.map_comp, Function.comp_def, PMF.bind_const]
   exact PMF.map_id _
 
+/-- Whole-law disintegration after randomized local processing. The complete
+observation law is unchanged, and the source posterior remains separate from the
+updated policy-private state, including null-observation completions. -/
+theorem queryResponse_update_disintegrate {D : Type*} (policy : PMF (A × C))
+    (source : A → PMF (B × S)) (update : A → B → C → PMF D) :
+    (queryResponse policy source).bind
+      (fun ⟨⟨query, reply⟩, ⟨localState, sourceState⟩⟩ =>
+        (update query reply localState).map fun next => ((query, reply), (next, sourceState))) =
+      ((policy.map Prod.fst).bind fun a => ((source a).map Prod.fst).map (a, ·)).bind
+        (fun ab => (((conditionalSnd policy ab.1).bind (update ab.1 ab.2)).bind fun d =>
+          (conditionalSnd (source ab.1) ab.2).map (d, ·)).map (ab, ·)) := by
+  rw [queryResponse_disintegrate]
+  simp only [PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  apply PMF.bind_congr_on_support
+  intro ac _
+  apply PMF.bind_congr_on_support
+  intro bs _
+  apply PMF.bind_congr_on_support
+  intro c _
+  exact PMF.bind_comm _ _ _
+
 /-- Local randomized processing of a complete reply preserves the conditional
 product of policy-private and source-private states. This is the invariant needed
 before another separated query/response step. -/
@@ -104,22 +126,7 @@ theorem conditionalSnd_queryResponse_update {D : Type*} (policy : PMF (A × C))
       (a, b) =
       ((conditionalSnd policy a).bind (update a b)).bind fun d =>
         (conditionalSnd (source a) b).map (d, ·) := by
-  have he : (queryResponse policy source).bind
-      (fun ⟨⟨query, reply⟩, ⟨localState, sourceState⟩⟩ =>
-        (update query reply localState).map fun next => ((query, reply), (next, sourceState))) =
-      ((policy.map Prod.fst).bind fun a => ((source a).map Prod.fst).map (a, ·)).bind
-        (fun ab => (((conditionalSnd policy ab.1).bind (update ab.1 ab.2)).bind fun d =>
-          (conditionalSnd (source ab.1) ab.2).map (d, ·)).map (ab, ·)) := by
-    rw [queryResponse_disintegrate]
-    simp only [PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
-    apply PMF.bind_congr_on_support
-    intro ac _
-    apply PMF.bind_congr_on_support
-    intro bs _
-    apply PMF.bind_congr_on_support
-    intro c _
-    exact PMF.bind_comm _ _ _
-  rw [he]
+  rw [queryResponse_update_disintegrate]
   apply conditionalSnd_bind_pair
   rwa [map_fst_queryResponse] at h
 

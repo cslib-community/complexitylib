@@ -29,10 +29,10 @@ open Cslib.Probability
 open scoped ENNReal
 
 /-- Fresh independent fair private randomness. -/
-def fair : PMF Bool := PMF.uniformOfFintype Bool
+@[expose] def fair : PMF Bool := PMF.uniformOfFintype Bool
 
 /-- The actual first source response and persistent hidden bit. -/
-def first : PMF (Bool × Bool) :=
+@[expose] def first : PMF (Bool × Bool) :=
   fair.bind fun s => fair.map fun noise => (s && noise, s)
 
 private theorem first_apply (r s : Bool) :
