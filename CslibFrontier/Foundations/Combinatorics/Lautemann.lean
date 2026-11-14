@@ -11,7 +11,6 @@ public import CslibFrontier.Init
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Pi
-import CslibFrontier.Foundations.Combinatorics.FiniteCover.Basic
 import CslibFrontier.Foundations.Data.BitString.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.BigOperators
@@ -24,7 +23,7 @@ import Mathlib.Tactic.Ring
 Let `S` be a subset of a finite group `G`. If `S` is large, a few shifts of `S` cover `G`; if `S`
 is small, they do not. Precisely, if `|G| |G \ S| ^ k < |G| ^ k`, then some `k` elements `u i`
 satisfy `∀ g, ∃ i, g * u i ∈ S` (`exists_forall_exists_mul_mem_of_card_mul_card_compl_pow_lt`),
-by the union bound over `g` for uniformly random shifts (`exists_cover_of_scaled_card_lt`).
+by the union bound over `g` for uniformly random shifts (`card_filter_exists_forall_mul_mem_le`).
 Conversely, if `k |S| < |G|`, then no `k` shifts do (`exists_forall_mul_notMem_of_mul_card_lt`),
 as the `k` translates have at most `k |S|` elements in all. Each of these statements has an
 additive version, with `g + u i` in place of `g * u i`.
@@ -38,14 +37,18 @@ The bound `m ≥ 2` is needed: at `m = 1`, an error of `1 / 2` carries no inform
 
 ## Main results
 
+* `Cslib.card_filter_exists_forall_mul_mem_le`, `Cslib.card_filter_exists_mul_mem_le`: union-bound
+  cardinality bounds for shift tuples and shifted sets.
 * `Cslib.exists_forall_exists_mul_mem_of_card_mul_card_compl_pow_lt`: the union-bound form of the
   covering lemma; `Cslib.exists_forall_exists_mul_mem_of_mul_card_compl_le` is its density form.
 * `Cslib.exists_forall_mul_notMem_of_mul_card_lt`: the converse, by counting;
   `Cslib.exists_forall_mul_notMem_of_mul_card_le` is its density form.
 * `Cslib.BitString.exists_forall_exists_add_mem_of_two_pow_mul_card_compl_le`,
-  `Cslib.BitString.exists_forall_add_notMem_of_two_pow_mul_card_le`: the two claims in Arora and
-  Barak's proof of the Sipser–Gács theorem, for sets of strings of density `1 - 2 ^ (-n)` and
-  `2 ^ (-n)`.
+  `Cslib.BitString.exists_forall_add_notMem_of_two_pow_mul_card_le`,
+  `Cslib.BitString.two_mul_card_filter_exists_add_mem_le`,
+  `Cslib.BitString.two_mul_card_filter_exists_forall_add_mem_le`: the two claims in Arora and
+  Barak's proof of the Sipser–Gács theorem and their half-density soundness bounds, for sets of
+  strings of density `1 - 2 ^ (-n)` and `2 ^ (-n)`.
 * `Cslib.BitString.mem_iff_exists_forall_exists`, `Cslib.BitString.mem_iff_forall_exists_forall`:
   the `∃ ∀ ∃` and `∀ ∃ ∀` forms of a language decided with error at most `1 / (2 m)`.
 
@@ -65,6 +68,31 @@ section Group
 
 variable {G : Type*} [Group G] [Fintype G]
 
+/-- For any subset `S` of a finite group `G`, at most `|G| |S| ^ k` tuples `u : Fin k → G` have some
+`g : G` with `g * u i ∈ S` for every `i`. -/
+@[to_additive
+/-- For any subset `S` of a finite additive group `G`, at most `|G| |S| ^ k` tuples `u : Fin k → G`
+have some `g : G` with `g + u i ∈ S` for every `i`. -/]
+theorem card_filter_exists_forall_mul_mem_le [DecidableEq G] (S : Finset G) (k : ℕ) :
+    #{u : Fin k → G | ∃ g : G, ∀ i, g * u i ∈ S} ≤ Fintype.card G * #S ^ k := by
+  let bad (g : G) : Finset (Fin k → G) := univ.filter fun u => ∀ i, g * u i ∈ S
+  have hsub : (univ.filter fun u : Fin k → G => ∃ g : G, ∀ i, g * u i ∈ S) ⊆
+      univ.biUnion bad := fun u hu => by
+    obtain ⟨g, hg⟩ := (mem_filter.1 hu).2
+    exact mem_biUnion.2 ⟨g, mem_univ _, mem_filter.2 ⟨mem_univ _, hg⟩⟩
+  have hbad (g : G) : #(bad g) = #S ^ k := by
+    have hg : Fintype.card {x : G // g * x ∈ S} = #S := by
+      rw [Fintype.card_subtype]
+      exact card_nbij' (g * ·) (g⁻¹ * ·) (fun _ => by simp) (fun _ => by simp)
+        (fun _ _ => by simp) (fun _ _ => by simp)
+    calc #(bad g)
+        = Fintype.card {u : Fin k → G // ∀ i, g * u i ∈ S} := by simp [bad, Fintype.card_subtype]
+      _ = Fintype.card (Fin k → {x : G // g * x ∈ S}) :=
+          Fintype.card_congr (Equiv.subtypePiEquivPi (p := fun (_ : Fin k) (x : G) => g * x ∈ S))
+      _ = #S ^ k := by simp [hg]
+  refine (card_le_card hsub).trans (card_biUnion_le.trans ?_)
+  rw [sum_const_nat fun g _ => hbad g, card_univ]
+
 /-- **Lautemann's covering lemma**, union-bound form: if `S` is a subset of a finite group `G`
 with `|G| |G \ S| ^ k < |G| ^ k`, then some `k` shifts `u i` carry every `g : G` into `S` by right
 multiplication, `g * u i ∈ S`. -/
@@ -76,12 +104,10 @@ theorem exists_forall_exists_mul_mem_of_card_mul_card_compl_pow_lt [DecidableEq 
     {k : ℕ}
     (h : Fintype.card G * #Sᶜ ^ k < Fintype.card G ^ k) :
     ∃ u : Fin k → G, ∀ g, ∃ i, g * u i ∈ S := by
-  refine exists_cover_of_scaled_card_lt (fun u g => g * u ∈ S) #Sᶜ (Fintype.card G) k
-    (fun g => ?_) h
-  rw [mul_comm, Fintype.card_subtype]
-  exact le_of_eq <| congrArg (· * _) <|
-    card_nbij' (g * ·) (g⁻¹ * ·) (fun _ => by simp) (fun _ => by simp) (fun _ _ => by simp)
-      (fun _ _ => by simp)
+  have hlt : #{u : Fin k → G | ∃ g : G, ∀ i, g * u i ∈ Sᶜ} < #(univ : Finset (Fin k → G)) := by
+    simpa [card_univ] using (card_filter_exists_forall_mul_mem_le Sᶜ k).trans_lt h
+  obtain ⟨u, -, hu⟩ := exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨u, by simpa using hu⟩
 
 /-- **Lautemann's covering lemma**, density form: if `S` misses at most a `1 / q` fraction of the
 finite group `G`, that is `q |G \ S| ≤ |G|`, and `|G| < q ^ k`, then some `k` shifts `u i` carry
@@ -99,6 +125,23 @@ theorem exists_forall_exists_mul_mem_of_mul_card_compl_le [DecidableEq G] (S : F
     _ ≤ Fintype.card G * Fintype.card G ^ k := by gcongr
     _ < q ^ k * Fintype.card G ^ k := Nat.mul_lt_mul_of_pos_right hk (pow_pos Fintype.card_pos k)
 
+/-- For any `k` shifts `u i` of a subset `S` of a finite group `G`, at most `k |S|` elements `g : G`
+satisfy `g * u i ∈ S` for some `i`. -/
+@[to_additive
+/-- For any `k` shifts `u i` of a subset `S` of a finite additive group `G`, at most `k |S|`
+elements `g : G` satisfy `g + u i ∈ S` for some `i`. -/]
+theorem card_filter_exists_mul_mem_le [DecidableEq G] (S : Finset G) {k : ℕ} (u : Fin k → G) :
+    #{g : G | ∃ i, g * u i ∈ S} ≤ k * #S := by
+  have hsub : (univ.filter fun g : G => ∃ i, g * u i ∈ S) ⊆
+      univ.biUnion fun i => {g | g * u i ∈ S} := fun g hg => by
+    obtain ⟨i, hi⟩ := (mem_filter.1 hg).2
+    exact mem_biUnion.2 ⟨i, mem_univ _, mem_filter.2 ⟨mem_univ _, hi⟩⟩
+  have hcard (i : Fin k) : #{g | g * u i ∈ S} = #S :=
+    card_nbij' (· * u i) (· * (u i)⁻¹) (fun _ => by simp) (fun _ => by simp) (fun _ _ => by simp)
+      (fun _ _ => by simp)
+  refine (card_le_card hsub).trans (card_biUnion_le.trans ?_)
+  rw [sum_const_nat fun i _ => hcard i, card_univ, Fintype.card_fin]
+
 /-- **The converse of Lautemann's covering lemma**: if `k |S| < |G|`, then for any `k` shifts
 `u i` of the finite group `G`, some `g : G` has `g * u i ∉ S` for every `i`. -/
 @[to_additive exists_forall_add_notMem_of_mul_card_lt
@@ -107,16 +150,10 @@ theorem exists_forall_exists_mul_mem_of_mul_card_compl_le [DecidableEq G] (S : F
 theorem exists_forall_mul_notMem_of_mul_card_lt (S : Finset G) {k : ℕ}
     (h : k * #S < Fintype.card G) (u : Fin k → G) : ∃ g, ∀ i, g * u i ∉ S := by
   classical
-  by_contra! hcover
-  have hsub : (univ : Finset G) ⊆ univ.biUnion fun i => {g | g * u i ∈ S} := fun g _ => by
-    obtain ⟨i, hi⟩ := hcover g
-    exact mem_biUnion.2 ⟨i, mem_univ _, mem_filter.2 ⟨mem_univ _, hi⟩⟩
-  have hcard (i : Fin k) : #{g | g * u i ∈ S} = #S :=
-    card_nbij' (· * u i) (· * (u i)⁻¹) (fun _ => by simp) (fun _ => by simp) (fun _ _ => by simp)
-      (fun _ _ => by simp)
-  have := (card_le_card hsub).trans card_biUnion_le
-  rw [card_univ, sum_const_nat fun i _ => hcard i, card_univ, Fintype.card_fin] at this
-  omega
+  have hlt : #{g : G | ∃ i, g * u i ∈ S} < #(univ : Finset G) := by
+    simpa [card_univ] using (card_filter_exists_mul_mem_le S u).trans_lt h
+  obtain ⟨g, -, hg⟩ := exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨g, by simpa using hg⟩
 
 /-- **The converse of Lautemann's covering lemma**, density form: if `S` is at most a `1 / q`
 fraction of the finite group `G`, that is `q |S| ≤ |G|`, and `k < q`, then for any `k` shifts
@@ -158,6 +195,39 @@ theorem BitString.exists_forall_add_notMem_of_two_pow_mul_card_le {n k : ℕ}
     (S : Finset (BitString m)) (hS : 2 ^ n * #S ≤ 2 ^ m) (hk : k < 2 ^ n)
     (u : Fin k → BitString m) : ∃ r, ∀ i, r + u i ∉ S :=
   exists_forall_add_notMem_of_mul_card_le S (by rwa [BitString.card]) hk u
+
+/-- If `S` is at most a `2 ^ (-n)` fraction of the strings of `m` bits and `2 * k ≤ 2 ^ n`, then for
+any `k` shifts `u i`, at most half of the strings `r` have `r + u i ∈ S` for some `i`. -/
+theorem BitString.two_mul_card_filter_exists_add_mem_le {n k : ℕ} (S : Finset (BitString m))
+    (hS : 2 ^ n * #S ≤ 2 ^ m) (hk : 2 * k ≤ 2 ^ n) (u : Fin k → BitString m) :
+    2 * #{r : BitString m | ∃ i, r + u i ∈ S} ≤ 2 ^ m := by
+  refine Nat.le_of_mul_le_mul_left ?_ (by positivity : 0 < 2 ^ n)
+  calc 2 ^ n * (2 * #{r : BitString m | ∃ i, r + u i ∈ S})
+      ≤ 2 ^ n * (2 * (k * #S)) := by gcongr; exact card_filter_exists_add_mem_le S u
+    _ = 2 * k * (2 ^ n * #S) := by ring
+    _ ≤ 2 ^ n * 2 ^ m := Nat.mul_le_mul hk hS
+
+/-- If `S` is at most a `2 ^ (-n)` fraction of the strings of `m` bits and `m < n * k`, then at most
+half of the `k`-tuples of shifts `u : Fin k → BitString m` have some string `r` with
+`r + u i ∈ S` for every `i`. -/
+theorem BitString.two_mul_card_filter_exists_forall_add_mem_le {n k : ℕ} (S : Finset (BitString m))
+    (hS : 2 ^ n * #S ≤ 2 ^ m) (hk : m < n * k) :
+    2 * #{u : Fin k → BitString m | ∃ r : BitString m, ∀ i, r + u i ∈ S} ≤
+      2 ^ (k * m) := by
+  have hpow : 2 * 2 ^ m ≤ (2 ^ n) ^ k := by
+    rw [← pow_succ', ← pow_mul]
+    exact Nat.pow_le_pow_right (by norm_num) hk
+  refine Nat.le_of_mul_le_mul_left ?_ (by positivity : 0 < (2 ^ n) ^ k)
+  calc (2 ^ n) ^ k * (2 * #{u : Fin k → BitString m | ∃ r : BitString m, ∀ i, r + u i ∈ S})
+      ≤ (2 ^ n) ^ k * (2 * (Fintype.card (BitString m) * #S ^ k)) := by
+        gcongr
+        exact card_filter_exists_forall_add_mem_le S k
+    _ = 2 * 2 ^ m * (2 ^ n * #S) ^ k := by
+        rw [BitString.card]
+        ring
+    _ ≤ (2 ^ n) ^ k * (2 ^ m) ^ k :=
+        Nat.mul_le_mul hpow (Nat.pow_le_pow_left hS k)
+    _ = (2 ^ n) ^ k * 2 ^ (k * m) := by rw [← pow_mul 2 m k, Nat.mul_comm m k]
 
 private theorem two_pow_lt_two_mul_pow (hm : 2 ≤ m) : 2 ^ m < (2 * m) ^ m := by
   rw [mul_pow]

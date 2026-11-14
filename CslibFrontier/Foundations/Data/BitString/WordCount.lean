@@ -57,6 +57,10 @@ represent sets of words.
 * `Cslib.BitString.card_filter_take_drop`: independent prefix/suffix tests give a product.
 * `Cslib.BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le`: a quarter of failures leaves
   two thirds of successes.
+* `Cslib.BitString.card_filter_forall_block`,
+  `Cslib.BitString.two_pow_mul_card_filter_forall_block_le`: independent blocks all satisfying a
+  predicate are counted by a power, so half-density per block gives `2 ^ (-k)` density over `k`
+  blocks.
 * `Cslib.BitString.two_pow_mul_card_filter_card_filter_block_le`: majority votes of `12 e` blocks
   err on at most a `2 ^ (-e)` fraction.
 * `Cslib.BitString.card_filter_listRows_all`: counting words by a condition on each row.
@@ -141,6 +145,24 @@ theorem two_mul_two_pow_le_of_four_mul_card_filter_not_le {m : ℕ}
     rw [card_filter_add_card_filter_not, card_univ, Fintype.card_fun, Fintype.card_bool,
       Fintype.card_fin]
   omega
+
+/-- **Counting words whose blocks all satisfy `g`.** The number of words `x : BitString (k * m)`
+for which every block `block x i` (`i : Fin k`) satisfies `g` is the `k`-th power of the number
+of `m`-bit strings satisfying `g`. -/
+theorem card_filter_forall_block (k m : ℕ) (g : BitString m → Prop) [DecidablePred g] :
+    #{x : BitString (k * m) | ∀ i : Fin k, g (block x i)} = #{s : BitString m | g s} ^ k := by
+  rw [← Fintype.card_piFinset_const]
+  refine card_equiv blocksEquiv fun x => ?_
+  simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset, blocksEquiv_apply]
+
+/-- **Independent-block half-density bound.** If at most half of the `m`-bit strings satisfy `g`,
+then at most a `2 ^ (-k)` fraction of the `k`-block strings `x : BitString (k * m)` have every
+block satisfying `g`. -/
+theorem two_pow_mul_card_filter_forall_block_le {k m : ℕ} (g : BitString m → Prop)
+    [DecidablePred g] (hg : 2 * #{s : BitString m | g s} ≤ 2 ^ m) :
+    2 ^ k * #{x : BitString (k * m) | ∀ i : Fin k, g (block x i)} ≤ 2 ^ (k * m) := by
+  rw [card_filter_forall_block, ← mul_pow]
+  exact (Nat.pow_le_pow_left hg k).trans_eq (by rw [← pow_mul, Nat.mul_comm])
 
 /-- **Majority votes of blocks.** If at least two thirds of the strings of `m` bits satisfy `g`,
 then at most a `2 ^ (-e)` fraction of the strings of `2 R = 12 e` blocks of `m` bits have at most

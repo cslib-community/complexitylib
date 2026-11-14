@@ -103,7 +103,7 @@ theorem computableInPolyTime_sigmaTwoVerifier {W : α × List Bool → Bool}
 
 /-- On a proof followed by the shifts and then a random string `r`, the `Σ₂` verifier accepts iff
 `W` accepts the proof with `r` xor some shift. -/
-private theorem sigmaTwoVerifier_append_ofFn {q k p : Polynomial ℕ} {W : α × List Bool → Bool}
+theorem sigmaTwoVerifier_append_ofFn {q k p : Polynomial ℕ} {W : α × List Bool → Bool}
     {a : α}
     {w : List Bool}
     (hw : w.length = q.eval (enc a).length + k.eval (enc a).length * p.eval (enc a).length)
@@ -195,7 +195,7 @@ theorem computableInPolyTime_piTwoVerifier {W : α × List Bool → Bool}
 /-- On the shifts followed by any word `v`, the `Π₂` verifier accepts iff `W` accepts, for each
 shift, the first `p(n)` bits of `v` xor the shift with the corresponding reply read from the rest
 of `v`. -/
-private theorem piTwoVerifier_append {k p q : Polynomial ℕ} {W : α × List Bool → Bool} {a : α}
+theorem piTwoVerifier_append {k p q : Polynomial ℕ} {W : α × List Bool → Bool} {a : α}
     {u : List Bool} (hu : u.length = k.eval (enc a).length * p.eval (enc a).length)
     (v : List Bool) :
     piTwoVerifier enc k p q W (a, u ++ v) = true ↔
@@ -268,7 +268,7 @@ theorem isAlternatingVerifier_piTwoVerifier {e k p q : Polynomial ℕ} {W : α �
 
 /-- The number of shifts and the error exponent `12 p + 1` cover random strings of
 `12 (12 p + 1) p` bits. -/
-private theorem eval_lt_mul (p : Polynomial ℕ) (n : ℕ) :
+theorem eval_lt_mul (p : Polynomial ℕ) (n : ℕ) :
     (12 * (12 * p + 1) * p).eval n < (12 * p + 1).eval n * (12 * p + 1).eval n := by
   simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_ofNat,
     Polynomial.eval_one]
