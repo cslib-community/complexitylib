@@ -29,6 +29,8 @@ with a different within-byte convention, such as FIPS 202's Keccak, keep that co
 
 ## Main results
 
+* `Cslib.Crypto.FixedBytes.append_left`, `Cslib.Crypto.FixedBytes.append_right`: concatenation
+  agrees with its left and right inputs.
 * `Cslib.Crypto.length_bytesToBitsBE`: byte serialization has eight bits per byte.
 * `Cslib.Crypto.byteOfBitsBE_byteBitsBE`, `Cslib.Crypto.byteBitsBE_byteOfBitsBE`: converting one
   byte to bits and back is exact in either direction.
@@ -64,6 +66,16 @@ def take {n : ℕ} (m : ℕ) (h : m ≤ n) (X : FixedBytes n) : FixedBytes m := 
 /-- Concatenate two fixed-length byte strings. -/
 def append {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) : FixedBytes (m + n) :=
   Fin.append X Y
+
+/-- Concatenation agrees with its left input on left indices. -/
+@[simp] theorem append_left {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) (i : Fin m) :
+    append X Y (Fin.castAdd n i) = X i :=
+  Fin.append_left X Y i
+
+/-- Concatenation agrees with its right input on right indices. -/
+@[simp] theorem append_right {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) (i : Fin n) :
+    append X Y (Fin.natAdd m i) = Y i :=
+  Fin.append_right X Y i
 
 end FixedBytes
 

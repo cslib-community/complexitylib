@@ -105,6 +105,14 @@ example (input : List Byte) (h : ValidSHA512Input input) :
 example (byte : Byte) : byteOfBitsBE (byteBitsBE byte) = byte :=
   byteOfBitsBE_byteBitsBE byte
 
+example {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) (i : Fin m) :
+    FixedBytes.append X Y (Fin.castAdd n i) = X i :=
+  FixedBytes.append_left X Y i
+
+example {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) (i : Fin n) :
+    FixedBytes.append X Y (Fin.natAdd m i) = Y i :=
+  FixedBytes.append_right X Y i
+
 -- Typed truncation exposes the leftmost `n` digest bytes required by the FIPS 205 SHA2 variants.
 #guard ((sha512 abc (by simp [abc, ValidSHA512Input])).take 24
   (by decide)).toList == sha512ABC.take 24
