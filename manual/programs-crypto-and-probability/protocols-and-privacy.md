@@ -2,6 +2,12 @@
 
 The general [public-coin interactive-reduction model](interactive-reductions.md), including sumcheck/GKR and efficient straight-line extraction/honest-verifier simulation, has a separate account.
 
+## FAEST v3 challenge decomposition
+
+Import `CslibFrontier.Crypto.Protocols.FAEST.Challenge` ([Challenge.lean](../../CslibFrontier/Crypto/Protocols/FAEST/Challenge.lean)) for the third Fiat--Shamir challenge parser in [FAEST v3.0, dated 1 September 2026](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/FAEST_specifications.pdf), Section 5.5, Figure 5.7. `ChallengeParams` records `lambda`, the number `tau` of small-VOLE instances and `w_grind`, with the source-derived values `n_Delta`, `tau_1`, `tau_0`, `k`, `d_i` and the block offsets from Table 5.1. `blockOffset_succ` and `blockOffset_repetitions` prove that the variable-width slices are consecutive and cover exactly the first `lambda - w_grind` bits. `grindingAccepted` checks exactly the remaining `w_grind` coordinates. `decodeChallengeBlock` retains the source's invalid-index and grinding-suffix rejection, while `decodeAllChallenge` uses the `NumRec` convention in Section 3.2, Figure 3.5 to convert each slice to its little-endian integer in `Fin (2 ^ d_i)`.
+
+The [checked clients](../../CslibFrontierTests/Crypto/FAESTChallenge.lean) instantiate the zero-remainder, mixed-width, FAEST-EM-192s and largest-repetition boundaries in Table 3.2, and check both sides of the prefix/suffix boundary. This is prerequisite parsing infrastructure. It does not formalize FAEST's BAVC, VOLE reconstruction, AES or Even--Mansour witness relation, signing and verification algorithms, correctness, or QROM security.
+
 ## Sigma protocols and explicit extraction
 
 [SigmaProtocol](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/Basic.lean#L78) specifies an honest commitment PMF with private state, a deterministic response to a challenge, and Boolean verification. `Complete`, `SpecialSoundness` and `SpecialHVZK` express correctness, extraction from two accepting same-commitment/distinct-challenge transcripts, and exact simulation at each fixed challenge. The extractor may target a different relation, accommodating relaxed lattice witnesses. The generic interface has no native efficiency built in [cslib-frontier][complexitylib].
