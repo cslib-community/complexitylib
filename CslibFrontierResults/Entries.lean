@@ -6,6 +6,9 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.MarkovChain.RandomWalk
+import CslibFrontier.Probability.MarkovChain.RotationMap
+import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -73,6 +76,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
@@ -119,6 +123,7 @@ import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
+import CslibFrontier.Computability.Complexity.Problems.QUADEQ
 import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TMSAT
@@ -173,6 +178,10 @@ import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
+import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
+import CslibFrontier.Crypto.Protocols.PIR.Indexed
+import CslibFrontier.Crypto.Protocols.PIR.Interactive
+import CslibFrontier.Crypto.Protocols.PIR.MultiInteractive
 import CslibFrontier.Crypto.Protocols.PIR.Shamir
 import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
@@ -244,6 +253,8 @@ import CslibFrontier.MachineLearning.LossMinimization.Squared
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACBayes.Basic
 import CslibFrontier.MachineLearning.PACBayes.KL
+import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
+import CslibFrontier.MachineLearning.PACLearning.FundamentalTheorem
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -255,6 +266,8 @@ import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalPrope
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Computability.Probabilistic.CoinOfDigits
+import CslibFrontier.Probability.BilinearFingerprint
+import CslibFrontier.Probability.Extractor.LeftoverHash
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -345,6 +358,21 @@ register_result "dir-ham-path-any-np-complete" where
     declared vertices are not members. Hardness reduces the designated-endpoint DirHamPath \
     (Sipser's diamond construction) by adding a fresh source and sink, not the draft's \
     direct 3SAT reduction."
+
+register_result "quadeq-np-complete" where
+  title := "QUADEQ is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 18",
+      locator := "Web draft 2007-01-08, printed p. 64; PDF p. 80" }
+  ]
+  theorems := [Cslib.Complexity.QUADEQ_npComplete]
+  scope := "Systems of quadratic equations over 𝔽₂ as lists of QuadEquation records under \
+    QUADEQ.encoding: each equation lists the monomials u_i u_j with a_ij = 1, repeated \
+    monomials cancelling in pairs, with binary natural-number variable labels and no bound on \
+    their values. Membership by a polynomial-time verifier with first-occurrence certificates; \
+    hardness by a polynomial-time reduction from SAT (the exercise's hint), composed with \
+    Cook–Levin."
 
 register_result "pcp" where
   title := "The PCP theorem"
@@ -1437,6 +1465,22 @@ register_result "sipser-lautemann" where
     input; Σ₂ and Π₂ use total native polynomial-time tests with explicit polynomial \
     quantifier blocks. No derandomization assumption."
 
+register_result "seedless-extraction-impossibility" where
+  title := "Deterministic seedless extraction fails even with only one bit of entropy loss"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 16, exercise 7",
+      locator := "January 8, 2007 draft, printed page 319 (PDF page 335)" }
+  ]
+  theorems := [
+    Cslib.Probability.exists_minEntropy_map_first_eq_pure,
+    Cslib.Probability.not_isExtractor_bitString
+  ]
+  scope := "For positive n and m, every deterministic map from n bits to m bits has a finite \
+    source of real min-entropy at least n - 1 whose first output bit is constant and whose \
+    output distance from uniform is at least 1/2. No efficiency hypothesis. Exercise 12 and \
+    the broader extractor objectives are not covered."
+
 register_result "chor-goldreich" where
   title := "Chor–Goldreich: the inner product extracts from two weak sources"
   topic := "randomized complexity"
@@ -2121,6 +2165,25 @@ register_result "adaboost-training-error" where
     a consistent output once log m < 2 γ² T. A round with ε_t = 0 stops AdaBoost with its \
     consistent hypothesis; vote ties predict false. Generalization is not covered."
 
+register_result "fundamental-theorem-statistical-learning" where
+  title := "The fundamental theorem of statistical learning on countable domains"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 6.7",
+      locator := "Section 6.4, p. 72" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.tfae_hasFiniteVCDim,
+    Cslib.MachineLearning.PACLearning.isPACLearnable_univ_iff_hasFiniteVCDim,
+    Cslib.MachineLearning.PACLearning.isPACLearnable_realizableDistributions_iff_hasFiniteVCDim
+  ]
+  scope := "Binary classes with the 0-1 loss on a countable domain with measurable singletons. \
+    Uniform convergence and learnability by every ERM use one sample-size threshold for all \
+    ERMs, where the source lets it depend on the ERM rule; the equivalence is unaffected. \
+    Agnostic learnability implies finite VC dimension on every domain with measurable \
+    singletons (IsPACLearnable.hasFiniteVCDim_of_univ). The quantitative bounds of Theorem 6.8 \
+    and the upper bounds on uncountable domains are not proved."
+
 register_result "rlm-stability" where
   title := "Stability and oracle inequality of Tikhonov-regularized loss minimization"
   topic := "statistical learning"
@@ -2247,6 +2310,25 @@ register_result "pac-bayes-kl" where
     Point masses give the Occam form with log (1 / P {i}). Maurer's log (2√m / δ) for m ≥ 8, \
     the square-root form through binary Pinsker, measurable hypothesis spaces and Catoni's \
     bound are not covered."
+
+register_result "agnostic-vc-sharp-rate" where
+  title := "Sharp agnostic sample complexity of classes of finite VC dimension"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 6.8",
+      locator := "Section 6.4, pp. 72–73" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.measure_pi_not_isRepresentative_le_of_chainingSampleSize_le,
+    Cslib.MachineLearning.PACLearning.isPACLearnerFor_univ_of_chainingSampleSize_le,
+    Cslib.MachineLearning.PACLearning.sampleComplexity_univ_le_chainingSampleSize
+  ]
+  scope := "Upper bounds of items 1 and 2 only, on countable domains with measurable \
+    singletons: uniform convergence and agnostic PAC learning by ERM from \
+    (16384 d + 32 log (4/δ)) / ε² and (65536 d + 128 log (4/δ)) / ε² examples, where d bounds \
+    the shattered sets. The constants are explicit and unoptimized. The lower bounds and the \
+    realizable item 3 are not part of this entry, and uncountable domains need a measurability \
+    hypothesis on the class."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -5270,6 +5352,116 @@ register_result "cgks-pir-block-retrieval" where
     n ≤ ℓ² / 4 with the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is \
     even)."
 
+register_result "cgks-pir-indexed-schemes" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: PIR with per-server query and answer widths"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := "Definition 1",
+      locator := "Sections 2.1, 2.2, 3.3 (Footnote 1), and 5.1 (pp. 4–5, 9, 14 of the \
+        April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.indexedCommunication_const,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.isTPrivate_one_iff,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.isTPrivate_iff_tuple,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.exists_injective_answers_of_card_le,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.card_le_indexedCommunication_of_card_le,
+    Cslib.Crypto.Protocols.PIR.HasTPrivateIndexedScheme.card_le_of_le,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_one_iff
+  ]
+  scope := "One-round PIR schemes with server-indexed query and answer alphabets Q, A : S → Type \
+    and per-server fixed-length binary encoding cost ∑ s, (⌈log₂ |Q s|⌉ + ⌈log₂ |A s|⌉) \
+    (execution-dependent variable-length codes within a single server and §2.4 machine runtime \
+    are not modeled). Embedding into uniform PIR.Scheme over Σ s, Q s and Σ s, A s \
+    (IndexedScheme.toSigmaScheme) transfers coalition-privacy equivalences and the full-coalition \
+    (|S| ≤ t) and single-server n-bit lower bounds without re-proving them."
+
+register_result "cgks-pir-general-covering" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: unbalanced covering-code PIR (Theorem 1) and \
+    radius-r covering schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := "Theorem 1",
+      locator := "Section 3.3, Footnote 1, Figure 1 (d = 5, k = 7), and p. 10 remark \
+        (pp. 9–10 of the April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.isCorrect_indexedScheme,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.isPrivate_indexedScheme,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.indexedCommunication_indexedScheme_eq,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.hasIndexedScheme,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_of_hammingDist,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_seven_of_le_pow_five,
+    Cslib.Crypto.Protocols.PIR.isCorrect_radiusCoverScheme,
+    Cslib.Crypto.Protocols.PIR.isPrivate_radiusCoverScheme,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_le,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two_sq,
+    Cslib.Crypto.Protocols.PIR.hasScheme_two_radius_two_of_le_pow_five
+  ]
+  scope := "Removes the balancedness hypothesis k * (m + 1) = 2^d from CGKS §3.3 Theorem 1 via \
+    PIR.IndexedScheme: any injective radius-1 covering code c : S → D → Bool on nonempty D \
+    (0 < |D|, made explicit because d - 1 truncates at d = 0 in ℕ and duplicate codewords would \
+    violate |S| ≤ 2^d) gives k + (2^d + (d - 1) * k) * ℓ bits for n ≤ ℓ^d, instantiated on the \
+    unbalanced optimal 7-word cover of {0, 1}^5 (60 * ℓ + 7 bits, matching Figure 1's 60 n^(1/5) \
+    asymptotic term plus k). For general radius-r covers, radiusCoverScheme achieves \
+    k * (d * ℓ + ∑_{j ≤ r} C(d, j) * ℓ^j) bits in uniform PIR.Scheme, specializing at r = 2 to \
+    k * (2 d ℓ + C(d, 2) ℓ² + 1) (CGKS p. 10's displayed leading expression k d ℓ + k C(d, 2) ℓ² \
+    plus the k * (d ℓ + 1) distance-0/1 answer bits; the literal k d ℓ + k C(d, 2) ℓ² bound \
+    without lower-order answer terms is not proved) and the coarser polynomial upper bound \
+    k * d * ℓ + k * d² * ℓ² (when 2 ≤ d and 1 ≤ ℓ). Server and user runtime (Remark on p. 10) is \
+    not modeled."
+
+register_result "cgks-pir-interactive-lower-bound" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: interactive single-server PIR and block lower bounds"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := unverified,
+      locator := "Sections 4 and 5.1 (pp. 11–14 of the April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.injective_leaf,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_ncard_transcripts,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_leafCount,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_mul_le_depth,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_block_iff
+  ]
+  scope := "Arbitrary-round deterministic protocol trees (Communication.Protocol) with \
+    independent ProbComp userCoins i and serverCoins over general payload β (defaulting to Bool). \
+    Replaces CGKS §5.1's deterministic-output step with Protocol.leaf_eq_iff (rectangle \
+    property), forcing |β|^|ι| leaves, |ι| bits on Boolean databases, and |ι| * |κ| bits on \
+    (κ → Bool) block databases (attained by download and blockDownload)."
+
+register_result "cgks-pir-multi-interactive-lower-bound" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: multi-server interactive PIR and full-coalition \
+    lower bounds"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := unverified,
+      locator := "Sections 2.1, 2.2, 4, and 5.1 (pp. 4–5, 11–14 of the April 21, 1998 journal \
+        version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.MultiRoundTree.depth_compile,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.isTPrivate_one_iff,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.isPrivate_toInteractiveScheme_of_card_le,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.card_le_depth_of_card_le,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.card_mul_le_depth_of_card_le
+  ]
+  scope := "Channel-isolated adaptive multi-round k-server PIR (MultiInteractiveScheme), where \
+    each step exchanges 1 bit between the user and a chosen server s and serverBit s depends only \
+    on x, d s, and the directional ChannelMsg history previously exchanged on s's channel (and \
+    IsPrivate / IsTPrivate compare communication sub-traces rather than full server views). \
+    Compiling to two-party InteractiveScheme preserves worst-case tree depth and transfers the \
+    |ι|-bit and |ι| * |κ|-bit lower bounds whenever all servers may collude (|S| ≤ t). \
+    Multi-round lower bounds below full collusion (t < |S|) are not proved."
+
 register_result "prp-prf-switching" where
   title := "PRP/PRF switching lemma: a pseudorandom permutation is a pseudorandom function"
   topic := "cryptography"
@@ -5565,3 +5757,109 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+
+register_result "bilinear-finite-field-fingerprint" where
+  title := "Two-vector matrix identity fingerprint"
+  topic := "randomized verification"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.22",
+      locator := "r5.pdf; PDF page 70 / printed page 452; rendered guideline exponent checked" }
+  ]
+  theorems := [Cslib.Probability.toOuterMeasure_bilinear_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_zmod_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_vecMulVec]
+  scope := "Arbitrary finite field and finite rectangular matrix with M ≠ 0. Independent \
+    uniform product sampling detects a nonzero bilinear fingerprint with probability at \
+    least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
+    two. No runtime bound or general rank formula."
+
+register_result "random-walk-edge-hitting-time" where
+  title := "The random walk crosses an edge of a connected graph in expected time at most 2|E|"
+  topic := "randomized complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Exercise 6.19 (completing Proposition 6.13)",
+      locator := "February 2007 draft r3.pdf, PDF p. 56; printed p. 258" }
+  ]
+  theorems := [
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_of_adj,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_add_degree_le,
+    Cslib.Probability.MarkovChain.degree_mul_returnTime_randomWalk,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_dist_mul
+  ]
+  scope := "Finite simple graphs (Mathlib SimpleGraph) with the simple random walk as a \
+    MarkovChain; connectedness assumed. Expected hitting and return times are exact \
+    extended-real tail sums of the probabilities of avoiding the target, not finite-horizon \
+    approximations. Proves E_u[tau_v] + deg v <= 2|E| for every edge {u,v}, Kac's formula \
+    deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
+    bound and the log-space USTCON algorithm are not included."
+
+register_result "regular-random-walk-hitting-times" where
+  title := "Random walks on regular multigraphs: unique stationary law, return and hitting times"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 7, Exercise 9(b)(i), (c), (d)",
+      locator := "2007-01-08 draft, printed p. 133; PDF p. 149" }
+  ]
+  theorems := [
+    Cslib.RotationMap.isStationary_randomWalk_iff,
+    Cslib.RotationMap.returnTime_randomWalk_eq_card,
+    Cslib.RotationMap.returnTime_randomWalk_le_ten_mul_sq,
+    Cslib.RotationMap.hittingTime_randomWalk_le_hundred_mul,
+    Cslib.RotationMap.ten_mul_card_filter_walkAt_ne_le
+  ]
+  scope := "d-regular multigraphs presented by rotation maps (loops and parallel edges allowed), \
+    random walk along a uniform edge label as a MarkovChain. Exact extended-real expectations. \
+    (b)(i): on a connected graph the uniform PMF is the unique stationary law. (c): the expected \
+    return time to u equals the size of u's component, hence n when connected and at most 10 n^2. \
+    (d): with d <= n, E_{u,v} <= 100 k n^2 along a path of length k, and at most a tenth of the \
+    label sequences of length 1000 n^3 avoid t. Part (b)(ii) (visit-count concentration) and \
+    part (e) are not included."
+
+register_result "goldreich-expander-varying-density-hitting" where
+  title := "Expander-walk varying-density product and constant-set bound"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := Goldreich2007DraftR4, theorem := "Exercise 8.43, equation (8.24)",
+      locator := "March 2007 draft, printed p. 381 / PDF p. 117" }
+  ]
+  theorems := [
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product_of_spectralExpansion_le,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_rpow_of_spectralExpansion_le
+  ]
+  scope := "Finite nonempty rotation map with nonempty incident slots; uniform initial vertex \
+    and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
+    retained, with explicit transport to lambda/d and the constant-set real half-length power. \
+    No machine uniformity, runtime or Exercise 8.44 concentration claim."
+
+register_result "linear-space-ne-np" where
+  title := "Book: linear space is not NP"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 3, Exercise 2",
+      locator := "2007 public draft, printed p. 73 / PDF p. 89" },
+    { paper := Book1974, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ne_NP,
+    Cslib.Complexity.DSPACE_pow_ne_of_polyTimeReducible_mem
+  ]
+  scope := "DSPACE encBits (fun n => n) ≠ NP encBits on bit words. DSPACE counts visited work \
+    cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
+    cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
+    polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
+
+register_result "arora-barak-draft-leftover-hash" where
+  title := "Draft leftover hash lemma with entropy k/delta"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 16.42; Chapter 16, Exercise 12",
+      locator := "January 8, 2007 draft; printed 308 / PDF 324; exercise printed 319 / PDF 335" }
+  ]
+  theorems := [Cslib.Probability.IsUniversalHash.isStrongExtractor_of_entropy_div,
+    Cslib.Probability.IsUniversalHash.isExtractor_append_of_entropy_div]
+  scope := "All n,k,t and positive delta. Uniform independent seed, distinct-input collision \
+    bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
+    sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
+    and large delta; no efficiency or short-seed assertion."

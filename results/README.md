@@ -23,6 +23,9 @@ empty-graph conventions; it does not establish the other chapter endpoints.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
 and quantitative crypto bounds. The native `dip-eq-np` entry covers deterministic interaction in the oracle-PPT IP model;
 `perfect-soundness-ip-subset-np` covers perfect soundness with any positive completeness.
+Its Chapter 16 leftover-hash milestone derives the draft's entropy `k/δ` and error
+`√(2δ)` for all positive `δ` and all lengths, with digest-first concatenation;
+it asserts no efficiency or short-seed bound and leaves the broader extractor objective open.
 Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement.
 Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
@@ -40,7 +43,8 @@ every end-of-chapter exercise as establishing new theory, covered, a source issu
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*, including the any-output bounded-termination
 endpoints of Exercises 4.6–4.7 in the documented total-decoder representation. It is not a claim of
-book-wide coverage.
+book-wide coverage. Exercise 8.43 has the varying-density product and constant-set
+real half-length power, with normalized spectral-parameter transport; Exercise 8.44 remains open.
 Its companion [exercise inventory](goldreich-2007-exercises.md) classifies the end-of-chapter
 exercises of chapters 2 and 5–10 as establishing new theory, covered, a source issue or routine.
 

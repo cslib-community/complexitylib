@@ -287,6 +287,14 @@ elaboration with `scripts/cache/ensure.sh`; retry for missing outputs or changed
 not merely a new commit with warm artifacts. See the
 [cache guide](scripts/cache/README.md#automatic-restoration) for actual retries and opt-out.
 
+For ordinary edits, use editor/MCP diagnostics or a targeted
+`scripts/build.sh <modules and representative clients> --wfail --iofail`. At a local checkpoint,
+use `scripts/check.sh --quick --no-full-fallback`. Status 3 means quick mode cannot plan the
+change: run the relevant focused checks and use hosted CI for full validation. Run a full local
+`scripts/check.sh` only when explicitly requested or hosted coverage is unavailable; do not
+repeat it after successful CI covering the final revision. The restored-source audit belongs to
+the validation helpers and recovers missing warning/info logs; ordinary builds still reuse caches.
+
 The test suite audits the axiom dependencies of every declaration stored in imported `CslibFrontier`
 modules. Named `#print axioms` checks are added only for results meant to depend on fewer axioms
 than the standard `propext`, `Classical.choice` and `Quot.sound`, such as choice-free results. The

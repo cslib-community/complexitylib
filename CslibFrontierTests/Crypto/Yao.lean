@@ -1,12 +1,14 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Mayank Rathee
 -/
 
-import CslibFrontierTests.Crypto.MPC
-import CslibFrontier.Crypto.Protocols.MPC.Yao
-import Cslib.Computability.Circuit.Boolean.Basic
+module
+
+public import CslibFrontierTests.Crypto.MPC
+public import CslibFrontier.Crypto.Protocols.MPC.Yao
+public import Cslib.Computability.Circuit.Boolean.Basic
 
 /-! # Yao's protocol and the semi-honest advantage: checked instances
 
@@ -18,6 +20,8 @@ import Cslib.Computability.Circuit.Boolean.Basic
   bit as input `1`, garbled with one-bit keys: the evaluator's decoding by computation on every
   input; the correctness theorem; perfect privacy against the garbler; and the evaluator bound with
   injective tweaks (`id`), which checks that its hypothesis is satisfiable. -/
+
+@[expose] public section
 
 namespace CslibFrontierTests.Crypto.Yao
 
@@ -103,6 +107,45 @@ example (x : (i : Fin 2) → YaoIn 1 1 i)
         (yaoInput x) (yaoEvaluatorDistinguisher andC (x 1)
           (andC.eval Boolean.interpretation (yaoInput x)) D) j) :=
   semiHonestAdvantage_yao_evaluator_le andC Boolean.interpretation toyF id Function.injective_id
+    x D
+
+/-! ### Two-output Yao's protocol for one AND gate -/
+
+-- Correctness: in every run of `yaoBothProtocol` both parties output `x₀ ∧ x₁`.
+example (x : (i : Fin 2) → YaoIn 1 1 i)
+    {r : ((i : Fin 2) → PartyView (YaoIn 1 1) (YaoCoins andC Bool) (yaoBothSchedule andC Bool) i) ×
+      (Fin 2 → Fin 1 → Bool)}
+    (hr : r ∈ ((yaoBothProtocol andC Boolean.interpretation toyF id).evalWith
+      (batchOTWorld 1 (Bool × Bool)) x).support) :
+    r.2 = fun _ => ![x 0 0 && x 1 0] := by
+  rw [yaoBoth_output_of_mem_support andC Boolean.interpretation toyF id x hr]
+  funext _ j
+  fin_cases j
+  rfl
+
+-- A corrupted garbler in `yaoBothProtocol` has advantage zero.
+example (x : (i : Fin 2) → YaoIn 1 1 i)
+    (D : ((i : ({0} : Finset (Fin 2))) →
+        PartyView (YaoIn 1 1) (YaoCoins andC Bool) (yaoBothSchedule andC Bool) i) ×
+      (Fin 2 → Fin 1 → Bool) → ProbComp Bool) :
+    semiHonestAdvantage (yaoBothProtocol andC Boolean.interpretation toyF id)
+      (batchOTWorld 1 (Bool × Bool)) (yaoBothFunctionality andC Boolean.interpretation) {0}
+      (yaoBothGarblerSim andC Bool) x D = 0 :=
+  semiHonestAdvantage_yaoBoth_garbler andC Boolean.interpretation toyF id x D
+
+-- A corrupted evaluator's advantage in `yaoBothProtocol` is at most the sum of three PRF
+-- advantages.
+example (x : (i : Fin 2) → YaoIn 1 1 i)
+    (D : ((i : ({1} : Finset (Fin 2))) →
+        PartyView (YaoIn 1 1) (YaoCoins andC Bool) (yaoBothSchedule andC Bool) i) ×
+      (Fin 2 → Fin 1 → Bool) → ProbComp Bool) :
+    semiHonestAdvantage (yaoBothProtocol andC Boolean.interpretation toyF id)
+        (batchOTWorld 1 (Bool × Bool)) (yaoBothFunctionality andC Boolean.interpretation) {1}
+        (yaoBothEvaluatorSim andC toyF id) x D ≤
+      ∑ j ∈ Finset.range 3, PRF.advantage toyF (reduction andC Boolean.interpretation toyF id
+        (yaoInput x) (yaoBothEvaluatorDistinguisher andC (x 1)
+          (andC.eval Boolean.interpretation (yaoInput x)) D) j) :=
+  semiHonestAdvantage_yaoBoth_evaluator_le andC Boolean.interpretation toyF id Function.injective_id
     x D
 
 end CslibFrontierTests.Crypto.Yao

@@ -19,7 +19,7 @@ sys.modules[SPEC.name] = quick
 SPEC.loader.exec_module(quick)
 REPO = Path(__file__).resolve().parent.parent
 # The audit of affected files restored from the artifact cache, run after the build (#4523).
-RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py"]
+RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py", "--progress"]
 
 
 class QuickCheckTests(unittest.TestCase):
@@ -86,10 +86,10 @@ class QuickCheckTests(unittest.TestCase):
 
     def record_command(self, command, plan):
         """Read the audit's temporary manifest while it exists, then normalize its random path."""
-        if command[:3] == RESTORES:
-            self.assertEqual(command[3], "--files-from")
-            self.assertEqual(json.loads(Path(command[4]).read_text()), plan.restore_files)
-            self.assertEqual(command[5:], [part for path in plan.restore_built
+        if command[:4] == RESTORES:
+            self.assertEqual(command[4], "--files-from")
+            self.assertEqual(json.loads(Path(command[5]).read_text()), plan.restore_files)
+            self.assertEqual(command[6:], [part for path in plan.restore_built
                                           for part in ("--built-under", path)])
             return RESTORES
         return command
@@ -273,7 +273,7 @@ class QuickCheckTests(unittest.TestCase):
             with self.subTest(lint_status=lint_status):
                 calls = []
 
-                def run(root, command, label):
+                def run(root, command, label, **kwargs):
                     calls.append(self.record_command(command, plan))
                     return lint_status if command[0] == "lint" else 0
 
@@ -334,7 +334,7 @@ class QuickCheckTests(unittest.TestCase):
             with self.subTest(lint_status=lint_status):
                 calls, listings = [], []
 
-                def run(root, command, label):
+                def run(root, command, label, **kwargs):
                     calls.append(self.record_command(command, plan))
                     if command[:2] == ["lake", "lint"]:
                         listing = Path(command[4].removeprefix("--only-modules="))
@@ -366,8 +366,10 @@ class QuickCheckTests(unittest.TestCase):
                 calls = []
                 plan = quick.Plan("base", targets, [], restore_files=["Demo/Base.lean"])
 
-                def run(root, command, label):
+                def run(root, command, label, **kwargs):
                     command = self.record_command(command, plan)
+                    if command == RESTORES:
+                        self.assertEqual(kwargs, {"progress": True})
                     calls.append(command)
                     return audit_status if command == RESTORES else 0
 
@@ -549,7 +551,7 @@ class QuickCheckTests(unittest.TestCase):
         original = quick.make_plan
         calls = []
 
-        def run(root, command, label):
+        def run(root, command, label, **kwargs):
             calls.append(command)
             return 1 if "DemoTests.Client" in command else 0
 

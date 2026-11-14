@@ -1,10 +1,12 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
-import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHotObliviousness
+module
+
+public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHotObliviousness
 
 /-! # Garbled one-hot conversion: checked instances
 
@@ -12,6 +14,8 @@ The one-hot product on a concrete table; the gadget over one-bit labels `ZMod 2`
 every input with a toy hash; the correctness and table-product theorems for these labels; the
 query bound of the reduction; and the obliviousness theorem with step-separated tweaks, which checks
 that its tweak hypothesis is satisfiable. -/
+
+@[expose] public section
 
 namespace CslibFrontierTests.GarblingOneHot
 
@@ -73,10 +77,15 @@ theorem stepTw_separated : ∀ t t' (j : Fin (t + 1) → Bool) (j' : Fin (t' + 1
   simp only [stepTw, Fin.val_ofNat] at this
   omega
 
--- Each reduction makes one query per doubling step.
+-- Each reduction makes one query per doubling step, and at most one query per tweak when the
+-- tweaks of distinct steps do not collide.
 example (x : Fin 3 → Bool) (D : OneHotView (ZMod 2) 2 → ProbComp Bool) :
     (reduction toyH2 stepTw 2 x D).IsQueryBounded 2 :=
   isQueryBounded_reduction toyH2 stepTw 2 x D
+
+example (x : Fin 3 → Bool) (D : OneHotView (ZMod 2) 2 → ProbComp Bool) :
+    CCR.IsTweakUnique (reduction toyH2 stepTw 2 x D) :=
+  isTweakUnique_reduction toyH2 stepTw 2 stepTw_separated x D
 
 -- The obliviousness theorem applies with step-separated tweaks and a uniform offset, for every
 -- distinguisher. With the toy hash the right side is not small; this checks that `htw` is
