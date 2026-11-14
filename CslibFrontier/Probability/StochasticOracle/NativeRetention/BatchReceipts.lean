@@ -183,7 +183,7 @@ with actual correlated source responses and authenticated receipt order. -/
 theorem run_safe {Private : Type} (limits : Limits n) (sample : Sampler n Private)
     (width budget : ℕ) (ell : ℝ≥0) (hw : 0 < width) (hc : budget * width ≤ n)
     (ht : budget ≤ limits.turns) (he : 0 < ell)
-    (hcut : ∀ i, limits.cutoff i ≤ ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
+    (hlat : HasDurationBound limits sample ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
     (fuel : ℕ) (state : RuntimeControl.State)
     (channels : Unit → Turing.MultiTapeMachine.Channel Bool)
     (memory : Memory Unit (ServerState n Private))
@@ -208,7 +208,7 @@ theorem run_safe {Private : Type} (limits : Limits n) (sample : Sampler n Privat
         PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at ho
       obtain ⟨⟨reply, next⟩, hr, ho⟩ := ho
       exact ih _ _ _ (BatchAdmission.after_reply_aligned limits sample width budget ell hw hc
-        ht he hcut hd state memory ha hs reply next hr)
+        ht he hlat hd state memory ha hs reply next hr)
         (safe_after_reply limits sample width budget ell hw hc ht he hd state memory ha hs
           hprior reply next hr) _ ho
 

@@ -183,7 +183,7 @@ theorem upper (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
@@ -213,7 +213,7 @@ theorem upper (width : ℕ) :
         optimum limits sample data seed hx η ≤ (c : ℝ≥0∞) * limits.turns ∧
         optimum limits sample data seed hx η ≠ ∞ := by
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
     a r hr p hp c Hprod Hcost η hη
   let impl := BatchPlanner.controller n width
   let program := impl.program
@@ -221,13 +221,13 @@ theorem upper (width : ℕ) :
       (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   have hnum := BatchOutput.upper_controller (n := n) width Private limits sample data seed ell
-    hn hw hc he hcut hd hbudget hallot hx a r hr p hp c Hprod Hcost
+    hn hw hc he hlat hd hbudget hallot hx a r hr p hp c Hprod Hcost
   obtain ⟨hsuccess, htail, hmean, hbudgetCost, hfinite⟩ := hnum
   have hm : expected limits sample program charge (limits.turns + 1) world ∈
       costs limits sample data seed hx η := by
     refine ⟨impl.tapes, impl.Controls, impl.finite, program, ?_, hη.trans hsuccess, rfl⟩
     have hs := BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
-      hn hw hc hbudget.le he hcut hd hx
+      hn hw hc hbudget.le he hlat hd hx
     intro fuel next hn C hC _
     exact hs fuel next hn C hC rfl
   have hle : optimum limits sample data seed hx η ≤
@@ -247,7 +247,7 @@ theorem competitive (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
@@ -277,7 +277,7 @@ theorem competitive (width : ℕ) :
         optimum limits sample data seed hx η ≤
           Quantitative.expected limits sample program charge (limits.turns + 1) world := by
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
     a r hr p hp c Hprod Hcost η hη0 hη hround Hlower
   let impl := BatchPlanner.controller n width
   let program := impl.program
@@ -285,7 +285,7 @@ theorem competitive (width : ℕ) :
       (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   have hnum := BatchOutput.upper_controller (n := n) width Private limits sample data seed ell
-    hn hw hc he hcut hd hbudget hallot hx a r hr p hp c Hprod Hcost
+    hn hw hc he hlat hd hbudget hallot hx a r hr p hp c Hprod Hcost
   obtain ⟨hsuccess, _, hmean, _, _⟩ := hnum
   have hl := lower limits sample data seed hx η a r (ENNReal.ofReal p) c hround
     (ne_of_gt (ENNReal.ofReal_pos.mpr hp)) ENNReal.ofReal_ne_top Hlower
@@ -293,7 +293,7 @@ theorem competitive (width : ℕ) :
       costs limits sample data seed hx η := by
     refine ⟨impl.tapes, impl.Controls, impl.finite, program, ?_, hη.trans hsuccess, rfl⟩
     have hs := BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
-      hn hw hc hbudget.le he hcut hd hx
+      hn hw hc hbudget.le he hlat hd hx
     intro fuel next hn C hC _
     exact hs fuel next hn C hC rfl
   refine ⟨?_, sInf_le hm⟩

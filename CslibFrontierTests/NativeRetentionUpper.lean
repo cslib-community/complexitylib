@@ -44,7 +44,8 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
   refine ⟨tapes, R, hR, program, ?_⟩
   intro sample seed
   have h := hp ℕ limits sample data seed 1 rfl (by decide) (by decide)
-    (by norm_num) (by intro i; exact Fin.elim0 i) (by norm_num [data, limits])
+    (by norm_num) (hasDurationBound_of_cutoff limits _ 1 (by intro i; exact Fin.elim0 i))
+    (by norm_num [data, limits])
     rfl (by decide) valid 1 0 (by norm_num [instanceOf, ground, data])
     ⟨1, by norm_num⟩ (by norm_num) 0
     (by intro t ht; change t < 0 at ht; omega)
