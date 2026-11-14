@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -141,9 +142,9 @@ theorem computableInPolyTime_boundedSearch {α : Type} {enc : α ↪ List Bool} 
   have hstep : ComputableInPolyTime (fun p : ℕ × List (FiniteCfg k Bool State) =>
       (Cslib.Reachability.expand ntm.viewSucc p.2).take p.1)
       (encPair encUnary (encList encFiniteCfg)) (encList encFiniteCfg) :=
-    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput
+    ComputableInPolyTime.listTakeWithInput
       ((ComputableInPolyTime.expand computableInPolyTime_viewSucc).comp
-        (ComputableInPolyTime.snd _ _)).tidy (ComputableInPolyTime.fst _ _).tidy)
+        (ComputableInPolyTime.snd _ _)) (ComputableInPolyTime.fst _ _)
   -- the size of the lists of views
   have hlen : PolyBounded (fun x : α × ℕ => (encPair enc encUnary x).length)
       fun x => (enc x.1).length :=

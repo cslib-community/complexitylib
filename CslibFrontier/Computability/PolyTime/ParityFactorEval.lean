@@ -16,6 +16,7 @@ public import CslibFrontier.Computability.PolyTime.JetArray
 public import CslibFrontier.Foundations.BooleanAnalysis.SparseEquations
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffList
 public import Mathlib.Algebra.Field.Rat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -1123,8 +1124,8 @@ private theorem taylorInvOneSubPow_polytime {ℓ : α → ℕ}
   have hstep : ComputableInPolyTime ParityFactorEval.prefixSumPoly
       (encList encIntBin) (encList encIntBin) :=
     mapWithInput (range.comp' (length_listIntBin id'))
-      (intBin_sum.comp (of_tidy (ComputableTidilyInPolyTime.listTakeWithInput (fst _ _).tidy
-        (unary_add' (snd _ _) (const 1)).tidy)))
+      (intBin_sum.comp (listTakeWithInput (fst _ _)
+        (unary_add' (snd _ _) (const 1))))
   let bound (k : ℕ) : ℕ := k * (4 * k + 5)
   have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) := by growth_poly
   refine (iterate hcnt hinit hstep hpoly fun x i hi => ?_).of_enc_eq fun _ => rfl

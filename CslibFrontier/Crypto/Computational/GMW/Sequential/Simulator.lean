@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.GMW.Sequential
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
@@ -558,16 +559,14 @@ theorem isPPTOn_attemptWithPadsStep {α Param : Type}
   let encCfg := encFiniteConfig (k := tapes) (State := Control) (Oracle := Unit)
   let encSt := encPair encUnary encCfg
   have htotal := (computableInPolyTime_totalLen hf).comp' ha
-  have htake := (ComputableTidilyInPolyTime.takeUnary encBits).computableInPolyTime.comp'
-    (hstate.snd'.prod htotal)
+  have htake := ComputableInPolyTime.listTakeWithInput hstate.snd' htotal
   have hreal := isPPTOn_gmwRealWithPads (Vstar := VstarSession (α := α) machine) hg
     (isOraclePPTOn_VstarSession (α := α) (enc := enc) machine)
     hn hs hm (ha.prod (hlimit.prod hst)) (.const ([] : List Bool)) hw (hf.comp' ha) htake
   have hp1 := ComputableInPolyTime.fst input (encOption encSt)
   have hp2 := ComputableInPolyTime.snd input (encOption encSt)
-  have hdrop := (ComputableTidilyInPolyTime.dropUnary (encA := encBits)
-    (encL := encList encBits)).computableInPolyTime.comp'
-    ((hstate.comp' hp1).snd'.prod (htotal.comp' hp1))
+  have hdrop := ComputableInPolyTime.listDropWithInput
+    (hstate.comp' hp1).snd' (htotal.comp' hp1)
   have hpost := (computableInPolyTime_optionOr (hstate.comp' hp1).fst' hp2).prod hdrop
   have hres := hreal.map_with
     (f := fun p res => ((state p).1.or res, (state p).2.drop (totalLen (f (a p))))) hpost

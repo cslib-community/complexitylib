@@ -10,6 +10,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Explici
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -294,7 +295,7 @@ private theorem computableInPolyTime_countTake {γ : Type} {encIn : γ ↪ List 
     ((ComputableInPolyTime.length_list _).comp hgroups) hv
   have htake : ComputableInPolyTime (fun x => (groups x).take (min (groups x).length (v x))) encIn
       (encList encNat) :=
-    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hgroups.tidy hcap.tidy)
+    ComputableInPolyTime.listTakeWithInput hgroups hcap
   have htest : ComputableInPolyTime (fun p : γ × ℕ => decide (p.2 = g p.1))
       (encPair encIn encNat) encBool :=
     ComputableInPolyTime.decide_eq' (ComputableInPolyTime.snd _ _)
