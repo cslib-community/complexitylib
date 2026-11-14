@@ -2136,7 +2136,8 @@ Source subinstance semantics and role-specific encodings remain separate obligat
 `sourceBoundary` recognizes an actual halt or a query accepted by those concrete
 guards. `sourceSilent` executes malformed/repeated/exhausted requests silently and
 holds an accepted whole batch before sampling. `sourceSilent_independent` proves
-that this kernel cannot consult the joint response sampler. `source_disintegration`
+that this kernel cannot consult the joint response sampler (import the small
+`NativeBatch.Memory` module for this latent-transport specialization). `source_disintegration`
 and `source_history_kernel` derive the actual selected-before-response conditional
 law and full-history behavioral kernel while retaining hidden tapes/state and null
 history completion. `source_restart` and `resume_source_prefix` preserve the complete
@@ -2362,6 +2363,40 @@ These epochs count actual raw requests. A request rejected by a source's batch
 protocol is still a raw request here. Skipping such rejections, relating the
 filtered private state to accepted-batch histories, and transferring the physical
 source turn/deadline optimum remain separate obligations.
+
+For transport through the actual accepted-batch selector, import
+`CslibFrontier.Computability.Probabilistic.NativeBatch.Memory`.
+`ServerState.mapPrivate` changes only latent source state and preserves the public
+accepted history, used opportunities and elapsed time. `Memory.mapPrivate` also
+preserves every raw event. Consequently `admit_mapPrivate` keeps the concrete
+admission decision unchanged, and `sourceBoundary_mapPrivate` preserves the next
+accepted-batch/halting boundary.
+
+`sourceSilent_absorbs` names the selected-boundary holding law for stopping-process
+reasoning. `sourceSilent_mapPrivate` commutes actual silent native steps with this latent-state
+mapping, across private-state types and completely unrelated samplers. Admitted
+queries are held before sampling; rejected queries receive the same deterministic
+rejection on each side. A rejection appends a raw zero-charge event, so the entire
+native memory is not invariant. The map preserves those events while the accepted
+server state stays fixed. `seekSourceFrom_mapPrivate` lifts this one-step law to the
+actual unbounded stopping distribution, including silent divergence, and
+`sourceSignal_mapPrivate` preserves its selected accepted-history/batch signal.
+The earlier `sourceSilent_independent` theorem now lives in this small module and
+is derived from the identity-map case, replacing its separate case proof.
+
+The [accepted-selector memory client](../../CslibFrontierTests/NativeBatchMemory.lean)
+checks an actual malformed query and its rejected response, retained raw log and
+unchanged accepted ledger, then transports the resulting stopping law between
+latent-state types. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.NativeBatchMemory
+```
+
+This transport does not yet give an accepted-epoch source posterior. In particular,
+full source `Exchange` histories include per-call time vectors that native reply
+bytes need not reveal. An enriched-history filter must justify its projection to
+native observations; a native-visible filter must retain unrevealed data privately.
 
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source

@@ -340,7 +340,7 @@ theorem final_not_issued (world : World k Control Unit (ServerState n Private) i
               have he : seekSourceFrom limits sample machine (some (.ready previous)) =
                   PMF.pure (some (.ready previous)) :=
                 StoppedProcess.terminal_halted (sourceSilent limits sample machine)
-                  (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _) _ hl
+                  (sourceBoundary limits) (sourceSilent_absorbs limits sample machine) _ hl
               simp [hz, he] at hh
             have hc := law_live_count limits sample machine _ world previous hi state hs hz hl
             rw [hz] at hh
