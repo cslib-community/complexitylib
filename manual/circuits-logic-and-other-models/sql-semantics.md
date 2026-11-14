@@ -395,8 +395,8 @@ not in the fragment. Set-semantics relational foundations and Yannakakis's algor
 ## Differences from SQLite
 
 The semantics follows standard SQL and PostgreSQL where engines differ. A differential run of 44
-queries in this fragment against SQLite 3.45.1, recorded in the pull request that added the
-join-size theorem, agreed on 39 as bags of rows, including joins with duplicate and `NULL` keys,
+queries in this fragment against SQLite 3.45.1, recorded in
+[#5335](https://github.com/cslib-community/cslib-frontier/pull/5335), agreed on 39 as bags of rows, including joins with duplicate and `NULL` keys,
 `NULL` in `WHERE`, `IN` and `NOT IN` (also with an empty list), `UNION ALL`, `DISTINCT` with `NULL`
 rows, integer division and remainder with negative operands, and text order. That run is
 evidence, not proof. The other five differ in the expected ways:
