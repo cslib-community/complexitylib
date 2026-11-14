@@ -2782,8 +2782,10 @@ against a `Q`-query adaptive chosen-plaintext adversary `A` with private coins, 
 of the three-round cipher built from three independent uniform keys of `F` is at most the PRF
 advantages of the three explicit hybrid reductions `feistel3Reduction F j A` plus
 `2 * Q.choose 2 / |G| + Q.choose 2 / |G| ^ 2`. Each reduction makes at most `3 * Q` queries
-(`isQueryBounded_feistel3Reduction`). Theorem 4.9 bounds the PRF part by `3` times the
-advantage of one reduction that picks the hybrid at random; this is the sum before averaging.
+(`isQueryBounded_feistel3Reduction`). The PRF part deviates from Theorem 4.9, which has `3`
+times the advantage of one reduction that picks the hybrid at random: by the triangle inequality
+the sum of the three hybrid advantages is at least that quantity, so this bound follows from the
+book's form and may be weaker.
 This is a concrete bound for one finite instance in the standard model; running time is not
 modeled. The asymptotic theorem for oracle-PPT adversaries is
 `Cslib.Crypto.PseudorandomFunction.prp_lubyRackoffCipher`. -/

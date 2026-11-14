@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
-public import CslibFrontier.Foundations.Control.Monad.Memoize
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 import CslibFrontier.Crypto.Game.Hybrid
+import CslibFrontier.Foundations.Control.Monad.Memoize
 import CslibFrontier.Languages.Probabilistic.Memoize
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Languages.Probabilistic.QueryCount
@@ -37,9 +37,11 @@ ideal one the `(j + 1)`-st, so the multi-key advantage is at most the sum of the
 advantages of the reductions (`multiKeyAdvantage_le_sum`). Each reduction makes at most as many
 queries as the adversary (`isQueryBounded_multiKeyReduction`).
 
-The exercise bounds the multi-key advantage by `t` times the advantage of one reduction that
-picks the hybrid at random; the sum over the `t` hybrid reductions here is the same argument
-before averaging.
+This deviates from the exercise, which relates the multi-key advantage to `t` times the
+advantage of one reduction that picks the hybrid at random. By the triangle inequality the sum of
+the `t` hybrid advantages is at least that quantity, so the bound here follows from the
+exercise's form and may be weaker. `Cslib.Crypto.Game.advantage_hybrid_average` provides the
+averaging step.
 
 ## Main definitions
 
@@ -62,7 +64,7 @@ before averaging.
   Exercise 4.26 (Parallel composition of PRFs).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PRF
 
@@ -77,15 +79,15 @@ abbrev MultiKeyAdversary (t : ℕ) (D R : Type) := ProbOracleComp (fun _ : Fin t
 
 /-- The real multi-key experiment: sample `t` independent uniform keys and answer each query
 `(i, x)` with `F (keys i) x`. -/
-noncomputable def multiKeyRealExperiment [Fintype Key] [Nonempty Key] (F : Key → D → R)
+@[expose] noncomputable def multiKeyRealExperiment [Fintype Key] [Nonempty Key] (F : Key → D → R)
     (A : MultiKeyAdversary t D R) : ProbComp Bool := do
   let keys ← ProbComp.uniform (Fin t → Key)
   A.run fun (i, x) => pure (F (keys i) x)
 
 /-- The ideal multi-key experiment: sample `t` independent uniform functions `D → R` and answer each
 query `(i, x)` with `tables i x`. -/
-noncomputable def multiKeyIdealExperiment [Fintype D] [DecidableEq D] [Fintype R] [Nonempty R]
-    (A : MultiKeyAdversary t D R) : ProbComp Bool := do
+@[expose] noncomputable def multiKeyIdealExperiment [Fintype D] [DecidableEq D] [Fintype R]
+    [Nonempty R] (A : MultiKeyAdversary t D R) : ProbComp Bool := do
   let tables ← ProbComp.uniform (Fin t → D → R)
   A.run fun (i, x) => pure (tables i x)
 

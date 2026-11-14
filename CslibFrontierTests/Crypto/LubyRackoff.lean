@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import Mathlib.Data.ZMod.Basic
 
@@ -18,6 +20,9 @@ insecurity attack, the 4-round random-round collision bound and the keyed 4-roun
 Luby–Rackoff theorem, and audits the axiom dependencies of the headline theorems in
 `CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff`.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.LubyRackoff
 
