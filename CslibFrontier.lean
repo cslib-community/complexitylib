@@ -4758,6 +4758,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Queries
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Reconstruction
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import CslibFrontier.Crypto.Primitives.PRP.Finite
+public import CslibFrontier.Crypto.Primitives.QRUOV.SLIField
 public import CslibFrontier.Crypto.Primitives.SLHDSA.Address
 public import CslibFrontier.Crypto.Primitives.SLHDSA.WOTS.Digits
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
@@ -6132,6 +6133,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Vertex
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.VertexOrientation
+public import CslibFrontier.Foundations.LinearAlgebra.MultiplicationForm
 public import CslibFrontier.Foundations.LinearAlgebra.PivotSpace
 public import CslibFrontier.Foundations.LinearAlgebra.PlaneRotation
 public import CslibFrontier.Foundations.LinearAlgebra.Rank
