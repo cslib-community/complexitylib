@@ -3223,6 +3223,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Id
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Ite
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.IterateWhileLayout
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.MultiPass
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Reverse
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
