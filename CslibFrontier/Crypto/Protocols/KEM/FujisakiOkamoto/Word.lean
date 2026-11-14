@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Crypto.Encoding
+public import CslibFrontier.Crypto.Computational.Encryption.Basic
 public import CslibFrontier.Computability.Probabilistic.Oracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Languages.Probabilistic.BitString
@@ -33,7 +34,9 @@ at parameter `n`, messages are words of length `msgLen n`, coins are uniform wor
 `coinLen n`, and the ciphertext space is the words of length at most `ctLen n`. Key generation is
 randomized; deterministic encryption and decryption are functions of the parameter and their
 word arguments. `WordPKE.IsEfficient` asks for strict PPT key generation and polynomial-time
-encryption, decryption and lengths.
+encryption, decryption and lengths. `WordPKE.CiphertextFits` says that encryption under generated
+keys stays in the ciphertext space, and `WordPKE.INDCPA` is IND-CPA security of randomized
+encryption `WordPKE.encrypt` with challenge messages in the message space.
 
 At each parameter, `WordPKE.scheme P keyLen n` is the FO parameter bundle `Scheme` over words,
 with uniform messages, coins and `keyLen n`-bit keys. Its decryption reports only results of
@@ -65,6 +68,10 @@ The `H` request is the word `encHQuery (b, m, c)`, keeping the library's domain-
   efficiency.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.encrypt`: randomized encryption, the
   algorithm of the family's IND-CPA security.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.CiphertextFits`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.IsMessagePair`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.INDCPA`: encryption stays in the ciphertext
+  space, and IND-CPA security of the family with challenge messages in its message space.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.toExplicitCoin`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.scheme`: the explicit-coin scheme and the FO
   bundle at one parameter.
@@ -94,7 +101,7 @@ The `H` request is the word `encHQuery (b, m, c)`, keeping the library's domain-
 
 * [D. Hofheinz, K. Hövelmanns, E. Kiltz, *A Modular Analysis of the Fujisaki–Okamoto
   Transformation*][HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated
-  2 November 2021), §2.1, §3.2.1 Fig. 9 and §3.2.2 Fig. 12.
+  2 November 2021), §2.1 and Definition 2.2, §3.2.1 Fig. 9 and §3.2.2 Fig. 12.
 * [NIST, *FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard*][NISTFIPS203],
   §7.3.
 -/
@@ -154,6 +161,29 @@ variable (P : WordPKE) (keyLen : ℕ → ℕ)
 noncomputable def encrypt (n : ℕ) (pk m : List Bool) : ProbComp (List Bool) := do
   let r ← BitString.sampleList (P.coinLen n)
   return P.encDet n pk m r
+
+/-- **The ciphertexts of `P` lie in its ciphertext space.** At every parameter `n`, encrypting a
+message of length `msgLen n` with coins of length `coinLen n` under a generated public key gives a
+word of length at most `ctLen n`. [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full
+version dated 2 November 2021, §2.1) measures the spreadness of a scheme over its ciphertext space
+`C`; `WordPKE` declares that space as the words of length at most `ctLen n`, and this predicate
+says that encryption stays inside it. -/
+def CiphertextFits : Prop :=
+  ∀ n pk sk, (pk, sk) ∈ (ProbComp.eval (P.keyGen n)).support →
+    ∀ m r, m.length = P.msgLen n → r.length = P.coinLen n →
+      (P.encDet n pk m r).length ≤ P.ctLen n
+
+/-- The admissible challenge pairs of the IND-CPA game of `P` at parameter `n`: two messages of
+length `msgLen n`, the message space of `P`. -/
+def IsMessagePair (n : ℕ) (_pk m₀ m₁ : List Bool) : Bool :=
+  m₀.length == P.msgLen n && m₁.length == P.msgLen n
+
+/-- **IND-CPA security of `P`** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021),
+§2.1, Def. 2.2): every uniform strict PPT chosen-message adversary has negligible advantage in
+the single-challenge game of randomized encryption `encrypt`, with challenge messages in the
+message space of `P`. -/
+def INDCPA : Prop :=
+  Encryption.INDCPAOn P.IsMessagePair encBits P.keyGen P.encrypt
 
 /-- The explicit-coin scheme of `P` at parameter `n`, over words: coins are uniform words of
 length `coinLen n`, and decryption reports only results of length `msgLen n`. -/
