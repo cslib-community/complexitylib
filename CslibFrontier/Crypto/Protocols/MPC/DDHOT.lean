@@ -76,10 +76,13 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
   `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_sender`: **perfect sender privacy** — the
   ideal joint distribution with `ddhOTSenderSim` equals the real one, so every distinguisher has
   advantage zero.
-* `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_receiver_eq`: **computational receiver
-  privacy** — when `g` generates `G` and `G` has `q` elements, a corrupted receiver's
-  distinguishing advantage equals `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)`, the
-  fixed-group DDH advantage of `CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean`.
+* `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_receiver_eq`: **receiver privacy as a
+  per-instance equality** — when `g` generates `G` and `G` has `q` elements, a corrupted
+  receiver's distinguishing advantage equals
+  `Cslib.Crypto.ddhAdvantage q g (ddhOTReduction g q x D)`, the fixed-group DDH advantage of
+  `CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean`. There is no security parameter
+  and no efficiency certificate for `ddhOTReduction`, so this is not a computational privacy
+  theorem.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_unchecked_of_add`,
   `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_zero_of_add_ne`,
   `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
@@ -795,9 +798,11 @@ theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Modu
   rw [← PMF.uniformOfFintype_map_equiv e_shift, PMF.bind_map, ← uniformOfFintype_bind_smul hg]
   rfl
 
-/-- **Computational privacy against a corrupted receiver**: every distinguisher's advantage
-between the ideal joint distribution with `ddhOTReceiverSim` and the real one equals the DDH
-advantage of `ddhOTReduction`, when `g` generates `G` and `G` has `q` elements. -/
+/-- **Privacy against a corrupted receiver, as a per-instance equality**: for a fixed group, input
+and distinguisher, the distinguisher's advantage between the ideal joint distribution with
+`ddhOTReceiverSim` and the real one equals the fixed-group DDH advantage of `ddhOTReduction`, when
+`g` generates `G` and `G` has `q` elements. This is not a computational privacy theorem: there is
+no security parameter, and `ddhOTReduction` has no efficiency certificate. -/
 theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
     (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
     (x : (i : Fin 2) → OTIn G i)
