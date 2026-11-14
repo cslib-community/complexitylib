@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Complexity.Problems.IntegerProgramming
 import CslibFrontier.Computability.Complexity.Problems.JobSequencing
 import CslibFrontier.Computability.Complexity.Problems.Knapsack
 import CslibFrontier.Computability.Complexity.Problems.MaxCut
+import CslibFrontier.Computability.Complexity.Problems.MaxCut.Simple
 import CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT
 import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Signed
 import CslibFrontier.Computability.Complexity.Problems.Partition
@@ -398,7 +399,11 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   with deadlines and penalties ({name}`polyTimeReducible_SubsetSum_JobSequencing`,
   {name}`JobSequencing_npComplete`). Partition reduces to weighted maximum cut through Karp's
   complete graph weighted by products ({name}`polyTimeReducible_Partition_MaxCut`,
-  {name}`MaxCut_npComplete`).
+  {name}`MaxCut_npComplete`). Expanding binary weights into unit edges is exponential, so
+  unweighted maximum cut on simple graphs, with the bound `K` in binary, is proved separately.
+  NAE EU3SAT reduces to it through a triangle per clause plus an edge `x`–`¬x` per literal, with
+  every edge then subdivided into a path of three edges
+  ({name}`polyTimeReducible_NAEEUThreeSAT_SimpleMaxCut`, {name}`SimpleMaxCut_npComplete`).
 * SAT reduces to independent set ({name}`polyTimeReducible_SAT_IndependentSet`,
   {name}`IndependentSet_npComplete`), which reduces to clique
   ({name}`polyTimeReducible_IndependentSet_Clique`, {name}`Clique_npComplete`) and vertex cover
