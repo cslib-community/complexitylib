@@ -55,37 +55,43 @@ public section
 open scoped BigOperators
 open Finset
 
-open Classical
 
 namespace Cslib.HomomorphismTesting
 
 variable {G H : Type*} [AddCommGroup G] [AddCommGroup H] [Fintype G]
 
+open Classical in
 /-- Uniform independent rejection probability of the additive consistency test. -/
 @[expose] noncomputable def rejection (f : G → H) : ℝ :=
   𝔼 p : G × G, if f p.1 + f p.2 ≠ f (p.1 + p.2) then 1 else 0
 
+open Classical in
 /-- A two-query vote for the value at `x`. -/
 @[expose] def vote (f : G → H) (x y : G) : H := f (x + y) - f y
 
+open Classical in
 /-- Every value has at most as many votes as the selected value. Ties are allowed. -/
 @[expose] def IsPlurality (f : G → H) (φ : G → H) : Prop :=
   ∀ x b, #{y | vote f x y = b} ≤ #{y | vote f x y = φ x}
 
+open Classical in
 /-- Plurality corrections exist without a tie-breaking convention. -/
 theorem exists_plurality (f : G → H) : ∃ φ, IsPlurality f φ := by
   classical
   exact ⟨fun x => (Fintype.exists_forall_card_filter_le_card_filter (vote f x)).choose,
     fun x => (Fintype.exists_forall_card_filter_le_card_filter (vote f x)).choose_spec⟩
 
+open Classical in
 /-- An actual homomorphism passes every test. -/
 @[simp] theorem rejection_hom (f : G →+ H) : rejection (f : G → H) = 0 := by
   simp [rejection, map_add]
 
+open Classical in
 private theorem rejection_eq_expect (f : G → H) : rejection f =
     𝔼 a, 𝔼 b, if f a + f b ≠ f (a + b) then (1 : ℝ) else 0 :=
   Fintype.expect_prod_type _
 
+open Classical in
 /-- Independent votes for a fixed point agree with probability at least `1 - 2ε`. -/
 theorem collision_lower (f : G → H) (x : G) :
     1 - 2 * rejection f ≤
@@ -119,6 +125,7 @@ theorem collision_lower (f : G → H) (x : G) :
   rw [h₁, h₂] at h
   linarith
 
+open Classical in
 /-- Every plurality value carries mass at least `1 - 2ε`. -/
 theorem concentration (f : G → H) {φ : G → H} (hφ : IsPlurality f φ) (x : G) :
     1 - 2 * rejection f ≤
@@ -139,6 +146,7 @@ theorem concentration (f : G → H) {φ : G → H} (hφ : IsPlurality f φ) (x :
   rw [nnratCast_dens, nnratCast_dens]
   exact div_le_div_of_nonneg_right (by exact_mod_cast hφ x b) (Nat.cast_nonneg _)
 
+open Classical in
 /-- The error probability of the correction at each point is at most `2ε`. -/
 theorem correction_error (f : G → H) {φ : G → H} (hφ : IsPlurality f φ) (x : G) :
     (𝔼 y, if φ x ≠ vote f x y then (1 : ℝ) else 0) ≤ 2 * rejection f := by
@@ -149,6 +157,7 @@ theorem correction_error (f : G → H) {φ : G → H} (hφ : IsPlurality f φ) (
     exact expect_congr rfl fun y _ => by split_ifs <;> simp_all
   linarith
 
+open Classical in
 /-- Below rejection `1/6`, every plurality correction preserves addition. -/
 theorem plurality_add (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
     (hε : rejection f < 1 / 6) (x y : G) : φ (x + y) = φ x + φ y := by
@@ -175,11 +184,13 @@ theorem plurality_add (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
   rw [ha, hb]
   abel
 
+open Classical in
 /-- The plurality correction bundled as an additive homomorphism. -/
 @[expose] noncomputable def correction (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
     (hε : rejection f < 1 / 6) : G →+ H :=
   AddMonoidHom.mk' φ (plurality_add f hφ hε)
 
+open Classical in
 /-- Below rejection `1/6`, the plurality correction differs on at most `2ε` of the domain. -/
 theorem closeness (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
     (hε : rejection f < 1 / 6) :
@@ -212,31 +223,38 @@ theorem closeness (f : G → H) {φ : G → H} (hφ : IsPlurality f φ)
 
 variable [Fintype H]
 
+open Classical in
+omit [Fintype H] in
 /-- A closest additive homomorphism exists, including for trivial groups. -/
-theorem exists_closest (f : G → H) : ∃ h : G →+ H,
+theorem exists_closest [Finite H] (f : G → H) : ∃ h : G →+ H,
     ∀ k : G →+ H, hammingDist f h ≤ hammingDist f k := by
   classical
+  let := Fintype.ofFinite H
   let : Fintype (G →+ H) := Fintype.ofInjective (fun h : G →+ H => (h : G → H))
     DFunLike.coe_injective
   obtain ⟨h, -, hh⟩ := univ.exists_min_image (fun h : G →+ H => hammingDist f h)
     (show (univ : Finset (G →+ H)).Nonempty from ⟨0, mem_univ _⟩)
   exact ⟨h, fun k => hh k (mem_univ _)⟩
 
+open Classical in
 /-- Minimum normalized disagreement with an additive homomorphism. -/
 noncomputable def distance (f : G → H) : ℝ :=
   (hammingDist f (exists_closest f).choose : ℝ) / Fintype.card G
 
+open Classical in
 /-- The minimum distance is attained by a bundled homomorphism. -/
 theorem distance_attained (f : G → H) : ∃ h : G →+ H,
     distance f = (hammingDist f h : ℝ) / Fintype.card G :=
   ⟨(exists_closest f).choose, rfl⟩
 
+open Classical in
 /-- The minimum distance is bounded by disagreement with any homomorphism. -/
 theorem distance_le (f : G → H) (h : G →+ H) :
     distance f ≤ (hammingDist f h : ℝ) / Fintype.card G := by
   exact div_le_div_of_nonneg_right
     (by exact_mod_cast (exists_closest f).choose_spec h) (Nat.cast_nonneg _)
 
+open Classical in
 /-- Goldreich Exercise 9.21: rejection is at least `min (1/6) (δ/2)`. -/
 theorem min_le_rejection (f : G → H) : min (1 / 6) (distance f / 2) ≤ rejection f := by
   by_cases hε : rejection f < 1 / 6
