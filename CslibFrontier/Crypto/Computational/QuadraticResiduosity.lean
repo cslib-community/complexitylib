@@ -404,10 +404,14 @@ structure ModulusDesc where
 instance (d : ModulusDesc) : Fact d.p.Prime := ⟨d.prime_p⟩
 instance (d : ModulusDesc) : Fact d.q.Prime := ⟨d.prime_q⟩
 
+/-- Every valid modulus `N = p * q` exceeds `1`. -/
+theorem ModulusDesc.one_lt_mul (d : ModulusDesc) : 1 < d.p * d.q := by
+  have := d.two_lt_p; have := d.two_lt_q; nlinarith
+
 /-- The unit `-1` modulo `N = p * q` has canonical residue `N - 1`. -/
 theorem ModulusDesc.val_neg_one (d : ModulusDesc) :
     (-1 : (ZMod (d.p * d.q))ˣ).val.val = d.p * d.q - 1 := by
-  have : Fact (1 < d.p * d.q) := ⟨by have := d.two_lt_p; have := d.two_lt_q; nlinarith⟩
+  have : Fact (1 < d.p * d.q) := ⟨d.one_lt_mul⟩
   rw [Units.val_neg, Units.val_one, ZMod.val_neg_of_ne_zero, ZMod.val_one]
 
 /-- The prime factors `(p, q)` of a modulus description; the proof fields are determined by them. -/

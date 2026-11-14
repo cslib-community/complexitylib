@@ -118,9 +118,8 @@ namespace KeyDesc
 abbrev modulus (k : KeyDesc) : ℕ := k.p * k.q
 
 /-- Every valid Goldwasser–Micali modulus exceeds `1`. -/
-theorem one_lt_modulus (k : KeyDesc) : 1 < k.modulus := by
-  have hp := k.two_lt_p; have hq := k.two_lt_q
-  change 1 < k.p * k.q; nlinarith
+theorem one_lt_modulus (k : KeyDesc) : 1 < k.modulus :=
+  k.toModulusDesc.one_lt_mul
 
 /-- `z` is strictly smaller than `N = p * q`. -/
 theorem z_lt_modulus (k : KeyDesc) : k.z < k.modulus := by
@@ -897,7 +896,7 @@ theorem advantage_blumGame_le_qr {gen : ℕ → ProbComp ModulusDesc} {n : ℕ}
         (idealBody d b) ≤ 5 / 2 ^ n := by
     simp only [blumQRDistinguisher, idealBody, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
     refine Game.advantage_bind_le_nnreal _ _ _ fun choice => ?_
-    have : Fact (1 < d.p * d.q) := ⟨by have := d.two_lt_p; have := d.two_lt_q; nlinarith⟩
+    have : Fact (1 < d.p * d.q) := ⟨d.one_lt_mul⟩
     -- The multiplier is `(-1) ^ (b && c) * s' ^ 2`, which adds `b && c` to the plaintext `m₀`.
     have hw : (if ChoiceOut.msg₀ choice ^^ ChoiceOut.msg₁ choice then y.val.val else 1) =
         ((if b && (ChoiceOut.msg₀ choice ^^ ChoiceOut.msg₁ choice) then -1 else 1) *

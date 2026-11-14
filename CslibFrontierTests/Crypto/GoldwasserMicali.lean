@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import CslibFrontier.Crypto.Computational.GoldwasserMicali
+import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
@@ -25,7 +26,10 @@ Concrete evaluation and non-vacuity checks for
   strict PPT, and correctness;
 * concrete client instantiations of `isPPTOn_qrDistinguisher`, `isPPTOn_qrWordDistinguisher`,
   `isPPTOn_blumQRDistinguisher`, the headline `indcpa_blumGoldwasserMicali`, and the ideal-key-law
-  statements `indistinguishable_publicKeyGame` and `indistinguishable_publicKeyWordGame`.
+  statements `indistinguishable_publicKeyGame` and `indistinguishable_publicKeyWordGame`;
+* joint satisfiability of the headline's premises `hblum` and `hsize`: the sampler
+  `blumWitnessGen` draws Blum moduli with `n`-bit primes at every `n` (Dirichlet's theorem), so
+  instantiating the headline at it leaves quadratic residuosity as the only premise.
 -/
 
 namespace CslibFrontierTests.Crypto.GoldwasserMicali
@@ -241,5 +245,56 @@ example {setup : ℕ → PMF ModulusDesc}
         (publicKeyWordGame id (publicKeyLaw setup n) constWordAdversary false n)
         (publicKeyWordGame id (publicKeyLaw setup n) constWordAdversary true n) :=
   indistinguishable_publicKeyWordGame .id' hsize hQR constWordAdversary constWordAdversary_isPPT
+
+/-! ### The headline's premises `hblum` and `hsize` hold together
+
+`constBlumGen` satisfies `hblum` but violates `hsize` for every `n ≥ 3`, since `Nat.size 3 = 2`.
+The sampler `blumWitnessGen` below satisfies both premises at every `n`, by Dirichlet's theorem on
+primes `≡ 3 (mod 4)`. So the headline's conditions on the modulus law are jointly satisfiable, and
+at `blumWitnessGen` quadratic residuosity is its only remaining premise. The sampler is a
+noncomputable choice: it witnesses satisfiability, not an efficient modulus generator, and nothing
+here discharges the cryptographic assumption `hQR`. -/
+
+/-- Dirichlet: there are Blum primes above every bound. -/
+theorem exists_isBlumPrime_gt (m : ℕ) : ∃ p > m, IsBlumPrime p := by
+  obtain ⟨p, hpm, hp, hmod⟩ :=
+    Nat.forall_exists_prime_gt_and_zmodEq m (q := 4) (a := 3) (by norm_num) (by decide)
+  refine ⟨p, hpm, hp, ?_⟩
+  rw [Int.ModEq] at hmod
+  omega
+
+/-- Every security parameter admits a Blum modulus with `n`-bit primes. -/
+theorem exists_blumModulusDesc (n : ℕ) :
+    ∃ d : ModulusDesc, IsBlumModulus d.p d.q ∧ n ≤ d.p.size ∧ n ≤ d.q.size := by
+  obtain ⟨p, hpn, hp⟩ := exists_isBlumPrime_gt (2 ^ n)
+  obtain ⟨q, hqp, hq⟩ := exists_isBlumPrime_gt p
+  have hp3 := hp.2
+  have hq3 := hq.2
+  refine ⟨⟨p, q, hp.1, hq.1, by omega, by omega, by omega⟩, ⟨hp, hq, hqp.ne⟩, ?_, ?_⟩
+  · exact (Nat.lt_size.mpr hpn.le).le
+  · exact (Nat.lt_size.mpr (show 2 ^ n ≤ q by omega)).le
+
+/-- A modulus sampler satisfying both premises `hblum` and `hsize` of the headline. -/
+noncomputable def blumWitnessGen (n : ℕ) : ProbComp ModulusDesc :=
+  pure (exists_blumModulusDesc n).choose
+
+theorem isBlum_blumWitnessGen (n : ℕ) :
+    ∀ d ∈ (ProbComp.eval (blumWitnessGen n)).support, IsBlumModulus d.p d.q := by
+  intro d hd
+  simp only [blumWitnessGen, ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hd
+  subst hd
+  exact (exists_blumModulusDesc n).choose_spec.1
+
+theorem size_blumWitnessGen (n : ℕ) :
+    ∀ d ∈ (ProbComp.eval (blumWitnessGen n)).support, n ≤ d.p.size ∧ n ≤ d.q.size := by
+  intro d hd
+  simp only [blumWitnessGen, ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hd
+  subst hd
+  exact (exists_blumModulusDesc n).choose_spec.2
+
+/-- At `blumWitnessGen`, quadratic residuosity is the headline's only premise. -/
+example (hQR : QuadraticResiduosityHard fun n => ProbComp.eval (blumWitnessGen n)) :
+    Encryption.INDCPA (blumKeyGen blumWitnessGen) encrypt :=
+  indcpa_blumGoldwasserMicali isBlum_blumWitnessGen size_blumWitnessGen hQR
 
 end CslibFrontierTests.Crypto.GoldwasserMicali
