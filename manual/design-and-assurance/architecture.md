@@ -38,6 +38,18 @@ The library repeatedly separates a high-level operation from its representation.
 
 The circuit refactor is documented by [PR #520](https://github.com/cslib-community/cslib-frontier/pull/520). The later named-cell pivot is documented by [issue #2205](https://github.com/cslib-community/cslib-frontier/issues/2205) and [PR #2228](https://github.com/cslib-community/cslib-frontier/pull/2228). The latter completes insertion-related Fibonacci-heap operations, not the full priority-queue refinement: decrease-key and extract-min remain outside that milestone. Their reported proof-size comparisons are historical measurements by the contributors, not benchmarks reproduced in the historical study.
 
+For list recursions that emit blocks and replace a carry at each indexed step, import
+[`Foundations/Data/List/EmitChain.lean`](../../CslibFrontier/Foundations/Data/List/EmitChain.lean)
+and use `List.eq_flatMap_range_of_emit`. Supply the short-suffix equation and the one-step
+equation; the theorem expands the consumed prefix as an indexed `flatMap`, followed by the
+terminal suffix. The carry update must depend only on the absolute step index. The two
+[clause-splitting](../../CslibFrontier/Logics/Propositional/CNF/ThreeCNF/PolyTime.lean)
+[certificates](../../CslibFrontier/Logics/Propositional/CNF/ThreeCNF/Exact/PolyTime.lean)
+use this with two reserved literals: ordinary splitting emits one clause and carries a negative
+fresh literal, while the count-preserving OR chain emits three clauses and carries a positive
+fresh literal. The equality preserves the output list, including order and repeated clauses;
+the clients still supply the encoding and polynomial-time certificates.
+
 ## Module interfaces and build consequences
 
 Lean's module system makes the distinction between public API dependencies and proof-only imports explicit. Source files use `module`, `public import` for dependencies needed by clients, and ordinary imports for proof support. `@[expose]` makes a definition body part of the downstream interface and is used selectively. A proof-only helper can remain private, while the small reusable theorem should live in the lowest suitable topic module. [Module guidance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/CONTRIBUTING.md#public-surface-under-the-module-system)
