@@ -61,9 +61,13 @@ example :
         specializeSize readFirstProgramBit oneTapeProgram ∧
     specializePrepareSteps zeroTapeProgram [] <
         specializePrepareSteps oneTapeProgram [] := by
+  have hlen : descLen zeroTapeProgram < descLen oneTapeProgram := by decide
   refine ⟨descLen_specialize_le _ _, descLen_specialize_le _ _, ?_, ?_⟩
-  · set_option maxRecDepth 10000 in decide
-  · set_option maxRecDepth 10000 in decide
+  · unfold specializeSize
+    exact Nat.mul_lt_mul_of_pos_left
+      (Nat.pow_lt_pow_left (by omega) (by norm_num)) (by norm_num)
+  · unfold specializePrepareSteps
+    omega
 
 /-- The concrete universal-interpreter bounds are usable directly at a generated program. -/
 example :
