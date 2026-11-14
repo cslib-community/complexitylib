@@ -25,10 +25,10 @@ phase flag, Hadamard/inverse flag, unary target and list of unary controls. List
 use the usual framed list encoding, so even a query contributes to the encoded program length.
 
 A native polynomial-time generator receives the unary security parameter and classical input
-length separately. It returns every register size and instruction. Its encoded output length
-therefore bounds active qubits and instruction count; restricting auxiliary lengths by any
-polynomial bound yields a computable polynomial resource schedule. No resource bound is assumed
-as a field of the family.
+length separately. It returns every register size and instruction. Its exact encoded output
+length is the generated-description cost and also bounds active qubits and instruction count;
+restricting auxiliary lengths by any polynomial bound yields a computable polynomial resource
+schedule. No resource bound is assumed as a field of the family.
 
 Execution places a supplied quantum state after the encoded classical input, initializes the
 other wires to zero, and uses one fixed coherent oracle throughout. Terminal measurement returns
@@ -47,7 +47,8 @@ The definitions and results are original infrastructure, not a QROM security cla
 
 ## Main results
 
-* `Cslib.Quantum.UniformOracleCircuitFamily.exists_resource_bound`: generation bounds resources.
+* `Cslib.Quantum.UniformOracleCircuitFamily.exists_resource_bound`: generation bounds exact
+  encoded description length.
 * `Cslib.Quantum.UniformOracleCircuitFamily.exists_computable_resource_bound`: a computable
   polynomial schedule bounds every allowed auxiliary length.
 -/
@@ -162,14 +163,12 @@ namespace UniformOracleCircuitFamily
 
 variable (F : UniformOracleCircuitFamily)
 
-/-- Native generation bounds both register size and instruction count by one polynomial in
-the two input sizes. Separate elementary/query counts are bounded by the instruction count. -/
+/-- Native generation bounds the exact encoded description length by one polynomial in the two
+input sizes. Register width and separate elementary/query counts are bounded by that length. -/
 theorem exists_resource_bound : ∃ c d : ℕ, ∀ n ℓ,
-    (F.description n ℓ).width + (F.description n ℓ).instructions.length ≤
-      c * (2 * n + ℓ + 2) ^ d := by
+    (encOracleCircuitDescription (F.description n ℓ)).length ≤ c * (2 * n + ℓ + 2) ^ d := by
   obtain ⟨c, d, h⟩ := F.computableInPolyTime_description.polyBounded_length.exists_le
   refine ⟨c, d, fun n ℓ => ?_⟩
-  refine (F.description n ℓ).width_add_length_le_encoding_length.trans ?_
   have hlen : (encOracleInputSize ⟨n, ℓ⟩).length + 1 = 2 * n + ℓ + 2 := by
     simp only [encOracleInputSize_apply, encOracleInputSizeFields, length_encPair,
       encUnary_apply, List.length_replicate]
@@ -177,11 +176,12 @@ theorem exists_resource_bound : ∃ c d : ℕ, ∀ n ℓ,
   simpa only [hlen] using h ⟨n, ℓ⟩
 
 /-- A polynomial bound on classical auxiliary lengths gives a native-computable polynomial
-resource schedule for every shorter word. The length bound itself need not be computable. -/
+schedule for the exact encoded description length of every shorter word. The length bound itself
+need not be computable. -/
 theorem exists_computable_resource_bound {L : ℕ → ℕ} (hL : PolynomiallyBounded L) :
     ∃ B : ℕ → ℕ, ComputableInPolyTime B encUnary encUnary ∧ PolynomiallyBounded B ∧
       ∀ n ℓ, ℓ ≤ L n →
-      (F.description n ℓ).width + (F.description n ℓ).instructions.length ≤ B n := by
+      (encOracleCircuitDescription (F.description n ℓ)).length ≤ B n := by
   obtain ⟨c, d, h⟩ := F.exists_resource_bound
   obtain ⟨cL, dL, hLp⟩ := polynomiallyBounded_iff_le.mp hL
   let B : ℕ → ℕ := fun n => c * (2 * n + cL * (n + 1) ^ dL + 2) ^ d

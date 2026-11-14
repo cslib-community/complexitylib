@@ -14,11 +14,11 @@ public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Uniform
 # Concrete game bounds for native uniform quantum oracle circuits
 
 The existing resource-indexed game API applies to uniform quantum oracle-circuit families with
-separate qubit, elementary-gate and query budgets. Native generation supplies polynomial schedules
-for all classical input lengths up to a polynomial bound. A concrete error negligible along every
-componentwise polynomial schedule therefore gives asymptotic indistinguishability for every such
-family. This is an instance of the existing concrete-to-asymptotic theorem, not a new game or
-advantage notion.
+separate qubit, elementary-gate, query and exact encoded-description budgets. Native generation
+supplies polynomial schedules for all classical input lengths up to a polynomial bound. A concrete
+error negligible along every componentwise polynomial schedule therefore gives asymptotic
+indistinguishability for every such family. This is an instance of the existing
+concrete-to-asymptotic theorem, not a new game or advantage notion.
 
 The games remain parameters. A caller must show that its experiment executes the supplied family
 on input lengths within the declared bound and establishes the concrete security premise. These
@@ -43,37 +43,45 @@ open Quantum
 open scoped NNReal
 
 /-- Every generated circuit for a classical input of length at most `inputLength n` respects the
-three budgets. The experiment using the family must separately respect this input-length bound. -/
+four budgets. The description coordinate is the exact length of `encOracleCircuitDescription`.
+The experiment using the family must separately respect this input-length bound. Static generator
+code and offline generation time/workspace are not part of these online circuit budgets. -/
 @[expose] def WithinOracleCircuits (inputLength : ℕ → ℕ) (n : ℕ)
     (budget : OracleCircuit.Resources) (family : UniformOracleCircuitFamily) : Prop :=
   ∀ ℓ ≤ inputLength n, (family.description n ℓ).instructions.Within
-    (family.description n ℓ).width budget
+    (family.description n ℓ).width
+    (encOracleCircuitDescription (family.description n ℓ)).length budget
 
-/-- Concrete bounds negligible for every polynomial qubit, gate and query schedule yield
-asymptotic indistinguishability for all native uniform families. Auxiliary lengths may be bounded
-by any polynomially bounded function; that bound need not itself be computable. -/
+/-- Concrete bounds negligible for every polynomial qubit, gate, query and generated-description
+schedule yield asymptotic indistinguishability for all native uniform families. Auxiliary lengths
+may be bounded by any polynomially bounded function; that bound need not itself be computable. -/
 theorem Indistinguishable.of_uniformOracleCircuits {inputLength : ℕ → ℕ}
     (hinput : PolynomiallyBounded inputLength)
     {game₁ game₂ : UniformOracleCircuitFamily → ℕ → Game}
     {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
     (h : IndistinguishableWithin game₁ game₂ (WithinOracleCircuits inputLength) ε)
-    (hneg : ∀ qubits gates queries : ℕ → ℕ,
+    (hneg : ∀ qubits gates queries descriptionBits : ℕ → ℕ,
       PolynomiallyBounded qubits → PolynomiallyBounded gates → PolynomiallyBounded queries →
-      Negligible (fun n => ε n ⟨qubits n, gates n, queries n⟩)) :
+      PolynomiallyBounded descriptionBits →
+      Negligible (fun n => ε n ⟨qubits n, gates n, queries n, descriptionBits n⟩)) :
     Indistinguishable game₁ game₂ (fun _ => True) := by
   refine h.indistinguishable (fun r => PolynomiallyBounded (fun n => (r n).qubits) ∧
     PolynomiallyBounded (fun n => (r n).gates) ∧
-    PolynomiallyBounded (fun n => (r n).queries)) ?_ ?_
+    PolynomiallyBounded (fun n => (r n).queries) ∧
+    PolynomiallyBounded (fun n => (r n).descriptionBits)) ?_ ?_
   · intro family _
     obtain ⟨B, _, hB, hbound⟩ := family.exists_computable_resource_bound hinput
-    refine ⟨fun n => ⟨B n, B n, B n⟩, ⟨hB, hB, hB⟩, fun n ℓ hℓ => ?_⟩
-    have htotal := hbound n ℓ hℓ
+    refine ⟨fun n => ⟨B n, B n, B n, B n⟩, ⟨hB, hB, hB, hB⟩,
+      fun n ℓ hℓ => ?_⟩
+    have hdescription := hbound n ℓ hℓ
+    have htotal := (family.description n ℓ).width_add_length_le_encoding_length.trans hdescription
     have hcounts := (family.description n ℓ).instructions.gateCount_add_queryCount
-    change _ ≤ B n ∧ _ ≤ B n ∧ _ ≤ B n
+    change _ ≤ B n ∧ _ ≤ B n ∧ _ ≤ B n ∧ _ ≤ B n
     omega
   · intro r hr
     exact hneg (fun n => (r n).qubits) (fun n => (r n).gates)
-      (fun n => (r n).queries) hr.1 hr.2.1 hr.2.2
+      (fun n => (r n).queries) (fun n => (r n).descriptionBits)
+      hr.1 hr.2.1 hr.2.2.1 hr.2.2.2
 
 /-- A concrete success bound along independent polynomial resource schedules yields asymptotic
 indistinguishability from failure, using the existing success/advantage equivalence. -/
@@ -82,9 +90,10 @@ theorem Indistinguishable.of_succ_uniformOracleCircuits {inputLength : ℕ → �
     {game : UniformOracleCircuitFamily → ℕ → Game}
     {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
     (h : SuccWithin game (WithinOracleCircuits inputLength) ε)
-    (hneg : ∀ qubits gates queries : ℕ → ℕ,
+    (hneg : ∀ qubits gates queries descriptionBits : ℕ → ℕ,
       PolynomiallyBounded qubits → PolynomiallyBounded gates → PolynomiallyBounded queries →
-      Negligible (fun n => ε n ⟨qubits n, gates n, queries n⟩)) :
+      PolynomiallyBounded descriptionBits →
+      Negligible (fun n => ε n ⟨qubits n, gates n, queries n, descriptionBits n⟩)) :
     Indistinguishable game (fun _ _ => PMF.pure false) (fun _ => True) :=
   of_uniformOracleCircuits hinput ((indistinguishableWithin_pure_false_iff _ _ _).mpr h) hneg
 

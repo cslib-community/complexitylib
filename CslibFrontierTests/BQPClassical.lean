@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Computability.Complexity.Classes.BQP.Classical
 import CslibFrontier.Computability.Complexity.Problems.CircuitValue
 import CslibFrontier.Computability.Circuit.Quantum.Reversible.Resources
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 
 /-! `P ⊆ BQP`: the reversible compilation of a concrete De Morgan gate list, its exact acceptance
 probability, and the circuit value problem in `BQP`. -/
@@ -14,6 +15,7 @@ probability, and the circuit value problem in `BQP`. -/
 namespace CslibFrontierTests.BQPClassical
 
 open Cslib Cslib.Quantum Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean
+open Turing.MultiTapeTM
 
 /-- Exclusive or of the inputs `0, 1` as a De Morgan gate list: wire `2` is `x₀ ∨ x₁`, wire `3` is
 `x₀ ∧ x₁`, wire `4` is `¬ (x₀ ∧ x₁)`, and wire `5` is their conjunction. -/
@@ -45,7 +47,9 @@ example : acceptProb (2 + xorGates.length + 1) (Reversible.circuitCodes 2 (xorGa
 example : (Reversible.circuitCodes 2 (xorGates, [5])).length = 10 := by decide
 example : OracleCircuit.Within
     ((Reversible.circuitCodes 2 (xorGates, [5])).map fun g => OracleGateCode.gate (false, g))
-    7 ⟨7, 15, 0⟩ := Reversible.within_circuitCodes 2 (xorGates, [5])
+    7 (encList encGateCode (Reversible.circuitCodes 2 (xorGates, [5]))).length
+    ⟨7, 15, 0, (encList encGateCode (Reversible.circuitCodes 2 (xorGates, [5]))).length⟩ :=
+  Reversible.within_circuitCodes 2 (xorGates, [5])
 
 /-- The circuit value problem is in `BQP`. -/
 example : CircuitValue ∈ BQP encCircuitValue := P_subset_BQP CircuitValue.mem_P

@@ -47,7 +47,8 @@ example (n : ℕ) : (encList encGateCode (negation.gates n)).length ≤
 
 example (n : ℕ) : OracleCircuit.Within
     ((negation.gates n).map fun g => OracleGateCode.gate (false, g))
-    (n + 2) ⟨n + 2, 6, 0⟩ := by
+    (n + 2) (encList encGateCode (negation.gates n)).length
+    ⟨n + 2, 6, 0, (encList encGateCode (negation.gates n)).length⟩ := by
   simpa [negation] using Reversible.within_circuitCodes n ([⟨.not, [0]⟩], [n])
 
 -- Embedding into the oracle instruction language preserves execution for every supplied oracle.

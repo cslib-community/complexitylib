@@ -16,8 +16,9 @@ import CslibFrontier.Probability.PMF.Uniform
 
 Mixing two challenge ensembles with a fair classical bit preserves native quantum
 indistinguishability. The same circuit tests both branches: the concrete bound is the average
-of the two branch bounds, with the input-length cap and separate qubit, gate and query budgets
-unchanged. The bit is sampled by the challenge experiment, not by an additional circuit.
+of the two branch bounds, with the input-length cap and separate qubit, gate, query and exact
+encoded-description budgets unchanged. The bit is sampled by the challenge experiment, not by an
+additional circuit.
 
 These are original closure results for the existing native model. They do not compile a typed
 probabilistic reduction into a native circuit or claim a cost for challenge sampling.
@@ -61,7 +62,7 @@ theorem SupportsLength.bind {ι : Type*} {X : ι → ℕ → PMF (List Bool)} {L
   fun n => (supportsLengthAt_bind_iff μ X L n).mpr fun i _ => h i n
 
 /-- A fair mixture averages the two concrete error bounds. The native test, input-length cap
-and each of its three resource budgets are unchanged. -/
+and each of its four resource budgets are unchanged. -/
 theorem IndistinguishableWithin.bind_uniformBool
     {X Y : Bool → ℕ → PMF (List Bool)} {L : ℕ → ℕ}
     {ε : Bool → ℕ → OracleCircuit.Resources → ℝ≥0}
