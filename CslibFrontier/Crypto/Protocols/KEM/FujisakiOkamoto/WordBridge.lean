@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame
-public import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
-public import Mathlib.Data.Set.Finite.List
+import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
+import Mathlib.Data.Set.Finite.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -37,12 +37,11 @@ the ciphertext space `WordPKE.Ciphertext P n` of words of length at most `ctLen 
 explicit-coin scheme `WordPKE.finitePKE P n` reads `encDet` as a ciphertext with
 `WordPKE.toCiphertext`, which keeps a word that fits and replaces a longer one by the empty word.
 
-**Properties of the PKE family.** `WordPKE.CiphertextFits` says that encryption under generated
-keys stays in the ciphertext space. `WordPKE.DeltaCorrect` and `WordPKE.GammaSpread` are the
+**Properties of the PKE family.** `WordPKE.DeltaCorrect` and `WordPKE.GammaSpread` are the
 `δ`-correctness and `γ`-spreadness of [HofheinzHoevelmannsKiltz2017] at every parameter, stated
-for `finitePKE`; for a family whose ciphertexts fit, `finitePKE` encrypts exactly as `P` on
-generated keys. `WordPKE.INDCPA` is IND-CPA security of `P` with challenge messages in its message
-space.
+for `finitePKE`. For a family whose ciphertexts fit (`WordPKE.CiphertextFits`, in
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word`), `finitePKE` encrypts exactly as `P` on
+generated keys.
 
 **The typed view of a native adversary.** A uniform strict oracle PPT adversary has a coin-tape
 machine whose replay on a uniform tape of polynomial length has the joint law of the adversary
@@ -69,11 +68,9 @@ replaying the machine against the typed oracles gives its replay against the wor
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.finitePKE`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.finiteScheme`: the scheme and the FO bundle at
   one parameter over finite types.
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.CiphertextFits`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.DeltaCorrect`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.GammaSpread`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.IsMessagePair`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.INDCPA`: properties of the PKE family.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.DeltaCorrect`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.GammaSpread`: correctness and spreadness of the
+  PKE family.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.typedHQuery`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.typedQuery`: native requests as typed queries.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.savedCoinAdversary`: the typed view of a
@@ -90,14 +87,15 @@ replaying the machine against the typed oracles gives its replay against the wor
 
 * [D. Hofheinz, K. Hövelmanns, E. Kiltz, *A Modular Analysis of the Fujisaki–Okamoto
   Transformation*][HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated
-  2 November 2021), §2.1 and Definition 2.2.
+  2 November 2021), §2.1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.FujisakiOkamoto
 
 open Probability Turing.MultiTapeTM
+open scoped NNReal
 
 namespace WordPKE
 
@@ -113,7 +111,7 @@ instance (n : ℕ) : Finite (P.Ciphertext n) :=
 
 /-- A word as a ciphertext at parameter `n`: the word itself when it has length at most `ctLen n`,
 and the empty word otherwise. -/
-def toCiphertext (n : ℕ) (c : List Bool) : P.Ciphertext n :=
+@[expose] def toCiphertext (n : ℕ) (c : List Bool) : P.Ciphertext n :=
   if h : c.length ≤ P.ctLen n then ⟨c, h⟩ else ⟨[], Nat.zero_le _⟩
 
 /-- The explicit-coin scheme of `P` at parameter `n` over finite spaces: messages and coins are
@@ -121,7 +119,7 @@ bit strings of lengths `msgLen n` and `coinLen n`, coins are uniform, and cipher
 `Ciphertext n`. Encryption is `encDet` read with `toCiphertext`; decryption reports only results
 of length `msgLen n`. When the ciphertexts of `P` fit its ciphertext space (`CiphertextFits`),
 encryption under a generated key is `encDet` itself. -/
-noncomputable def finitePKE (n : ℕ) :
+@[expose] noncomputable def finitePKE (n : ℕ) :
     ExplicitCoinPKE (List Bool) (List Bool) (BitString (P.msgLen n)) (BitString (P.coinLen n))
       (P.Ciphertext n) where
   keyGen := P.keyGen n
@@ -132,7 +130,7 @@ noncomputable def finitePKE (n : ℕ) :
 
 /-- The FO parameter bundle of `P` at parameter `n` over finite spaces: the explicit-coin scheme
 `finitePKE n`, uniform messages and uniform keys of length `keyLen n`. -/
-noncomputable def finiteScheme (n : ℕ) :
+@[expose] noncomputable def finiteScheme (n : ℕ) :
     Scheme (List Bool) (List Bool) (BitString (P.msgLen n)) (BitString (P.coinLen n))
       (P.Ciphertext n) (BitString (keyLen n)) where
   pke := P.finitePKE n
@@ -164,42 +162,19 @@ noncomputable def finiteScheme (n : ℕ) :
 
 /-! ### Properties of the PKE family -/
 
-/-- **The ciphertexts of `P` lie in its ciphertext space.** At every parameter `n`, encrypting a
-message of length `msgLen n` with coins of length `coinLen n` under a generated public key gives a
-word of length at most `ctLen n`. [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full
-version dated 2 November 2021, §2.1) measures the spreadness of a scheme over its ciphertext space
-`C`; `WordPKE` declares that space as the words of length at most `ctLen n`, and this predicate
-says that encryption stays inside it. -/
-def CiphertextFits : Prop :=
-  ∀ n pk sk, (pk, sk) ∈ (ProbComp.eval (P.keyGen n)).support →
-    ∀ m r, m.length = P.msgLen n → r.length = P.coinLen n →
-      (P.encDet n pk m r).length ≤ P.ctLen n
-
 /-- **`δ`-correctness of `P`** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021),
 §2.1): at every parameter `n`, the expectation over generated key pairs of the worst-message
 probability that decryption of an encryption under uniform coins fails is at most `δ n`. It is
 `ExplicitCoinPKE.DeltaCorrect` of the scheme at parameter `n`. -/
-def DeltaCorrect (δ : ℕ → ℝ) : Prop :=
+@[expose] def DeltaCorrect (δ : ℕ → ℝ≥0) : Prop :=
   ∀ n, (P.finitePKE n).DeltaCorrect (δ n)
 
 /-- **`γ`-spreadness of `P`** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021),
 §2.1): at every parameter `n`, for every generated key pair, message and ciphertext, encryption
 under uniform coins hits the ciphertext with probability at most `2 ^ (-γ n)`. It is
 `ExplicitCoinPKE.GammaSpread` of the scheme at parameter `n`. -/
-def GammaSpread (γ : ℕ → ℝ) : Prop :=
+@[expose] def GammaSpread (γ : ℕ → ℝ) : Prop :=
   ∀ n, (P.finitePKE n).GammaSpread (γ n)
-
-/-- The admissible challenge pairs of the IND-CPA game of `P` at parameter `n`: two messages of
-length `msgLen n`, the message space of `P`. -/
-def IsMessagePair (n : ℕ) (_pk m₀ m₁ : List Bool) : Bool :=
-  m₀.length == P.msgLen n && m₁.length == P.msgLen n
-
-/-- **IND-CPA security of `P`** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021),
-§2.1, Def. 2.2): every uniform strict PPT chosen-message adversary has negligible advantage in
-the single-challenge game of randomized encryption `encrypt`, with challenge messages in the
-message space of `P`. -/
-def INDCPA : Prop :=
-  Encryption.INDCPAOn P.IsMessagePair encBits P.keyGen P.encrypt
 
 /-! ### The typed view of a native adversary -/
 
@@ -369,10 +344,10 @@ private def skRep (P : WordPKE) (n : ℕ) (dk : ImplicitSK (List Bool) (List Boo
     (BitString (P.msgLen n))) : ImplicitSK (List Bool) (List Bool) (List Bool) :=
   ⟨dk.sk, dk.pk, List.ofFn dk.fallback⟩
 
-private theorem eval_uniform_map_ofFn (k : ℕ) :
-    (ProbComp.eval (ProbComp.uniform (BitString k))).map List.ofFn =
-      ProbComp.eval (BitString.sampleList k) := by
-  rw [ProbComp.eval_uniform, BitString.eval_sampleList]
+/-- Uniform words are uniform bit strings read as words. -/
+private theorem uniformList_eq_map_ofFn (k : ℕ) :
+    BitString.uniformList k = (ProbComp.eval (ProbComp.uniform (BitString k))).map List.ofFn := by
+  rw [ProbComp.eval_uniform]
   rfl
 
 private theorem represents_roHashG (n : ℕ) (m : BitString (P.msgLen n)) :
@@ -383,7 +358,7 @@ private theorem represents_roHashG (n : ℕ) (m : BitString (P.msgLen n)) :
         (List.ofFn m)) :=
   represents_zoomMemoize (cacheRep P keyLen n) ROCache.gCache (fun st c => { st with gCache := c })
     ROCache.gCache (fun st c => { st with gCache := c }) (ofFnEmb _) List.ofFn (fun _ => rfl)
-    (fun _ _ => rfl) _ _ (eval_uniform_map_ofFn _) m
+    (fun _ _ => rfl) _ _ (by rw [BitString.eval_sampleList, uniformList_eq_map_ofFn]) m
 
 private theorem represents_roHashH (n : ℕ) (x : Bool × BitString (P.msgLen n) × P.Ciphertext n) :
     Represents (cacheRep P keyLen n) List.ofFn
@@ -393,7 +368,7 @@ private theorem represents_roHashH (n : ℕ) (x : Bool × BitString (P.msgLen n)
         (hKeyEmb P n x)) :=
   represents_zoomMemoize (cacheRep P keyLen n) ROCache.hCache (fun st c => { st with hCache := c })
     ROCache.hCache (fun st c => { st with hCache := c }) (hKeyEmb P n) List.ofFn (fun _ => rfl)
-    (fun _ _ => rfl) _ _ (eval_uniform_map_ofFn _) x
+    (fun _ _ => rfl) _ _ (by rw [BitString.eval_sampleList, uniformList_eq_map_ofFn]) x
 
 private theorem roWordOracle_G (n : ℕ) (w : List Bool) :
     P.roWordOracle keyLen n (.G, w) =
@@ -599,7 +574,7 @@ private theorem represents_simHashG (n : ℕ) (m : BitString (P.msgLen n)) :
   represents_zoomMemoize (simRep P keyLen n) (fun st => st.gCache)
     (fun st c => { st with gCache := c }) (fun st => st.gCache)
     (fun st c => { st with gCache := c }) (ofFnEmb _) List.ofFn (fun _ => rfl)
-    (fun _ _ => rfl) _ _ (eval_uniform_map_ofFn _) m
+    (fun _ _ => rfl) _ _ (by rw [BitString.eval_sampleList, uniformList_eq_map_ofFn]) m
 
 private theorem represents_simHashHRaw (n : ℕ)
     (x : Bool × BitString (P.msgLen n) × P.Ciphertext n) :
@@ -609,7 +584,7 @@ private theorem represents_simHashHRaw (n : ℕ)
   represents_zoomMemoize (simRep P keyLen n) (fun st => st.hCache)
     (fun st c => { st with hCache := c }) (fun st => st.hCache)
     (fun st c => { st with hCache := c }) (hKeyEmb P n) List.ofFn (fun _ => rfl)
-    (fun _ _ => rfl) _ _ (eval_uniform_map_ofFn _) x
+    (fun _ _ => rfl) _ _ (by rw [BitString.eval_sampleList, uniformList_eq_map_ofFn]) x
 
 private theorem represents_simHashHq (n : ℕ) (c : P.Ciphertext n) :
     Represents (simRep P keyLen n) List.ofFn
@@ -619,7 +594,8 @@ private theorem represents_simHashHq (n : ℕ) (c : P.Ciphertext n) :
   represents_zoomMemoize (simRep P keyLen n) SimState.hqCache
     (fun st c' => { st with hqCache := c' }) SimState.hqCache
     (fun st c' => { st with hqCache := c' }) (Function.Embedding.subtype _) List.ofFn
-    (fun _ => rfl) (fun _ _ => rfl) _ _ (eval_uniform_map_ofFn _) c
+    (fun _ => rfl) (fun _ _ => rfl) _ _
+    (by rw [BitString.eval_sampleList, uniformList_eq_map_ofFn]) c
 
 private theorem filterDecaps_true {M R CT K : Type}
     (Hq : CT → StateT (SimState M R CT K) ProbComp K) (c : CT) :
@@ -766,81 +742,49 @@ private theorem run_runCoins_typedQuery {σ σ' : Type} (n : ℕ) (rep : σ' →
 
 /-- The challenge words of the saved-coin budget at parameter `n`: a generated public key, a
 uniform key of length `keyLen n` and an encryption of a uniform message, as the word
-`encKEMChallenge (pk, k, c)`, with the secret key. Every challenge of the word game and of the
-reduction's simulator lies in its support. -/
+`encKEMChallenge (pk, k, c)`. Every challenge of the word game and of the reduction's simulator
+lies in its support. -/
 private noncomputable def challengeWords (P : WordPKE) (keyLen : ℕ → ℕ) (n : ℕ) :
-    ProbComp (List Bool × List Bool) := do
-  let (pk, sk) ← P.keyGen n
+    ProbComp (List Bool × Unit) := do
+  let pk ← Prod.fst <$> P.keyGen n
   let m ← BitString.sampleList (P.msgLen n)
   let c ← P.encrypt n pk m
   let k ← BitString.sampleList (keyLen n)
-  return (Encryption.encKEMChallenge (pk, k, c), sk)
-
-/-- The input `((1ⁿ, pk, sk), m)` of the challenge words after the message draw. -/
-private abbrev encChallengeMsg : (ℕ × List Bool × List Bool) × List Bool ↪ List Bool :=
-  encPair (encPair encUnary (encPair encBits encBits)) encBits
-
-/-- The input `(((1ⁿ, pk, sk), m), c)` of the challenge words after encryption. -/
-private abbrev encChallengeCt :
-    ((ℕ × List Bool × List Bool) × List Bool) × List Bool ↪ List Bool :=
-  encPair encChallengeMsg encBits
+  return (Encryption.encKEMChallenge (pk, k, c), ())
 
 private theorem isPPTOn_challengeWords (hP : P.IsEfficient)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
-    IsPPTOn encUnary (encPair encBits encBits) (challengeWords P keyLen) := by
-  have hk : IsPPTOn encChallengeCt (encPair encBits encBits)
-      (fun z : ((ℕ × List Bool × List Bool) × List Bool) × List Bool =>
-        (fun k => (Encryption.encKEMChallenge (z.1.1.2.1, k, z.2), z.1.1.2.2)) <$>
-          BitString.sampleList (keyLen z.1.1.1)) := by
-    have hout : ComputableInPolyTime
-        (fun p : (((ℕ × List Bool × List Bool) × List Bool) × List Bool) × List Bool =>
-          (Encryption.encKEMChallenge (p.1.1.1.2.1, p.2, p.1.2), p.1.1.1.2.2))
-        (encPair encChallengeCt encBits) (encPair encBits encBits) :=
-      (by fun_prop : ComputableInPolyTime
-        (fun p : (((ℕ × List Bool × List Bool) × List Bool) × List Bool) × List Bool =>
-          (p.1.1.1.2.1, p.2, p.1.2)) (encPair encChallengeCt encBits)
-          Encryption.encKEMChallenge).encoding_comp.prod (by fun_prop)
-    exact (hkeyLen.comp (by fun_prop : ComputableInPolyTime
-      (fun z : ((ℕ × List Bool × List Bool) × List Bool) × List Bool => z.1.1.1) encChallengeCt
-        encUnary)).sampleList.map_with hout
-  have hc : IsPPTOn encChallengeMsg encBits
-      (fun y : (ℕ × List Bool × List Bool) × List Bool => P.encrypt y.1.1 y.1.2.1 y.2) :=
-    hP.isPPTOn_encrypt.preprocess (prepare := fun y : (ℕ × List Bool × List Bool) × List Bool =>
-      (y.1.1, y.1.2.1, y.2)) (by fun_prop)
-  have hm : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun x : ℕ × List Bool × List Bool => BitString.sampleList (P.msgLen x.1)) :=
-    (hP.msgLen.comp (by fun_prop : ComputableInPolyTime
-      (fun x : ℕ × List Bool × List Bool => x.1) (encPair encUnary (encPair encBits encBits))
-        encUnary)).sampleList
-  have h₂ : IsPPTOn encChallengeMsg (encPair encBits encBits)
-      (fun y : (ℕ × List Bool × List Bool) × List Bool => do
-        let c ← P.encrypt y.1.1 y.1.2.1 y.2
-        (fun k => (Encryption.encKEMChallenge (y.1.2.1, k, c), y.1.2.2)) <$>
+    IsPPTOn encUnary (encPair encBits encUnit) (challengeWords P keyLen) := by
+  -- On `(1ⁿ, pk)`: encrypt a uniform message of length `msgLen n`.
+  have hc : IsPPTOn (encPair encUnary encBits) encBits (fun x : ℕ × List Bool => do
+      let m ← BitString.sampleList (P.msgLen x.1)
+      P.encrypt x.1 x.2 m) :=
+    (hP.msgLen.comp (ComputableInPolyTime.fst _ _)).sampleList.bind_with
+      (hP.isPPTOn_encrypt.preprocess
+        (prepare := fun y : (ℕ × List Bool) × List Bool => (y.1.1, y.1.2, y.2)) (by fun_prop))
+  -- On `((1ⁿ, pk), c)`: draw a uniform key and write the challenge word.
+  have hk : IsPPTOn (encPair (encPair encUnary encBits) encBits) (encPair encBits encUnit)
+      (fun y : (ℕ × List Bool) × List Bool =>
+        (fun k => (Encryption.encKEMChallenge (y.1.2, k, y.2), ())) <$>
           BitString.sampleList (keyLen y.1.1)) :=
-    hc.bind_with hk
-  have h₁ : IsPPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
-      (fun x : ℕ × List Bool × List Bool => do
-        let m ← BitString.sampleList (P.msgLen x.1)
-        let c ← P.encrypt x.1 x.2.1 m
-        (fun k => (Encryption.encKEMChallenge (x.2.1, k, c), x.2.2)) <$>
-          BitString.sampleList (keyLen x.1)) :=
-    hm.bind_with h₂
-  refine (hP.keyGen.bind_with (second := fun n keys => do
-    let m ← BitString.sampleList (P.msgLen n)
-    let c ← P.encrypt n keys.1 m
-    (fun k => (Encryption.encKEMChallenge (keys.1, k, c), keys.2)) <$>
-      BitString.sampleList (keyLen n)) h₁).congr fun n => ?_
-  simp only [challengeWords, bind_pure_comp]
+    (hkeyLen.comp (by fun_prop)).sampleList.map_with
+      ((ComputableInPolyTime.encoding_comp (by fun_prop)).prod (by fun_prop))
+  refine ((hP.keyGen.map (ComputableInPolyTime.fst _ _)).bind_with (second := fun n pk =>
+      (do let m ← BitString.sampleList (P.msgLen n); P.encrypt n pk m) >>= fun c =>
+        (fun k => (Encryption.encKEMChallenge (pk, k, c), ())) <$> BitString.sampleList (keyLen n))
+    (hc.bind_with hk)).congr fun n => ?_
+  simp only [challengeWords, bind_assoc, bind_pure_comp]
 
 /-- Every challenge word of the games is a challenge word of `challengeWords`. -/
 private theorem mem_support_challengeWords {n : ℕ} {pk sk : List Bool}
     (hkeys : (pk, sk) ∈ (ProbComp.eval (P.keyGen n)).support) (m : BitString (P.msgLen n))
     (r : BitString (P.coinLen n)) (k : BitString (keyLen n)) :
     (Encryption.encKEMChallenge (pk, List.ofFn k, P.encDet n pk (List.ofFn m) (List.ofFn r)),
-      sk) ∈ (ProbComp.eval (challengeWords P keyLen n)).support := by
-  simp only [challengeWords, encrypt, ProbComp.eval_bind, ProbComp.eval_pure, PMF.support_bind,
-    PMF.support_pure, Set.mem_iUnion, Set.mem_singleton_iff, BitString.eval_sampleList,
-    BitString.mem_support_uniformList_iff, exists_prop]
+      ()) ∈ (ProbComp.eval (challengeWords P keyLen n)).support := by
+  simp only [challengeWords, encrypt, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    PMF.support_bind, PMF.support_map, PMF.support_pure, Set.mem_iUnion, Set.mem_image,
+    Set.mem_singleton_iff, BitString.eval_sampleList, BitString.mem_support_uniformList_iff,
+    exists_prop, exists_exists_and_eq_and]
   exact ⟨(pk, sk), hkeys, List.ofFn m, by simp, P.encDet n pk (List.ofFn m) (List.ofFn r),
     ⟨List.ofFn r, by simp, rfl⟩, List.ofFn k, by simp, rfl⟩
 
@@ -854,8 +798,8 @@ private theorem exists_savedCoins (hP : P.IsEfficient)
     {A : ℕ → List Bool → WordOracleComp CCAOp Bool} (hA : IsOraclePPT encBool A) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
       (machine : _root_.Turing.MultiTapePTM k Bool Control CCAOp) (c d keyC keyD : ℕ),
-      ∀ n (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n)) (sk : List Bool),
-        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), sk) ∈
+      ∀ n (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n)),
+        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), ()) ∈
           (ProbComp.eval (challengeWords P keyLen n)).support →
         ∀ {σ σ' : Type} (rep : σ' → σ)
           (handler' : (q : ROQuery (BitString (P.msgLen n)) (P.Ciphertext n)) →
@@ -873,7 +817,7 @@ private theorem exists_savedCoins (hP : P.IsEfficient)
   obtain ⟨k, Control, hfinite, machine, c, d, keyC, keyD, hkeys, -, -, hrun⟩ :=
     hA.exists_savedCoins_of_keyGen (isPPTOn_challengeWords hP hkeyLen)
   refine ⟨k, Control, hfinite, machine, c, d, keyC, keyD, ?_⟩
-  intro n pk ct key sk hmem σ σ' rep handler' handler hstep s
+  intro n pk ct key hmem σ σ' rep handler' handler hstep s
   have hlen : (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val)).length ≤
       keyC * (n + 1) ^ keyD := hkeys n _ hmem
   have hdecode (x : PMF (Bool × σ)) :
@@ -941,11 +885,6 @@ theorem savedCoinAdversary_queryBounds {k : ℕ} {Control : Type}
   exact ⟨htotal.of_le fun q => by cases q <;> simp, htotal.of_le fun q => by cases q <;> simp⟩
 
 /-! ### The word game as the typed game -/
-
-private theorem uniformList_eq_map_ofFn (k : ℕ) :
-    BitString.uniformList k = (ProbComp.eval (ProbComp.uniform (BitString k))).map List.ofFn := by
-  rw [ProbComp.eval_uniform]
-  rfl
 
 /-- Native key generation is typed key generation with the fallback seed read as a word. -/
 private theorem eval_keyGenNotBot (n : ℕ) :
@@ -1033,9 +972,8 @@ adversary's saved coins replay it. -/
 private theorem eval_romIndCcaGameWord_eq {n : ℕ} (hfit : P.CiphertextFits)
     {A : ℕ → List Bool → WordOracleComp CCAOp Bool} {k : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM k Bool Control CCAOp) (c d keyC keyD : ℕ)
-    (hreplay : ∀ (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n))
-        (sk : List Bool),
-        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), sk) ∈
+    (hreplay : ∀ (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n)),
+        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), ()) ∈
           (ProbComp.eval (challengeWords P keyLen n)).support →
         ∀ {σ σ' : Type} (rep : σ' → σ)
           (handler' : (q : ROQuery (BitString (P.msgLen n)) (P.Ciphertext n)) →
@@ -1079,7 +1017,7 @@ private theorem eval_romIndCcaGameWord_eq {n : ℕ} (hfit : P.CiphertextFits)
     exact hfit'
   have hrun (m : BitString (P.msgLen n)) (r : BitString (P.coinLen n))
       (kR kStar : BitString (keyLen n)) :=
-    hreplay pk ((P.finitePKE n).encDet pk m r) kStar dk.sk
+    hreplay pk ((P.finitePKE n).encDet pk m r) kStar
       (by rw [hct]; exact mem_support_challengeWords hkeys m r kStar)
       (cacheRep P keyLen n) ((P.finiteScheme keyLen n).roHandler dk ((P.finitePKE n).encDet pk m r))
       (P.ccaWordOracle keyLen n (skRep P n dk) ((P.finitePKE n).encDet pk m r).val)
@@ -1102,9 +1040,8 @@ view, at a parameter where the adversary's saved coins replay it. -/
 private theorem eval_gameOn_romCpaReductionWord_eq {n : ℕ} (hfit : P.CiphertextFits)
     {A : ℕ → List Bool → WordOracleComp CCAOp Bool} {k : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM k Bool Control CCAOp) (c d keyC keyD : ℕ)
-    (hreplay : ∀ (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n))
-        (sk : List Bool),
-        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), sk) ∈
+    (hreplay : ∀ (pk : List Bool) (ct : P.Ciphertext n) (key : BitString (keyLen n)),
+        (Encryption.encKEMChallenge (pk, List.ofFn key, ct.val), ()) ∈
           (ProbComp.eval (challengeWords P keyLen n)).support →
         ∀ {σ σ' : Type} (rep : σ' → σ)
           (handler' : (q : ROQuery (BitString (P.msgLen n)) (P.Ciphertext n)) →
@@ -1153,7 +1090,7 @@ private theorem eval_gameOn_romCpaReductionWord_eq {n : ℕ} (hfit : P.Ciphertex
         (A n (Encryption.encKEMChallenge
           (pk, List.ofFn kStar, ((P.finitePKE n).encDet pk m r).val)))
         {} = _ :=
-    hreplay pk ((P.finitePKE n).encDet pk m r) kStar sk
+    hreplay pk ((P.finitePKE n).encDet pk m r) kStar
       (by rw [← hct]; exact mem_support_challengeWords hkeys m r kStar)
       (simRep P keyLen n)
       ((P.finiteScheme keyLen n).simFilterHandler (fun _ _ => true) pk

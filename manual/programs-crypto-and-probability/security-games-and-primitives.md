@@ -1271,8 +1271,10 @@ For a security-parameter family over words, import
 [`FujisakiOkamoto/Word.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Word.lean).
 `WordPKE` fixes at each parameter `n` the message length, the coin length and a bound on ciphertext
 lengths, and `WordPKE.IsEfficient` asks for strict PPT key generation and polynomial-time
-encryption and decryption. `WordPKE.scheme P keyLen n` is the `Scheme` bundle at `n`, and the
-native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
+encryption and decryption. `WordPKE.CiphertextFits` says that encryption under generated keys
+stays within the ciphertext bound, and `WordPKE.INDCPA` is IND-CPA security of `WordPKE.encrypt`
+with challenge messages of length `msgLen n`. `WordPKE.scheme P keyLen n` is the `Scheme` bundle
+at `n`, and the native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
 `WordPKE.encaps`, and `WordPKE.decapsNotBot` and `WordPKE.decapsBot`, which reject words longer
 than the ciphertext bound and otherwise run `Scheme.decapsNotBotM` and `Scheme.decapsBotM`. Their
 native certificates (`WordPKE.IsEfficient.isPPTOn_keyGenNotBot`,
@@ -1295,8 +1297,8 @@ and the native decapsulation for the decapsulation oracle (`WordPKE.ccaWordOracl
 [`FujisakiOkamoto/WordBridge.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordBridge.lean)
 relates these word objects to the typed ones at each parameter. `WordPKE.finiteScheme P keyLen n` is
 the bundle over bit strings and the ciphertext space `WordPKE.Ciphertext P n`, and
-`WordPKE.CiphertextFits`, `WordPKE.DeltaCorrect`, `WordPKE.GammaSpread` and `WordPKE.INDCPA` are
-properties of the family. `WordPKE.IsEfficient.exists_typedAdversary` turns each `IsOraclePPT`
+`WordPKE.DeltaCorrect` and `WordPKE.GammaSpread` are the correctness and spreadness of the family,
+stated for that bundle. `WordPKE.IsEfficient.exists_typedAdversary` turns each `IsOraclePPT`
 adversary into a typed adversary at each parameter (`WordPKE.savedCoinAdversary`, a replay of its
 saved coins) with polynomially many `G` and `H` queries; when the ciphertexts fit, the word game is
 its typed `Scheme.roIndCcaGame`, and the advantage of `romCpaReductionWord` is the typed
