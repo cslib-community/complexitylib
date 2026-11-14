@@ -481,6 +481,11 @@ Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edit
 
 Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
 
+<a id="cs03"></a>
+## cs03
+
+Ronald Cramer and Victor Shoup. “Design and Analysis of Practical Public-Key Encryption Schemes Secure against Adaptive Chosen Ciphertext Attack.” *SIAM Journal on Computing* 33(1), 167–226, 2003. https://doi.org/10.1137/S0097539702403773 . Authors' revised manuscript (August 14, 2003): https://www.shoup.net/papers/cca2.pdf (Section 5.1, target collision resistance; Section 6.1, Figure 1, the hash key `hk` drawn at key generation and published in the public key; Section 6.2, Theorem 1). Checked against that manuscript on 2026-11-14.
+
 <a id="cslib"></a>
 ## cslib
 
