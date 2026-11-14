@@ -341,6 +341,18 @@ FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, a
 NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the still-developing
 FIPS 206 remain separate obligations.
 
+Import
+[`Falcon/Compression.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Compression.lean) for
+the signer-side deterministic rejection boundary. `Falcon.coefficientCompressionBits` records
+Algorithm 17's sign, seven low bits and unary high part;
+`Falcon.referenceCompressible_iff_bitCapacity` gives the exact reference-encoder coefficient range
+and payload-capacity condition; and `Falcon.signingCandidateAccepts_eq_true_iff` combines it with
+the independent squared-norm rejection from Algorithm 10. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/FalconCompression.lean) checks the
+127/128 unary boundary, exact buffer and ±2047 range boundaries, independent rejection causes and
+the two recommended payload capacities. This layer does not yet emit bytes, prove a codec
+round-trip, or model the sampler, retry probability, termination, resource cost or security.
+
 The source-faithful SLH-DSA WOTS+ digit preprocessing from FIPS 205 is in
 [`SLHDSA/WOTS/Digits.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/WOTS/Digits.lean), with
 edge checks in [`SLHDSAWOTSDigits.lean`](../../CslibFrontierTests/Crypto/SLHDSAWOTSDigits.lean)
