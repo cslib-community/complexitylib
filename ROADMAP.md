@@ -140,9 +140,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 ### Concurrent and quantum security
 
 - **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
-  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain source-required sampling, abort, transform and failure obligations, including evolving/unsupported claims.
+  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain sampling, abort, transform and failure obligations, including evolving claims.
   Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
-  FAEST challenge decoding [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); BAVC, VOLE, correctness and QROM security remain.
+  FAEST parsing is [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); row-to-VOLE is [#5246](https://github.com/cslib-community/cslib-frontier/issues/5246). BAVC, QuickSilver, correctness and ROM/QROM security remain.
 - **SQIsign foundations** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Extend its `B_{p,∞}` presentation with maximal orders and ideals, finite-field and elliptic-curve arithmetic, isogenies and Deuring, protocol algorithms, failure analysis, distribution switches, assumptions and security reductions.
 
 - **SDitH foundations**: [#5212](https://github.com/cslib-community/cslib-frontier/issues/5212) is the completed bounded binary-RSD milestone. Seed expansion, the PIOP, commitments, grinding, signing and verification, SD/RSD hardness, and EUF-CMA/QROM security remain under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
