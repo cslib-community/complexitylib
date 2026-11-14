@@ -113,13 +113,8 @@ private theorem uniformSample_abs_sub_ge_le {m : ℕ} (hm : 0 < m) (s : ℕ)
     rw [hscale, abs_mul, abs_of_pos hdiv_pos, hlhs]
     exact mul_le_mul_iff_right₀ hdiv_pos
   rw [hpi, hevent]
-  have hconc := pi_sum_abs_sub_mean_ge (fun _ : Fin s => uniformOfFintype (Fin m))
-    (fun _ i => val i) (bound := 1) (ε := (s : ℝ) * δ) zero_le_one (fun _ i _ => hval i)
-    (by positivity)
-  refine hconc.trans_eq ?_
-  congr 2
-  rw [Fintype.card_fin]
-  field_simp
+  simpa only [Fintype.card_fin] using pi_sum_abs_sub_mean_ge_card_mul
+    (fun _ : Fin s => uniformOfFintype (Fin m)) (fun _ i => val i) (fun _ i _ => hval i) hδ
 
 private theorem uniformSample_exists_abs_sub_ge_le {D : Type*} [Fintype D] {n m : ℕ}
     (hm : 0 < m) (s : ℕ) (evalAt : Fin m → (Fin n → D) → ℝ)
