@@ -31,7 +31,7 @@ open scoped BigOperators
 
 variable {ι 𝕜 : Type*} [Fintype ι] [Field 𝕜] [LinearOrder 𝕜] [IsStrictOrderedRing 𝕜]
 
-/-- The density of an absolute tail is bounded by the second momentdivided by the threshold
+/-- The density of an absolute tail is bounded by the second moment divided by the threshold
 squared. Subtract a chosen center from `f` to obtain Chebyshev's inequality. -/
 theorem dens_le_abs_le_expect_sq_div_sq (f : ι → 𝕜) {ε : 𝕜} (hε : 0 < ε) :
     (dens {i | ε ≤ |f i|} : 𝕜) ≤ (𝔼 i, f i ^ 2) / ε ^ 2 := by
@@ -46,7 +46,7 @@ theorem dens_le_abs_le_expect_sq_div_sq (f : ι → 𝕜) {ε : 𝕜} (hε : 0 <
 theorem dens_lt_abs_le_expect_sq_div_sq (f : ι → 𝕜) {ε : 𝕜} (hε : 0 < ε) :
     (dens {i | ε < |f i|} : 𝕜) ≤ (𝔼 i, f i ^ 2) / ε ^ 2 := by
   classical
-  have hsub : ({i | ε < |f i|} : Finset ι) ⊆ {i | ε ≤ |f i|} := by
+  have hsub : ({i | ε < |f i|} : Finset ι) ⊆ ({i | ε ≤ |f i|} : Finset ι) := by
     intro i hi
     simp only [mem_filter, mem_univ, true_and] at hi ⊢
     exact hi.le
