@@ -30,6 +30,16 @@ Small PRs usually need one or two paragraphs plus validation/review links and a 
 disclosure. State what changed, why, and important limitations. Keep evidence in one place;
 link to it instead of copying full reports, hashes or logs across threads.
 
+Write for a contributor who has not followed the task. Introduce the problem or mathematical
+setting, explain the central idea, and say what the change enables. Introduce specialized terms
+and notation before relying on them. For substantial developments, give a short roadmap
+explaining how the main steps connect and why consequential choices are needed. Use an example,
+equation, or before/after comparison when helpful. Scale the explanation to what the reader
+needs to understand, and put validation, manual impact and AI disclosure after it.
+
+For a substantial mathematical example, see the setting, statement and proof-strategy sections
+of [shmcg's lifting PR #4908](https://github.com/cslib-community/cslib-frontier/pull/4908).
+
 Comments should add a finding, answer, decision, blocker or useful handoff. Keep CI polling and
 internal agent discussion out of public threads. Reply directly to questions and fixes; a short
 "Fixed in <commit>" is enough when the change is clear. Be courteous, welcome disagreement, and
@@ -285,9 +295,11 @@ MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
-Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
-validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
-`scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
+Use MCP goal inspection, diagnostics and theorem search while iterating. When a build is needed,
+use `scripts/build.sh <affected modules and representative clients> --wfail --iofail`;
+reserve `scripts/check.sh --quick --no-full-fallback` for local validation checkpoints.
+`scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and `scripts/worktree.sh create`
+run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
 Use `scripts/worktree.sh` for isolated worktrees; follow its
@@ -307,17 +319,24 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
-CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
-post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
-compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
-why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
-context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
-there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
-After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
-restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
-affected sources, including unchanged importing clients, built import aggregates and executable
+optional caches and runs every locally reproducible step from CI's parallel `source-checks` and
+`lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
+(`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
+encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
+statement ratchet, result registry and changed-file lints. Changed-file checks compare with the
+merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining
+step stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
+fails when either execution job gains a step that is neither mirrored nor recorded there, when a
+mirrored step runs a line or sets an option that the local run does not repeat, or when the
+required aggregator stops requiring both jobs to succeed and forwarding the Lean job's publication
+output.
+The split overlaps work rather than removing it: it adds another checkout and runner plus the
+aggregator's scheduling time, and saves only source-check time that would otherwise extend the
+slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
+After the Lean gates, full mode also re-elaborates built root-package sources whose individual
+artifacts Lake restored without diagnostic logs. This recovers warnings and informational output;
+it is not part of an ordinary targeted build. Quick mode checks the affected sources, including
+unchanged importing clients, built import aggregates and executable
 helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
@@ -325,27 +344,36 @@ generated research data. They catch source/link drift and malformed visual marku
 replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
-repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
-need direct checks of the changed behavior. Required CI and merge-group checks still apply.
+repeat it locally merely to satisfy a second reporting requirement. Run local full validation
+(`scripts/check.sh`) only when explicitly requested or hosted coverage is unavailable; changes
+to validation machinery also need direct checks of the changed behavior. Required CI and
+merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
 any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
-For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
-transitive importing clients, then checks import aggregates. The comparison uses the merge base
+At local validation checkpoints, `scripts/check.sh --quick --no-full-fallback [--base REF]`
+builds changed Lean modules and their transitive importing clients, then checks import aggregates.
+The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability and projection chain ratchets: all read only
-sources and take seconds. Quick mode lints only the affected library modules, skips the global
+it does not fetch. It also runs source hygiene and the source-only changed-file lints
+(`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
+when a library module changed, the encoding readability and projection chain ratchets: all read
+only sources and take seconds. Run the same changed-file lints when building targets directly
+instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
-and ambiguous change/import analysis fall back to the full check. The exceptions are the
-ratchet baselines `scripts/encoding_readability_baseline.json` and
-`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
-ratchet instead. Quick success alone does not satisfy the full validation requirement above;
-documentation-only checks need not invoke quick mode.
+not full validation. Without `--no-full-fallback`, non-Lean changes, deletions/renames, aggregate
+edits other than the import lines `lake exe mk_all` adds for new modules, unsupported layouts and
+ambiguous change/import
+analysis fall back to the full check. The exceptions are the ratchet baselines
+`scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
+which no Lean gate reads: a change to one runs its ratchet instead. With `--no-full-fallback`,
+an unsupported change exits with status 3: run focused checks for the changed files and
+representative clients, and leave the full run to hosted CI. Do not respond to status 3 by
+starting a full local check unless the full-validation condition above applies. Quick success
+alone does not satisfy the full validation requirement above; documentation-only checks need not invoke
+quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -578,10 +606,14 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 ### Approve and queue
 
 Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
-write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
-exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
-for a check that is still running. Write access is sufficient authority to queue a head approved
-under this cycle. Approve without queueing, and say why in the approval, when:
+write access who approves uses `scripts/queue_pr.py` from a trusted checkout of current `main`,
+or an isolated copy obtained from a pinned revision of current `main`. Do not use the PR branch's
+helper or an old copy. Invoke the trusted script by its path; from private scratch, pass `--repo OWNER/NAME`
+explicitly ([queue command](manual/workflows/agent-operations.md#queue-approved-work-and-keep-its-approval)).
+Keep the approved PR head; do not refresh its branch just to obtain the tool. The helper queues
+exactly that head once its required check passes; `--wait 30` waits up to 30 minutes for a running
+check. Write access is sufficient authority to queue a head approved under this cycle. Approve
+without queueing, and say why in the approval, when:
 
 - human review has been requested in the PR, its comments or a linked issue; queueing is then left
   to that human or to whomever they name;
@@ -592,7 +624,15 @@ Pending source, advisory-notice or rendered-manual review is also a hold. `--wai
 automatically when the check passes; do not start it while completing CI will produce material
 that still needs review. Inspect that material first, then record the hold's resolution and link
 the existing proof/API/caller assessment before queueing. A successful check does not release a
-review hold, and the helper does not judge whether that review is complete.
+review hold, and the helper does not judge whether that review is complete. Updating `main` does
+not upgrade a running copy; an old waiter's owner stops it before replacing it after holds clear.
+
+When the helper actually waits, including its automatic mergeability retries, it snapshots the
+PR body, comments, submitted reviews and inline discussion before the first sleep and rereads
+them before enqueueing. Any change stops that enqueue: reread the discussion and holds, then
+rerun for the still-approved head when appropriate. It does not recheck linked issues or make
+the discussion read atomic with enqueue, so the reviewer's final hold check remains necessary.
+Instant-ready invocations and reports of already-queued entries are unchanged.
 
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
@@ -732,7 +772,17 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
    embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
-   shows the declaration and what it generates.
+   shows the declaration and what it generates. Migrating a tuple to a record keeps its encoded
+   words, which `IsPPTOn` and the other machine predicates read. `enc_structure` frames every
+   field but the last and adds no nested grouping, so it reproduces a right-nested tuple such as
+   `encPair a (encPair b c)` but not a left-grouped one such as
+   `encPair (encPair a b) (encPair c d)`. For a left-grouped tuple, nest sub-records whose
+   generated layout matches, or define the encoding as `encOfEquiv` into the former tuple encoding
+   and keep the named projection and constructor certificates. Every migration, including a
+   right-nested one, adds a checked equality `encX r = <former tuple encoding> (…)` to the tests
+   (usually `rfl`) and states "encoded words unchanged" in the PR. Changing the layout needs a
+   coordinator's scope decision and a checked transport of efficiency and security in both
+   directions; a claim that the re-association is polynomial-time equivalent is not enough.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
    and matrices, and framing that changes a length bound stay visible: the name or the first line
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.

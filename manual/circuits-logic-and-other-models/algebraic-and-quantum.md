@@ -8,9 +8,125 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 [affineSignature](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic.lean#L67) makes an entire arbitrary-arity affine combination one gate. The [FullOp](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Signature.lean#L37) model is broader still: any operation depending on at most a fixed number of values is primitive. Over the full binary basis, tests and selections can cost one gate, and `Synthesis.full_sum`, `full_dot` and `full_chain` bound counts of these operations. An algebraic operation count in that model is not automatically a bound in the restricted addition/multiplication basis, nor a bound on binary integer/rational computation. [cslib][cslib] See [full-basis synthesis](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/FullArithmetic.lean).
 
+For encoded arithmetic values, import
+[Arithmetic.BitBlast](../../CslibFrontier/Computability/Circuit/Arithmetic/BitBlast.lean).
+`Synthesis.bitBlast_arithmetic enc decode hdecode c φ hφ` synthesizes every encoded output of
+an arithmetic circuit from the already-available bits of `φ`, within
+`c.size * bitBlastCost w` additional Boolean gates. The encoding is any function to `w` bits
+with `Function.LeftInverse decode enc`; it need not fill the bit cube, so odd-sized carriers
+are supported. The budget and all-output guarantee are unchanged from bijective bit-blasting.
+No behavior on unused code words or reverse Boolean-to-field simulation is asserted.
+
+To obtain a circuit on free Boolean input wires, import
+[Boolean.BitBlastCompiler](../../CslibFrontier/Computability/Circuit/Boolean/BitBlastCompiler.lean)
+and use `c.exists_encoded_boolean I hArity enc decode hdecode`. This returns a Boolean circuit
+with `N * w` inputs, `M * w` outputs and at most `c.size * bitBlastCost w` gates, for any
+interpretation `I` whose operations have arity at most two. Pack source inputs with
+`BitString.blocksEquiv.symm (enc ∘ x)`; the output is the same packing of `enc ∘ c.eval I x`.
+Bit `j` of source wire `i` occupies position `finProdFinEquiv (i, j)`. Correctness is required
+on valid encoded inputs, with no source semantics promised for unused code words. Constants
+count as gates and wiring is free, with no additive input-size cost. The linked
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
+field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
+circuit simulation with an explicit encoding. For finite carriers the encoding is supplied
+below. The reverse direction is supplied by the ring simulation described below.
+
+For a finite nonempty carrier, import
+[Boolean.FiniteSimulation](../../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean)
+and use `c.exists_finite_boolean I hArity`. No encoding argument is needed: the theorem uses
+`BitString.fintypeEncoding F`, which enumerates `F` by `Fintype.equivFin` and applies the
+existing least-significant-bit-first `indexBits` embedding. Each value occupies
+`w = Nat.clog 2 (Fintype.card F)` bits. Pack inputs as
+`BitString.blocksEquiv.symm (BitString.fintypeEncoding F ∘ x)`; every output has the same
+layout. The size bound is `c.size * bitBlastCost w`, a constant factor for a fixed carrier.
+The encoding is fixed independently of the circuit. This proves the arithmetic-to-Boolean
+direction for any fixed finite field, under these explicit value and gate-count conventions.
+The enumeration and total decoder are noncomputable: there is no uniform encoding or compiler
+runtime certificate. The [clients](../../CslibFrontierTests/BitBlastEncoding.lean) include
+`ZMod 3` with no supplied encoding and a singleton carrier requiring zero bits and zero gates.
+
+The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
+[Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
+`enc`, `decode` and the left-inverse proof explicitly. Existing equivalence callers pass
+`enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
+Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
+code word, modulo-three addition and zero-width synthesis over a singleton. Together with
+`Boolean.exists_ring_simulation` below, this supplies both constant-factor value-simulation
+directions of Arora–Barak Chapter 14 Exercise 1 for each fixed finite field, with free input
+wires and an explicit finite-carrier encoding. This does not assert formal polynomial identity,
+uniform compiler runtime or correctness of the forward encoding on unused bit words.
+The broader [textbook objective](https://github.com/cslib-community/cslib-frontier/issues/4711)
+remains open.
+
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
-The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
+The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
+
+The [Chapter 14 coverage audit](../../results/arora-barak-2007.md#chapter-14-algebraic-computation-models)
+distinguishes the available arithmetic-circuit results from algebraic computation trees and
+complex-number machines whose endpoints were not located. In particular, the 2007 draft's
+Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specification: its
+linear dimension bound fails the existing repeated-squaring degree check. See the audit's
+[checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
+
+## Arithmetic synthesis without polynomial families
+
+Import [Arithmetic.Synthesis](../../CslibFrontier/Computability/Circuit/Arithmetic/Synthesis.lean)
+for `Synthesis.arith_const`, `arith_add`, `arith_mul` and `arith_sum`. The constant symbols
+have arbitrary type `K`, interpreted by a supplied map into the value carrier `R`; no semiring
+structure on `K` is required. The primitive rules need addition and multiplication on `R`,
+and the finite-sum rule needs an additive commutative monoid. VP publicly re-exports the same
+rules and names for existing clients; `Synthesis.exists_circuit_polynomial` stays in VP.
+
+The Boolean simulation below and the
+[matrix-multiplication exponent module](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/Exponent.lean)
+use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.ArithmeticSynthesis`
+for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
+constants as natural-number lengths, without importing VP or giving the labels a semiring.
+
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The finite-carrier construction above supplies the field-element encoding
+for the arithmetic-to-Boolean direction.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
+## Boolean and two-element arithmetic circuits
+
+Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
+for the two-element case of Arora–Barak's Chapter 14, Exercise 1. Mathlib's Boolean ring
+on `Bool` uses XOR for addition and AND for multiplication. `Boolean.exists_arithmetic_simulation c`
+replaces a De Morgan circuit by an arithmetic circuit on this same carrier, preserving every
+output with at most `3 * c.size` gates. `Boolean.exists_boolean_simulation c` goes the other way
+with at most `4 * c.size` gates. Constants count as gates; input/output wires are free, and
+zero-input and pure-wiring circuits are included.
+
+The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
+also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
+and nonuniform size results, not formal polynomial identities or certified translation runtimes.
+For an arbitrary fixed finite field, use `c.exists_finite_boolean I hArity`
+with the encoding of the finite carrier above for the arithmetic-to-Boolean direction,
+and `Boolean.exists_ring_simulation` for the Boolean-to-arithmetic direction. Together
+they give both value simulations with constant factors for that field. The forward
+guarantee covers every output on valid encoded inputs. Uniform compiler/runtime
+certificates, formal-polynomial identities and behavior on unused code words are
+outside these statements.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
+outputs, zero-input constants and zero-gate wiring.
 
 ## Valiant classes and term models
 
@@ -52,7 +168,7 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.N
 **Not certified here.** The paper's Theorem 1.1 is an integer algorithm with bit cost `O(n^(9/4+γ) M(B + log n))` on `B`-bit entries ([§4.3](https://arxiv.org/pdf/2610.28627v2#page=20)); the formalization proves the field-circuit statement only and says nothing about integer arithmetic, division by the cleared denominators or bit complexity. The paper's "computable" side `v` and count `r` are obtained here as existentials (`Tensor.exists_rank_mm_lt_rpow`), with no extraction procedure and no explicit constants; the parameters are galactic. Degenerations compose at the order `(h + 1) (k + 1) - 1` rather than the paper's additive bookkeeping, the gap parameter is `⌊w₀ / c ^ d⌋ ^ 4` rather than `⌊w / u⌋ ^ 2`, and the lengths of the rounds are bounded explicitly rather than by a limit argument; none of this changes the exponent. Positive characteristic, the rectangular and dual exponents and any lower bound beyond `2 ≤ omega K` are open; see [ROADMAP.md](../../ROADMAP.md).
 
 Until the formal abstracts were retired on 2026-11-08, the
-[matrix multiplication abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/MatrixMultiplicationAbstract.lean)
+[matrix multiplication abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/ComplexityAbstracts/MatrixMultiplicationAbstract.lean)
 restated the exact circuit bound and infimum with visible quantifiers. The current statements are
 those of [NineQuarters.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean),
 built by the command above.
@@ -208,7 +324,184 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic \
   CslibFrontierTests.Computability.Circuit.Arithmetic.HittingSet
 ```
 
-**Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of the next section, which concerns noncommutative rational formulas.
+**Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of [Rational formulas and hitting lists](#rational-formulas-and-hitting-lists), which concerns noncommutative rational formulas.
+
+## Hitting sets for affine orbits of sparse polynomials
+
+Import [HittingSet/SparseOrbit.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean). The endpoint [isHittingSet_sparseOrbitHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean) is for `[Field F] [CharZero F]`: `sparseOrbitHittingSet F n s d` hits every `f` with `f.totalDegree ≤ d` that equals `aeval (fun i => ∑ j, C (A i j) * X j + C (b i)) p` for some `p` with `p.support.card ≤ s`, a matrix `A` with `IsUnit A.det` and a point `b`: the polynomials `p (A x + b)` with `p` sparse. `card_sparseOrbitHittingSet_le s d` bounds the set by `(n ^ 2 + 1) * (2 * d * (n * s ^ 2 + s) + 1)`. The points are those of the curves `sparseOrbitCurve`, `t ↦ (β, β ^ 2, …, β ^ n) + t ^ B • G (t)` with `G` the truncated logarithmic curve of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces) and `B = n * s ^ 2 + s`.
+
+The pieces, each usable alone:
+
+- [finrank_iteratedPDerivSpan_homogeneousComponent_shift_le](../../CslibFrontier/Foundations/Data/MvPolynomial/SparseShift.lean): if all coordinates of `u` are nonzero and `shift u p` has no homogeneous component below degree `m`, the partial derivatives of its component of degree `m` span a space of dimension at most `p.support.card`. `prod_X_add_C_mul_iteratedPDeriv_shift_mem` puts `∏ (X (α i) + C (u (α i))) * iteratedPDeriv α (shift u p)` in the image under the shift of Mathlib's `MvPolynomial.restrictSupport K ↑p.support`, the span of the monomials of `p`.
+- [iteratedPDerivSpan p](../../CslibFrontier/Foundations/Data/MvPolynomial/IteratedPDerivSpan.lean): the span of all iterated partial derivatives of `p`, closed under `pderiv` (`pderiv_mem_iteratedPDerivSpan`).
+- [linearIndependent_of_homogeneousComponent](../../CslibFrontier/Foundations/Data/MvPolynomial/LowestComponent.lean): polynomials `F i` with no homogeneous component below degree `e i` whose components of degree `e i` are linearly independent are linearly independent.
+- [linearSubst A](../../CslibFrontier/Foundations/Data/MvPolynomial/LinearSubstitution.lean), `p ↦ p (A x)`, with the chain rule `pderiv_linearSubst` (from the general `MvPolynomial.pderiv_aeval`, now in [Substitution.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Substitution.lean)), `pderiv_mem_map_linearSubst` (the image of a derivative-closed space is derivative-closed) and `linearSubst_injective` for `IsUnit A.det`.
+- `not_X_pow_dvd_aeval_logCurve` ([Basic.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Basic.lean)): a nonzero polynomial in a derivative-closed space of dimension at most `r` is not divisible by `X ^ (n * r ^ 2 + r)` on the truncated curve.
+
+Complete client: [SparseOrbit.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/SparseOrbit.lean) shows that `(X 0 + X 1) ^ 2` is `p (A x)` for the monomial `p = X 0 ^ 2` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SparseOrbit
+```
+
+**Not certified here.** Positive characteristic: ordinary partial derivatives replace the source's Hasse derivatives, and the hitting set of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces) needs characteristic zero. The source's curve `-ln (1 - i t)`; the library's is used. The degree-free hitting set over the reals, the lower bound on the number of monomials in every coordinate system, the applications to other orbit classes, and the operation count. The bit length of the points.
+
+## Hitting sets for multilinear any-order ROABPs
+
+Import [HittingSet/AnyOrder.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean). `IsAnyOrderROABP w f` says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in every order of the variables: for every list `l` of all the variables without repetition there are matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` and indices `s t` with `f = roabpProd M l s t`, the `(s, t)` entry of the product of the `M i` evaluated at `X i` in the order of `l`. The matrices may depend on the order.
+
+The endpoint [isHittingSet_anyOrderHittingSet_roabp](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean) is for `[Field F] [CharZero F]`: `anyOrderHittingSet F n w` hits `{f | (∀ i, f.degreeOf i ≤ 1) ∧ IsAnyOrderROABP w f}`. `card_anyOrderHittingSet_le F n w` bounds the set by an explicit expression in `n`, `w` and `Nat.log 2 w` that is polynomial in `n` and `w`, since `2 ^ Nat.log 2 w ≤ w + 1` (for `w = 0` the left side is `1`).
+
+**To use it for another class**, apply `isHittingSet_anyOrderHittingSet`, which hits every `f` with `f.degreeOf i ≤ 1` for all `i` and `SplitRankLE ↑U w f` for every `U : Finset (Fin n)`, and prove the split-rank bound as `IsAnyOrderROABP.splitRankLE` does. For variables grouped in blocks, or for your own set of shifts, use `exists_mem_setPartitionedHittingSet_eval_ne_zero` of [Hitting sets for set-multilinear depth-three circuits with small variable sets](#hitting-sets-for-set-multilinear-depth-three-circuits-with-small-variable-sets). The pieces are the shifts and hash families of [Support-concentrating shifts and perfect hash families](#support-concentrating-shifts-and-perfect-hash-families), [colorPart](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ColorPart.lean) with `colorPart_ne_zero`, `exists_eval_ne_zero_of_eval_colorPart_ne_zero` and `exists_pderiv_closed_colorPart`, and the hitting set for small partial-derivative spaces above. The interpolation behind the second of these reads weighted homogeneous components off a monomial substitution: `MvPolynomial.coeff_aeval_monomial` ([WeightedHomogeneous.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/WeightedHomogeneous.lean)) holds for any weight over a commutative semiring.
+
+Complete client: [AnyOrderHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/AnyOrderHittingSet.lean) shows that `X 0 * X 1` is computed by width-one programs in every order and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderHittingSet
+```
+
+**Not certified here.** Positive characteristic. Polynomials of individual degree above one, and orbits. The converse of `IsAnyOrderROABP.splitRankLE`. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
+
+## Hitting sets for set-multilinear depth-three circuits with small variable sets
+
+Import [HittingSet/SetMultilinear.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetMultilinear.lean). The variables are `X (j, t)` with `j : Fin n` the block and `t : Fin d` the position in the block. The endpoint [isHittingSet_setMultilinearHittingSet_sum_prod](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetMultilinear.lean) is for `[Field F] [CharZero F]`: `setMultilinearHittingSet F n d s` hits `{f | ∃ c : Fin s → Fin n → Fin d → F, f = ∑ i, ∏ j, ∑ t, C (c i j t) * X (j, t)}`, the sums of `s` products of `n` linear forms, the `j`-th in the variables of block `j`. `card_setMultilinearHittingSet_le s` bounds the set by an explicit expression that is a polynomial in `n`, `d` and `s` times `(d + 1) ^ (Nat.log 2 s + 1)`. A block with fewer than `d` variables is covered by taking the coefficients of the missing variables to be zero.
+
+**To use it for another class**, apply `isHittingSet_setMultilinearHittingSet s`, which hits every `f` with `IsSetPartitioned Prod.fst f` and `SplitRankLE (Prod.fst ⁻¹' ↑I) s f` for every `I : Finset (Fin n)`. `MvPolynomial.IsSetPartitioned blk f` ([SetPartitioned.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SetPartitioned.lean)) says that every monomial of `f` has at most one variable of each block of `blk`, to the first power; `IsSetMultilinear.isSetPartitioned` gives it for set-multilinear polynomials, `IsSetPartitioned.shift` for shifts, and `isSetPartitioned_id_iff` says that for `blk = id` it means `f.degreeOf i ≤ 1` for all `i`.
+
+**To use your own shifts**, apply [exists_mem_setPartitionedHittingSet_eval_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetPartitioned.lean). It is for a finite type `σ` of variables, `blk : σ → Fin n`, a set-partitioned `f` with `SplitRankLE (blk ⁻¹' ↑I) w f` for every `I`, and a shift `a ∈ A` such that `shift a f` has a monomial with at most `L` variables; it gives a point of `setPartitionedHittingSet F blk A L w` where `f` is nonzero. `card_setPartitionedHittingSet_le` bounds that set by `A.card` times an explicit polynomial in `n`, `Fintype.card σ`, `w` and `2 ^ L`. `logHittingSetOn F σ r d` with `isHittingSet_logHittingSetOn` is the hitting set for derivative-closed spaces of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces), for variables indexed by a finite type.
+
+The shifts of the endpoint come from `blockPower F n d`, the substitution `X (j, t) ↦ X j ^ (t + 1)`: `blockPower_ne_zero`, `degreeOf_blockPower_le` and `SplitRankLE.blockPower` put the image of a set-partitioned polynomial in the class of `exists_mem_boundedDegreeShifts` of [Support-concentrating shifts and perfect hash families](#support-concentrating-shifts-and-perfect-hash-families), and `exists_mem_support_shift_blockPowerPoint` carries a shift `b` of the image back to the shift `blockPowerPoint b` of the polynomial.
+
+Complete client: [SetMultilinearHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/SetMultilinearHittingSet.lean) obtains a point of the hitting set where `(x₀₀ + x₀₁) (x₁₀ + x₁₁)` is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SetMultilinearHittingSet
+```
+
+**Not certified here.** Positive characteristic. Blocks are indexed by `Fin n × Fin d`; no statement for a general partition is given. The factor `(d + 1) ^ (Nat.log 2 s + 1)` is not removed. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
+
+## Quasipolynomial hitting sets for ROABPs in an unknown order
+
+Import [HittingSet/ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean). `IsROABP w δ f` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in some order: there are a list `l` without repetition, matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` with all entries of `natDegree ≤ δ`, and indices `s t` with `f = roabpProd M l s t`. The degree bound is on the layers, not on `f`. `roabpProd` and `IsAnyOrderROABP` of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) live in the same module.
+
+The endpoint [isHittingSet_roabpHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean) is for `[Field F] [CharZero F]`: `roabpHittingSet F n w δ` hits `{f | IsROABP w δ f}`. The set depends on `n`, `w` and `δ` only, not on the order. `card_roabpHittingSet_le F n w δ` bounds it by `(Nat.clog 2 n + 1) * p ^ Nat.clog 2 n * (n * δ * (n * δ * p + 1 + p) ^ Nat.clog 2 n + 1)` with `p = roabpPrime n w δ`, and `roabpPrime_le` gives `p ≤ 2 * (2 * n * (w ^ 2) ^ 4 * n + δ + 1)`: the size is `(n δ w) ^ O(log n)`. For multilinear programs that are narrow in every order the set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) is of polynomial size; this one needs only one order and allows any degree.
+
+The pieces, each usable alone:
+
+- [coeff_roabpProd](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean): the coefficient of a monomial `m` in `roabpProd M l s t` is the `(s, t)` entry of the product over `l` of the coefficient matrices `layerCoeff M i (m i)`, for `l` without repetition and `m` supported in `l`; `coeff_roabpProd_eq_zero` for the other monomials.
+- [Cslib.Isolates F wt D T S](../../CslibFrontier/Foundations/LinearAlgebra/IsolatedBasis.lean), for `D : M → A` with values in a vector space, a weight `wt : M → ℕ` and finite sets `S ⊆ T`: `wt` is injective on `S` and every `D m`, `m ∈ T \ S`, is in the span of the `D m'` with `m' ∈ S` and `wt m' < wt m`. `exists_isolates_of_injOn` gives such an `S` of at most `finrank F A` elements when `wt` is injective on `T`; `Isolates.of_span_lt` weakens `m' ∈ S` to `m' ∈ T`; `exists_isolates_add` treats `D (m₁ + m₂) = D₁ m₁ * D₂ m₂`. `S` is not required to give a basis.
+- [MvPolynomial.aeval_X_pow_ne_zero_of_isolates](../../CslibFrontier/Foundations/Data/MvPolynomial/WeightSubstitution.lean): if `f.coeff m = ℓ (D m)` on `T ⊇ f.support` for a linear `ℓ` and `Finsupp.weight c` isolates, then `f ≠ 0` stays nonzero under `X i ↦ X ^ c i`.
+- [Cslib.exists_modWeight_separating](../../CslibFrontier/Foundations/NumberTheory/ModularWeights.lean): for a prime `p > δ` and fewer than `p / n` pairs of distinct exponent vectors with entries at most `δ`, some `a < p` gives the two members of every pair different weights for `modWeight p a i = a ^ (i + 1) % p`.
+- [exists_isolating_weight](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABPWeights.lean): the weight `levelWeight p (n * δ * p + 1) a` of some list `a` of at most `Nat.clog 2 n` parameters below `p` isolates a set of monomials among the matrices `segmentCoeff M l`. It goes by induction on the height of the subtrees of a [Cslib.Bracketing](../../CslibFrontier/Foundations/Data/Bracketing.lean) of `l` (`Bracketing.exists_leaves_eq`: height at most `Nat.clog 2 l.length`).
+
+Complete client: [ROABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ROABPHittingSet.lean) shows that `X 1 ^ 2 * X 0` is computed by a width-one program in the order `1, 0` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ROABPHittingSet
+```
+
+**Not certified here.** Positive characteristic and small fields. Layers that are sparse polynomials in several variables, sums of set-multilinear circuits, and the other theorems of the source. The source's bound: the weights are `a ^ (i + 1) % p` for one prime and the levels are combined one at a time, so the constants differ. The bit length of the points and the cost of computing them; `roabpPrime` is defined by `Nat.find`.
+
+## Hitting sets of matrices for non-commutative branching programs
+
+Import [HittingSet/NoncommABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean). A non-commutative polynomial is tested on tuples of matrices: `P : Fin n → Matrix (Fin (d + 1)) (Fin (d + 1)) F` hits `f : FreeAlgebra F (Fin n)` when `FreeAlgebra.lift F P f ≠ 0`. The endpoint [exists_mem_noncommABPHittingSet_lift_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean) is for `[Field F] [CharZero F]`, `A : NoncommABP F (Fin n) d` (the homogeneous layered programs of [Noncommutative/ABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/Noncommutative/ABP.lean)) with `A.width k ≤ W` for all `k ≤ d` and `A.polynomial ≠ 0`: some `P ∈ noncommABPHittingSet F n d W` has `FreeAlgebra.lift F P A.polynomial ≠ 0`. `card_noncommABPHittingSet_le n d W` bounds the set by the size of `roabpHittingSet F d W (n - 1)` of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), which is `(n d W) ^ O(log d)`.
+
+The tuples are `superdiagPoint a` for the points `a` of that set: the variable `x` becomes the matrix with entry `a k ^ x` at `(k, k + 1)` and zero elsewhere. `eval_roabpProd` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) evaluates a read-once oblivious program as an entry of the product of its evaluated layers.
+
+Complete client: [NoncommABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NoncommABPHittingSet.lean) builds the width-one program computing `x₀ x₁` and obtains a tuple of the set where it does not vanish. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NoncommABPHittingSet
+```
+
+**Not certified here.** The reduction is that of [Forbes and Shpilka][forbesshpilka2013] (Construction 4.1 to Theorem 4.6), for homogeneous layered programs; the hitting set for read-once oblivious programs is the one of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), the library's adaptation of Agrawal–Gurjar–Korwar–Saxena with a different weight family, not their generator, so the size is neither paper's bound; their Corollary 4.7 is not formalized. Programs that are not homogeneous and layered. Positive characteristic. White-box identity testing (Raz–Shpilka). The bit length of the matrix entries.
+
+## Support-concentrating shifts and perfect hash families
+
+Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) takes from earlier work.
+
+`MvPolynomial.SplitRankLE U w f` ([SplitRank.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SplitRank.lean)) says that `f` is a sum of `w` products `p * q` with `p` in the variables of `U` and `q` in the others. It stands for "the coefficient matrix of `f` across the split has rank at most `w`", but no matrix is defined and that equivalence is not proved. `MvPolynomial.shift a` ([Shift.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Shift.lean)) is `f ↦ f (X + a)`; the point may have coordinates in an algebra over the coefficient ring.
+
+The endpoint [exists_mem_concentratingShifts_perfectHashFamily](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean) is for `[Field F] [CharZero F]` and `f : MvPolynomial (Fin n) F` with `f ≠ 0`, `f.degreeOf i ≤ 1` for all `i`, and `SplitRankLE ↑Y w f` for every `Y : Finset (Fin n)` with `Y.card = Nat.log 2 w + 1`. It gives a point `a` of `concentratingShifts F (perfectHashFamily n (Nat.log 2 w + 1))` and a monomial of `shift a f` with at most `Nat.log 2 w` variables; `card_concentratingShifts_perfectHashFamily_le` bounds the set by `(n * (n * 2 ^ (25 * (Nat.log 2 w + 1))) + 1) * (n * 2 ^ (Nat.log 2 w + 1) + 1)`. `exists_mem_concentratingShifts` is the same for any `P` with `IsPerfectHashFamily P k` and `w < 2 ^ k`.
+
+**To use a different shift**, apply [exists_mem_support_shift_card_lt](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShift.lean): it needs a point `γ` over a domain `R` that is an `F`-algebra such that, for every set `Y` of `k` variables, the products `∏ j ∈ T, γ j` over `T ⊆ Y` are linearly independent over `F`. It has no characteristic hypothesis.
+
+**For individual degree above one**, [exists_mem_boundedDegreeShifts](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/BoundedDegreeShifts.lean) is for `IsPerfectHashFamily P k`, `w < 2 ^ k` and `f ≠ 0` with `f.degreeOf i ≤ δ` for all `i` and `SplitRankLE ↑Y w f` for every `Y` with `Y.card = k`. It gives a point `a` of `boundedDegreeShifts F δ P` and a monomial of `shift a f` with fewer than `k` variables; `card_boundedDegreeShifts_le` bounds the set by `(n * δ * P.card + 1) * (n * δ * (δ + 1) ^ k + 1)`. The statement is that of Corollary 2.4 of Shpilka's paper, which cites Forbes, Saptharishi and Shpilka; the proof is not theirs and is not taken from a source. It goes through `IsConcentrating` ([Concentrating.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Concentrating.lean)), `exists_mem_support_shift_card_lt_of_isConcentrating` ([ConcentratingReduction.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingReduction.lean)) and `eq_zero_of_scale_X_pow_vanishing` ([ConcentratingMonomial.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingMonomial.lean)), with `MvPolynomial.two_pow_card_le_card_support` (a nonzero polynomial that vanishes when any of `k` variables is set to one has at least `2 ^ k` monomials), `MvPolynomial.linearIndependent_of_initial_monomial` and `Nat.eq_of_sum_mul_pow_eq` from the foundations.
+
+`Cslib.IsPerfectHashFamily P s` ([PerfectHashFamily/Defs.lean](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Defs.lean)) says that every `s`-element set is mapped injectively by some member of `P`. [perfectHashFamily n r](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Basic.lean) is such a family of maps `Fin n → Fin r` for `0 < r` (`isPerfectHashFamily_perfectHashFamily`) with at most `n * 2 ^ (25 * r)` members (`card_perfectHashFamily_le`). The construction is the library's own and the bound is not the best known.
+
+Complete clients: [ConcentratingShift.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConcentratingShift.lean) gives `X 0 * X 1` a constant term by a shift from the explicit set, and [PerfectHashFamily.lean](../../CslibFrontierTests/Foundations/Combinatorics/PerfectHashFamily.lean) separates two points of `Fin 5`. Build them with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShift \
+  CslibFrontierTests.Foundations.Combinatorics.PerfectHashFamily
+```
+
+**Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
+
+## Roots of polynomial equations and hardness versus randomness
+
+This section collects the pieces of the hardness-versus-randomness route for constant-depth formulas (issue #4734); each is usable alone.
+
+**Lagrange inversion.** Import [LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean). For a commutative ring `R` that is an algebra over a field `F` of characteristic zero, an ideal `J` of `R`, a polynomial `G : R[X]` with `G.coeff 0 ∈ J` and `G.coeff 1 ∈ J`, and `f ∈ J` with `G.eval f = f`, `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` gives `f - ∑ m ∈ range N, ((m : F) + 1)⁻¹ • (G ^ (m + 1)).coeff m ∈ J ^ e` whenever `2 * e ≤ N`. `Polynomial.sum_coeff_mul_pow_sub_eval_mem` is the Lagrange–Good form for `H.eval f`. The proof is finite (no power series), with the weight filtration `Polynomial.HasWeight`.
+
+**Roots.** Import [LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean); `J` is Mathlib's `MvPolynomial.idealOfVars`. For `P : Polynomial (MvPolynomial σ F)` in characteristic zero:
+
+- a *simple root at the origin* — `constantCoeff f = 0`, `P.eval f = 0`, `constantCoeff (P.coeff 1) ≠ 0` — has, for every `D`, `truncateTotalDegree D f` equal to the truncation of `∑ m ∈ range (2 * (D + 1)), ((m : F) + 1)⁻¹ • ((X - C (C a⁻¹) * P) ^ (m + 1)).coeff m` with `a = constantCoeff (P.coeff 1)` (`MvPolynomial.truncateTotalDegree_root_eq`);
+- *any root* of `P ≠ 0` reduces to that case after the `j`-th `y`-derivative and a shift of the variables by a point `x₀` (`MvPolynomial.exists_shift_eq_truncate_sum_of_root`, through `exists_iterate_derivative_eval_ne_zero`): `shift x₀ f = C (eval x₀ f) + truncateTotalDegree D (…)` for every `D ≥ f.totalDegree`.
+
+Complete clients: [LagrangeInversion.lean](../../CslibFrontierTests/Foundations/Algebra/Polynomial/LagrangeInversion.lean) (the fixed point `t` of `G = t` over `ℚ[t]`) and [LowDegreeRoot.lean](../../CslibFrontierTests/Foundations/Data/MvPolynomial/LowDegreeRoot.lean) (the root `x₀ x₁` of `y - x₀ x₁`, simple, and of `(y - x₀ x₁) ^ 2`, double). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Foundations.Algebra.Polynomial.LagrangeInversion \
+  CslibFrontierTests.Foundations.Data.MvPolynomial.LowDegreeRoot
+```
+
+**Formulas for roots.** Import [RootFormula.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/RootFormula.lean). For `[Field K] [CharZero K]` and a formula `F : SPFormula K (N + 1)` whose *last* input plays the role of `y`, with `F.productDepth ≤ Δ` and `F.polynomial ≠ 0`, a root `f : MvPolynomial (Fin N) K`, meaning `aeval (Fin.lastCases f X) F.polynomial = 0`, has a formula `G : SPFormula K N` with `G.polynomial = f`, `G.productDepth ≤ Δ + 1` and `G.nodeCount ≤ SPFormula.rootCost F.nodeCount f.totalDegree`, where `rootCost s D = 2 ^ 36 * (s + 1) ^ 8 * (D + 1) ^ 6` (`SPFormula.exists_formula_of_root`). It implements the formula for roots above: the powers are the only extra product layer.
+
+The formula operations it uses, each with exact `polynomial`, `productDepth` and `nodeCount` lemmas:
+
+- [FormulaOps.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaOps.lean): `substFormula` (formulas for the inputs; product-depths add), `constInput` and `affineInput` (constants and `a * x + b` for inputs; no product-depth), `ofSparse` (a polynomial as a sum of monomials, product-depth `≤ 1`, at most `p.support.card * (p.totalDegree + 1) + 1` nodes), and `totalDegree_polynomial_le_nodeCount`.
+- [FormulaInterpolation.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaInterpolation.lean), in characteristic zero and with no increase of product-depth: `coeffLast i r F`, the coefficient of the `i`-th power of the last input when the degree in it is at most `r`, and `lowPartFormula d r F`, the homogeneous components of degree at most `d` when the total degree is at most `r`. Both rest on `Lagrange.coeff_eq_sum_coeff_basis_smul_eval` ([InterpolationCoeff.lean](../../CslibFrontier/Foundations/Data/Polynomial/InterpolationCoeff.lean)).
+
+Complete clients: [RootFormula.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/RootFormula.lean) (the root `x₀ x₁` of the formula `y - x₀ x₁` gets a formula of product-depth at most `2`), [FormulaOps.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaOps.lean) and [FormulaInterpolation.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaInterpolation.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.RootFormula \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaOps \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaInterpolation
+```
+
+**Hardness gives hitting sets.** Import [HittingSet/HardnessToHittingSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/HardnessToHittingSet.lean). For `[Field K] [CharZero K]`, a multilinear `f : MvPolynomial (Fin m) K` (`f.degreeOf i ≤ 1`) with `f.totalDegree ≤ d`, blocks `S : Fin n → (Fin m ↪ L)` into a finite type `L` that pairwise meet in at most `a` points, and the hardness hypothesis that every `G : SPFormula K m` with `G.polynomial = f` and `G.productDepth ≤ Δ + 2` has more than `SPFormula.rootCost (s * (2 ^ a * (a + 1) + 2)) d` nodes, `isHittingSet_generatorHittingSet_of_hard` says that `generatorHittingSet f S (s * d)` hits every polynomial in `n` variables computed by a formula of product-depth at most `Δ` with at most `s` nodes. The set is the image of the grid `{0, …, s * d} ^ L` under the Nisan–Wigderson generator `nwGenerator f S i = rename (S i) f` ([HittingSet/NWGenerator.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NWGenerator.lean)), so `card_generatorHittingSet_le` bounds it by `(s * d + 1) ^ Fintype.card L`. The pieces: the hybrid argument `exists_root_formula_of_generator_vanishing` and the grid lemma `exists_mem_generatorHittingSet_eval_ne_zero`; `MvPolynomial.exists_aeval_sumElim_ne_zero` ([PartialEval.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/PartialEval.lean)), a nonzero polynomial over an infinite domain stays nonzero after assigning constants to some variables; `Cslib.IsDesign`, `Cslib.rsDesign` and `Cslib.isDesign_rsDesign` ([Design/ReedSolomon.lean](../../CslibFrontier/Foundations/Combinatorics/Design/ReedSolomon.lean)), with `Cslib.card_polynomialBlock_inter_le`.
+
+Complete clients: [NWGenerator.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NWGenerator.lean) (a vanishing hybrid on `x₀ - x₁`, a nonvanishing grid point, and a partial specialization) and [ReedSolomon.lean](../../CslibFrontierTests/Foundations/Combinatorics/Design/ReedSolomon.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NWGenerator \
+  CslibFrontierTests.Foundations.Combinatorics.Design.ReedSolomon
+```
+
+The theorem is finite: it takes the hardness of one polynomial as a hypothesis. No hard family is instantiated here and nothing is said about running time.
+
+**Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
+
+## Subexponential hitting sets for constant-depth formulas
+
+Import [HittingSet/ConstantDepth.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean). This is a finite form of Corollary 6 of Limaye, Srinivasan and Tavenas: the library's lower bound for iterated matrix multiplication, in its formula form `SPFormula.eventually_pow_lt_nodeCount_of_imm` ([CircuitLowerBound.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/CircuitLowerBound.lean)), turned into a hitting set by `isHittingSet_generatorHittingSet_of_hard` of [Roots of polynomial equations and hardness versus randomness](#roots-of-polynomial-equations-and-hardness-versus-randomness). For `[Field K] [CharZero K]`, a product-depth `Δ` and an exponent `c`:
+
+- [eventually_isHittingSet_constantDepthHittingSet_rpow](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean): for every real `ε > 0`, for all large `n`, `constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n` hits `{p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c}` and has at most `2 ^ (n ^ ε)` points (a real inequality).
+- `eventually_isHittingSet_constantDepthHittingSet_circuit_rpow`: the same for simple circuits (`SPCircuit.IsSimple`) of product-depth at most `Δ` with at most `n ^ c` gates, with the set at exponent `(c + 2) * (2 * Δ + 1)`.
+- `eventually_isHittingSet_constantDepthHittingSet`, `eventually_card_constantDepthHittingSet_le`, `eventually_isHittingSet_constantDepthHittingSet_circuit`: the separate statements at `ε = 1 / t` for a natural number `t ≥ 1`.
+
+The set does not depend on `Δ`. It is the set of values of the Nisan–Wigderson generator of `IMM_{ν,δ}`, with `ν = 2 ^ ⌊log₂ n / 8t⌋` and `δ = ⌊log₂ ⌊log₂ ν⌋⌋`, over a Reed–Solomon design indexed by coefficient vectors, on a grid; the parameters are the definitions in the namespace `ConstantDepthHittingSet`.
+
+Complete client: [ConstantDepthHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConstantDepthHittingSet.lean) takes the formula `x₀ + x₁` in `n ≥ 2` variables (product-depth zero, three nodes) and obtains, for all large `n`, a point of the set at `c = 2` and `ε = 1 / 2` where it does not vanish, together with the bound `2 ^ √n` on the size of the set; it also instantiates the circuit form. Build it from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConstantDepthHittingSet
+```
+
+**Not certified here.** Corollary 6 of the source is a deterministic identity test with running time `(s ^ (Δ + 1) n) ^ O(n ^ μ)` for circuits of depth `Δ = o(log log log n)` in characteristic zero; here there is no algorithm, running time, uniformity or bit complexity, only the existence and size of an explicit set, with thresholds "for all large `n`" that are not explicit. Constant product-depth only. Circuits that are not simple. Positive characteristic.
 
 ## Rational formulas and hitting lists
 
@@ -224,7 +517,22 @@ The [native generator endpoint](https://github.com/cslib-community/cslib-frontie
 
 Arbitrary unitary matrices are semantic objects. The [GateCode](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Code.lean#L98) interface supplies a finite basis of Hadamard, NOT, controlled-NOT and Toffoli codes, with explicit target/control indices and well-formedness. The [UniformCircuitFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Uniform.lean#L79) structure requires native polynomial-time generation of both the well-formed gate list and the positive register width from unary input length. The width is at least the input length. Unary wire/width encodings prevent an uncharged exponentially large register address. Inputs are followed by zero ancillas; acceptance measures qubit zero, and postselection conditions on qubit one.
 
-[BQP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses one such family for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
+For coherent function access, import [Oracle/Code.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Code.lean). An `OracleGateCode` is an existing `PhaseGateCode` or a query; elementary instructions include phase and controlled-phase gates and their inverses, with ordinary gate codes embedded as `(false, g)`. For a function from `a` bits to `b` bits, a query uses the first `a` wires as its argument and the following `b` wires as an XOR response register. `OracleCircuit.toCircuit m H codes` interprets the description using the same fixed `H` throughout; the resulting `Circuit` supplies unitary evolution and final measurement. `gateCount` and `queryCount` count elementary gates and oracle calls separately. Require `∀ g ∈ codes, g.WellFormed a b m`: the total interpreter skips malformed instructions, and `length_toCircuit` proves that a well-formed description executes every instruction.
+
+The [placed-query API](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Basic.lean) also permits an arbitrary injective wire placement. `queryRegisters` identifies argument, response and unused wires, with component equations for callers. [Oracle/ValueQuery.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/ValueQuery.lean) supplies `xorQuery_eq_valueOracle`, which proves agreement with the existing `valueOracle addStep` semantics on arbitrary states; `xorQuery_eval_twice` proves coherent cancellation. [Checked clients](../../CslibFrontierTests/QuantumOracleCircuit.lean) exercise a one-bit identity hash, entanglement with real and complex relative phases, interference after query/unquery, malformed codes and separate costs. This finite operational layer does not certify uniform quantum polynomial time or sample a random oracle. Classical signing/decapsulation access, efficient preparation of quantum auxiliary information, gate approximation and full QROM security remain separate obligations under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
+For native uniform generation, import [Oracle/Uniform.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Uniform.lean). A `UniformOracleCircuitFamily` receives the security parameter `n` and classical input length `ℓ` separately, both in unary. Its one native polynomial-time generator returns all register sizes and instructions. Every size and wire address is charged by the encoding, so `exists_resource_bound` bounds both active qubits and instruction count. `exists_computable_resource_bound` gives a computable polynomial schedule that works for every `ℓ ≤ L n` whenever `L` is polynomially bounded; `L` itself need not be computable. [Oracle/Resources.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Resources.lean) keeps qubit, elementary-gate and query budgets independent.
+
+`initialState` places a supplied quantum state after the encoded classical input `(n, x)`, leaving zero ancillas elsewhere. `run` is the resulting isometry with a fixed oracle; `output` measures the declared prefix and returns a bit word. Its supported words have the declared output length. The [varying checked client](../../CslibFrontierTests/QuantumOracleUniform.lean) natively generates growing query counts and wire addresses, cancels query/unquery pairs for every oracle, and returns the original encoded input followed by the bit decoded from `(|0⟩ ± i|1⟩)/√2`. This certifies uniform generation and the stated pure-state execution. Efficient preparation of supplied states, unbounded random-oracle semantics, classical interaction and gate approximation remain open under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
+[Oracle/Density.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Density.lean) extends the same native family to mixed quantum inputs. `runDensity` conjugates the density matrix by the existing run isometry; `outputDensity` measures the same declared prefix and agrees with `output` on pure states. `runDensityWithReference` acts on the input half of an arbitrary joint density matrix and retains the full output, including entanglement with an inaccessible finite reference. Its reduced reference state is unchanged. The reference is not counted among active circuit registers, and no preparation cost is asserted for the supplied state. [Checked clients](../../CslibFrontierTests/QuantumOracleDensity.lean) retain unequal mixture weights, compute every entry of an initialized Bell state including its off-diagonal coherence, and cover zero quantum-input and reference-qubit boundaries. These execution bridges do not supply adaptive measurements, instruments, or a security reduction.
+
+
+For one finite oracle shared by executions at different input lengths, import [Oracle/Signature.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Signature.lean). A proof `h : F.HasOracleSignature a b L` fixes argument width `a n` and response width `b n` for every `ℓ ≤ L n`. Draw `H : (Fin (a n) → Bool) → Fin (b n) → Bool` once with `Probability.PMF.uniformOfFintype`, outside all stages, and pass `h.oracle n x.length hx H` to each existing `F.run` or `F.output`. The transport only relabels finite indices. The shared widths are polynomially bounded by native generation; this does not make sampling the complete table efficient. Existing uniform-equivalence and finite-product restriction laws supply the sampling API. [Checked staged clients](../../CslibFrontierTests/QuantumOracleShared.lean) show that reusing a table gives certain agreement while independent redraws give agreement probability one half, including zero-width register cases. The [coherent interference client](../../CslibFrontierTests/QuantumOracleInterference.lean) uses one query and four Hadamards to return the parity of two oracle values; a uniform table gives a fair bit. These are finite ideal experiments, with no theorem identifying different length caps or establishing interactive QROM security.
+
+The [native quantum ensemble API](../programs-crypto-and-probability/security-games-and-primitives.md#generic-games-and-adversary-quantifiers) specializes this execution model to zero quantum input and the all-zero XOR oracle, then quantifies the resulting first-output-bit test over word ensembles. It retains the exact uniform generator and separate circuit-resource accounting; it does not add advice or a QROM.
+
+[BQP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses an oracle-free `UniformCircuitFamily` for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
 
 **Controlled phase gates.** [PhaseCode.lean](../../CslibFrontier/Computability/Circuit/Quantum/PhaseCode.lean) adds the phase gate `S = diag(1, i)`, the controlled phase gate `Λ(S)` and their inverses. A code `(true, (inv, t, cs))` names the gate on qubits `t :: cs`, with at most one control; `(false, g)` is an ordinary gate code. A `UniformPhaseCircuitFamily` over the extended set has the same uniformity, width, input and acceptance conventions as a `UniformCircuitFamily`. [`mem_BQP_iff_phase`](../../CslibFrontier/Computability/Complexity/Classes/BQP/PhaseGates.lean) shows that both kinds of families define the same `BQP`.
 
@@ -265,6 +573,8 @@ These models connect to tensor networks through [the path-network construction](
 
 ## Quantum verifiers and QMA
 
+[Input.lean](../../CslibFrontier/Computability/Circuit/Quantum/Input.lean) provides `embedState`, a linear isometry that places a quantum state on selected qubits while fixing the other qubits to a basis string. Its basis-state and linear-expansion equations let clients prepare an input register without importing verifier families. `Circuit.eval_mapWires_embedState` moves circuit evaluation through this embedding, so a client can prove its state transformation on the small register once. `glue_blockEmb_inputState` identifies a basis state in the block after the input with initialization from the concatenated word. The [checked client](../../CslibFrontierTests/QuantumInput.lean) distinguishes the two unit states `(|0⟩ ± i|1⟩)/√2` by applying `S†` and then `H` on a qubit whose position depends on two input lengths, preserving the other qubits. Build it with `lake build CslibFrontierTests.QuantumInput`.
+
 A [UniformVerifierFamily](../../CslibFrontier/Computability/Circuit/Quantum/Verifier.lean) is a uniform circuit family together with a witness length, itself computed in polynomial time from the unary input length. On an input word of length n, the circuit starts with the input on qubits `0, …, n-1`, an arbitrary pure witness state on the next `witnessLength n` qubits, and zeros elsewhere. It accepts when the final measurement finds qubit zero in state one. The acceptance probability is a quadratic form in the witness, and on a basis witness it is the ordinary circuit run on the input word followed by the witness bits. [PromiseQMA c s](../../CslibFrontier/Computability/Complexity/Classes/QMA.lean) asks that some unit witness reach at least `c n` on every encoded yes-instance and that every unit witness stay at most `s n` on every encoded no-instance. `QMA` is the `(2/3, 1/3)` decision version.
 
 Witnesses are pure states. The equivalence with mixed witnesses, by convexity of the acceptance probability, is stated in the docstrings but not formalized.
@@ -300,6 +610,8 @@ These modules use states `EuclideanSpace ℂ ι` over an arbitrary finite index 
 [DensityMatrix.lean](../../CslibFrontier/Foundations/Quantum/DensityMatrix.lean) represents mixed states as matrices, following [de Wolf][dewolf19], §15.1 and §18.3. `IsDensityMatrix ρ` means positive semidefinite with trace one. `pureState ψ` is `|ψ⟩⟨ψ|`, a density matrix for a unit vector (`isDensityMatrix_pureState`). `partialTraceLeft` and `partialTraceRight` give the reduced state of the second and of the first system of a matrix on `ι × κ`. Either half of a maximally entangled state is maximally mixed (`partialTraceLeft_pureState_maxEntangled`, `partialTraceRight_pureState_maxEntangled`). Each is a sum of principal submatrices, so it preserves positive semidefiniteness, and it preserves the trace; reduced states of density matrices are therefore density matrices. On a Kronecker product, `Tr_A (A ⊗ₖ B) = tr A • B`. Mathlib's `Matrix.trace_kronecker` and `Matrix.PosSemidef.kronecker` cover the full trace and products.
 
 An operator on the traced-out system moves cyclically under `Tr_A` (`partialTraceLeft_kronecker_one_mul`). This gives **no-signalling** for a Kraus family on Alice's system: `Tr_A (∑ⱼ (Kⱼ ⊗ 1) ρ (Kⱼ ⊗ 1)ᴴ) = Tr_A ρ` whenever `∑ⱼ Kⱼᴴ Kⱼ = 1` (`partialTraceLeft_kraus`). The special cases are a local unitary (`partialTraceLeft_conj_unitary`; [de Wolf][dewolf19], Chapter 18, Exercise 7, here for mixed states) and a computational-basis measurement whose outcome is discarded (`partialTraceLeft_measure`). The Kraus form is a standard generalization of the exercise, not a new result. General channels (CPTP maps, Stinespring and Choi representations), von Neumann entropy and trace distance are not formalized.
+
+The local Kraus identity also permits rectangular operators, so adding fresh registers does not require extending an isometry to a square unitary. [DensityMatrix/Isometry.lean](../../CslibFrontier/Foundations/Quantum/DensityMatrix/Isometry.lean) packages rectangular conjugation as the linear map `densityConj V`, reusing matrix multiplication maps. The explicit condition `Vᴴ * V = 1` preserves density matrices; `matrix_isometry` supplies it for an existing linear isometry. `densityConj_pureState` connects this matrix operation to vector execution, and `partialTraceLeft_densityConj_kronecker` preserves an arbitrary reference marginal.
 
 [PauliTwirl.lean](../../CslibFrontier/Foundations/Quantum/PauliTwirl.lean) works on the bit strings `ι → Bool`. It defines the bit flip `X^a |z⟩ = |z + a⟩` (`pauliXPow`), the phase flip `Z^b |z⟩ = (-1)^{b · z} |z⟩` (`pauliZPow`) and the Pauli string `X^a Z^b` (`pauliString`), all unitary. On one qubit they are the matrices of Pauli.lean after reindexing, which the tests check. The **Pauli twirl** is completely depolarizing: `∑_{a,b} X^a Z^b ρ (X^a Z^b)ᴴ = 2ⁿ tr ρ • 1` (`sum_pauliTwirl`). The proof sums over `b` by character orthogonality (`BitString.sum_signVal_dotProduct_mul_signVal_dotProduct`) and then over `a` by a translation. With a reference system, the twirl gives `2ⁿ 1 ⊗ Tr_A ρ` (`sum_pauliTwirl_kronecker_one`).
 
@@ -352,6 +664,8 @@ lake build CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa \
 
 ## Quantum Fourier transform and exact period finding
 
+The [2007 draft Chapter 20 audit](../../results/arora-barak-2007.md#chapter-20-quantum-computation) maps the numbered quantum results to their precise models. It distinguishes exact period finding from efficient QFT synthesis and general order finding, and records source defects in the factoring and continued-fraction statements.
+
 This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
 
 [Fourier.lean](../../CslibFrontier/Foundations/Quantum/Fourier.lean) defines `Cslib.Quantum.qft N : unitaryGroup (ZMod N) ℂ`, the matrix `F_N(j, k) = ω^{jk}/√N` with `ω = e^{2πi/N}`, for `[NeZero N]`. `qft_apply` gives its entries as `ZMod.stdAddChar (j * k) / √N` and `qft_apply_eq_exp` as `exp(2πi · j.val · k.val / N) / √N`. `qft_mulVec` identifies its action on amplitude vectors with `√N • 𝓕⁻`, Mathlib's inverse DFT `ZMod.dft.symm`, so the sign convention is Shor's eq. (4.1) and Mathlib's inverse transform. Unitarity is character orthogonality (`AddChar.sum_mulShift`). For a register pair `ι × κ`, [Register.lean](../../CslibFrontier/Foundations/Quantum/Register.lean) gives `onFirst U = U ⊗ I` (`onFirst_apply`).
@@ -375,6 +689,17 @@ lake build CslibFrontier.Algorithms.Quantum.PeriodFinding CslibFrontierTests.Qua
 ## Nonlocal games and Tsirelson's bound
 
 [POVM.lean](../../CslibFrontier/Foundations/Quantum/POVM.lean) adds general measurements. A `POVM A ι` is a family of positive semidefinite matrices `E_a` on `ℂ^ι` summing to the identity. Measuring a unit state `ψ` gives outcome `a` with probability `⟨ψ|E_a|ψ⟩` (`POVM.prob`, `POVM.measure`), and the computational-basis measurement `Cslib.Quantum.measure` is the POVM of the projections `|x⟩⟨x|` (`POVM.measure_basis`). Two parties measuring the halves of a bipartite state jointly perform the Kronecker product POVM (`POVM.kronecker`). A `±1` observable (Hermitian, `O² = 1`) is the projective measurement with effects `(1 ± O)/2`, outcome `false` for `+1` (`POVM.ofObservable`). Conversely, every two-outcome POVM has the observable `E_false − E_true` (`POVM.observable`), which satisfies `O² ≤ 1` even when the POVM is not projective (`POVM.posSemidef_one_sub_observable_mul_self`).
+
+
+[POVM/Density.lean](../../CslibFrontier/Foundations/Quantum/POVM/Density.lean) applies the same POVM to an `IsDensityMatrix ρ`, using the real trace pairing `densityProb M ρ a = Re (Tr (E_a ρ))` from [de Wolf][dewolf19], §15.1, p. 128. The probabilities are nonnegative and sum to one, and `measureDensity` packages them as the existing `PMF`. `densityProb_pureState` and `measureDensity_pureState` recover vector-state readout; `densityProb_basis` reads the diagonal of `ρ`. The outcome weights are linear in real mixtures. [Checked module clients](../../CslibFrontierTests/QuantumDensityPOVM.lean) give basis probabilities `1/3` and `2/3` for a biased mixture and a fair Pauli-X outcome even though its effects do not commute with the state. This API specifies outcome distributions; post-measurement states and instruments remain separate.
+
+To read a classical value while retaining quantum memory, import [Measurement/Classical.lean](../../CslibFrontier/Foundations/Quantum/Measurement/Classical.lean). Declare a function `f : ι → A` from basis indices to outcomes. `outcomeProjection f y` is the matrix of the existing amplitude projection `projOutcomes (f · = y)`, and `classicalDensityBranch f y ρ` is its conjugation of `ρ`. It retains the full register and coherence within each fiber. The branch traces sum to `ρ.trace`, and `map_measureDensity_basis_apply` identifies their probabilities with `(POVM.basis.measureDensity ρ hρ).map f`. Computing that distribution by a PMF map does not measure the undeclared work bits: their retained state is specified by the projection branch.
+
+Use `PMF.bindOnSupport` to continue from an observed outcome. Its support proof supplies `isDensityMatrix_normalize_classicalDensityBranch`; [DensityMatrix/Normalize.lean](../../CslibFrontier/Foundations/Quantum/DensityMatrix/Normalize.lean) divides a positive branch by its real trace. An impossible branch is zero, and no density matrix is supplied for it. `bindOnSupport_classicalDensityBranch_apply` equates supported normalization followed by linear state evolution and POVM readout with the sum of subnormalized branch readouts. On a joint active/reference state, use `f ∘ Prod.fst`: `partialTraceLeft_sum_classicalDensityBranch` preserves the reference after summing the branches, while individual conditional reference states may change. [Checked clients](../../CslibFrontierTests/QuantumClassicalInstrument.lean) preserve a `|+⟩` work qubit, show that full-register measurement would destroy its coherence, compute conditional Bell states, and handle a null outcome. This is the diagonal projective update of de Wolf §15.1; a general instrument or channel type is not introduced.
+
+Across a native classical query, [Oracle/Interaction.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Interaction.lean) composes two existing `UniformOracleCircuitFamily` values. `runClassicalQuery` measures the first stage's request prefix, samples one fixed-width reply, and resumes the second stage on `x ++ request ++ reply` with the entire saved register as quantum input. Both stages and the service receive the same table `H`. Width compatibility is explicit, and arbitrary finite reference correlations are retained. `measureDensity_runClassicalQuery_eq` gives supported request normalization; `measureDensity_resumeDensity_eq` exposes exactly one service draw. These laws reuse [POVM/Mixture.lean](../../CslibFrontier/Foundations/Quantum/POVM/Mixture.lean), which identifies matrix averaging with probabilistic sampling. The summed output preserves the reference marginal.
+
+[Oracle/InteractionResources.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/InteractionResources.lean) bounds both stages' widths, elementary gates, coherent queries and transcript length by a native-computable polynomial, with one separately charged classical call. The service's implementation, auxiliary-state preparation and ideal table sampling are outside that budget. [QuantumOracleInteraction.lean](../../CslibFrontierTests/QuantumOracleInteraction.lean) checks genuinely growing families and an actual accepted toy ML-KEM decapsulation path. Its retained work qubit decodes to zero with probability `1`, versus `1/2` after full-register measurement; its same-table comparison is zero with probability `1`, versus `1/2` after redrawing the service table. The toy uses a Boolean key and two table cells, not final FIPS encodings or hash internals. This is one resumable boundary; adaptive polynomial-round QROM execution and scheme security reductions remain open.
 
 [TwoProverGame/Quantum.lean](../../CslibFrontier/Computability/PCP/TwoProverGame/Quantum.lean) gives classical two-prover games (`TwoProverGame`) entangled strategies, in the finite-dimensional tensor-product model of Cleve, Høyer, Toner and Watrous (CCC 2004, §2). A `QuantumStrategy X Y A B ι κ` is a pure unit state on `ℂ^ι ⊗ ℂ^κ` with a POVM for each question of each player. `quantumWinProb` is `∑ π(x,y) ∑ V(a,b|x,y) ⟨ψ|X_x^a ⊗ Y_y^b|ψ⟩` (`quantumWinProb_eq_sum`). `quantumValue` is the supremum over the dimensions `Fin n` and `Fin m`; the source gives both players the same `ℂⁿ`, which gives the same value after padding (not formalized; the CHSH value is unaffected, since its bound covers all dimensions and the EPR strategy has equal dimensions). Relabelling the bases (`QuantumStrategy.reindex`) shows that every strategy on finite index types is bounded by `quantumValue` (`quantumWinProb_le_quantumValue`). A deterministic strategy is a strategy on one-dimensional systems (`QuantumStrategy.ofDeterministic`), so `value_le_quantumValue`.
 
@@ -405,6 +730,7 @@ The selected definitions and headline statements have been source-inspected; the
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dewolf19]: ../sources.md#dewolf19
+[forbesshpilka2013]: ../sources.md#forbesshpilka2013
 [grenet11]: ../sources.md#grenet11
 [hoyerleespalek07]: ../sources.md#hoyerleespalek07
 [mahler64]: ../sources.md#mahler64

@@ -610,7 +610,7 @@ private theorem forth_partialIsoOn_of_hasExtension_lt {M N : Type*} [L.Structure
   · push Not at hmem
     obtain ⟨m, hm, x, y, pos, hx, hpos⟩ := exists_distinct_pebble_enum h i
     let p : NewAtom L m → Bool := fun atom =>
-      decide (RelMap atom.1.1.2 ((Fin.cons c y : Fin (m + 1) → M) ∘ atom.1.2))
+      decide (RelMap atom.symbol.2 ((Fin.cons c y : Fin (m + 1) → M) ∘ atom.args))
     obtain ⟨d, hd_ne, hd_rel⟩ := hN m hm p x hx
     have hd_fresh : ∀ j ∈ S, j ≠ i → d ≠ b j :=
       fun j hj hne hdb => hd_ne (pos j hj hne) (hdb.trans (hpos j hj hne).1.symm)

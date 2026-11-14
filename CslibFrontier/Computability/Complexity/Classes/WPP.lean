@@ -252,31 +252,6 @@ theorem symmDiff_mem_LWPP (hA : A ∈ LWPP enc) (hB : B ∈ LWPP enc) : A ∆ B 
 
 /-! ### Finite multiple-target robustness -/
 
-private theorem finset_prod_intBin {ι : Type*} (s : Finset ι) {f : ι → α → ℤ}
-    (hf : ∀ i ∈ s, ComputableInPolyTime (f i) enc encIntBin) :
-    ComputableInPolyTime (fun a => ∏ i ∈ s, f i a) enc encIntBin := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    exact (ComputableInPolyTime.const 1).of_enc_eq fun _ => congrArg encIntBin (by simp)
-  | insert i s hi ih =>
-    have hmul := (hf i (Finset.mem_insert_self i s)).intBin_mul'
-      (ih fun j hj => hf j (Finset.mem_insert_of_mem hj))
-    exact hmul.of_enc_eq fun a => congrArg encIntBin (Finset.prod_insert hi)
-
-private theorem finset_prod_mem_GapP {ι : Type*} (s : Finset ι) {f : ι → α → ℤ}
-    (hf : ∀ i ∈ s, f i ∈ GapP enc) : (fun a => ∏ i ∈ s, f i a) ∈ GapP enc := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    exact GapP.one_mem
-  | insert i s hi ih =>
-    have hmul := GapP.mul_mem (hf i (Finset.mem_insert_self i s))
-      (ih fun j hj => hf j (Finset.mem_insert_of_mem hj))
-    convert hmul using 1
-    ext a
-    exact Finset.prod_insert hi
-
 private theorem finsetTargetWitness {ι : Type*} (s : Finset ι) {g : α → ℤ} {f : ι → α → ℤ}
     (hg : g ∈ GapP enc)
     (hf : ∀ i ∈ s, ComputableInPolyTime (f i) enc encIntBin)
@@ -287,10 +262,11 @@ private theorem finsetTargetWitness {ι : Type*} (s : Finset ι) {g : α → ℤ
       ∀ a, a ∈ A ↔ G a = ∏ i ∈ s, f i a := by
   let F : α → ℤ := fun a => ∏ i ∈ s, f i a
   let P : α → ℤ := fun a => ∏ i ∈ s, (f i a - g a)
-  have hF : ComputableInPolyTime F enc encIntBin := finset_prod_intBin s hf
+  have hF : ComputableInPolyTime F enc encIntBin := ComputableInPolyTime.intBin_finset_prod s hf
   have hFn (a : α) : F a ≠ 0 := Finset.prod_ne_zero_iff.mpr fun i hi => hn i hi a
-  have hP : P ∈ GapP enc :=
-    finset_prod_mem_GapP s fun i hi => GapP.sub_mem' (mem_GapP_of_polyTime (hf i hi)) hg
+  have hP : P ∈ GapP enc := by
+    simpa only [P, Finset.prod_fn, Pi.sub_apply] using
+      GapP.prod_mem s fun i hi => GapP.sub_mem' (mem_GapP_of_polyTime (hf i hi)) hg
   have hP_zero {a : α} (hz : g a = 0) : P a = F a := by
     simp [P, F, hz]
   have hP_mem {a : α} (hmem : ∃ i ∈ s, g a = f i a) : P a = 0 := by
@@ -324,7 +300,7 @@ theorem mem_WPP_of_finset_targets {ι : Type*} (s : Finset ι) {g : α → ℤ} 
     (hr : ∀ a, g a = 0 ∨ ∃ i ∈ s, g a = f i a)
     (hA : ∀ a, a ∈ A ↔ ∃ i ∈ s, g a = f i a) : A ∈ WPP enc := by
   obtain ⟨G, hG, hR, hGA⟩ := finsetTargetWitness s hg hf hn hr hA
-  exact ⟨G, hG, _, finset_prod_intBin s hf,
+  exact ⟨G, hG, _, ComputableInPolyTime.intBin_finset_prod s hf,
     fun a => Finset.prod_ne_zero_iff.mpr fun i hi => hn i hi a, hR, hGA⟩
 
 /-- **Finite multiple-target robustness for `LWPP`:** a `GapP` function that takes `0` outside `A`
@@ -340,7 +316,7 @@ theorem mem_LWPP_of_finset_targets {ι : Type*} (s : Finset ι) {g : α → ℤ}
   obtain ⟨G, hG, hR, hGA⟩ := finsetTargetWitness s hg
     (fun i hi => (hf i hi).comp (.encoding_length enc))
     (fun i hi a => hn i hi (enc a).length) hr hA
-  exact ⟨G, hG, fun n => ∏ i ∈ s, f i n, finset_prod_intBin s hf,
+  exact ⟨G, hG, fun n => ∏ i ∈ s, f i n, ComputableInPolyTime.intBin_finset_prod s hf,
     fun n => Finset.prod_ne_zero_iff.mpr fun i hi => hn i hi n, hR, hGA⟩
 
 /-! ### Unary-indexed target normalization and `LWPP` reduction closure -/

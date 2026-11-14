@@ -14,6 +14,11 @@ import sys
 import tempfile
 import tomllib
 
+try:
+    from check_progress import run_logged
+except ModuleNotFoundError:
+    from scripts.check_progress import run_logged
+
 
 class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
@@ -25,7 +30,7 @@ ENCODING_RATCHET = (
 PROJECTION_RATCHET = (
     "projection chain ratchet",
     [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", "{base}"])
-# The per-module ratchets of `ci-checks`, which read only the library sources.
+# The per-module ratchets of CI's `source-checks` job, which read only the library sources.
 RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
@@ -38,7 +43,7 @@ DATA_CHECKS = {
     "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
 }
 
-# The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
+# The source-only `source-checks` steps, scoped to the changed Lean files: source hygiene reads the
 # files under these roots (its default selection), the ratchets the modules under `RATCHET_ROOT`.
 # Each takes seconds; the post-build audits need whole-library outputs that quick mode does not
 # build, so they stay in the full check.
@@ -48,6 +53,9 @@ RATCHET_ROOT = "CslibFrontier/"
 
 # `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
 LINT_DRIVER = "batteries/runLinter"
+
+# Exit status for `--no-full-fallback` when the change needs the full check; argparse uses 2.
+NO_FALLBACK_STATUS = 3
 
 
 @dataclass
@@ -72,6 +80,22 @@ def git(root: Path, *args: str) -> str:
     if result.returncode or "ambiguous" in result.stderr.lower():
         raise FullCheck(f"Git cannot resolve {args[0]} safely: {result.stderr.strip()}")
     return result.stdout
+
+
+# An import line as `lake exe mk_all` writes it, with no comment or other text.
+AGGREGATE_IMPORT = re.compile(r"(?:public )?import ([A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)*)")
+
+
+def only_adds_imports(old: str, new: str, added: set[str]) -> bool:
+    """Whether `new` is `old` with import lines for some of the `added` modules inserted."""
+    rest, imported = [], set()
+    for line in new.split("\n"):
+        match = AGGREGATE_IMPORT.fullmatch(line)
+        if match and match[1] in added and match[1] not in imported:
+            imported.add(match[1])
+        else:
+            rest.append(line)
+    return bool(imported) and rest == old.split("\n")
 
 
 def imports_from_lean(root: Path, paths: list[str]) -> dict[str, list[str]]:
@@ -252,6 +276,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         checks.insert(0, ("source hygiene (changed files)",
                           [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
                            "--", *hygiene]))
+        # CI's changed-file lints that read only sources: a section-level `@[expose]` with no
+        # definition, and new tests that only restate signatures. The module-doc name lint reads
+        # whole-library build outputs, so it stays in the full check.
+        checks.insert(1, ("changed-file source lints (doc-name lint skipped)",
+                          [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
+                           "--source-only"]))
     if any(path.startswith(RATCHET_ROOT) for _, path in changes):
         for label, command in RATCHETS:
             ratchet = (label, [base if part == "{base}" else part for part in command])
@@ -270,8 +300,14 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         if "env_linter" in (root / path).read_text(errors="replace"):
             raise FullCheck(f"changed source mentions a linter: {path}")
         changed.add(by_path[path])
-    if changed & aggregates:
-        raise FullCheck("a library import aggregate changed")
+    added = {by_path[path] for status, path in changes if status == "A"}
+    for aggregate in sorted(changed & aggregates):
+        # `lake exe mk_all` adds an import line for each new module. The aggregate stays in
+        # `changed`, so its importing clients are built; any other edit falls back.
+        if not only_adds_imports(git(root, "show", f"{base}:{modules[aggregate]}"),
+                                 (root / modules[aggregate]).read_text(), added - aggregates):
+            raise FullCheck(f"library import aggregate {aggregate} changed beyond imports of "
+                            "modules this change adds")
     executables = executable_sources(root)
     imports = (parser or imports_from_lean)(
         root, list(dict.fromkeys([*by_path, *(exe.path for exe in executables)])))
@@ -328,11 +364,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                           for exe in selected_executables}))
 
 
-def run_check(root: Path, command: list[str], label: str) -> int:
+def run_check(root: Path, command: list[str], label: str, *, progress: bool = False) -> int:
     with tempfile.NamedTemporaryFile(prefix="cslib-frontier-quick-", suffix=".log", delete=False) as log:
         path = Path(log.name)
         try:
-            result = subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT)
+            result = run_logged(command, cwd=root, log=log,
+                                progress=sys.stdout if progress else None)
         except OSError as error:
             print(f"FAIL  {label}: {error}", file=sys.stderr)
             path.unlink(missing_ok=True)
@@ -349,11 +386,18 @@ def run_check(root: Path, command: list[str], label: str) -> int:
 def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument("--base", default="origin/main", help="comparison ref; use its merge base with HEAD")
+    args.add_argument("--no-full-fallback", action="store_true",
+                      help="when quick mode cannot plan the change, report why and exit with status "
+                           f"{NO_FALLBACK_STATUS} instead of running the full check")
     options = args.parse_args(argv)
     root = root or Path(__file__).resolve().parent.parent
     try:
         plan = make_plan(root, options.base)
     except (FullCheck, OSError, ValueError, TypeError) as error:
+        if options.no_full_fallback:
+            print(f"Quick check cannot plan this change: {error}. Build the changed modules and "
+                  "their clients directly, or let CI run the full check.", flush=True)
+            return NO_FALLBACK_STATUS
         print(f"Quick check falls back to the full check: {error}", flush=True)
         return subprocess.run([str(root / "scripts/check.sh"), "--base", options.base],
                               cwd=root).returncode
@@ -382,10 +426,12 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         with tempfile.TemporaryDirectory(prefix="cslib-frontier-restores-") as directory:
             files = Path(directory) / "files.json"
             files.write_text(json.dumps(plan.restore_files))
-            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--files-from", str(files)]
+            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--progress",
+                       "--files-from", str(files)]
             for source in plan.restore_built:
                 command.extend(["--built-under", source])
-            status = run_check(root, command, "affected files restored from the artifact cache")
+            status = run_check(root, command, "affected files restored from the artifact cache",
+                               progress=True)
         if status:
             return status
     status = run_lint(root, plan)

@@ -122,7 +122,8 @@ theorem uniformDecidableInTimeLogWord_of_decidableInTimeAndSpace {α : Type} {A 
   set M := Fintype.card Q
   set D' := 2 * K * D + 2 * K + M + 3
   refine ⟨stepCost K M + 2 + 2 * K + 13, D' + (e + 1) + 2, by omega, regs K,
-    simProgram tm.tr tm.q₀ (Fintype.equivFin Q), fun a w hw _ => ?_⟩
+    simProgram tm.tr tm.q₀ (Fintype.equivFin Q), (fun a w hw _ => ?_),
+    inputAdmissible_of_widthIndependent _ _⟩
   obtain ⟨hhalt, hout⟩ := (htm a).runFrom_of_le le_rfl
   have hsp : tm.RunsInSpace (enc a) (s a) := (htm a).2.2
   set n := (enc a).length

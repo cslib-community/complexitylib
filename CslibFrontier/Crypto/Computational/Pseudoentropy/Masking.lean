@@ -201,7 +201,6 @@ theorem maskedSequence_prediction_gap {α β : Type} [Fintype α] (source : Prob
             maskedSequencePredictor source observe truth mask count test (observe x)] - 1 / 2) := by
   have hgap := sequenceTest_gap (maskedSample source observe truth mask)
     ((fun x => (observe x, truth x)) <$> source) count test
-  simp only [Game.coe_succProbability] at hgap
   rw [hgap]; unfold maskedSequencePredictor; congr 1
   simpa only [bind_map_left] using maskedSample_prediction_gap source observe truth mask
     (fun observation trial => sequenceTest (maskedSample source observe truth mask)

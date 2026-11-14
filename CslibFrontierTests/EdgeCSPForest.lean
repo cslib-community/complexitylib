@@ -20,7 +20,7 @@ open Cslib.Logic.PL.CSP.DAG
 
 -- Equality depends on positional ports, not equality of relation symbols or variable names.
 private abbrev opaqueNames : CSP (ℕ → Bool) (ℕ → Bool) :=
-  [(fun _ => false, [fun _ => false, fun _ => true])]
+  [⟨fun _ => false, [fun _ => false, fun _ => true]⟩]
 private abbrev opaquePort (j : Fin 2) : opaqueNames.Occurrence := ⟨0, j⟩
 
 example : (⟨opaquePort 0, [opaquePort 1]⟩ : Expansion opaqueNames) =
@@ -29,7 +29,7 @@ example : (⟨opaquePort 0, []⟩ : Expansion opaqueNames) ≠ ⟨opaquePort 1, 
 example : (ScanResult.continued [opaquePort 0]) ≠
     ScanResult.meeting [] (opaquePort 1) := by decide
 
-private abbrev opaqueRelations : CSP (ℕ → Bool) ℕ := [(fun _ => false, [0, 1])]
+private abbrev opaqueRelations : CSP (ℕ → Bool) ℕ := [⟨fun _ => false, [0, 1]⟩]
 private abbrev opaqueRelationPort (j : Fin 2) : opaqueRelations.Occurrence := ⟨0, j⟩
 private abbrev opaqueMeeting : Meeting opaqueRelations :=
   ⟨[0], [], ⟨opaqueRelationPort 0, []⟩, opaqueRelationPort 1⟩
@@ -42,7 +42,7 @@ private def binarySem (odd : Bool) : List Bool → Bool
   | _ => false
 
 private abbrev augmentInstance : CSP Bool ℕ :=
-  [(false, [2 ^ 100, 2 ^ 200]), (false, [2 ^ 100, 2 ^ 200])]
+  [⟨false, [2 ^ 100, 2 ^ 200]⟩, ⟨false, [2 ^ 100, 2 ^ 200]⟩]
 
 private def augmentLabels : augmentInstance.OccurrenceLabeling Bool := fun o => o.1.val == 1
 
@@ -64,7 +64,7 @@ example : (match search binarySem augmentLabels with
   decide +kernel
 
 private abbrev triangle : CSP Bool ℕ :=
-  [(true, [0, 1]), (false, [1, 2]), (false, [2, 0])]
+  [⟨true, [0, 1]⟩, ⟨false, [1, 2]⟩, ⟨false, [2, 0]⟩]
 
 private def triangleLabels : triangle.OccurrenceLabeling Bool :=
   fun o => o.1.val == 0 && o.2.val == 0
@@ -89,7 +89,7 @@ private def starSem (r : Fin 3) : List Bool → Bool
   | [a] => r == 2 && a
   | _ => false
 
-private abbrev star : CSP (Fin 3) ℕ := [(0, [0, 1, 2]), (1, [1, 2]), (2, [0])]
+private abbrev star : CSP (Fin 3) ℕ := [⟨0, [0, 1, 2]⟩, ⟨1, [1, 2]⟩, ⟨2, [0]⟩]
 private def starLabels : star.OccurrenceLabeling Bool := fun o => o.1.val == 2
 
 example : EdgeInstance star := by unfold EdgeInstance; decide
@@ -121,7 +121,7 @@ private def repeatedSem (r : Fin 4) : List Bool → Bool
   | _ => false
 
 private abbrev repeated : CSP (Fin 4) ℕ :=
-  [(0, [0, 1, 2, 3]), (1, [1, 2]), (2, [0]), (3, [3])]
+  [⟨0, [0, 1, 2, 3]⟩, ⟨1, [1, 2]⟩, ⟨2, [0]⟩, ⟨3, [3]⟩]
 private def repeatedLabels : repeated.OccurrenceLabeling Bool := fun o => o.1.val == 2
 
 private theorem repeated_edge : EdgeInstance repeated := by unfold EdgeInstance; decide
@@ -206,7 +206,7 @@ private def pruneSem (r : Bool) : List Bool → Bool
   | _ => false
 
 private abbrev pruneInstance : CSP Bool ℕ :=
-  [(false, [0, 1, 2]), (true, [0]), (false, [1]), (true, [2])]
+  [⟨false, [0, 1, 2]⟩, ⟨true, [0]⟩, ⟨false, [1]⟩, ⟨true, [2]⟩]
 private def pruneLabels : pruneInstance.OccurrenceLabeling Bool :=
   fun o => o.1.val == 1 || o.1.val == 3
 private abbrev pp (j : Fin 3) : pruneInstance.Occurrence := ⟨0, j⟩
@@ -241,7 +241,7 @@ example : (match search (fun (_ : Unit) (_ : List Bool) => false)
     | _ => false) = true := by
   decide +kernel
 
-private abbrev rejected : CSP Unit ℕ := [((), [])]
+private abbrev rejected : CSP Unit ℕ := [⟨(), []⟩]
 example : ¬ ValidLabeling (fun _ _ => false) (F := rejected) (fun _ => false) := by
   unfold ValidLabeling
   decide

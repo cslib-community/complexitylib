@@ -387,9 +387,6 @@ theorem map_zipWith_uniformBlocks :
         uniformBlocks ms.length
   | [] => by simp
   | m :: ms => by
-    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
-        PMF.uniformOfFintype (BitString n) :=
-      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
     calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
         = (PMF.uniformOfFintype (BitString n)).bind fun u =>
             ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
@@ -402,12 +399,9 @@ theorem map_zipWith_uniformBlocks :
       _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
             (uniformBlocks ms.length).map ((u + m) :: ·) := by
           rw [map_zipWith_uniformBlocks ms]
-      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
-            (uniformBlocks ms.length).map (u :: ·) :=
-          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
-            (uniformBlocks ms.length).map (u :: ·)).symm
       _ = uniformBlocks (m :: ms).length := by
-          rw [hshift, List.length_cons, uniformBlocks_succ]
+          rw [PMF.uniformOfFintype_bind_add_right m fun u => (uniformBlocks ms.length).map (u :: ·),
+            List.length_cons, uniformBlocks_succ]
 
 /-- XORing a fixed block sequence `ms` into the uniform block draws paired with an independent
   uniform IV leaves the joint `(iv, blocks)` distribution invariant. -/
@@ -602,9 +596,8 @@ theorem ctrEncryptBlocks_overlapping_nonce (f step : BitString n → BitString n
   simp [ctrEncryptBlocks, ctrMaskBlocks, List.range_succ, overlappingStreamBlocks]
 /-- Distinguisher for Exercises 3.24 and 3.32: checks whether the second block of the first output
   equals the first block of the second output. -/
-def overlappingStreamTest
-    (out : (BitString n × BitString n) × (BitString n × BitString n)) : Bool :=
-  decide (out.1.2 = out.2.1)
+def overlappingStreamTest : (BitString n × BitString n) × (BitString n × BitString n) → Bool :=
+  fun ((_, inner₁), (inner₂, _)) => decide (inner₁ = inner₂)
 /-- `overlappingStreamTest` always accepts `overlappingStreamBlocks f step iv`. -/
 @[simp]
 theorem overlappingStreamTest_overlappingStreamBlocks (f step : BitString n → BitString n)
@@ -752,8 +745,8 @@ def additiveModeCipher {B α : Type*} [Add B] (π : B → α) (δ r m₁ m₂ : 
   (r, (π (r + m₁), π (r + δ + m₂)))
 /-- Zero-query distinguisher for `additiveModeCipher` on `M₀ = (0, 0)` vs `M₁ = (0, -δ)`: tests
   whether the two ciphertext blocks are equal (`c₁ = c₂`). -/
-def additiveModeDistinguisher {B α : Type*} [DecidableEq α] (c : B × (α × α)) : Bool :=
-  decide (c.2.1 = c.2.2)
+def additiveModeDistinguisher {B α : Type*} [DecidableEq α] : B × (α × α) → Bool :=
+  fun (_, (c₁, c₂)) => decide (c₁ = c₂)
 /-- For any injective `π : B → α` over `[AddCommGroup B]` and nonzero step `δ ≠ 0`,
   `additiveModeDistinguisher` rejects every encryption of `(0, 0)` and accepts every encryption of
   `(0, -δ)` ([KatzLindell2020], Exercise 3.25). -/

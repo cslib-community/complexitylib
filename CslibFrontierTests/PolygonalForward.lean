@@ -40,7 +40,7 @@ private theorem checkedGenus {G : Graph} (r : RotationSystem G)
     (RotationCertificate.verifyRotation_ofRotation r hG)).mp h
   exact RotationCertificate.decode_ofRotation r hG ▸ he
 
-private abbrev points : Graph := ([7, 11, 1000000, 7, 1000000], [])
+private abbrev points : Graph := ⟨[7, 11, 1000000, 7, 1000000], []⟩
 
 private def soleEdge : RotationSystem (lastEdgeGraph points 7 11) where
   rotate := Equiv.refl _
@@ -52,7 +52,7 @@ example : ∃ D : PolygonalDrawing (lastEdgeGraph points 7 11),
   soleEdge.exists_polygonalDrawing (by decide +kernel)
     (checkedGenus soleEdge (by decide +kernel) (by decide +kernel))
 
-private abbrev oneBlock : Graph := ([0, 1, 12, 12], [(0, 0)])
+private abbrev oneBlock : Graph := ⟨[0, 1, 12, 12], [(0, 0)]⟩
 
 private def pendant : RotationSystem (lastEdgeGraph oneBlock 0 1) where
   rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (lastEdgeGraph oneBlock 0 1))
@@ -66,7 +66,7 @@ example : ∃ D : PolygonalDrawing (lastEdgeGraph oneBlock 0 1),
   pendant.exists_polygonalDrawing (by decide +kernel)
     (checkedGenus pendant (by decide +kernel) (by decide +kernel))
 
-private abbrev otherBlock : Graph := ([0, 1, 12, 12], [(1, 1)])
+private abbrev otherBlock : Graph := ⟨[0, 1, 12, 12], [(1, 1)]⟩
 
 private def pendantOther : RotationSystem (lastEdgeGraph otherBlock 0 1) where
   rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (lastEdgeGraph otherBlock 0 1))
@@ -81,7 +81,7 @@ example : ∃ D : PolygonalDrawing (lastEdgeGraph otherBlock 0 1),
     (checkedGenus pendantOther (by decide +kernel) (by decide +kernel))
 
 private abbrev residual : Graph :=
-  ([7, 11, 50, 1000000, 7, 1000000], [(7, 7), (11, 11), (7, 11), (50, 50)])
+  ⟨[7, 11, 50, 1000000, 7, 1000000], [(7, 7), (11, 11), (7, 11), (50, 50)]⟩
 
 private def certificate : RotationCertificate := ⟨[1, 4, 3, 9, 8, 2, 7, 6, 0, 5]⟩
 
@@ -108,8 +108,8 @@ example : ∃ D : PolygonalDrawing points, D.IsEmbedding ∧ D.Realizes emptyRot
   emptyRotation.exists_polygonalDrawing (by decide)
     (checkedGenus emptyRotation (by decide) (by decide +kernel))
 
-example (r : RotationSystem ([], [])) :
-    ∃ D : PolygonalDrawing ([], []), D.IsEmbedding ∧ D.Realizes r := by
+example (r : RotationSystem ⟨[], []⟩) :
+    ∃ D : PolygonalDrawing ⟨[], []⟩, D.IsEmbedding ∧ D.Realizes r := by
   apply r.exists_polygonalDrawing
   · simp [Graph.incidenceVertices]
   · intro root hroot

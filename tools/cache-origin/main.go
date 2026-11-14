@@ -31,17 +31,23 @@ func (s *store) handler() http.Handler {
 			http.Error(w, "PUT required", http.StatusMethodNotAllowed)
 			return
 		}
-		if r.Header.Get("Content-Type") != "application/x-tar" {
+		mediaType := r.Header.Get("Content-Type")
+		if mediaType != fullMediaType && mediaType != probeMediaType && mediaType != deltaMediaType {
 			http.Error(w, "application/x-tar required", http.StatusUnsupportedMediaType)
 			return
 		}
-		if r.ContentLength > maxPackage {
+		limit := int64(maxPackage)
+		if mediaType == probeMediaType {
+			limit = maxMetadata + maxMapping + 16384
+		}
+		if r.ContentLength > limit {
 			http.Error(w, "package too large", http.StatusRequestEntityTooLarge)
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, maxPackage)
+		r.Body = http.MaxBytesReader(w, r.Body, limit)
 		defer r.Body.Close()
-		if err := s.publish(r.Body, revision); err != nil {
+		missing, err := s.receive(r.Body, revision, mediaType)
+		if err != nil {
 			status := http.StatusBadRequest
 			var tooLarge *http.MaxBytesError
 			var filesystemError *os.PathError
@@ -49,6 +55,8 @@ func (s *store) handler() http.Handler {
 			case errors.Is(err, syscall.EWOULDBLOCK):
 				status = http.StatusServiceUnavailable
 				w.Header().Set("Retry-After", "5")
+			case errors.Is(err, errMissing):
+				status = http.StatusPreconditionFailed
 			case errors.Is(err, errConflict):
 				status = http.StatusConflict
 			case errors.As(err, &tooLarge):
@@ -63,6 +71,14 @@ func (s *store) handler() http.Handler {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
+		if mediaType == probeMediaType {
+			json.NewEncoder(w).Encode(struct {
+				Version  int      `json:"version"`
+				Revision string   `json:"revision"`
+				Missing  []string `json:"missing"`
+			}{1, revision, missing})
+			return
+		}
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{"revision": revision, "status": "published"})
 	})

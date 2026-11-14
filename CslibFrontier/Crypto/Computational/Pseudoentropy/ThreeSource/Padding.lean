@@ -16,8 +16,8 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 
 One polynomial bounds the input sizes of all entropy-grid entries. Padding to that common
 length gives each candidate exactly one bit of stretch and preserves the secure choice against
-uniform indexed tests. The common length is increasing and at least the security parameter plus
-one, preparing later reindexing by the actual seed length.
+tests that read the advice and the index. The common length is increasing and at least the
+security parameter plus one, preparing later reindexing by the actual seed length.
 
 ## Main definitions
 
@@ -28,9 +28,8 @@ one, preparing later reindexing by the actual seed length.
 
 * `exists_common_seedLength`: one increasing efficient schedule bounds every entry's seed length.
 * `isPolyTime_paddedGenerate`, `length_paddedGenerate`: efficient evaluation with one-bit stretch.
-* `exists_secure_padded_choice_withAdvice`, `exists_secure_padded_choice`: padding preserves a
-  choice secure against every uniform indexed test, relative to fixed advice and in the uniform
-  case.
+* `exists_secure_padded_choice_withAdvice`: padding preserves the secure choice, for tests that
+  read the advice and the index.
 
 ## References
 
@@ -129,8 +128,8 @@ theorem length_paddedGenerate {pair : SamplablePair} (saved : pair.SeedRealizati
   rw [length_generate saved n _ _ _ hfits hseed]
   exact seedLength_lt_outputLength ..
 
-/-- Padding preserves one secure choice relative to fixed advice against every uniform indexed
-test. -/
+/-- Padding preserves one secure choice relative to fixed advice: the padded candidate is
+indistinguishable from uniform for tests that read both the advice and the candidate index. -/
 theorem exists_secure_padded_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (saved : pair.SeedRealization)
@@ -139,63 +138,32 @@ theorem exists_secure_padded_choice_withAdvice {pair : SamplablePair} {gap : ℕ
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
     ∃ choose : ℕ → ℕ,
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-          encBool (fun ((a, i), word) => test a i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (common n)).map (paddedGenerate n (saved.length n) (observationBound n)
-            (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
-              (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
-          ((uniformList (common n + 1)).bind
-            (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+      IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n))
+        (fun n => (uniformList (common n)).map (paddedGenerate n (saved.length n)
+          (observationBound n) (densityBound n) (common n) (choose n) (saved.evaluate n)))
+        (fun n => uniformList (common n + 1)) := by
   obtain ⟨hobservation, hdensity, hcommon, hfits, hbound⟩ := bounds
   obtain ⟨choose, hchoose, hsecure⟩ :=
     exists_secure_choice_withAdvice hpair saved hobservation hdensity hfits hgap
-  refine ⟨choose, hchoose, fun test htest => ?_⟩
-  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have hn := hp1.fst'.fst'
-  have hadv := htest.preprocess
-    ((ComputableInPolyTime.fst (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-      encBits).fst'.prod (.snd _ _))
-  let reduction := fun (a : ℕ × List Bool) index => GeneratorPadding.test
-    (seedLength a.1 (saved.length a.1) (observationBound a.1) (densityBound a.1) index)
-    (common a.1) (test a index)
-  have h := hsecure reduction (by
+  refine ⟨choose, hchoose, IndistinguishableWithAdvice.of_negligible_encoded fun test htest => ?_⟩
+  have hp1 := ComputableInPolyTime.fst (encPair encUnary (encPair encBits encUnary)) encBits
+  have hn := hp1.fst'
+  have h := hsecure.negligible_encoded
+    (test := fun input => GeneratorPadding.test
+      (seedLength input.1.1 (saved.length input.1.1) (observationBound input.1.1)
+        (densityBound input.1.1) input.1.2.2)
+      (common input.1.1) (fun word => test (input.1, word)) input.2) (by
     apply GeneratorPadding.isPPTOn_test
     · exact isPolyTime_seedLength hn (hn.trans saved.length_isPolyTime) (hn.trans hobservation)
-        (hn.trans hdensity) hp1.snd'
+        (hn.trans hdensity) hp1.snd'.snd'
     · exact hn.trans hcommon
-    · exact hadv
+    · exact htest.preprocess ((hp1.comp (.fst _ _)).prod (.snd _ _))
     · exact .snd _ _)
   apply h.congr'
   filter_upwards [hchoose] with n hn
-  dsimp only [reduction, paddedGenerate]
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   exact (GeneratorPadding.advantage_eq _ _ (hbound n (choose n) hn)
-    (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
-      (choose n))).symm
-
-/-- Padding preserves one secure choice against every uniform indexed test. -/
-theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
-    {observationBound densityBound common : ℕ → ℕ}
-    (bounds : PaddingBounds saved observationBound densityBound common)
-    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
-    ∃ choose : ℕ → ℕ,
-      (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun ((n, i), word) => test n i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (common n)).map (paddedGenerate n (saved.length n) (observationBound n)
-            (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
-              (fun word => ProbComp.eval (test n (choose n) word)))
-          ((uniformList (common n + 1)).bind
-            (fun word => ProbComp.eval (test n (choose n) word)))) := by
-  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_padded_choice_withAdvice
-    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap
-  refine ⟨choose, hchoose, fun test htest => ?_⟩
-  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have htest' := htest.preprocess ((hp1.fst'.fst'.prod hp1.snd').prod (.snd _ _))
-  exact hsecure (fun a => test a.1) htest'
+      (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
+        (choose n))).symm
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

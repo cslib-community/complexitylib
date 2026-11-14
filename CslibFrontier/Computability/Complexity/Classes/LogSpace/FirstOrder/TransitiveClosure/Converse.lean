@@ -12,10 +12,10 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Input
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
-import CslibFrontier.Computability.Complexity.Fagin.Converse
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
 import CslibFrontier.Foundations.Relation.Transport
+import CslibFrontier.Logics.FirstOrder.Encoding.PowerBound
 
 /-!
 # Nondeterministic logarithmic space in FO(TC)
@@ -192,15 +192,12 @@ theorem exists_pow_fits {L : Language} (v : Vocabulary L) (State : Type) [Fintyp
           (encStructure a).length < a.1 ^ K ∧
             ∀ u, Relation.ReflTransGen ntm.ViewStep (ntm.initView (encStructure a)) u →
               Fits (a.1 ^ K) (registers u) := by
-  obtain ⟨K, hK, har, hpow⟩ := v.exists_pow_bound 0 1 (radixExponent State c)
+  obtain ⟨K, hK, har, hpow⟩ := v.exists_pow_bound
+    (fun n => n + radix (radixExponent State c) n) (by unfold radix; fun_prop)
   refine ⟨K, hK, har, fun a ha h2 k ntm hs => ?_⟩
-  obtain ⟨hinput, hclock⟩ := hpow a ha h2
-  simp only [Polynomial.eval_zero, Nat.add_zero, Nat.one_mul, Turing.MultiTapeTM.length_frame]
-    at hinput hclock
-  have hradix : radix (radixExponent State c) (encStructure a).length ≤ a.1 ^ K := by
-    have hle : (encStructure a).length + 2 ≤ 2 * (encStructure a).length + 1 + 1 := by omega
-    exact (Nat.pow_le_pow_left hle _).trans (by omega)
-  exact ⟨by omega, fun _ hv i => (fits_of_runsInSpace c hs hv i).trans_le hradix⟩
+  have hb : (encStructure a).length + radix (radixExponent State c) (encStructure a).length <
+      a.1 ^ K := hpow a ha h2
+  exact ⟨by omega, fun _ hv i => (fits_of_runsInSpace c hs hv i).trans_le (by omega)⟩
 
 end Cslib.Logic.Vocabulary
 

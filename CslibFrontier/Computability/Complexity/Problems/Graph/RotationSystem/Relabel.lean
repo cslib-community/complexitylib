@@ -25,13 +25,13 @@ namespace Cslib.Complexity.Graph
 
 /-- Map the actual declared names and both endpoints of every listed edge occurrence. -/
 @[expose] def relabel (G : Graph) (f : ℕ → ℕ) : Graph :=
-  (G.1.map f, G.2.map (Prod.map f f))
+  ⟨G.vertices.map f, G.edges.map (Prod.map f f)⟩
 
 /-- Mapping all declared names and edge endpoints retains endpoint declaration, without
 an injectivity assumption on the map. -/
 theorem endpoints_declared_relabel (G : Graph) (f : ℕ → ℕ)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
-    ∀ v ∈ (G.relabel f).incidenceVertices, v ∈ (G.relabel f).1 := by
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
+    ∀ v ∈ (G.relabel f).incidenceVertices, v ∈ (G.relabel f).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   obtain ⟨old, ho, rfl⟩ := List.mem_map.mp he
@@ -44,18 +44,18 @@ namespace Dart
 
 /-- A vertex-name map retains every original indexed edge end. No injection is required. -/
 @[expose] def relabelEquiv (G : Graph) (f : ℕ → ℕ) : Dart G ≃ Dart (G.relabel f) :=
-  (finCongr (show G.2.length = (G.relabel f).2.length by simp [Graph.relabel])).prodCongr
+  (finCongr (show G.edges.length = (G.relabel f).edges.length by simp [Graph.relabel])).prodCongr
     (Equiv.refl Bool)
 
 /-- The actual endpoint is mapped by the supplied name function. -/
 theorem vertex_relabelEquiv (G : Graph) (f : ℕ → ℕ) (d : Dart G) :
     (relabelEquiv G f d).vertex = f d.vertex := by
   rcases d with ⟨i, b⟩
-  change (if b then ((G.2.map (Prod.map f f)).getD i.val (0, 0)).2
-    else ((G.2.map (Prod.map f f)).getD i.val (0, 0)).1) = _
+  change (if b then ((G.edges.map (Prod.map f f)).getD i.val (0, 0)).2
+    else ((G.edges.map (Prod.map f f)).getD i.val (0, 0)).1) = _
   rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using i.isLt),
     List.getElem_map]
-  change _ = f (if b then (G.2.getD i.val (0, 0)).2 else (G.2.getD i.val (0, 0)).1)
+  change _ = f (if b then (G.edges.getD i.val (0, 0)).2 else (G.edges.getD i.val (0, 0)).1)
   rw [List.getD_eq_getElem _ _ i.isLt]
   cases b <;> rfl
 

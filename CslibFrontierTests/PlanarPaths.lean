@@ -46,7 +46,7 @@ example : ((paths single).filter fun r => r.contains (3, 4)).length ≤ 1 :=
 example : ((paths single).filter fun r => r.contains (3, 4)).length = 1 := by decide +kernel
 
 -- Canonical path certificates are available from the shared path API alone.
-private def singleOccurrence : Occurrence ℕ := (0, 0, (0, true))
+private def singleOccurrence : Occurrence ℕ := ⟨0, 0, (0, true)⟩
 
 private theorem single_mem : singleOccurrence ∈ Cslib.Logic.PL.occurrences single := by decide
 

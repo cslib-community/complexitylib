@@ -2,14 +2,16 @@
 """Re-elaborate local Lean files whose build outputs came from Lake's artifact cache (#4523).
 
 Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--built-under PATH ...]
+                                            [--progress | --quiet]
 
 `lakefile.toml` enables Lake's local artifact cache, which checkouts on the same machine share.
-Lake stores a module's outputs there whenever it builds them, also when the build logged warnings.
-Only `--wfail` and `--iofail` turn those warnings into failures. A cache entry keeps the outputs
-but not the messages. When another checkout later builds the same source, Lake restores the
-outputs and writes a trace marked `"synthetic": true` with an empty log, so
-`lake build --wfail --iofail` and `lake test --wfail --iofail` pass without showing the warnings.
-CI does not hit this, because its remote cache is published only from `main`.
+Lake stores a module's outputs there even when the build logged warnings. Individual-artifact
+(`.arts`) restoration without the original trace writes `"synthetic": true` with an empty log,
+so `lake build --wfail --iofail` and `lake test --wfail --iofail` can pass without showing those
+warnings. An ordinary `.ltar` archive can preserve the original trace and its messages; such a
+restore need not be re-elaborated by this audit. Later individual-artifact reuse can lose those
+messages again. CI publishes its remote cache only from `main`; this local check recovers
+diagnostics rather than establishing artifact provenance or proof trust.
 
 After the Lean gates, `scripts/full_check.py` runs this check for all built sources of the root
 package, including unchanged clients, tests and executables. This also covers deletions and
@@ -21,8 +23,12 @@ traces are checked too.
 It runs `lake -q lean` on each selected file whose trace is synthetic and fails when the command
 fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
 informational output too. `lake lean` first builds the file's imports and replays their logs, so
-a reported message can also come from an import. Files are elaborated one at a time. This local
-audit does not change Lake: a bare `lake build` still cannot replay a cached module's messages.
+a reported message can also come from an import. Files are elaborated one at a time. A successful
+audit leaves traces unchanged and records no receipt, so repeating it can re-elaborate the same
+sources. It does not repair the missing diagnostic metadata in Lake's individual-artifact cache.
+Outside CI, progress lists the selected count and each source before elaboration, with elapsed
+audit time. `--progress` enables those lines in CI; `--quiet` suppresses them locally. Failures
+and the final summary are always printed.
 """
 
 from __future__ import annotations
@@ -30,9 +36,11 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,7 +123,14 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                         help="JSON list of affected source paths; default: all built root sources")
     parser.add_argument("--built-under", action="append", default=[],
                         help="also check built sources at this file or under this directory")
+    progress = parser.add_mutually_exclusive_group()
+    progress.add_argument("--progress", action="store_true", dest="progress",
+                          help="show source-by-source progress, including in CI")
+    progress.add_argument("--quiet", action="store_false", dest="progress",
+                          help="suppress progress lines, retaining failures and the summary")
+    parser.set_defaults(progress=not os.environ.get("CI"))
     args = parser.parse_args(argv)
+    started = time.monotonic()
     try:
         selected = json.loads(args.files_from.read_text()) if args.files_from else None
         if args.files_from and (not isinstance(selected, list)
@@ -125,8 +140,13 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     except (OSError, ValueError) as error:
         print(f"Cannot audit restored sources: {error}", file=sys.stderr)
         return 1
+    if args.progress:
+        print(f"Cache-restore audit: checking {len(files)} source(s) serially.", flush=True)
     failed = []
-    for rel in files:
+    for index, rel in enumerate(files, 1):
+        if args.progress:
+            print(f"Cache-restore audit [{index}/{len(files)}]: {rel} "
+                  f"(elapsed {time.monotonic() - started:.1f}s)", flush=True)
         result = elaborate(root, rel)
         if result.returncode or result.stdout.strip():
             failed.append(rel)
@@ -134,12 +154,15 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
             # also come from an import that this checkout built with warnings.
             print(f"FAIL  {rel} (restored or missing trace; messages from it or its "
                   f"imports)\n{result.stdout.rstrip()}", flush=True)
+    elapsed = time.monotonic() - started
     if failed:
         print(f"Re-elaborating {len(failed)} file(s) with restored or missing traces "
-              "printed messages that `lake build --wfail --iofail` did not replay; see #4523.",
+              "printed messages that `lake build --wfail --iofail` did not replay; "
+              f"see #4523. Audit elapsed {elapsed:.1f}s.",
               file=sys.stderr)
         return 1
-    print(f"Files with restored or missing traces re-elaborated cleanly ({len(files)}).")
+    print(f"Files with restored or missing traces re-elaborated cleanly ({len(files)}) "
+          f"in {elapsed:.1f}s.")
     return 0
 
 

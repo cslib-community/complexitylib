@@ -16,16 +16,16 @@ open Cslib.Complexity Cslib.Logic.PL
 -- Vertex names depend on the number of distinct variables, not their numeric magnitudes.
 example : SAT.incidenceGraph
     ([[(17, true), (17, false)], [], [(100000000000000000000, false)]] : CNF ℕ) =
-    ([0, 1, 2, 3, 4], [(0, 2), (0, 2), (1, 4)]) := by decide
+    ⟨[0, 1, 2, 3, 4], [(0, 2), (0, 2), (1, 4)]⟩ := by decide
 
 -- An empty clause remains an isolated clause vertex. Repeated clauses have distinct vertices.
-example : SAT.incidenceGraph ([[], []] : CNF ℕ) = ([0, 1], []) := by decide
+example : SAT.incidenceGraph ([[], []] : CNF ℕ) = ⟨[0, 1], []⟩ := by decide
 
-example : SAT.incidenceGraph ([] : CNF ℕ) = ([], []) := by decide
+example : SAT.incidenceGraph ([] : CNF ℕ) = ⟨[], []⟩ := by decide
 
 -- The construction works for ordinary finite variable types too.
 example : SAT.incidenceGraph ([[(true, false)], [(false, true)]] : CNF Bool) =
-    ([0, 1, 2, 3], [(0, 2), (1, 3)]) := by decide
+    ⟨[0, 1, 2, 3], [(0, 2), (1, 3)]⟩ := by decide
 
 -- One actual width/occurrence-bounded formula exercises canonical degree-three ports.
 private def boundedFormula : CNF ℕ :=
@@ -34,7 +34,7 @@ private def boundedFormula : CNF ℕ :=
 private def boundedGraph : Graph := SAT.incidenceGraph boundedFormula
 
 example : boundedGraph =
-    ([0, 1, 2, 3, 4, 5], [(0, 3), (1, 3), (0, 4), (1, 4), (2, 4), (0, 5), (2, 5)]) := by decide
+    ⟨[0, 1, 2, 3, 4, 5], [(0, 3), (1, 3), (0, 4), (1, 4), (2, 4), (0, 5), (2, 5)]⟩ := by decide
 
 private theorem bounded_degree : ∀ v, boundedGraph.incidenceVertices.count v ≤ 3 := by
   intro v
@@ -58,7 +58,7 @@ example : Graph.portAt boundedGraph.canonicalPorts 0 false ≠
     Graph.portAt boundedGraph.canonicalPorts 2 false := by
   have h := Graph.canonical_index_port_ne boundedGraph
     (fun _ => SAT.incidenceGraph_endpoints) bounded_degree
-    (by decide : 0 < boundedGraph.2.length) (by decide : 2 < boundedGraph.2.length)
+    (by decide : 0 < boundedGraph.edges.length) (by decide : 2 < boundedGraph.edges.length)
     (by decide) false false
   exact fun hp => h (Prod.ext (by decide) hp)
 

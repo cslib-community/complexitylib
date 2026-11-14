@@ -33,7 +33,8 @@ variable {Rel V : Type} {m n : ℕ}
 @[expose] noncomputable def scopeJoinSourceEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V) :
     (F.Occurrence ⊕ Fin m) ⊕ (H.Occurrence ⊕ Fin n) ≃
-      ((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])).Occurrence :=
+      ((F ++ [Constraint.mk r (List.ofFn x)]) ++
+        (H ++ [Constraint.mk r (List.ofFn y)])).Occurrence :=
   (Equiv.sumCongr (appendOfFnOccurrenceEquiv F r x) (appendOfFnOccurrenceEquiv H r y)).trans
     (appendOccurrenceEquiv _ _)
 
@@ -42,7 +43,7 @@ The concatenated scope has the same positive cyclic orientation after the center
 @[expose] noncomputable def scopeJoinTargetEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V) :
     (F.Occurrence ⊕ Fin m) ⊕ (H.Occurrence ⊕ Fin n) ≃
-      ((F ++ H) ++ [(r, List.ofFn (Fin.addCases y x))]).Occurrence :=
+      ((F ++ H) ++ [Constraint.mk r (List.ofFn (Fin.addCases y x))]).Occurrence :=
   (Equiv.sumSumSumComm F.Occurrence (Fin m) H.Occurrence (Fin n)).trans
     ((Equiv.sumCongr (appendOccurrenceEquiv F H)
       ((Equiv.sumComm (Fin m) (Fin n)).trans finSumFinEquiv)).trans
@@ -51,8 +52,8 @@ The concatenated scope has the same positive cyclic orientation after the center
 /-- Every source edge occurrence has its exact target occurrence in the joined-scope body. -/
 @[expose] noncomputable def scopeJoinOccurrenceEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V) :
-    ((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])).Occurrence ≃
-      ((F ++ H) ++ [(r, List.ofFn (Fin.addCases y x))]).Occurrence :=
+    ((F ++ [Constraint.mk r (List.ofFn x)]) ++ (H ++ [Constraint.mk r (List.ofFn y)])).Occurrence ≃
+      ((F ++ H) ++ [Constraint.mk r (List.ofFn (Fin.addCases y x))]).Occurrence :=
   (scopeJoinSourceEquiv F H r x y).symm.trans (scopeJoinTargetEquiv F H r x y)
 
 private theorem source_left (F H : CSP Rel V) (r : Rel) (x : Fin m → V) (y : Fin n → V)
@@ -150,7 +151,8 @@ theorem record_scopeJoinTargetEquiv (F H : CSP Rel V) (r : Rel)
 /-- The occurrence map leaves every actual variable label unchanged. -/
 theorem var_scopeJoinOccurrenceEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V)
-    (o : ((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])).Occurrence) :
+    (o : ((F ++ [Constraint.mk r (List.ofFn x)]) ++
+      (H ++ [Constraint.mk r (List.ofFn y)])).Occurrence) :
     (scopeJoinOccurrenceEquiv F H r x y o).var = o.var := by
   obtain ⟨a, rfl⟩ := (scopeJoinSourceEquiv F H r x y).surjective o
   have hs := congrArg (fun record => record.2.2) (record_scopeJoinSourceEquiv F H r x y a)
@@ -164,7 +166,8 @@ theorem var_scopeJoinOccurrenceEquiv (F H : CSP Rel V) (r : Rel)
 identified. This guard is about positions, including list-identical rows and nullaries. -/
 theorem constraint_scopeJoinOccurrenceEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V)
-    (o p : ((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])).Occurrence) :
+    (o p : ((F ++ [Constraint.mk r (List.ofFn x)]) ++
+      (H ++ [Constraint.mk r (List.ofFn y)])).Occurrence) :
     (scopeJoinOccurrenceEquiv F H r x y o).1 = (scopeJoinOccurrenceEquiv F H r x y p).1 ↔
       Function.update id (F.length + 1 + H.length) F.length o.1.val =
         Function.update id (F.length + 1 + H.length) F.length p.1.val := by
@@ -274,7 +277,8 @@ private theorem argumentSuccessor_target_splice (F H : CSP Rel V) (r : Rel)
 argument cycles, with no reflected scope or arbitrary all-port conjunction principle. -/
 theorem argumentSuccessor_scopeJoinOccurrenceEquiv (F H : CSP Rel V) (r : Rel)
     (x : Fin (m + 1) → V) (y : Fin (n + 1) → V)
-    (o : ((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])).Occurrence) :
+    (o : ((F ++ [Constraint.mk r (List.ofFn x)]) ++
+      (H ++ [Constraint.mk r (List.ofFn y)])).Occurrence) :
     scopeJoinOccurrenceEquiv F H r x y (argumentSuccessor (Equiv.swap
       (scopeJoinSourceEquiv F H r x y (Sum.inl (Sum.inr (Fin.last m))))
       (scopeJoinSourceEquiv F H r x y (Sum.inr (Sum.inr (Fin.last n)))) o)) =
@@ -291,33 +295,39 @@ variable [DecidableEq V]
 private theorem source_probe_left_vertex (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V) (i : Fin m) :
     (incidenceDart (scopeJoinSourceEquiv F H r x y (Sum.inl (Sum.inr i))) true).vertex =
-      (((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])) : CSP Rel V).numVars +
+      (((F ++ [Constraint.mk r (List.ofFn x)]) ++ (H ++ [Constraint.mk r (List.ofFn y)])) :
+        CSP Rel V).numVars +
         F.length := by
   rw [vertex_incidenceDart]
   simp only [ite_true]
   exact congrArg (fun record =>
-    (((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])) : CSP Rel V).numVars + record.1)
+    (((F ++ [Constraint.mk r (List.ofFn x)]) ++ (H ++ [Constraint.mk r (List.ofFn y)])) :
+      CSP Rel V).numVars + record.1)
       (record_scopeJoinSourceEquiv F H r x y (Sum.inl (Sum.inr i)))
 
 private theorem source_probe_right_vertex (F H : CSP Rel V) (r : Rel)
     (x : Fin m → V) (y : Fin n → V) (i : Fin n) :
     (incidenceDart (scopeJoinSourceEquiv F H r x y (Sum.inr (Sum.inr i))) true).vertex =
-      (((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])) : CSP Rel V).numVars +
+      (((F ++ [Constraint.mk r (List.ofFn x)]) ++ (H ++ [Constraint.mk r (List.ofFn y)])) :
+        CSP Rel V).numVars +
         (F.length + 1 + H.length) := by
   rw [vertex_incidenceDart]
   simp only [ite_true]
   exact congrArg (fun record =>
-    (((F ++ [(r, List.ofFn x)]) ++ (H ++ [(r, List.ofFn y)])) : CSP Rel V).numVars + record.1)
+    (((F ++ [Constraint.mk r (List.ofFn x)]) ++ (H ++ [Constraint.mk r (List.ofFn y)])) :
+      CSP Rel V).numVars + record.1)
       (record_scopeJoinSourceEquiv F H r x y (Sum.inr (Sum.inr i)))
 
 /-- Join the two actual probe centers at their last outgoing corners. Both probe scopes
 are nonempty, so their actual constraint darts supply the corners even for empty bodies. -/
 @[expose] noncomputable def scopeJoinRotation (F H : CSP Rel V) (r : Rel)
     (x : Fin (m + 1) → V) (y : Fin (n + 1) → V)
-    (hd : List.Disjoint (F ++ [(r, List.ofFn x)]).vars (H ++ [(r, List.ofFn y)]).vars)
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn x)])))
-    (tau : RotationSystem (incidenceGraph (H ++ [(r, List.ofFn y)]))) :
-    RotationSystem (incidenceGraph ((F ++ H) ++ [(r, List.ofFn (Fin.addCases y x))])) :=
+    (hd : List.Disjoint (F ++ [Constraint.mk r (List.ofFn x)]).vars
+      (H ++ [Constraint.mk r (List.ofFn y)]).vars)
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn x)])))
+    (tau : RotationSystem (incidenceGraph (H ++ [Constraint.mk r (List.ofFn y)]))) :
+    RotationSystem
+      (incidenceGraph ((F ++ H) ++ [Constraint.mk r (List.ofFn (Fin.addCases y x))])) :=
   constraintJoinRotation (scopeJoinOccurrenceEquiv F H r x y)
     F.length (F.length + 1 + H.length) (by omega)
     (incidenceDart (scopeJoinSourceEquiv F H r x y (Sum.inl (Sum.inr (Fin.last m)))) true)
@@ -332,9 +342,10 @@ are nonempty, so their actual constraint darts supply the corners even for empty
 genus is proved from the two source genera and the literal center splice. -/
 theorem numericalGenusZero_scopeJoinRotation (F H : CSP Rel V) (r : Rel)
     (x : Fin (m + 1) → V) (y : Fin (n + 1) → V)
-    (hd : List.Disjoint (F ++ [(r, List.ofFn x)]).vars (H ++ [(r, List.ofFn y)]).vars)
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn x)])))
-    (tau : RotationSystem (incidenceGraph (H ++ [(r, List.ofFn y)])))
+    (hd : List.Disjoint (F ++ [Constraint.mk r (List.ofFn x)]).vars
+      (H ++ [Constraint.mk r (List.ofFn y)]).vars)
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn x)])))
+    (tau : RotationSystem (incidenceGraph (H ++ [Constraint.mk r (List.ofFn y)])))
     (hr : rho.NumericalGenusZero) (hs : tau.NumericalGenusZero) :
     (scopeJoinRotation F H r x y hd rho tau).NumericalGenusZero := by
   unfold scopeJoinRotation
@@ -353,9 +364,10 @@ theorem numericalGenusZero_scopeJoinRotation (F H : CSP Rel V) (r : Rel)
 become the precise positive cyclic concatenation specified by the target scope. -/
 theorem respectsArgumentOrder_scopeJoinRotation (F H : CSP Rel V) (r : Rel)
     (x : Fin (m + 1) → V) (y : Fin (n + 1) → V)
-    (hd : List.Disjoint (F ++ [(r, List.ofFn x)]).vars (H ++ [(r, List.ofFn y)]).vars)
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn x)])))
-    (tau : RotationSystem (incidenceGraph (H ++ [(r, List.ofFn y)])))
+    (hd : List.Disjoint (F ++ [Constraint.mk r (List.ofFn x)]).vars
+      (H ++ [Constraint.mk r (List.ofFn y)]).vars)
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn x)])))
+    (tau : RotationSystem (incidenceGraph (H ++ [Constraint.mk r (List.ofFn y)])))
     (hr : RespectsArgumentOrder rho) (hs : RespectsArgumentOrder tau) :
     RespectsArgumentOrder (scopeJoinRotation F H r x y hd rho tau) := by
   intro p
@@ -370,12 +382,13 @@ theorem respectsArgumentOrder_scopeJoinRotation (F H : CSP Rel V) (r : Rel)
 numerical rotations, without a target certificate or genus premise. -/
 theorem verifyRotationCertificate_scopeJoinRotation (F H : CSP Rel V) (r : Rel)
     (x : Fin (m + 1) → V) (y : Fin (n + 1) → V)
-    (hd : List.Disjoint (F ++ [(r, List.ofFn x)]).vars (H ++ [(r, List.ofFn y)]).vars)
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn x)])))
-    (tau : RotationSystem (incidenceGraph (H ++ [(r, List.ofFn y)])))
+    (hd : List.Disjoint (F ++ [Constraint.mk r (List.ofFn x)]).vars
+      (H ++ [Constraint.mk r (List.ofFn y)]).vars)
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn x)])))
+    (tau : RotationSystem (incidenceGraph (H ++ [Constraint.mk r (List.ofFn y)])))
     (hr : rho.NumericalGenusZero) (hs : tau.NumericalGenusZero)
     (hor : RespectsArgumentOrder rho) (hos : RespectsArgumentOrder tau) :
-    verifyRotationCertificate ((F ++ H) ++ [(r, List.ofFn (Fin.addCases y x))])
+    verifyRotationCertificate ((F ++ H) ++ [Constraint.mk r (List.ofFn (Fin.addCases y x))])
       (RotationCertificate.ofRotation (scopeJoinRotation F H r x y hd rho tau)) = true :=
   verifyRotationCertificate_ofRotation _
     (numericalGenusZero_scopeJoinRotation F H r x y hd rho tau hr hs)

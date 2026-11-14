@@ -313,6 +313,10 @@ abbrev OrderedPair.first {m : ℕ} (p : OrderedPair m) : Fin m :=
 abbrev OrderedPair.second {m : ℕ} (p : OrderedPair m) : Fin m :=
   p.val.2
 
+/-- The first party of an ordered pair precedes the second. -/
+theorem OrderedPair.first_lt_second {m : ℕ} (p : OrderedPair m) : p.first < p.second :=
+  p.2
+
 /-- Embedding of `Fin 2` into `Fin m` sending `0 ↦ p.first` and `1 ↦ p.second` for an ordered pair
 `p : OrderedPair m`. -/
 def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
@@ -320,8 +324,8 @@ def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
   inj' a b h := by
     fin_cases a <;> fin_cases b
     · rfl
-    · exact (ne_of_lt p.2 h).elim
-    · exact (ne_of_gt p.2 h).elim
+    · exact (ne_of_lt p.first_lt_second h).elim
+    · exact (ne_of_gt p.first_lt_second h).elim
     · rfl
 
 @[simp] theorem pairEmbedding_zero {m : ℕ} (p : OrderedPair m) :
@@ -371,7 +375,7 @@ def extractPairShare {m : ℕ} (p : OrderedPair m) (i : Fin m)
     0
 
 /-- Step-by-step execution over a list of ordered pairs `L`, where each party's local state is
-`((a_i, b_i), acc_i) : (Bool × Bool) × Bool`. In each round `p ∈ L`, `p.1.1` and `p.1.2` submit
+`((a_i, b_i), acc_i) : (Bool × Bool) × Bool`. In each round `p ∈ L`, `p.first` and `p.second` submit
 their input pairs `(a_i, b_i)` to `sharedMulSpec 2` and each party adds its received share
 (`extractPairShare p i`) to `acc_i`. -/
 def pairsSteps {m : ℕ} :
@@ -443,10 +447,10 @@ theorem extractPairShare_receivedPairOfRow {m : ℕ} (p : OrderedPair m) (i : Fi
       (if p.first = i then row_i p.second else 0) +
         (if p.second = i then row_i p.first else 0) := by
   dsimp [extractPairShare, receivedPairOfRow]
-  by_cases h0 : p.1.1 = i
-  · have h1 : p.1.2 ≠ i := fun h => ne_of_lt p.2 (h0.trans h.symm)
+  by_cases h0 : p.first = i
+  · have h1 : p.second ≠ i := fun h => ne_of_lt p.first_lt_second (h0.trans h.symm)
     simp [h0, h1]
-  · by_cases h1 : p.1.2 = i
+  · by_cases h1 : p.second = i
     · simp only [h0, h1, ↓reduceIte, zero_add]
       rfl
     · simp [h0, h1]
@@ -607,7 +611,7 @@ private theorem asymTerm_add_comm {m : ℕ} (x : Fin m → Bool × Bool) (i j : 
 private theorem matrixOfCoins_eq_symMatrix_add_asymTerm {m : ℕ}
     (x : Fin m → Bool × Bool) (r : OrderedPair m → Bool) (i j : Fin m) :
     matrixOfCoins x r i j =
-      symMatrix (r + fun p => asymTerm x p.1.1 p.1.2) i j + asymTerm x i j := by
+      symMatrix (r + fun p => asymTerm x p.first p.second) i j + asymTerm x i j := by
   dsimp [matrixOfCoins, symMatrix]
   rcases lt_trichotomy i j with hij | rfl | hji
   · simp [hij, add_assoc, BooleanRing.add_self]
@@ -625,7 +629,7 @@ theorem sum_realOut {m : ℕ} (x : Fin m → Bool × Bool) (r : OrderedPair m �
   have hrow : ∀ i : Fin m,
       realOut x r i =
         (x i).1 * (∑ j : Fin m, (x j).2) +
-          ∑ j : Fin m, symMatrix (r + fun p => asymTerm x p.1.1 p.1.2) i j := by
+          ∑ j : Fin m, symMatrix (r + fun p => asymTerm x p.first p.second) i j := by
     intro i
     simp only [realOut, matrixOfCoins_eq_symMatrix_add_asymTerm, Finset.sum_add_distrib]
     have hasym :
@@ -660,19 +664,19 @@ theorem deliverOracle_pairAnswer_eq_receivedPairOfRow {m : ℕ}
       receivedPairOfRow p i (matrixOfCoins x r i) := by
   refine Round.received_oracle_ext fun s hs => ?_
   fin_cases s
-  · change completeShares 2 (pairTarget x p.1.1 p.1.2) (fun _ => r p)
-        (Fin.castLE (Nat.sub_le 2 1) 0) = matrixOfCoins x r i p.1.2
+  · change completeShares 2 (pairTarget x p.first p.second) (fun _ => r p)
+        (Fin.castLE (Nat.sub_le 2 1) 0) = matrixOfCoins x r i p.second
     rw [completeShares_castLE]
-    have hi : p.1.1 = i := hs
+    have hi : p.first = i := hs
     subst hi
-    simp [matrixOfCoins, p.2]
-  · change completeShares 2 (pairTarget x p.1.1 p.1.2) (fun _ => r p) (⊤ : Fin 2) =
-        matrixOfCoins x r i p.1.1
+    simp [matrixOfCoins, p.first_lt_second]
+  · change completeShares 2 (pairTarget x p.first p.second) (fun _ => r p) (⊤ : Fin 2) =
+        matrixOfCoins x r i p.first
     rw [completeShares_top]
-    have hi : p.1.2 = i := hs
+    have hi : p.second = i := hs
     subst hi
-    have hnot : ¬ p.1.2 < p.1.1 := not_lt_of_gt p.2
-    simp [matrixOfCoins, hnot, p.2, BooleanRing.sub_eq_add, pairTarget_comm, add_comm]
+    have hnot : ¬ p.second < p.first := not_lt_of_gt p.first_lt_second
+    simp [matrixOfCoins, hnot, p.first_lt_second, BooleanRing.sub_eq_add, pairTarget_comm, add_comm]
 
 theorem nodup_orderedPairs (m : ℕ) : (orderedPairs m).Nodup := by
   rw [orderedPairs, List.nodup_flatMap]
@@ -734,7 +738,7 @@ private theorem eval_sharedMulWorld2_pair {m : ℕ} (x : Fin m → Bool × Bool)
   rw [uniformOfFintype_fin1_bool, PMF.map_comp]
   have htarget :
       ((∑ i : Fin 2, (x (pairEmbedding p i)).1) * (∑ i : Fin 2, (x (pairEmbedding p i)).2)) =
-        pairTarget x p.1.1 p.1.2 := by
+        pairTarget x p.first p.second := by
     simp [Fin.sum_univ_two, pairTarget]
   rw [htarget]
   rfl
@@ -812,9 +816,9 @@ def delta {m : ℕ} (ℓ : Fin m) (w : Fin m → Bool) (p : OrderedPair m) : Boo
 def deltaErase {m : ℕ} (ℓ : Fin m) (u : (i : Finset.univ.erase ℓ) → Bool)
     (p : OrderedPair m) : Bool :=
   if h1 : p.first = ℓ then
-    u ⟨p.second, Finset.mem_erase.mpr ⟨ne_of_gt (h1 ▸ p.2), Finset.mem_univ _⟩⟩
+    u ⟨p.second, Finset.mem_erase.mpr ⟨ne_of_gt (h1 ▸ p.first_lt_second), Finset.mem_univ _⟩⟩
   else if h2 : p.second = ℓ then
-    u ⟨p.first, Finset.mem_erase.mpr ⟨ne_of_lt (h2 ▸ p.2), Finset.mem_univ _⟩⟩
+    u ⟨p.first, Finset.mem_erase.mpr ⟨ne_of_lt (h2 ▸ p.first_lt_second), Finset.mem_univ _⟩⟩
   else 0
 
 theorem delta_eq_deltaErase_restrict {m : ℕ} (ℓ : Fin m) (w : Fin m → Bool) :
@@ -1023,8 +1027,8 @@ private theorem uniform_bind_tildeR {m : ℕ} [NeZero m] {α : Type} (ℓ : Fin 
         F (r₁ + deltaErase ℓ u)) := by
     intro r₁
     conv_rhs =>
-      rw [← PMF.uniformOfFintype_map_equiv
-        (Equiv.addRight ((Finset.univ.erase ℓ).restrict (realOut x r₁))), PMF.map_comp]
+      rw [← PMF.uniformOfFintype_map_add_right ((Finset.univ.erase ℓ).restrict (realOut x r₁)),
+        PMF.map_comp]
     rfl
   simp_rw [hshift1]
   have hswap2 :
@@ -1043,7 +1047,7 @@ private theorem uniform_bind_tildeR {m : ℕ} [NeZero m] {α : Type} (ℓ : Fin 
       (PMF.uniformOfFintype (OrderedPair m → Bool)).map F := by
     intro u
     conv_rhs =>
-      rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (deltaErase ℓ u)), PMF.map_comp]
+      rw [← PMF.uniformOfFintype_map_add_right (deltaErase ℓ u), PMF.map_comp]
     rfl
   simp_rw [hshift2, PMF.bind_const]
 
@@ -1083,7 +1087,7 @@ theorem perfectSemiHonestPrivate_multiPartyMul (m : ℕ) [NeZero m] :
   have hsum : ∑ i : Fin m, y i = (∑ i : Fin m, (x i).1) * (∑ i : Fin m, (x i).2) :=
     ProbComp.sum_sampleAdditiveShares _ hy
   conv_rhs =>
-    rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (sigmaShift I x)), PMF.map_comp]
+    rw [← PMF.uniformOfFintype_map_add_right (sigmaShift I x), PMF.map_comp]
   refine congrArg (PMF.map · (PMF.uniformOfFintype (OrderedPair m → Bool))) (funext fun r => ?_)
   dsimp [F, Function.comp]
   refine Prod.ext (funext fun i => ?_) ?_

@@ -11,7 +11,8 @@ public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import CslibFrontier.Computability.Communication.Rectangle
 import CslibFrontier.Languages.Probabilistic.Norm
-import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
+import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Interactive single-server private information retrieval
@@ -21,9 +22,10 @@ protocol must exchange `n` bits [Chor, Goldreich, Kushilevitz and Sudan,
 Section 5.1][ChorGoldreichKushilevitzSudan1998]. `PIR.SingleServer` proves the one-round case; this
 file proves the interactive one.
 
-An interactive scheme `P : PIR.InteractiveScheme ι C D` is a deterministic two-party protocol
-`P.protocol` (`Cslib.Communication.Protocol`) between the server, holding the database
-`x : ι → Bool` and its coins `d : D`, and the user, holding the index `i : ι` and its coins `c : C`.
+An interactive scheme `P : PIR.InteractiveScheme ι C D β` (by default `β = Bool`, or multi-bit
+blocks in Section 4) is a deterministic two-party protocol `P.protocol`
+(`Cslib.Communication.Protocol`) between the server, holding the database `x : ι → β` and its coins
+`d : D`, and the user, holding the index `i : ι` and its coins `c : C`.
 The protocol may use any number of rounds, and the coins are drawn by the probabilistic programs
 `P.serverCoins` and `P.userCoins i` (the latter may depend on `i`). The *transcript*
 `P.transcript x i` is the leaf the protocol reaches. It determines every bit sent, so it is
@@ -34,7 +36,7 @@ that leaf applied to the user's view `(i, c)`.
 (`InteractiveScheme.IsPrivate`) says that for every database, the transcript has the same
 distribution for all indices. If the output were a function of the transcript alone, it would
 therefore have the same distribution for all indices, and no scheme could be correct for a
-database with two different bits. So leaves are labelled by functions `ι × C → Bool`, and the user's
+database with two different entries. So leaves are labelled by functions `ι × C → β`, and the user's
 output may depend on its private coins as well as on the communication. In this generality, the
 source's step "on the same communication C, the user must output the same bit" is replaced by the
 rectangle property of protocols (`Communication.Protocol.leaf_eq_iff`). Suppose that a leaf is
@@ -43,16 +45,20 @@ also reached on `(y, d₂)` with user view `(j, c₁)`. On that one view, correc
 to output both `x j` and `y j`.
 
 With that step, the source's counting argument goes through (`InteractiveScheme.injective_leaf`):
-for fixed coins, the transcript determines the database. So every index has at least `2 ^ n`
-possible transcripts (`InteractiveScheme.two_pow_card_le_ncard_transcripts`), the protocol tree
-has at least `2 ^ n` leaves, and the protocol has depth at least `n`
-(`InteractiveScheme.card_le_depth`). Communication is measured by `Protocol.depth`, the worst-case
-number of bits over all branches of the protocol tree, reachable or not. The privacy hypothesis
-asks only that the transcript law be independent of `i`. This is weaker than privacy of the
-server's whole view, since the server's own coins do not depend on `i` anyway. The proofs use
+for fixed coins, the transcript determines the database. Over a finite payload `β`, every index has
+at least `|β| ^ |ι|` possible transcripts (`InteractiveScheme.card_pow_card_le_ncard_transcripts`,
+specializing to `2 ^ n` in `InteractiveScheme.two_pow_card_le_ncard_transcripts`), the protocol tree
+has at least `|β| ^ |ι|` leaves (`InteractiveScheme.card_pow_card_le_leafCount`,
+`InteractiveScheme.two_pow_card_le_leafCount`), Boolean databases need depth at least `n`
+(`InteractiveScheme.card_le_depth`), and `(κ → Bool)` block databases need depth at least
+`|ι| · |κ|` (`InteractiveScheme.card_mul_le_depth`). Communication is measured by `Protocol.depth`,
+the worst-case number of bits over all branches of the protocol tree, reachable or not. The privacy
+hypothesis asks only that the transcript law be independent of `i`. This is weaker than privacy of
+the server's whole view, since the server's own coins do not depend on `i` anyway. The proofs use
 privacy only through supports: a transcript possible for `(x, i)` is possible for `(x, j)`. The
-server sending the database attains the bound (`InteractiveScheme.download`), so a scheme of
-protocol depth at most `c` exists exactly when `n ≤ c` (`InteractiveScheme.exists_iff`).
+server sending the database attains both bounds (`InteractiveScheme.download`,
+`InteractiveScheme.blockDownload`), giving tight depth characterizations for both single-bit and
+`ℓ`-bit block databases (`InteractiveScheme.exists_iff`, `InteractiveScheme.exists_block_iff`).
 
 The server is Alice and the user is Bob in `Communication.Protocol`. With uniform bit-string coins
 and leaves labelled by `Bool`, a scheme would be a `Communication.PrivateCoin` protocol. Here the
@@ -61,32 +67,39 @@ so `InteractiveScheme` is a separate structure.
 
 ## Main definitions
 
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme`: interactive single-server schemes.
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme`: interactive single-server schemes over payload
+  `β` (by default `Bool`).
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.transcript`,
   `Cslib.Crypto.Protocols.PIR.InteractiveScheme.run`: the transcript and the user's output.
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.IsCorrect`,
   `Cslib.Crypto.Protocols.PIR.InteractiveScheme.IsPrivate`: perfect correctness and privacy.
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.transcripts`: the possible transcripts for an
   index.
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.download`: the server sends the database.
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.download`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.blockDownload`: the server sends its bit or block
+  database.
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.injective_leaf`: for fixed coins, the transcript
   determines the database.
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_ncard_transcripts`: at least
-  `2 ^ n` possible transcripts for each index.
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_leafCount`,
-  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth`: at least `2 ^ n` leaves and
-  protocol depth at least `n`.
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff`: one server needs protocol depth
-  exactly `n`, with or without interaction.
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_ncard_transcripts`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_ncard_transcripts`: at least
+  `|β| ^ n` (`2 ^ n` for bits) possible transcripts for each index.
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_leafCount`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_leafCount`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_mul_le_depth`: leaf-count and depth lower
+  bounds (`n` bits for single bits, `n · ℓ` bits for `ℓ`-bit blocks).
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff`,
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_block_iff`: one server needs protocol depth
+  at least `n` (`n · ℓ` for `ℓ`-bit blocks), with or without interaction.
 
 ## References
 
 * [B. Chor, O. Goldreich, E. Kushilevitz, M. Sudan, *Private information
-  retrieval*][ChorGoldreichKushilevitzSudan1998], Section 5.1; numbering of the authors' journal
-  version of April 21, 1998
+  retrieval*][ChorGoldreichKushilevitzSudan1998], Sections 4 and 5.1; numbering of the authors'
+  journal version of April 21, 1998
 -/
 
 public section
@@ -96,25 +109,25 @@ namespace Cslib.Crypto.Protocols.PIR
 open Probability Communication
 
 /-- An interactive single-server private information retrieval scheme for databases
-`x : ι → Bool`, with user coins `C` and server coins `D`
-[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. The server (Alice) holds the database and
-its coins, and the user (Bob) holds the index and its coins. Each leaf of the protocol is labelled
-by the user's output as a function of its view. -/
-structure InteractiveScheme (ι C D : Type) where
+`x : ι → β` (by default `β = Bool`, or multi-bit blocks in Section 4), with user coins `C` and
+server coins `D` [CGKS, Sections 4 and 5.1][ChorGoldreichKushilevitzSudan1998]. The server (Alice)
+holds the database and its coins, and the user (Bob) holds the index and its coins. Each leaf of
+the protocol is labelled by the user's output as a function of its view. -/
+structure InteractiveScheme (ι C D : Type) (β : Type := Bool) where
   /-- The user's coins for the index `i`. -/
   userCoins : ι → ProbComp C
   /-- The server's coins. -/
   serverCoins : ProbComp D
   /-- The protocol; its leaves are labelled by the user's output as a function of its view. -/
-  protocol : Protocol ((ι → Bool) × D) (ι × C) (ι × C → Bool)
+  protocol : Protocol ((ι → β) × D) (ι × C) (ι × C → β)
 
 namespace InteractiveScheme
 
-variable {ι C D : Type}
+variable {ι C D β : Type}
 
 section Defs
 
-variable (P : InteractiveScheme ι C D)
+variable (P : InteractiveScheme ι C D β)
 
 /-- The coins of the user, for the index `i`, and of the server, drawn independently. -/
 def coins (i : ι) : ProbComp (C × D) := do
@@ -124,15 +137,15 @@ def coins (i : ι) : ProbComp (C × D) := do
 
 /-- The transcript of the protocol on the database `x` and the index `i`: the leaf it reaches. The
 leaf determines every bit sent, in order. -/
-def transcript (x : ι → Bool) (i : ι) : ProbComp (Fin P.protocol.leafCount) :=
+def transcript (x : ι → β) (i : ι) : ProbComp (Fin P.protocol.leafCount) :=
   (fun cd => P.protocol.leaf (x, cd.2) (i, cd.1)) <$> P.coins i
 
 /-- The user's output on the database `x` and the index `i`: the label of the leaf reached,
 applied to the user's view. -/
-def run (x : ι → Bool) (i : ι) : ProbComp Bool :=
+def run (x : ι → β) (i : ι) : ProbComp β :=
   (fun cd => P.protocol.leafOutput (P.protocol.leaf (x, cd.2) (i, cd.1)) (i, cd.1)) <$> P.coins i
 
-/-- Perfect correctness: on every database, the user outputs the bit it asks for with probability
+/-- Perfect correctness: on every database, the user outputs the entry it asks for with probability
 one. -/
 def IsCorrect : Prop :=
   ∀ x i, ProbComp.eval (P.run x i) = PMF.pure (x i)
@@ -147,6 +160,24 @@ some database. -/
 noncomputable def transcripts (i : ι) : Set (Fin P.protocol.leafCount) :=
   ⋃ x, (ProbComp.eval (P.transcript x i)).support
 
+theorem eval_coins (i : ι) :
+    ProbComp.eval (P.coins i) =
+      (ProbComp.eval (P.userCoins i)).bind fun c =>
+        (ProbComp.eval P.serverCoins).map fun d => (c, d) := by
+  simp only [coins, ProbComp.eval_bind, ProbComp.eval_pure]
+  rfl
+
+theorem eval_transcript (x : ι → β) (i : ι) :
+    ProbComp.eval (P.transcript x i) =
+      (ProbComp.eval (P.coins i)).map fun cd => P.protocol.leaf (x, cd.2) (i, cd.1) := by
+  rw [transcript, ProbComp.eval_map]
+
+theorem eval_run (x : ι → β) (i : ι) :
+    ProbComp.eval (P.run x i) =
+      (ProbComp.eval (P.coins i)).map fun cd =>
+        P.protocol.leafOutput (P.protocol.leaf (x, cd.2) (i, cd.1)) (i, cd.1) := by
+  rw [run, ProbComp.eval_map]
+
 theorem mem_support_coins_iff {i : ι} {cd : C × D} :
     cd ∈ (ProbComp.eval (P.coins i)).support ↔
       cd.1 ∈ (ProbComp.eval (P.userCoins i)).support ∧
@@ -159,7 +190,7 @@ theorem mem_support_coins_iff {i : ι} {cd : C × D} :
   · rintro ⟨hc, hd⟩
     exact ⟨cd.1, hc, cd.2, hd, rfl⟩
 
-theorem mem_support_transcript_iff {x : ι → Bool} {i : ι} {t : Fin P.protocol.leafCount} :
+theorem mem_support_transcript_iff {x : ι → β} {i : ι} {t : Fin P.protocol.leafCount} :
     t ∈ (ProbComp.eval (P.transcript x i)).support ↔
       ∃ c ∈ (ProbComp.eval (P.userCoins i)).support, ∃ d ∈ (ProbComp.eval P.serverCoins).support,
         P.protocol.leaf (x, d) (i, c) = t := by
@@ -171,24 +202,18 @@ theorem mem_support_transcript_iff {x : ι → Bool} {i : ι} {t : Fin P.protoco
   · rintro ⟨c, hc, d, hd, rfl⟩
     exact ⟨(c, d), P.mem_support_coins_iff.mpr ⟨hc, hd⟩, rfl⟩
 
-/-- Perfect correctness holds exactly when the user outputs the right bit on all coins that can be
+/-- Perfect correctness holds exactly when the user outputs the right entry on all coins that can be
 drawn. -/
 theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i, ∀ c ∈ (ProbComp.eval (P.userCoins i)).support,
     ∀ d ∈ (ProbComp.eval P.serverCoins).support,
       P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  rw [run, ProbComp.eval_map]
+  rw [run, ProbComp.eval_map, Probability.PMF.map_eq_pure_iff]
   constructor
   · intro h c hc d hd
-    have hmem : P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) ∈
-        ((ProbComp.eval (P.coins i)).map fun cd =>
-          P.protocol.leafOutput (P.protocol.leaf (x, cd.2) (i, cd.1)) (i, cd.1)).support :=
-      (PMF.mem_support_map_iff _ _ _).2 ⟨(c, d), P.mem_support_coins_iff.mpr ⟨hc, hd⟩, rfl⟩
-    rwa [h, PMF.support_pure, Set.mem_singleton_iff] at hmem
-  · intro h
-    rw [Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun cd hcd => h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2
-        (P.mem_support_coins_iff.mp hcd).2, PMF.map_const]
+    exact h (c, d) (P.mem_support_coins_iff.mpr ⟨hc, hd⟩)
+  · intro h cd hcd
+    exact h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2 (P.mem_support_coins_iff.mp hcd).2
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ x i i', ProbComp.eval (P.transcript x i) = ProbComp.eval (P.transcript x i') := by
@@ -196,10 +221,10 @@ theorem isPrivate_iff : P.IsPrivate ↔
 
 end Defs
 
-variable {P : InteractiveScheme ι C D}
+variable {P : InteractiveScheme ι C D β}
 
-/-- A correct scheme outputs the right bit on all coins that can be drawn. -/
-theorem IsCorrect.leafOutput_eq (h : P.IsCorrect) (x : ι → Bool) {i : ι} {c : C} {d : D}
+/-- A correct scheme outputs the right entry on all coins that can be drawn. -/
+theorem IsCorrect.leafOutput_eq (h : P.IsCorrect) (x : ι → β) {i : ι} {c : C} {d : D}
     (hc : c ∈ (ProbComp.eval (P.userCoins i)).support)
     (hd : d ∈ (ProbComp.eval P.serverCoins).support) :
     P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) = x i :=
@@ -213,13 +238,13 @@ on `x`, and on that view the user would have to output both `x j` and `y j`. -/
 theorem injective_leaf (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) {i : ι} {c : C} {d : D}
     (hc : c ∈ (ProbComp.eval (P.userCoins i)).support)
     (hd : d ∈ (ProbComp.eval P.serverCoins).support) :
-    Function.Injective fun x : ι → Bool => P.protocol.leaf (x, d) (i, c) := by
+    Function.Injective fun x : ι → β => P.protocol.leaf (x, d) (i, c) := by
   intro x y hxy
   by_contra hne
   obtain ⟨j, hj⟩ := Function.ne_iff.mp hne
   -- The leaf `t` is possible for `(x, i)` and `(y, i)`, so by privacy for `(x, j)` and `(y, j)`.
   set t := P.protocol.leaf (x, d) (i, c) with ht
-  have hpossible (z : ι → Bool) (hz : P.protocol.leaf (z, d) (i, c) = t) :
+  have hpossible (z : ι → β) (hz : P.protocol.leaf (z, d) (i, c) = t) :
       t ∈ (ProbComp.eval (P.transcript z j)).support := by
     rw [hprivate z j i]
     exact P.mem_support_transcript_iff.mpr ⟨c, hc, d, hd, hz⟩
@@ -234,36 +259,62 @@ theorem injective_leaf (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) {i : ι
   rw [h₃] at hy
   exact hj (hx.symm.trans hy)
 
-/-- **Every index has at least `2 ^ n` possible transcripts**
-[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
-theorem two_pow_card_le_ncard_transcripts [Fintype ι] (hcorrect : P.IsCorrect)
-    (hprivate : P.IsPrivate) (i : ι) : 2 ^ Fintype.card ι ≤ (P.transcripts i).ncard := by
+/-- Every index has at least `|β| ^ |ι|` possible transcripts. -/
+theorem card_pow_card_le_ncard_transcripts [Fintype ι] [Fintype β] (hcorrect : P.IsCorrect)
+    (hprivate : P.IsPrivate) (i : ι) :
+    Fintype.card β ^ Fintype.card ι ≤ (P.transcripts i).ncard := by
   classical
   obtain ⟨c, hc⟩ := (ProbComp.eval (P.userCoins i)).support_nonempty
   obtain ⟨d, hd⟩ := (ProbComp.eval P.serverCoins).support_nonempty
-  have hsub : Set.range (fun x : ι → Bool => P.protocol.leaf (x, d) (i, c)) ⊆ P.transcripts i := by
+  have hsub : Set.range (fun x : ι → β => P.protocol.leaf (x, d) (i, c)) ⊆ P.transcripts i := by
     rintro _ ⟨x, rfl⟩
     exact Set.mem_iUnion.mpr ⟨x, P.mem_support_transcript_iff.mpr ⟨c, hc, d, hd, rfl⟩⟩
   have h := Set.ncard_le_ncard hsub
   rwa [Set.ncard_range_of_injective (injective_leaf hcorrect hprivate hc hd),
-    Nat.card_eq_fintype_card, Fintype.card_fun, Fintype.card_bool] at h
+    Nat.card_eq_fintype_card, Fintype.card_fun] at h
+
+/-- **Every index has at least `2 ^ n` possible transcripts**
+[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
+theorem two_pow_card_le_ncard_transcripts [Fintype ι] {P : InteractiveScheme ι C D}
+    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) (i : ι) :
+    2 ^ Fintype.card ι ≤ (P.transcripts i).ncard := by
+  simpa only [Fintype.card_bool] using card_pow_card_le_ncard_transcripts hcorrect hprivate i
+
+/-- A perfectly correct and perfectly private interactive scheme over payload `β` has at least
+`|β| ^ |ι|` transcripts. -/
+theorem card_pow_card_le_leafCount [Fintype ι] [Fintype β] (hcorrect : P.IsCorrect)
+    (hprivate : P.IsPrivate) : Fintype.card β ^ Fintype.card ι ≤ P.protocol.leafCount := by
+  rcases isEmpty_or_nonempty ι with hι | ⟨⟨i⟩⟩
+  · rw [Fintype.card_eq_zero (α := ι), pow_zero]
+    exact P.protocol.leafCount_pos
+  · refine (card_pow_card_le_ncard_transcripts hcorrect hprivate i).trans ?_
+    exact (Set.ncard_le_card _).trans_eq (Nat.card_eq_fintype_card.trans (Fintype.card_fin _))
 
 /-- **A perfectly correct and perfectly private interactive scheme for `n`-bit databases has at
 least `2 ^ n` transcripts.** -/
-theorem two_pow_card_le_leafCount [Fintype ι] (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+theorem two_pow_card_le_leafCount [Fintype ι] {P : InteractiveScheme ι C D}
+    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
     2 ^ Fintype.card ι ≤ P.protocol.leafCount := by
-  rcases isEmpty_or_nonempty ι with hι | ⟨⟨i⟩⟩
-  · rw [Fintype.card_eq_zero, pow_zero]
-    exact P.protocol.leafCount_pos
-  · refine (two_pow_card_le_ncard_transcripts hcorrect hprivate i).trans ?_
-    exact (Set.ncard_le_card _).trans_eq (Nat.card_eq_fintype_card.trans (Fintype.card_fin _))
+  simpa only [Fintype.card_bool] using card_pow_card_le_leafCount hcorrect hprivate
+
+/-- **A perfectly correct and perfectly private single-server block scheme for `n` blocks of `ℓ`
+bits has protocol depth at least `n · ℓ`, even with interaction**
+[CGKS, Sections 4 and 5.1][ChorGoldreichKushilevitzSudan1998]. -/
+theorem card_mul_le_depth {κ : Type} [Fintype ι] [Fintype κ]
+    {P : InteractiveScheme ι C D (κ → Bool)} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    Fintype.card ι * Fintype.card κ ≤ P.protocol.depth := by
+  classical
+  have h := (card_pow_card_le_leafCount hcorrect hprivate).trans
+    P.protocol.leafCount_le_two_pow_depth
+  rw [Fintype.card_fun, Fintype.card_bool, ← pow_mul, Nat.mul_comm] at h
+  exact (Nat.pow_le_pow_iff_right (by norm_num : 1 < 2)).mp h
 
 /-- **A perfectly correct and perfectly private single-server scheme for `n`-bit databases has
 protocol depth at least `n`, even with interaction**
 [CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. The depth is the worst-case number of bits
 over all branches of the protocol tree. -/
-theorem card_le_depth [Fintype ι] (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
-    Fintype.card ι ≤ P.protocol.depth :=
+theorem card_le_depth [Fintype ι] {P : InteractiveScheme ι C D}
+    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) : Fintype.card ι ≤ P.protocol.depth :=
   (Nat.pow_le_pow_iff_right (by norm_num : 1 < 2)).mp
     ((two_pow_card_le_leafCount hcorrect hprivate).trans P.protocol.leafCount_le_two_pow_depth)
 
@@ -276,18 +327,6 @@ def download (n : ℕ) : InteractiveScheme (Fin n) Unit Unit where
   serverCoins := pure ()
   protocol := Protocol.aliceSend n (fun xd => xd.1) fun x => Protocol.output fun ic => x ic.1
 
-/-- In a protocol in which only Alice sends, the leaf does not depend on Bob's input. -/
-private theorem leaf_aliceSend_output {X Y Z : Type} (n : ℕ) (msg : X → BitString n)
-    (out : BitString n → Z) (x : X) (y y' : Y) :
-    (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y =
-      (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y' := by
-  induction n generalizing Z with
-  | zero => rfl
-  | succ n ih =>
-    simp only [Protocol.aliceSend, Protocol.leaf_alice]
-    rw [ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons false m),
-      ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons true m)]
-
 theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
   (download n).isCorrect_iff.mpr fun x i _ _ _ _ => by
     rw [← Protocol.run_eq_leafOutput_leaf]
@@ -296,8 +335,8 @@ theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
 theorem isPrivate_download (n : ℕ) : (download n).IsPrivate :=
   (download n).isPrivate_iff.mpr fun x i i' => by
     simp only [pmf_norm, transcript, coins, download]
-    exact congrArg PMF.pure
-      (leaf_aliceSend_output n _ (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
+    exact congrArg PMF.pure (Protocol.leaf_aliceSend_output n _
+      (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
 
 theorem depth_download (n : ℕ) : (download n).protocol.depth = n :=
   le_antisymm (Protocol.depth_aliceSend_le (d := 0) fun _ => le_rfl)
@@ -317,6 +356,48 @@ theorem exists_iff (n c : ℕ) :
   · intro h
     exact ⟨Unit, Unit, download n, isCorrect_download n, isPrivate_download n,
       (depth_download n).trans_le h⟩
+
+private def flattenBlocks (n ℓ : ℕ) : (Fin n → BitString ℓ) ≃ BitString (n * ℓ) :=
+  (Equiv.curry (Fin n) (Fin ℓ) Bool).symm.trans (Equiv.arrowCongr finProdFinEquiv (Equiv.refl Bool))
+
+/-- Trivial interactive block download: the server sends all `n · ℓ` bits of the `n` blocks, and the
+user outputs block `i`. -/
+def blockDownload (n ℓ : ℕ) : InteractiveScheme (Fin n) Unit Unit (BitString ℓ) where
+  userCoins _ := pure ()
+  serverCoins := pure ()
+  protocol := Protocol.aliceSend (n * ℓ) (fun xd => flattenBlocks n ℓ xd.1)
+    fun m => Protocol.output fun ic => (flattenBlocks n ℓ).symm m ic.1
+
+theorem isCorrect_blockDownload (n ℓ : ℕ) : (blockDownload n ℓ).IsCorrect :=
+  (blockDownload n ℓ).isCorrect_iff.mpr fun x i _ _ _ _ => by
+    rw [← Protocol.run_eq_leafOutput_leaf]
+    simp only [blockDownload, Protocol.run_aliceSend, Protocol.run_output, Equiv.symm_apply_apply]
+
+theorem isPrivate_blockDownload (n ℓ : ℕ) : (blockDownload n ℓ).IsPrivate :=
+  (blockDownload n ℓ).isPrivate_iff.mpr fun x i i' => by
+    simp only [pmf_norm, transcript, coins, blockDownload]
+    exact congrArg PMF.pure (Protocol.leaf_aliceSend_output (n * ℓ) _
+      (fun (m : BitString (n * ℓ)) (ic : Fin n × Unit) => (flattenBlocks n ℓ).symm m ic.1) _ _ _)
+
+theorem depth_blockDownload (n ℓ : ℕ) : (blockDownload n ℓ).protocol.depth = n * ℓ :=
+  le_antisymm (Protocol.depth_aliceSend_le (d := 0) fun _ => le_rfl)
+    (by simpa only [Fintype.card_fin] using
+      card_mul_le_depth (isCorrect_blockDownload n ℓ) (isPrivate_blockDownload n ℓ))
+
+/-- **One server needs `n · ℓ` bits for `ℓ`-bit blocks, with or without interaction**: a perfectly
+correct and perfectly private interactive block scheme of protocol depth at most `c` exists iff
+`n · ℓ ≤ c` [CGKS, Sections 4 and 5.1][ChorGoldreichKushilevitzSudan1998]. -/
+theorem exists_block_iff (n ℓ c : ℕ) :
+    (∃ (C D : Type) (P : InteractiveScheme (Fin n) C D (BitString ℓ)),
+      P.IsCorrect ∧ P.IsPrivate ∧ P.protocol.depth ≤ c) ↔ n * ℓ ≤ c := by
+  constructor
+  · rintro ⟨C, D, P, hcorrect, hprivate, hc⟩
+    have hle : n * ℓ ≤ P.protocol.depth := by
+      simpa only [Fintype.card_fin] using card_mul_le_depth hcorrect hprivate
+    exact hle.trans hc
+  · intro h
+    exact ⟨Unit, Unit, blockDownload n ℓ, isCorrect_blockDownload n ℓ,
+      isPrivate_blockDownload n ℓ, (depth_blockDownload n ℓ).trans_le h⟩
 
 end InteractiveScheme
 

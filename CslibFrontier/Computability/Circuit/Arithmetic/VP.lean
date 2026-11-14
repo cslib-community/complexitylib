@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Pi
-public import Cslib.Computability.Circuit.Synthesis
+public import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 public import Cslib.Foundations.Data.Nat.PolynomialBound
 public import Mathlib.Algebra.MvPolynomial.Degrees
 import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
@@ -50,6 +50,11 @@ variable of `Q` a variable of `P` or a constant. A family `f` is a *p-projection
 `f n` is a projection of `g (t n)` for a polynomially bounded `t`. Projections are Valiant's
 reductions; `VP` is closed under them.
 
+Generic arithmetic synthesis rules are publicly re-exported from
+`CslibFrontier.Computability.Circuit.Arithmetic.Synthesis`; value-level clients need not import
+the polynomial-family API. The polynomial synthesis rule `Synthesis.exists_circuit_polynomial`
+remains here.
+
 ## Main definitions
 
 * `Cslib.Circuits.Circuit.polynomial`: the formal polynomial computed by an arithmetic circuit.
@@ -71,9 +76,6 @@ reductions; `VP` is closed under them.
 * `Cslib.Circuits.Arithmetic.IsProjection.trans`,
   `Cslib.Circuits.Arithmetic.PolynomialFamily.IsPProjection.trans`: projections compose.
 * `Cslib.Circuits.Arithmetic.totalDegree_projection_le`: projections do not raise the degree.
-* `Cslib.Circuits.Synthesis.arith_const`, `Cslib.Circuits.Synthesis.arith_add`,
-  `Cslib.Circuits.Synthesis.arith_mul`, `Cslib.Circuits.Synthesis.arith_sum`: synthesis rules for
-  arithmetic circuits.
 * `Cslib.Circuits.Synthesis.exists_circuit_polynomial`: a synthesis bound gives a circuit computing
   the polynomial.
 * `Cslib.Circuits.Arithmetic.VP.of_isPProjection`: `VP` is closed under p-projections.
@@ -135,40 +137,7 @@ with evaluating the circuit under `arithInterpretation K`. -/
   simpa [MvPolynomial.aeval_def, MvPolynomial.eval₂_id, arithInterpretation] using
     c.aeval_polynomial x j
 
-/-! ### Synthesis of arithmetic circuits -/
-
-section Synthesis
-
-variable {R : Type*} {constant : K → R} {s : Set ((Fin n → R) → R)} {f g : (Fin n → R) → R}
-
-omit [CommSemiring K] in
-/-- A constant costs one gate. -/
-theorem Synthesis.arith_const [Add R] [Mul R] (a : K) :
-    Synthesis (arithInterpretationWith K constant) s {fun _ => constant a} 1 :=
-  Synthesis.gate (σ := arithSignature K) (.const a) (fun i => Fin.elim0 i) (fun i => Fin.elim0 i)
-
-omit [CommSemiring K] in
-/-- The sum of two available functions costs one gate. -/
-theorem Synthesis.arith_add [Add R] [Mul R] (hf : f ∈ s) (hg : g ∈ s) :
-    Synthesis (arithInterpretationWith K constant) s {fun x => f x + g x} 1 :=
-  Synthesis.gate (σ := arithSignature K) .add ![f, g] fun i => by fin_cases i <;> assumption
-
-omit [CommSemiring K] in
-/-- The product of two available functions costs one gate. -/
-theorem Synthesis.arith_mul [Add R] [Mul R] (hf : f ∈ s) (hg : g ∈ s) :
-    Synthesis (arithInterpretationWith K constant) s {fun x => f x * g x} 1 :=
-  Synthesis.gate (σ := arithSignature K) .mul ![f, g] fun i => by fin_cases i <;> assumption
-
-omit [CommSemiring K] in
-/-- A finite sum costs its summands and one addition each, when zero is available. -/
-theorem Synthesis.arith_sum {ι : Type*} [AddCommMonoid R] [Mul R] (indices : Finset ι)
-    (summand : ι → (Fin n → R) → R) (cost : ι → ℕ) (hzero : (fun _ => 0) ∈ s)
-    (h : ∀ i ∈ indices, Synthesis (arithInterpretationWith K constant) s {summand i} (cost i)) :
-    Synthesis (arithInterpretationWith K constant) s {fun x => ∑ i ∈ indices, summand i x}
-      (∑ i ∈ indices, (cost i + 1)) := by
-  have := Synthesis.finset_fold (· + ·) 1 (fun f g => Synthesis.arith_add (Set.mem_insert f {g})
-    (Set.mem_insert_of_mem f rfl)) indices (Synthesis.of_mem hzero) h
-  simpa only [Finset.sum_eq_fold, Nat.add_zero] using this
+/-! ### Synthesis of formal polynomials -/
 
 /-- A synthesis bound on a function `F` from the inputs gives a circuit, within the bound,
 computing the polynomial `F X`. -/
@@ -178,8 +147,6 @@ theorem Synthesis.exists_circuit_polynomial
     ∃ c : Circuit (arithSignature K) n 1, c.polynomial 0 = F X ∧ c.size ≤ cost := by
   obtain ⟨c, hc, hsize⟩ := h.exists_circuit
   exact ⟨c, congrFun (hc X) 0, hsize⟩
-
-end Synthesis
 
 namespace Arithmetic
 

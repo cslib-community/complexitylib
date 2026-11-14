@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedCompile
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 public import CslibFrontier.Logics.Propositional.CNF.Compact.Relabel
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import Mathlib.Data.List.Nodup
 import Mathlib.Algebra.BigOperators.Ring.List
 import Mathlib.Tactic.FinCases
@@ -83,7 +84,7 @@ private theorem lastLiteral_cons_cons_cons (sites : List Point) (positive : Bool
 
 private theorem count_vars_append (φ ψ : CNF Variable) (v : Variable) :
     (φ ++ ψ).vars.count v = φ.vars.count v + ψ.vars.count v := by
-  simp [CNF.vars]
+  rw [CNF.vars_append, List.count_append]
 
 private theorem count_two_links (sites : List Point) (a b : Point) (v : Variable) :
     (CNF.vars [(link sites a b 0).1, (link sites a b 1).1]).count v =
@@ -141,7 +142,7 @@ theorem allPathPortSignals_nodup {φ : CNF ℕ}
 private theorem vars_originalClauses (φ : CNF ℕ) (sites : List Point) :
     CNF.vars ((originalClauses φ sites).map Prod.fst) =
       (Cslib.Logic.PL.occurrences φ).map
-        (fun o => (lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1) := by
+        (fun o => (lastLiteral sites (occurrencePath φ o) o.lit.2).1.1) := by
   simp [originalClauses, Cslib.Logic.PL.occurrences, CNF.vars, List.map_flatten,
     List.map_map, Function.comp_def, List.flatMap_def]
 
@@ -149,31 +150,28 @@ private theorem count_external_blocks_le {φ : CNF ℕ} (sites : List Point)
     (os : List (Occurrence ℕ))
     (hpaths : ∀ o ∈ os, 2 ≤ (occurrencePath φ o).length) (v : Variable) :
     (CNF.vars ((os.flatMap fun o => links sites (occurrencePath φ o)).map Prod.fst)).count v +
-      (os.map (fun o => (lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1)).count v ≤
+      (os.map (fun o => (lastLiteral sites (occurrencePath φ o) o.lit.2).1.1)).count v ≤
       (os.flatMap fun o => pathPortSignals sites (occurrencePath φ o)).count v := by
   induction os with
   | nil => simp [CNF.vars]
   | cons o os ih =>
     have ht := ih (fun a ha => hpaths a (List.mem_cons_of_mem _ ha))
-    have ho := count_links_lastLiteral_le sites o.2.2.2 (occurrencePath φ o)
+    have ho := count_links_lastLiteral_le sites o.lit.2 (occurrencePath φ o)
       (hpaths o List.mem_cons_self) v
     rw [List.flatMap_cons, List.map_append, count_vars_append, List.map_cons,
       List.count_cons, List.flatMap_cons, List.count_append]
-    have hc : [(lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1].count v =
-        if (lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1 == v then 1 else 0 := by
+    have hc : [(lastLiteral sites (occurrencePath φ o) o.lit.2).1.1].count v =
+        if (lastLiteral sites (occurrencePath φ o) o.lit.2).1.1 == v then 1 else 0 := by
       simp [List.count_cons]
     rw [hc] at ho
     omega
-
-private theorem vars_append (φ ψ : CNF Variable) : (φ ++ ψ).vars = φ.vars ++ ψ.vars := by
-  simp [CNF.vars]
 
 private theorem vars_flatMap (ps : List Point) (f : Point → List PlacedClause) :
     CNF.vars ((ps.flatMap f).map Prod.fst) =
       ps.flatMap fun p => CNF.vars ((f p).map Prod.fst) := by
   induction ps with
   | nil => rfl
-  | cons p ps ih => rw [List.flatMap_cons, List.map_append, vars_append, ih]; rfl
+  | cons p ps ih => rw [List.flatMap_cons, List.map_append, CNF.vars_append, ih]; rfl
 
 private theorem vars_ordinaryBlock (p : Point) :
     CNF.vars ((ordinaryClauses p).map Prod.fst) =

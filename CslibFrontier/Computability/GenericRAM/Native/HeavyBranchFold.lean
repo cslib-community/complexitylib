@@ -549,9 +549,8 @@ private noncomputable def fiberEquiv {n : ℕ} {S : List ℕ} {vals : List Bool}
     simp only [mergeAssignment, u.2, ↓reduceDIte, Subtype.eta, Equiv.apply_symm_apply, u]
   right_inv := fun ⟨σ, hσ⟩ => by
     apply Subtype.ext; funext i; simp only [mergeAssignment]; split_ifs with hiS
-    · have hk : S.idxOf (i : ℕ) < S.length := List.idxOf_lt_length_of_mem hiS
-      rw [← hσ, List.getD_eq_getElem _ false (by rw [List.length_map]; exact hk)]
-      simp only [List.getElem_map, List.getElem_idxOf hk, extendAssignment_coe]
+    · rw [← hσ]
+      simp [List.getD_eq_getElem?_getD, hiS, extendAssignment_coe]
     · simp only [Equiv.symm_apply_apply]
 
 private theorem evalSystem_mergeAssignment {n : ℕ} {S : List ℕ} {vals : List Bool}

@@ -7,13 +7,18 @@ import pathlib
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
 SCRIPT = pathlib.Path(__file__).resolve().parent / "worktree.sh"
 
 GIT_ENV = {
-    **os.environ,
+    # Fixtures choose whether to bootstrap; a caller's opt-out must not disable their probes.
+    **{
+        key: value for key, value in os.environ.items()
+        if key not in ("COMPLEXITYLIB_CACHE_AUTO", "DISABLE_CACHE_RESTORE")
+    },
     "GIT_AUTHOR_NAME": "Test",
     "GIT_AUTHOR_EMAIL": "test@example.com",
     "GIT_COMMITTER_NAME": "Test",
@@ -371,6 +376,28 @@ class WorktreeCreateTests(unittest.TestCase):
         self.assertEqual(pathlib.Path(fetched.read_text(encoding="utf-8").strip()).resolve(), wt)
         self.assertTrue((wt / ".lake/cache-bootstrap/attempt.json").is_file())
         self.assertFalse((self.work / ".lake/cache-bootstrap/attempt.json").exists())
+
+
+@unittest.skipUnless(shutil.which("git"), "git is required")
+class WorktreeEnvironmentTests(unittest.TestCase):
+    def test_fallback_bootstrap_ignores_inherited_cache_opt_outs(self) -> None:
+        # Import the fixture in a fresh process, as the full validation suite does.
+        outer_env = dict(os.environ)
+        for name in ("COMPLEXITYLIB_CACHE_AUTO", "DISABLE_CACHE_RESTORE"):
+            outer_env.pop(name, None)
+        for name, value in (("COMPLEXITYLIB_CACHE_AUTO", "0"),
+                            ("DISABLE_CACHE_RESTORE", "1")):
+            with self.subTest(variable=name):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(pathlib.Path(__file__).resolve()),
+                     "WorktreeCreateTests."
+                     "test_create_fallback_cache_bootstrap_targets_worktree_not_root"],
+                    env={**outer_env, name: value},
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 @unittest.skipUnless(shutil.which("git"), "git is required")

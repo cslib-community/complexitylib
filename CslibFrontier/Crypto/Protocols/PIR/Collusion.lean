@@ -22,8 +22,13 @@ queries sent to those servers does not depend on the target index `i`.
   `T.card ≤ t` (for arbitrary entry payload type `β`, defaulting to `Bool`). At `t = 0` this holds
   trivially (`Scheme.isTPrivate_zero`), at `t = 1` it is equivalent to single-server
   `Scheme.IsPrivate` (`Scheme.isTPrivate_one_iff`), and for every `t` it is equivalent to the
-  paper's `t`-tuple formulation (`Scheme.isTPrivate_iff_tuple`). Both `Scheme.rows` and
-  `Scheme.comap` preserve `IsTPrivate`.
+  paper's `t`-tuple formulation (`Scheme.isTPrivate_iff_tuple`). `Scheme.IsTPrivate.of_query_eq`
+  transfers it to every scheme whose queries have the law of the queries of a `t`-private scheme
+  up to reindexing, such as `Scheme.rows` and `Scheme.comap`.
+* **Existence (`HasTPrivateScheme`, `HasScheme`).** `HasTPrivateScheme ι t k c β` says that a
+  correct, `t`-private `k`-server scheme communicating at most `c` bits exists; the single-server
+  statement `HasScheme ι k c β` is its `t = 1` case, unfolded by `hasScheme_iff`.
+  `HasTPrivateScheme.fin_of_le_card` turns a scheme for a grid or a cube into one for `Fin n`.
 * **Necessity of `t < |S|` (`Scheme.exists_injective_answers_of_card_le`,
   `Scheme.card_le_communication_of_card_le`).** Generalizing the single-server injectivity argument
   of [CGKS, Section 5.1, p. 14][ChorGoldreichKushilevitzSudan1998] (`PIR.SingleServer`) from
@@ -41,14 +46,20 @@ Polynomial Shamir `t`-private constructions live in `PIR.Shamir`, single-server 
   `Cslib.Crypto.Protocols.PIR.Scheme.tupleQuery`: joint query marginals on server subsets and
   tuples.
 * `Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate`: perfect information-theoretic `t`-privacy.
-* `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme`: existence of a correct, `t`-private `k`-server
-  scheme within a bit budget.
+* `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme`, `Cslib.Crypto.Protocols.PIR.HasScheme`:
+  existence of a correct, `t`-private (respectively private) `k`-server scheme within a bit budget.
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.PIR.Scheme.isTPrivate_one_iff`,
   `Cslib.Crypto.Protocols.PIR.Scheme.isTPrivate_iff_tuple`: equivalence with `IsPrivate` at `t = 1`
   and with `t`-tuple query independence.
+* `Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate.of_query_eq`: `t`-privacy transfers along
+  reindexed query laws.
+* `Cslib.Crypto.Protocols.PIR.hasScheme_iff`: `HasScheme` unfolded with single-server privacy.
+* `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.comap`,
+  `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.fin_of_le_card`: existence restricts along an
+  embedding of indices, in particular to `Fin n` from any index type with at least `n` elements.
 * `Cslib.Crypto.Protocols.PIR.Scheme.exists_injective_answers_of_card_le`,
   `Cslib.Crypto.Protocols.PIR.Scheme.card_le_communication_of_card_le`: full-coalition `|S| ≤ t`
   determines the database from one joint answer vector and requires at least `|ι|` bits.
@@ -207,24 +218,28 @@ theorem isTPrivate_iff_tuple {t : ℕ} :
     · rw [Finset.not_nonempty_iff_eq_empty.mp hne]
       exact P.isTPrivate_zero ∅ (by simp) i i'
 
-theorem coalitionQuery_rows (ρ : Type) (P : Scheme ι S R Q A β) (T : Finset S) (ji : ρ × ι) :
-    (P.rows ρ).coalitionQuery T ji = P.coalitionQuery T ji.2 := by
-  rw [coalitionQuery, query_rows, coalitionQuery]
+/-- **`t`-privacy transfer.** If the queries that `P'` sends for `i` have the law of the queries
+that the `t`-private scheme `P` sends for `f i`, then `P'` is `t`-private. The retained states,
+answers and reconstructions of the two schemes are unconstrained. -/
+theorem IsTPrivate.of_query_eq {ι' R' A' β' : Type} {P' : Scheme ι' S R' Q A' β'} {t : ℕ}
+    (h : P.IsTPrivate t) (f : ι' → ι)
+    (hq : ∀ i,
+      ProbComp.eval (Prod.snd <$> P'.query i) = ProbComp.eval (Prod.snd <$> P.query (f i))) :
+    P'.IsTPrivate t := by
+  have hview (T : Finset S) (i : ι') :
+      ProbComp.eval (P'.coalitionQuery T i) = ProbComp.eval (P.coalitionQuery T (f i)) := by
+    have hT := congrArg (PMF.map fun q (s : T) => q s) (hq i)
+    simp only [ProbComp.eval_map, PMF.map_comp] at hT
+    rw [eval_coalitionQuery, eval_coalitionQuery]
+    exact hT
+  exact fun T hT i i' => by rw [hview, hview, h.eval_coalitionQuery_eq T hT]
 
-theorem IsTPrivate.rows (ρ : Type) {t : ℕ} (h : P.IsTPrivate t) : (P.rows ρ).IsTPrivate t := by
-  intro T hT ji ji'
-  rw [coalitionQuery_rows, coalitionQuery_rows]
-  exact h T hT ji.2 ji'.2
-
-theorem coalitionQuery_comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (pad : β)
-    (T : Finset S) (i : ι) : (P.comap e pad).coalitionQuery T i = P.coalitionQuery T (e i) := by
-  rw [coalitionQuery, query_comap, coalitionQuery]
+theorem IsTPrivate.rows (ρ : Type) {t : ℕ} (h : P.IsTPrivate t) : (P.rows ρ).IsTPrivate t :=
+  h.of_query_eq Prod.snd fun _ => by rw [query_rows]
 
 theorem IsTPrivate.comap {ι' : Type} {P : Scheme ι' S R Q A β} {t : ℕ} (h : P.IsTPrivate t)
-    (e : ι ↪ ι') (pad : β) : (P.comap e pad).IsTPrivate t := by
-  intro T hT i i'
-  rw [coalitionQuery_comap, coalitionQuery_comap]
-  exact h T hT (e i) (e i')
+    (e : ι ↪ ι') (pad : β) : (P.comap e pad).IsTPrivate t :=
+  h.of_query_eq e fun _ => by rw [query_comap]
 
 /-! ### Full-coalition lower bound (`t ≥ |S|`) -/
 
@@ -312,26 +327,47 @@ def HasTPrivateScheme (ι : Type) (t k c : ℕ) (β : Type := Bool) : Prop :=
   ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
     P.IsCorrect ∧ P.IsTPrivate t ∧ Fintype.card S = k ∧ communication S Q A ≤ c
 
+/-- Some `k`-server scheme for databases `ι → β` (by default `β = Bool`) is perfectly correct and
+perfectly private and communicates at most `c` bits: the `t = 1` case of `HasTPrivateScheme`, by
+`Scheme.isTPrivate_one_iff`. `hasScheme_iff` states it with `Scheme.IsPrivate`. -/
+def HasScheme (ι : Type) (k c : ℕ) (β : Type := Bool) : Prop :=
+  HasTPrivateScheme ι 1 k c β
+
 theorem hasTPrivateScheme_iff {ι β : Type} {t k c : ℕ} :
     HasTPrivateScheme ι t k c β ↔
       ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
         P.IsCorrect ∧ P.IsTPrivate t ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
   rw [HasTPrivateScheme]
 
-/-- `1`-private scheme existence agrees with `HasScheme`. -/
+/-- `1`-private scheme existence is `HasScheme`. -/
 theorem hasTPrivateScheme_one_iff {ι β : Type} {k c : ℕ} :
-    HasTPrivateScheme ι 1 k c β ↔ HasScheme ι k c β := by
-  simp only [hasTPrivateScheme_iff, hasScheme_iff, Scheme.isTPrivate_one_iff]
+    HasTPrivateScheme ι 1 k c β ↔ HasScheme ι k c β :=
+  Iff.rfl
+
+theorem hasScheme_iff {ι β : Type} {k c : ℕ} : HasScheme ι k c β ↔
+    ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
+      P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
+  simp only [← hasTPrivateScheme_one_iff, hasTPrivateScheme_iff, Scheme.isTPrivate_one_iff]
 
 theorem Scheme.IsCorrect.hasTPrivateScheme {ι S R Q A β : Type} [Fintype S] [Fintype Q] [Fintype A]
     {P : Scheme ι S R Q A β} {t : ℕ} (hcorrect : P.IsCorrect) (hprivate : P.IsTPrivate t) :
     HasTPrivateScheme ι t (Fintype.card S) (communication S Q A) β :=
   hasTPrivateScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, rfl, le_rfl⟩
 
+/-- A correct, private scheme witnesses `HasScheme`. -/
+theorem Scheme.IsCorrect.hasScheme {ι S R Q A β : Type} [Fintype S] [Fintype Q] [Fintype A]
+    {P : Scheme ι S R Q A β} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    HasScheme ι (Fintype.card S) (communication S Q A) β :=
+  hcorrect.hasTPrivateScheme (Scheme.isTPrivate_one_iff.mpr hprivate)
+
 theorem HasTPrivateScheme.mono {ι β : Type} {t k c c' : ℕ} (h : HasTPrivateScheme ι t k c β)
     (hc : c ≤ c') : HasTPrivateScheme ι t k c' β := by
   obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasTPrivateScheme_iff.mp h
   exact hasTPrivateScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
+
+theorem HasScheme.mono {ι β : Type} {k c c' : ℕ} (h : HasScheme ι k c β) (hc : c ≤ c') :
+    HasScheme ι k c' β :=
+  HasTPrivateScheme.mono h hc
 
 theorem HasTPrivateScheme.mono_threshold {ι β : Type} {t₁ t₂ k c : ℕ} (ht : t₁ ≤ t₂)
     (h : HasTPrivateScheme ι t₂ k c β) : HasTPrivateScheme ι t₁ k c β := by
@@ -340,7 +376,30 @@ theorem HasTPrivateScheme.mono_threshold {ι β : Type} {t₁ t₂ k c : ℕ} (h
 
 theorem HasTPrivateScheme.hasScheme {ι β : Type} {t k c : ℕ} (ht : 1 ≤ t)
     (h : HasTPrivateScheme ι t k c β) : HasScheme ι k c β :=
-  hasTPrivateScheme_one_iff.mp (h.mono_threshold ht)
+  h.mono_threshold ht
+
+/-- A scheme for a larger index type restricts along an embedding `ι ↪ ι'`
+(`Scheme.comap`), keeping its servers and communication. -/
+theorem HasTPrivateScheme.comap {ι ι' β : Type} [Nonempty β] {t k c : ℕ}
+    (h : HasTPrivateScheme ι' t k c β) (e : ι ↪ ι') : HasTPrivateScheme ι t k c β := by
+  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasTPrivateScheme_iff.mp h
+  let pad : β := Classical.arbitrary β
+  exact hasTPrivateScheme_iff.mpr
+    ⟨S, R, Q, A, _, _, _, P.comap e pad, hcorrect.comap e pad, hprivate.comap e pad, hk, hcomm⟩
+
+theorem HasScheme.comap {ι ι' β : Type} [Nonempty β] {k c : ℕ} (h : HasScheme ι' k c β)
+    (e : ι ↪ ι') : HasScheme ι k c β :=
+  HasTPrivateScheme.comap h e
+
+/-- A scheme for a finite index type of size at least `n` gives one for `n`-entry databases. -/
+theorem HasTPrivateScheme.fin_of_le_card {ι β : Type} [Fintype ι] [Nonempty β] {n t k c : ℕ}
+    (h : HasTPrivateScheme ι t k c β) (hn : n ≤ Fintype.card ι) :
+    HasTPrivateScheme (Fin n) t k c β :=
+  h.comap ((Fin.castLEEmb hn).trans (Fintype.equivFin ι).symm.toEmbedding)
+
+theorem HasScheme.fin_of_le_card {ι β : Type} [Fintype ι] [Nonempty β] {n k c : ℕ}
+    (h : HasScheme ι k c β) (hn : n ≤ Fintype.card ι) : HasScheme (Fin n) k c β :=
+  HasTPrivateScheme.fin_of_le_card h hn
 
 theorem HasTPrivateScheme.card_le_of_le {ι : Type} [Fintype ι] {t k c : ℕ}
     (h : HasTPrivateScheme ι t k c) (hkt : k ≤ t) : Fintype.card ι ≤ c := by

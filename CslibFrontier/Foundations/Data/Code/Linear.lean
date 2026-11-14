@@ -12,6 +12,7 @@ public import Mathlib.Algebra.Module.Submodule.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.LinearAlgebra.Dimension.Finrank
 public import Mathlib.LinearAlgebra.Pi
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.FieldTheory.Finiteness
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -108,7 +109,7 @@ theorem rate_linearCode_eq_finrank_div_card {ι F : Type*} [Fintype ι] [Field F
   have hcard : Nat.card (C : Set (ι → F)) = Nat.card C := rfl
   rw [rate, hcard, card_linearCode_eq_pow_finrank]
   push_cast
-  rw [← Real.rpow_natCast (Fintype.card F : ℝ), Real.logb_rpow (by linarith) (by linarith)]
+  rw [Real.logb_self_pow (zero_lt_one.trans hF) hF.ne']
 
 end Rate
 

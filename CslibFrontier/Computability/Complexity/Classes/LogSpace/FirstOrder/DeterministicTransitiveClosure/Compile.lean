@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Loop
+public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 import CslibFrontier.Foundations.Data.List.Lookup
 
 /-!
@@ -49,7 +50,7 @@ namespace Cslib.Logic.FO.Ordered.DTCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr Vocabulary.ModelChecker
 open Operator (Formula RelEnv)
-open TCModelChecker (Kept termE getD_pair eval_termE_of_atomic)
+open ClosureKernel
 
 variable {L : Language.{u, v}} [L.IsRelational] (v : Vocabulary L)
 
@@ -147,10 +148,10 @@ the registers below `base` and every register at most `B`. -/
 theorem correct_ofFO (hE : Env v a B) {Γ : List ℕ} {α : Type} (φ : (language L).Formula α) :
     Correct v a P B (Formula.ofFO (shape := TC.shape) (Γ := Γ) φ) := by
   intro _ _ fv base val ρ b T F regs hP hbase hfv hd h0 hv hregs
-  obtain ⟨res, regs', hres, hreach, hlen, hkeep, hB'⟩ :=
+  obtain ⟨res, regs', hres, hreach, hk⟩ :=
     reaches_formulaCodeWith hE.card_le fv base hbase hfv val _ (hE.atomic fv base val) φ b T F
       regs default hP hd h0 hregs hv (fun i => i.elim0)
-  exact ⟨res, regs', hres, hreach, ⟨hlen, fun i hi => hkeep i (by omega), hB'⟩⟩
+  exact ⟨res, regs', hres, hreach, hk.mono (Nat.le_add_right _ _)⟩
 
 theorem correct_neg {Γ : List ℕ} {α : Type} {φ : Formula (language L) TC.shape Γ α}
     (ih : Correct v a P B φ) : Correct v a P B φ.neg := by
@@ -185,20 +186,11 @@ theorem correct_conj {Γ : List ℕ} {α : Type} {φ ψ : Formula (language L) T
   | true =>
     obtain ⟨hd₁, h0₁, hv₁⟩ := hk₁.facts hbase hfv hdψ h0 hv
     obtain ⟨r₂, regs₂, hr₂, hreach₂, hk₂⟩ :=
-      ihψ hΓ hWψ fv base val ρ (b + len φ) T F regs₁ hPψ hbase hfv hd₁ h0₁ hv₁ hk₁.2.2
+      ihψ hΓ hWψ fv base val ρ (b + len φ) T F regs₁ hPψ hbase hfv hd₁ h0₁ hv₁ hk₁.bounded
     rw [ite_eq_left rfl] at hreach₁
     refine ⟨r₂, regs₂, ?_, hreach₁.trans hreach₂, hk₁.trans hk₂⟩
     rw [hr₂]
     exact ⟨fun h => ⟨hr₁.mp rfl, h⟩, fun h => h.2⟩
-
-/-- The registers of the extended assignment of an existential body: the new variable in
-register `base`, the others in their registers. -/
-private theorem getD_elim_eq {α : Type} {fv : α → ℕ} {base : ℕ} {regs : List ℕ} {n : ℕ}
-    {val : α → Fin n} (hv : ∀ x, regs.getD (fv x) 0 = val x) {c : Fin n}
-    (hc : regs.getD base 0 = c) :
-    ∀ y : Option α, regs.getD (y.elim base fv) 0 = (Option.elim y c val : Fin n)
-  | none => hc
-  | some y => hv y
 
 theorem correct_ex (hE : Env v a B) {Γ : List ℕ} {α : Type}
     {φ : Formula (language L) TC.shape Γ (Option α)}
@@ -222,8 +214,8 @@ theorem correct_ex (hE : Env v a B) {Γ : List ℕ} {α : Type}
   have hstep : ∀ regs₁ : List ℕ, Kept B base regs regs₁ → ∀ m, regs₁.getD base 0 = m →
       P.Reaches (encStructure a) (P.Running B) (b + 1, regs₁)
         (if m < a.1 then b + 2 else F, regs₁) := fun regs₁ hk m hm =>
-    Reaches.lt h₁ hk.2.2 (by
-      simp only [eval_reg, hm, (hk.2.1 0 hbase).trans h0]
+    Reaches.lt h₁ hk.bounded (by
+      simp only [eval_reg, hm, (hk.getD_eq 0 hbase).trans h0]
       exact Reaches.refl _)
   have key : ∀ e m (regs₁ : List ℕ), a.1 - m = e → m ≤ a.1 → Kept B base regs regs₁ →
       regs₁.getD base 0 = m →
@@ -246,9 +238,10 @@ theorem correct_ex (hE : Env v a B) {Γ : List ℕ} {α : Type}
       rw [ite_eq_left hmn] at hr₁
       obtain ⟨r, regs₂, hr, hreach, hk₂⟩ :=
         ih hΓ hW (fun x => x.elim base fv) (base + 1) (Option.elim · ⟨m, hmn⟩ val) ρ (b + 2) T
-          (b + 2 + len φ) regs₁ hPφ (by omega) hfv' (by rw [hk.1]; omega)
-          ((hk.2.1 0 hbase).trans h0)
-          (getD_elim_eq (fun x => (hk.2.1 _ (hfv x)).trans (hv x)) (c := ⟨m, hmn⟩) hx) hk.2.2
+          (b + 2 + len φ) regs₁ hPφ (by omega) hfv' (by rw [hk.length_eq]; omega)
+          ((hk.getD_eq 0 hbase).trans h0)
+          (getD_elim_eq (fun x => (hk.getD_eq _ (hfv x)).trans (hv x)) (c := ⟨m, hmn⟩) hx)
+          hk.bounded
       cases r with
       | true =>
         rw [ite_eq_left rfl] at hreach
@@ -256,23 +249,23 @@ theorem correct_ex (hE : Env v a B) {Γ : List ℕ} {α : Type}
           hk.trans (hk₂.mono (by omega))⟩
       | false =>
         rw [ite_eq_right Bool.false_ne_true] at hreach
-        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.2.1 base (by omega), hx]
+        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.getD_eq base (by omega), hx]
         have hk₃ : Kept B base regs (regs₂.set base (m + 1)) :=
           (hk.trans (hk₂.mono (by omega))).set_right le_rfl (by have := hE.card_le; omega)
         have hinc : P.Reaches (encStructure a) (P.Running B) (b + 2 + len φ, regs₂)
             (b + 1, regs₂.set base (m + 1)) := by
-          refine Reaches.assign h₂ hk₂.2.2 ?_
+          refine Reaches.assign h₂ hk₂.bounded ?_
           simp only [eval_add, eval_reg, eval_const, hx₂]
           exact Reaches.refl _
         obtain ⟨res, regs', hres, hreach', hk'⟩ := ih' (m + 1) _ (by omega) hmn hk₃
-          (List.getD_set_self (by rw [hk₂.1, hk.1]; exact hlen)) fun x hxm => by
+          (List.getD_set_self (by rw [hk₂.length_eq, hk.length_eq]; exact hlen)) fun x hxm => by
             rcases Nat.lt_succ_iff_lt_or_eq.mp hxm with hxm | hxm
             · exact hall x hxm
             · obtain rfl : x = ⟨m, hmn⟩ := Fin.ext hxm
               exact fun h => Bool.false_ne_true (hr.mpr h)
         exact ⟨res, regs', hres, (hr₁.trans hreach).trans (hinc.trans hreach'), hk'⟩
   have hk₀ : Kept B base regs (regs.set base 0) :=
-    (TCModelChecker.Kept.refl hregs).set_right le_rfl (Nat.zero_le _)
+    (Kept.refl hregs).set_right le_rfl (Nat.zero_le _)
   obtain ⟨res, regs', hres, hreach, hk'⟩ := key _ 0 _ rfl (Nat.zero_le _) hk₀
     (List.getD_set_self hlen) fun x hx => absurd hx (Nat.not_lt_zero _)
   exact ⟨res, regs', hres, Reaches.assign h₀ hregs hreach, hk'⟩
@@ -328,12 +321,12 @@ theorem correct_op (hE : Env v a B) {Γ : List ℕ} {α : Type} (k : ℕ)
         cases x with
         | inl x => have := hfv x; simp only [Sum.elim_inl]; omega
         | inr i => have : (i : ℕ) < 2 * k := i.isLt; simp only [Sum.elim_inr]; omega)
-      (by rw [hk.1]; omega) ((hk.2.1 0 hbase).trans h0)
+      (by rw [hk.length_eq]; omega) ((hk.getD_eq 0 hbase).trans h0)
       (fun x => by
         cases x with
-        | inl x => simp only [Sum.elim_inl]; exact (hk.2.1 _ (hfv x)).trans (hv x)
+        | inl x => simp only [Sum.elim_inl]; exact (hk.getD_eq _ (hfv x)).trans (hv x)
         | inr i => exact getD_pair hu hy i)
-      hk.2.2
+      hk.bounded
   obtain ⟨res, regs', hres, hreach, hk'⟩ := reaches_dtcCode (E := E) hP' hbase (by omega) h0
     hNB hE.card_le hE.one_le hregs hsrc hdst hbody
   exact ⟨res, regs', hres, hreach, hk'⟩

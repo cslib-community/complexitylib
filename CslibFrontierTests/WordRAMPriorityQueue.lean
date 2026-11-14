@@ -10,7 +10,7 @@ module
 public import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate
 
 /-! The original operation sequence and dirty-initialization cases, through the replacement
-fixed program. These are certified actual executions, with halt-inclusive call bounds. The
+fixed program. These are actual executions, with conversion and halt included in the bounds. The
 old interpreter's implementation-specific instruction/register constants are not retained.
 External argument delivery and host continuations have the existing operation-call semantics. -/
 
@@ -111,7 +111,7 @@ example : ∃ y₀ y traces,
     Representation.Rep 10 (show Fits 10 4 by decide) (show Fits 10 20 by decide)
       (IndexedMinPQ.empty 4) y ∧
     DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-      spec.totalCost (fun _ o => operationTime o + 1) (IndexedMinPQ.empty 4)
+      spec.totalCost (fun _ o => operationTime o + 2) (IndexedMinPQ.empty 4)
         (spec.clientHistory (IndexedMinPQ.empty 4) sequence) := by
   have hS : Fits 10 (10 + space 4) := by decide
   have hK : Fits 10 20 := by decide
@@ -135,7 +135,7 @@ example : ∃ y₀ y traces,
     Executes ((dynamicProgram 4 20).ExecOp 10) clearedClient y₀ (true, none, some (1, 7)) y
       traces ∧
     DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-      spec.totalCost (fun _ o => operationTime o + 1) (IndexedMinPQ.empty 4)
+      spec.totalCost (fun _ o => operationTime o + 2) (IndexedMinPQ.empty 4)
         (spec.clientHistory (IndexedMinPQ.empty 4) clearedClient) := by
   have hS : Fits 10 (4 + space 4) := by decide
   have hK : Fits 10 20 := by decide

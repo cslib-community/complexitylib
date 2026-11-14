@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Support
 import CslibFrontier.Probability.Product.Split
 
 /-!
@@ -129,11 +130,6 @@ private theorem length_logM (q : ROQuery M CT) (l : List M) :
     (logM q l).length ≤ l.length + q.hCost := by
   cases q <;> simp [logM]
 
-private theorem snd_eq_of_mem_support_map {α σ : Type} {μ : PMF α} {t : σ} {x : α × σ}
-    (hx : x ∈ (μ.map (·, t)).support) : x.2 = t := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
-  rfl
-
 variable [DecidableEq CT]
 
 section DecidableMessages
@@ -150,7 +146,7 @@ private theorem eagerHandler_fbTable (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => simp [eagerHandler, eagerFbHandler, fbTable, hq x rfl]
   | decaps c =>
-    simp only [eagerHandler, eagerFbHandler, decapsNotBot]
+    simp only [eagerHandler, eagerFbHandler, decapsNotBot_eq, ROQuery.dispatch]
     cases decT S.pke G pk sk c <;> simp [fbTable]
 
 /-- The logged oracles of the two games are identical until the log contains the seed. -/
@@ -165,13 +161,13 @@ private theorem identicalUntilBad_log (S : Scheme PK SK M R CT K) (G : M → R)
     · obtain ⟨x, rfl, hx⟩ := hbad
       have hz (μ : PMF K) : (μ.map (·, logM (.H x) st)) (a, st') = 0 :=
         (PMF.apply_eq_zero_iff _ _).mpr fun hmem =>
-          hst' (by rw [show st' = _ from snd_eq_of_mem_support_map hmem]; simp [logM, hx])
+          hst' (by rw [show st' = _ from snd_eq_of_mem_support_map_pair hmem]; simp [logM, hx])
       exact (hz _).trans (hz _).symm
     · rw [eagerHandler_fbTable S G H Hfb pk sk s cStar q fun x hq hx => hbad ⟨x, hq, hx⟩]
   absorb_first q st hst x hx := by
-    rw [snd_eq_of_mem_support_map hx]; exact mem_logM q hst
+    rw [snd_eq_of_mem_support_map_pair hx]; exact mem_logM q hst
   absorb_second q st hst x hx := by
-    rw [snd_eq_of_mem_support_map hx]; exact mem_logM q hst
+    rw [snd_eq_of_mem_support_map_pair hx]; exact mem_logM q hst
 
 /-! ### One run of each game -/
 
@@ -181,14 +177,14 @@ private noncomputable def runReal (S : Scheme PK SK M R CT K) (A : ROAdversary P
     (b : Bool) (pk : PK) (sk : SK) (s : M) (G : M → R) (H : Bool × M × CT → K) (Hfb : CT → K)
     (m : M) (kRand : K) : PMF Bool :=
   OracleComp.interpret (S.eagerHandler G (fbTable s H Hfb) ⟨sk, pk, s⟩ (encT S.pke G pk m))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)
 
 /-- The adversary's run in `eagerFbGame` once all randomness is fixed. -/
 private noncomputable def runFb (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
     (b : Bool) (pk : PK) (sk : SK) (s : M) (G : M → R) (H : Bool × M × CT → K) (Hfb : CT → K)
     (m : M) (kRand : K) : PMF Bool :=
   OracleComp.interpret (S.eagerFbHandler G H Hfb ⟨sk, pk, s⟩ (encT S.pke G pk m))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)
 
 /-- The logged run of `eagerFbGame`; the oracle ignores the fallback seed, set here to `m`. -/
 private noncomputable def logRunFb (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
@@ -197,7 +193,7 @@ private noncomputable def logRunFb (S : Scheme PK SK M R CT K) (A : ROAdversary 
   (OracleComp.interpret (m := StateT (List M) PMF)
     (fun q st => (S.eagerFbHandler G H Hfb ⟨sk, pk, m⟩ (encT S.pke G pk m) q).map
       (·, logM q st))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))).run []
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)).run []
 
 /-- Whether the logged run of `eagerFbGame` queries `H` at the seed `s`. -/
 private noncomputable def hitSeed (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
@@ -214,7 +210,7 @@ private theorem runReal_le_and_runFb_le (S : Scheme PK SK M R CT K)
         S.runReal A b pk sk s G H Hfb m kRand true +
           S.hitSeed A b pk sk s G H Hfb m kRand true := by
   set c := encT S.pke G pk m
-  set prog := A (pk, c, if b then kRand else H (false, m, c))
+  set prog := A ⟨pk, c, if b then kRand else H (false, m, c)⟩
   have h := identicalUntilBad_log S G H Hfb pk sk s c
   have e (hd : (q : ROQuery M CT) → PMF (ROResp R K q)) :
       OracleComp.interpret hd prog =
@@ -251,9 +247,9 @@ private noncomputable def expect (S : Scheme PK SK M R CT K) [Fintype M] [Finite
     PMF Bool :=
   (ProbComp.eval S.pke.keyGen).bind fun ks =>
   (ProbComp.eval S.sampleMsg).bind fun s =>
-  (pi fun _ : M => ProbComp.eval S.pke.sampleCoins).bind fun G =>
-  (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H =>
-  (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb =>
+  S.coinTable.bind fun G =>
+  (S.keyTable (Bool × M × CT)).bind fun H =>
+  (S.keyTable CT).bind fun Hfb =>
   (ProbComp.eval S.sampleMsg).bind fun m =>
   (ProbComp.eval S.sampleKey).bind fun kRand => F ks.1 ks.2 s G H Hfb m kRand
 
@@ -296,11 +292,11 @@ private theorem expect_hitSeed_le [Fintype M] [Finite R] [Fintype CT] [Finite K]
   rw [PMF.bind_comm (ProbComp.eval S.sampleMsg)]
   refine Probability.PMF.bind_apply_le_on_support _ fun x hx => ?_
   have hlen : x.2.length ≤ qH := by
-    have hcost := (hq (ks.1, encT S.pke G ks.1 m,
-      if b then kRand else H (false, m, encT S.pke G ks.1 m))).2
+    have hcost := (hq ⟨ks.1, encT S.pke G ks.1 m,
+      if b then kRand else H (false, m, encT S.pke G ks.1 m)⟩).2
     simpa using hcost.measure_le _ List.length
       (fun q st res st' hmem => by
-        rw [show st' = logM q st from snd_eq_of_mem_support_map hmem]
+        rw [show st' = logM q st from snd_eq_of_mem_support_map_pair hmem]
         exact length_logM q st)
       (show (x.1, x.2) ∈ _ from hx)
   have hμ : ∀ s, ((ProbComp.eval S.sampleMsg).map id) s ≤ p := fun s => by
@@ -320,15 +316,17 @@ omit [DecidableEq M] in
 private theorem eagerFbGame_eq_expect [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     S.eagerFbGame A b = S.expect (S.runFb A b) := by
-  simp only [eagerFbGame, expect, keyGenNotBot, encapsNotBot, encapsBot, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind]
+  simp only [eagerFbGame, expect, coinTable, keyTable, keyGenNotBot, encapsNotBot, encapsBot,
+    ProbComp.eval_bind, ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1 with ⟨pk, sk⟩ : 1
 
 private theorem eagerIndCcaGame_eq_expect [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     S.eagerIndCcaGame A b = S.expect (S.runReal A b) := by
-  simp only [eagerIndCcaGame, expect, keyGenNotBot, encapsNotBot, encapsBot, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind]
+  simp only [eagerIndCcaGame, expect, coinTable, keyTable, keyGenNotBot, encapsNotBot, encapsBot,
+    ProbComp.eval_bind, ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1 with ⟨pk, sk⟩ : 1
   congr 1 with s : 1
   congr 1 with G : 1

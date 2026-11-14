@@ -7,7 +7,9 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Local
 public import CslibFrontier.Computability.Circuit.Topology
+public import CslibFrontier.Crypto.Primitives.Garbling.OneHot
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.Ring.BooleanRing
 import CslibFrontier.Computability.Circuit.Program
@@ -32,7 +34,8 @@ label's *colour* (the least significant bit in [ZahurRosulekEvans2015]). A globa
 The garbled table therefore has exactly two entries per AND gate and none per XOR gate: it is
 indexed by `Slot C` (`card_slot`). The zero labels and the evaluator's labels are computed by
 one evaluation round iterated `n + size` times; on the ordered topology of a circuit the result
-is the unique labelling fixed by one round (`iterate_eq_of_isFixed`, `isFixed_iterate`).
+is the unique labelling fixed by one round, since the round is local
+(`Cslib.Circuits.IsLocal.iterate_eq_of_isFixed`, `Cslib.Circuits.IsLocal.isFixed_iterate`).
 
 Correctness (`Garbled.run_garbleWith`) holds for every hash and tweak assignment, every offset
 key and every choice of input zero labels, provided `x + x = 0` in `K`: the evaluator holding
@@ -138,65 +141,9 @@ theorem card_slot :
     Fintype.card (Slot C) = 2 * (Finset.univ.filter fun g => op C g = .and).card := by
   rw [Fintype.card_prod, Fintype.card_bool, Fintype.card_subtype, mul_comm]
 
-/-! ### Labels as fixed points of an evaluation round -/
-
-/-- A labelling round is *local* when the new label of a wire depends only on the labels of
-lower-numbered wires. -/
-def IsLocal {s : ℕ} {α : Type} (S : (Wire n s → α) → Wire n s → α) : Prop :=
-  ∀ A B w, (∀ v : Wire n s, v.toNat < w.toNat → A v = B v) → S A w = S B w
-
-section FixedPoint
-
-variable {s : ℕ} {α : Type} {S : (Wire n s → α) → Wire n s → α}
-
-theorem IsLocal.iterate_succ (hS : IsLocal S) (B : Wire n s → α) :
-    ∀ t (w : Wire n s), w.toNat < t → S^[t + 1] B w = S^[t] B w := by
-  intro t
-  induction t with
-  | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-  | succ t ih =>
-    intro w hw
-    calc S^[t + 1 + 1] B w = S (S^[t + 1] B) w := by rw [Function.iterate_succ_apply' S (t + 1)]
-      _ = S (S^[t] B) w := hS _ _ w fun v hv => ih v (by omega)
-      _ = S^[t + 1] B w := by rw [Function.iterate_succ_apply' S t]
-
-/-- Iterating a local round `n + s` times reaches a labelling it fixes. -/
-theorem IsLocal.isFixed_iterate (hS : IsLocal S) (B : Wire n s → α) :
-    S (S^[n + s] B) = S^[n + s] B := by
-  funext w
-  rw [← Function.iterate_succ_apply' S]
-  exact hS.iterate_succ B _ w w.toNat_lt
-
-/-- Every labelling fixed by a local round is its `n + s`-fold iterate from any start. -/
-theorem IsLocal.iterate_eq_of_isFixed (hS : IsLocal S) (B : Wire n s → α) {A : Wire n s → α}
-    (hA : S A = A) : S^[n + s] B = A := by
-  have key : ∀ t (w : Wire n s), w.toNat < t → S^[t] B w = A w := by
-    intro t
-    induction t with
-    | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-    | succ t ih =>
-      intro w hw
-      rw [Function.iterate_succ_apply', ← hA]
-      exact hS _ _ w fun v hv => ih v (by omega)
-  exact funext fun w => key _ w w.toNat_lt
-
-/-- A local round fixes at most one labelling. -/
-theorem IsLocal.eq_of_isFixed (hS : IsLocal S) {A B : Wire n s → α} (hA : S A = A)
-    (hB : S B = B) : A = B :=
-  (hS.iterate_eq_of_isFixed A hA).symm.trans (hS.iterate_eq_of_isFixed A hB)
-
-end FixedPoint
-
 /-! ### Garbling and evaluation -/
 
 variable {K T : Type} [AddCommGroup K]
-
-/-- `x` if `b`, else `0`. -/
-def sel (b : Bool) (x : K × Bool) : K × Bool := if b then x else 0
-
-theorem sel_false (x : K × Bool) : sel false x = 0 := rfl
-
-theorem sel_true (x : K × Bool) : sel true x = x := rfl
 
 /-- The global offset `Δ = (R, true)`, of colour `true`. -/
 def offset (R : K) : K × Bool := (R, true)
@@ -204,12 +151,12 @@ def offset (R : K) : K × Bool := (R, true)
 /-- The evaluator's AND gate: from argument labels `a`, `b` and ciphertexts `TG`, `TE`, the label
 `(H(a, t) + s_a TG) + (H(b, t') + s_b (TE + a))`, where `s_a`, `s_b` are the colours of `a`, `b`. -/
 def andEval (H : K × Bool → T → K × Bool) (t t' : T) (TG TE a b : K × Bool) : K × Bool :=
-  H a t + sel a.2 TG + (H b t' + sel b.2 (TE + a))
+  H a t + bitOffset TG a.2 + (H b t' + bitOffset (TE + a) b.2)
 
 /-- The generator half-ciphertext `H(a, t) + H(a + Δ, t) + p_b Δ` of an AND gate with argument
 zero labels `a`, `b`, where `p_b` is the colour of `b`. -/
 def genCt (H : K × Bool → T → K × Bool) (Δ : K × Bool) (t : T) (a b : K × Bool) : K × Bool :=
-  H a t + H (a + Δ) t + sel b.2 Δ
+  H a t + H (a + Δ) t + bitOffset Δ b.2
 
 /-- The evaluator half-ciphertext `H(b, t) + H(b + Δ, t) + a` of an AND gate with argument zero
 labels `a`, `b`. -/
@@ -291,7 +238,7 @@ structure Garbled (K : Type) where
 def garbleWith (H : K × Bool → T → K × Bool) (tw : Slot C → T) (R : K)
     (Z : Fin n → K × Bool) : Garbled C K where
   table := garbleTable C H tw (offset R) (zeroLabels C H tw (offset R) Z)
-  encoding i b := Z i + sel b (offset R)
+  encoding i b := Z i + bitOffset (offset R) b
   decoding o := (zeroLabels C H tw (offset R) Z (C.outputs o)).2
 
 /-- Garble with a uniform offset key and uniform input zero labels. -/
@@ -339,21 +286,10 @@ theorem snd_add_offset (a : K × Bool) (R : K) : (a + offset R).2 = !a.2 := by
   cases c <;> rfl
 
 omit hK in
-theorem snd_add_sel_offset (a : K × Bool) (b : Bool) (R : K) :
-    (a + sel b (offset R)).2 = a.2 + b := by
+theorem snd_add_bitOffset_offset (a : K × Bool) (b : Bool) (R : K) :
+    (a + bitOffset (offset R) b).2 = a.2 + b := by
   obtain ⟨k, c⟩ := a
   cases b <;> cases c <;> rfl
-
-theorem sel_add (a b : Bool) (Δ : K × Bool) : sel (a + b) Δ = sel a Δ + sel b Δ := by
-  cases a <;> cases b
-  · change sel false Δ = sel false Δ + sel false Δ
-    simp [sel]
-  · change sel true Δ = sel false Δ + sel true Δ
-    simp [sel]
-  · change sel true Δ = sel true Δ + sel false Δ
-    simp [sel]
-  · change sel false Δ = sel true Δ + sel true Δ
-    simp [sel, add_self_label hK]
 
 /-- **The half-gates identity.** With the two ciphertexts of an AND gate built from zero labels
 `a`, `b`, the evaluator holding the labels `a + v_a Δ` and `b + v_b Δ` obtains
@@ -362,9 +298,9 @@ theorem sel_add (a b : Bool) (Δ : K × Bool) : sel (a + b) Δ = sel a Δ + sel 
 theorem andEval_active (H : K × Bool → T → K × Bool) (R : K) (t t' : T) (a b : K × Bool)
     (va vb : Bool) :
     andEval H t t' (genCt H (offset R) t a b) (evCt H (offset R) t' a b)
-        (a + sel va (offset R)) (b + sel vb (offset R)) =
+        (a + bitOffset (offset R) va) (b + bitOffset (offset R) vb) =
       andEval H t t' (genCt H (offset R) t a b) (evCt H (offset R) t' a b) a b +
-        sel (va * vb) (offset R) := by
+        bitOffset (offset R) (va * vb) := by
   have hc := add_add_cancel_label hK
   have hz := add_self_label hK
   have hmt : (true : Bool) * true = true := rfl
@@ -372,21 +308,21 @@ theorem andEval_active (H : K × Bool → T → K × Bool) (R : K) (t t' : T) (a
   have hfm : (false : Bool) * true = false := rfl
   have hffm : (false : Bool) * false = false := rfl
   cases va <;> cases vb <;> cases ha : a.2 <;> cases hb : b.2 <;>
-    simp only [andEval, genCt, evCt, sel, hmt, hmf, hfm, hffm, add_zero, snd_add_offset, ha, hb,
-      Bool.not_true, Bool.not_false, ↓reduceIte, Bool.false_eq_true] <;>
+    simp only [andEval, genCt, evCt, bitOffset, hmt, hmf, hfm, hffm, add_zero, snd_add_offset, ha,
+      hb, Bool.not_true, Bool.not_false, ↓reduceIte, Bool.false_eq_true] <;>
     simp only [add_assoc, add_comm, add_left_comm, hc, hz, add_zero, zero_add]
 
 /-- The label of the bit that wire `w` carries on input `x`. -/
 def activeLabel (W : Wire n C.size → K × Bool) (Δ : K × Bool) (x : Fin n → Bool)
     (w : Wire n C.size) : K × Bool :=
-  W w + sel (C.program.trace interpretation x w) Δ
+  W w + bitOffset Δ (C.program.trace interpretation x w)
 
 /-- One round of evaluation on the garbled table, from the labels of the bits every wire
 carries, gives them back, for zero labels `W` fixed by one garbling round. -/
 theorem evalStep_activeLabel (H : K × Bool → T → K × Bool) (tw : Slot C → T) (R : K)
     (Z : Fin n → K × Bool) (x : Fin n → Bool) (W : Wire n C.size → K × Bool)
     (hW : evalStep C H tw (garbleTable C H tw (offset R) W) Z W = W) :
-    evalStep C H tw (garbleTable C H tw (offset R) W) (fun i => Z i + sel (x i) (offset R))
+    evalStep C H tw (garbleTable C H tw (offset R) W) (fun i => Z i + bitOffset (offset R) (x i))
         (activeLabel C W (offset R) x) = activeLabel C W (offset R) x := by
   funext w
   cases w with
@@ -400,7 +336,7 @@ theorem evalStep_activeLabel (H : K × Bool → T → K × Bool) (tw : Slot C �
     split_ifs with h
     · simp only [garbleTable, ite_true, Bool.false_eq_true, ite_false]
       exact andEval_active hK H R _ _ _ _ _ _
-    · rw [sel_add hK]
+    · rw [bitOffset_add_of_add_self (add_self_label hK _)]
       abel
 
 /-- **Correctness**: evaluating a garbled circuit on an encoded input and decoding gives the
@@ -412,7 +348,7 @@ theorem Garbled.run_garbleWith (H : K × Bool → T → K × Bool) (tw : Slot C 
     (evalStep_activeLabel C hK H tw R Z x _ (zeroLabels_isFixed C H tw (offset R) Z))
   funext o
   simp only [Garbled.run, garbleWith, evaluate, evalLabels, h, activeLabel, Circuit.eval,
-    Function.comp_apply, snd_add_sel_offset]
+    Function.comp_apply, snd_add_bitOffset_offset]
   rw [add_comm, ← add_assoc, BooleanRing.add_self, zero_add]
 
 /-- **Correctness** of the randomized garbling. -/

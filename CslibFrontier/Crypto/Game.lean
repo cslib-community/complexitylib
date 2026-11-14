@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Negligible
 public import Cslib.Probability.PMF
+import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Security of Boolean experiments
@@ -45,6 +46,11 @@ directly, and computational definitions over infinite sample spaces can reuse th
   `Cslib.Crypto.Game.Indistinguishable.of_eventually_succProbability_reduction`,
   `Cslib.Crypto.Game.Indistinguishable.of_succProbability_reduction`: one-sided search/forgery game
   characterizations and success-probability reductions against `PMF.pure false`.
+* `Cslib.Crypto.Game.advantage_pure_true`, `Cslib.Crypto.Game.advantage_pure_true_left`,
+  `Cslib.Crypto.Game.coe_advantage_pure_true_left`: the advantage of a game against the
+  always-`true` game is its failure probability.
+* `Cslib.Crypto.Game.coe_succProbability`, `Cslib.Crypto.Game.coe_failProbability`: real-valued
+  success and failure probabilities.
 * `Cslib.Crypto.Game.advantage_le_of_apply_le`, `Cslib.Crypto.Game.advantage_bind_le`: bound
   real-valued distinguishing advantage from mutual acceptance-probability bounds or across a common
   first-stage distribution.
@@ -366,6 +372,28 @@ theorem Indistinguishable.of_succProbability_reduction
 @[simp] theorem coe_succProbability (game : Game) :
     (succProbability game : ℝ) = (game true).toReal := rfl
 
+/-- As a real number, the failure probability is the real-valued probability of `false`. -/
+@[simp] theorem coe_failProbability (game : Game) :
+    (failProbability game : ℝ) = (game false).toReal := rfl
+
+/-- Comparing a game with certain success measures the game's failure probability. -/
+theorem advantage_pure_true (game : Game) :
+    advantage game (PMF.pure true) = failProbability game := by
+  rw [← advantage_not game (PMF.pure true), PMF.pure_map, Bool.not_true, advantage_pure_false,
+    succProbability_not]
+
+/-- Comparing certain success on the left with a game measures the game's failure probability. -/
+theorem advantage_pure_true_left (game : Game) :
+    advantage (PMF.pure true) game = failProbability game :=
+  (advantage_comm _ _).trans (advantage_pure_true game)
+
+/-- As a real number, the advantage of certain success over `game` is one minus the probability
+that `game` outputs `true`. -/
+theorem coe_advantage_pure_true_left (game : Game) :
+    (advantage (PMF.pure true) game : ℝ) = 1 - (game true).toReal := by
+  rw [advantage_pure_true_left, failProbability_eq, NNReal.coe_sub (succProbability_le_one _),
+    NNReal.coe_one, coe_succProbability]
+
 open scoped ENNReal in
 /-- Mutual upper bounds on the two acceptance probabilities bound the real-valued advantage. -/
 theorem advantage_le_of_apply_le {game1 game2 : Game} {B : ℝ≥0∞} (hB : B ≠ ⊤)
@@ -474,11 +502,8 @@ theorem bind_apply_le_add_bind_apply {β : Type*} (μ : PMF β)
     (h : ∀ x, game1 x b ≤ game2 x b + err x b ∧ game2 x b ≤ game1 x b + err x b) :
     (μ.bind game1) b ≤ (μ.bind game2) b + (μ.bind err) b ∧
       (μ.bind game2) b ≤ (μ.bind game1) b + (μ.bind err) b := by
-  have h1 (f g : β → Game) (hle : ∀ x, f x b ≤ g x b + err x b) :
-      (μ.bind f) b ≤ (μ.bind g) b + (μ.bind err) b := by
-    simp only [PMF.bind_apply, ← tsum_add, ← mul_add]
-    exact tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
-  exact ⟨h1 game1 game2 fun x => (h x).1, h1 game2 game1 fun x => (h x).2⟩
+  exact ⟨Probability.PMF.bind_apply_le_add_on_support μ b fun x _ => (h x).1,
+    Probability.PMF.bind_apply_le_add_on_support μ b fun x _ => (h x).2⟩
 
 /-- Averaging pointwise acceptance-probability bounds `game1 x true ≤ game2 x true + err x true`
 and `game2 x true ≤ game1 x true + err x true` over `μ : PMF β` bounds the `Game.advantage` of the

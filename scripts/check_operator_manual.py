@@ -5,10 +5,11 @@ Relative `File.lean#L<n>` links must also start on a declaration, attribute, doc
 ranges) section header, and an inline link whose text names a declaration of the linked file
 (`[Ns.name](…#L<n>)`) must start on that declaration's header. Pass `--fix-anchors` to repoint
 drifted `[Ns.name](File.lean#Ln)` links at the declaration's current header start line before
-running the check. This does not fetch URLs, elaborate Lean, audit mathematical meaning, check
-links whose text names no declaration of the linked file (prose, a file, a module, a declaration
-that moved elsewhere), or assert that historical evidence describes the current checkout. Run from
-any working directory.
+running the check. It also reports a list item directly after a paragraph line, which the PDF
+build's Pandoc reader absorbs into that paragraph. This does not fetch URLs, elaborate Lean, audit
+mathematical meaning, check links whose text names no declaration of the linked file (prose, a
+file, a module, a declaration that moved elsewhere), or assert that historical evidence describes
+the current checkout. Run from any working directory.
 """
 from __future__ import annotations
 
@@ -61,27 +62,69 @@ STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Stale on main. #4205 rewrites the manual sentence that links them.
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
-    # Stale on main. #3538 edits the adjacent manual line; repoint them after it lands.
-    *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
-      for line in (107, 217, 228, 243)),
 }
 
 
-def prose(text: str) -> str:
-    """Ignore fenced and inline code when scanning Markdown links/headings."""
-    result = []
+def fenced_lines(text: str):
+    """Yield `(line number, line, fenced)`, where `fenced` marks fences and their contents."""
     fence = None
-    for line in text.splitlines():
+    for number, line in enumerate(text.splitlines(), 1):
         match = FENCE.match(line)
         if fence is not None:
             if match and match[1][0] == fence[0] and len(match[1]) >= len(fence):
                 fence = None
+            yield number, line, True
             continue
         if match:
             fence = match[1]
+        yield number, line, fence is not None
+
+
+def prose(text: str) -> str:
+    """Ignore fenced and inline code when scanning Markdown links/headings."""
+    return "\n".join(re.sub(r"(`+).*?\1", "", line)
+                     for _, line, fenced in fenced_lines(text) if not fenced)
+
+
+# Pandoc, which builds the PDFs, reads a list item directly after a paragraph line (including a
+# quotation, inline HTML or `#…` line) as more of that paragraph, while GitHub starts a list there.
+# Items of an open list need no blank line, including nested items and items after an indented
+# fence in an earlier item; nor does a list after a heading, table row, HTML block or comment,
+# thematic break or reference definition. Lists inside block quotes are not checked.
+LIST_ITEM = re.compile(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)")
+HEADING = re.compile(r"\s*#{1,6}(?:[ \t]|$)")
+BLOCK_LINE = re.compile(
+    r"\s*(?:\||=+\s*$|<!--|</?(?:address|article|aside|blockquote|details|div|dl|figure|footer"
+    r"|form|h[1-6]|header|hr|ol|p|pre|section|summary|table|ul)\b)|(?: {0,3}[-*_][ \t]*){3,}$",
+    re.I)
+REFERENCE = re.compile(r" {0,3}\[[^\]]+\]:\s")
+LIST_AFTER_PARAGRAPH = ("list item directly after a paragraph line (add a blank line before the "
+                        "list, or rewrap a line that only looks like an item)")
+
+
+def lists_after_paragraphs(text: str) -> list[int]:
+    """Line numbers of list items that pandoc would read as part of the paragraph above them."""
+    found, paragraph, in_list, after_blank = [], False, False, True
+    for number, line, fenced in fenced_lines(text):
+        indented = line[:1].isspace()
+        if not line.strip():
+            paragraph, after_blank = False, True
             continue
-        result.append(re.sub(r"(`+).*?\1", "", line))
-    return "\n".join(result)
+        if fenced:
+            # A fence and its contents stay inside an open list only when indented under its item.
+            paragraph, after_blank, in_list = False, False, in_list and indented
+            continue
+        if LIST_ITEM.match(line):
+            if paragraph and not in_list:
+                found.append(number)
+            paragraph, in_list = False, True
+        elif BLOCK_LINE.match(line) or HEADING.match(line) and not paragraph:
+            paragraph, in_list = False, in_list and indented
+        elif paragraph or not REFERENCE.match(line):
+            in_list = in_list and not (after_blank and not indented)
+            paragraph = True
+        after_blank = False
+    return found
 
 
 def anchors(text: str) -> set[str]:
@@ -310,6 +353,8 @@ def check(repo: Path, manual: Path | None = None) -> dict:
                 visual_counts[key] += value
         except ValueError as error:
             errors.append(f'{doc.relative_to(manual)}: {error}')
+        errors.extend(f"{doc.relative_to(manual)}: Line {number}: {LIST_AFTER_PARAGRAPH}"
+                      for number in lists_after_paragraphs(doc.read_text()))
         urls, undefined = links(doc.read_text())
         errors.extend(f"{doc.relative_to(manual)}: undefined reference [{key}]" for key in undefined)
         for url in urls:

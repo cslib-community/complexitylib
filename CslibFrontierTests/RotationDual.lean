@@ -11,10 +11,10 @@ import Mathlib.Tactic.FinCases
 
 open Cslib Cslib.Complexity Cslib.Complexity.Graph
 
-private abbrev bridge : Graph := ([0, 1], [(0, 1)])
-private abbrev loopGraph : Graph := ([0], [(0, 0)])
-private abbrev digon : Graph := ([0, 1], [(0, 1), (0, 1)])
-private abbrev torusBouquet : Graph := ([0], [(0, 0), (0, 0)])
+private abbrev bridge : Graph := ⟨[0, 1], [(0, 1)]⟩
+private abbrev loopGraph : Graph := ⟨[0], [(0, 0)]⟩
+private abbrev digon : Graph := ⟨[0, 1], [(0, 1), (0, 1)]⟩
+private abbrev torusBouquet : Graph := ⟨[0], [(0, 0), (0, 0)]⟩
 
 private def bridgeRotation : RotationSystem bridge where
   rotate := Equiv.refl _
@@ -35,7 +35,7 @@ private def torusRotation : RotationSystem torusBouquet where
   sameCycle_iff := by decide
 
 -- The bridge's single source face becomes a loop, retaining its two different darts.
-example : bridgeRotation.dualGraph = ([0], [(0, 0)]) := by decide
+example : bridgeRotation.dualGraph = ⟨[0], [(0, 0)]⟩ := by decide
 
 example : bridgeRotation.dualRotation.faceNext
     (bridgeRotation.dualDartEquiv (0, false)) =
@@ -46,14 +46,14 @@ example : bridgeRotation.dualRotation.faceNext
       bridgeRotation.dualDartEquiv (0, true) := by decide
 
 -- A sphere loop has two singleton source faces; its dual is an ordinary edge.
-example : loopRotation.dualGraph = ([0, 1], [(0, 1)]) := by decide
+example : loopRotation.dualGraph = ⟨[0, 1], [(0, 1)]⟩ := by decide
 
 example : loopRotation.dualRotation.rotate
     (loopRotation.dualDartEquiv (0, false)) =
       loopRotation.dualDartEquiv (0, false) := by decide
 
 -- Distinct parallel edge positions survive dualization.
-example : digonRotation.dualGraph.2 = [(0, 1), (1, 0)] := by decide
+example : digonRotation.dualGraph.edges = [(0, 1), (1, 0)] := by decide
 
 example : digonRotation.faceId (0, false) = digonRotation.faceId (1, true) := by decide
 
@@ -120,17 +120,17 @@ example : ¬ ∃ spin : ℕ → Bool,
     simp [edgeGradient, Dart.vertex, edgeEndpoint]
   exact Bool.false_ne_true (by simpa only [hz, decide_true] using he)
 
-private abbrev pointGraph : Graph := ([2 ^ 100, 2 ^ 100, 7], [])
+private abbrev pointGraph : Graph := ⟨[2 ^ 100, 2 ^ 100, 7], []⟩
 
 private def pointRotation : RotationSystem pointGraph where
   rotate := Equiv.refl _
   sameCycle_iff := by intro d; exact d.1.elim0
 
-example : pointRotation.dualGraph = ([], []) := by decide
+example : pointRotation.dualGraph = ⟨[], []⟩ := by decide
 
 -- Sparse labels and duplicate declared point records require no finite instance on Nat.
 example (x : Fin 0 → Bool) : ∃ spin : ℕ → Bool, pointGraph.edgeGradient spin = x := by
-  have hG : ∀ v ∈ pointGraph.incidenceVertices, v ∈ pointGraph.1 := by decide
+  have hG : ∀ v ∈ pointGraph.incidenceVertices, v ∈ pointGraph.vertices := by decide
   have hgenus : pointRotation.NumericalGenusZero := by
     intro root _
     have hn : ¬ ∃ d : Dart pointGraph, d.vertex = root := by
@@ -159,7 +159,7 @@ example (x : Fin 2 → Bool) :
   rfl
 
 private abbrev sparseMixed : Graph :=
-  ([2 ^ 100, 2 ^ 100 + 7, 2 ^ 100 + 7, 5, 900000], [(2 ^ 100, 2 ^ 100 + 7), (5, 5)])
+  ⟨[2 ^ 100, 2 ^ 100 + 7, 2 ^ 100 + 7, 5, 900000], [(2 ^ 100, 2 ^ 100 + 7), (5, 5)]⟩
 
 private def sparseMixedRotation : RotationSystem sparseMixed where
   rotate :=
@@ -172,7 +172,7 @@ private def sparseMixedRotation : RotationSystem sparseMixed where
 -- Disconnected bridge, loop and point components; duplicate and very large vertex names.
 example (x : Fin 2 → Bool) (hx : x 1 = false) :
     ∃ spin : ℕ → Bool, sparseMixed.edgeGradient spin = x := by
-  have hG : ∀ v ∈ sparseMixed.incidenceVertices, v ∈ sparseMixed.1 := by decide
+  have hG : ∀ v ∈ sparseMixed.incidenceVertices, v ∈ sparseMixed.vertices := by decide
   have hgenus := (RotationCertificate.verifyEuler_eq_true_iff
     (RotationCertificate.verifyRotation_ofRotation sparseMixedRotation hG)).mp (by decide)
   have hgenus' : sparseMixedRotation.NumericalGenusZero :=
@@ -185,7 +185,7 @@ example (x : Fin 2 → Bool) (hx : x 1 = false) :
   rw [← hseed]
   exact sparseMixedRotation.faceEven_edgeGradient seed
 
-private abbrev undeclaredBouquet : Graph := ([], [(0, 0), (0, 0)])
+private abbrev undeclaredBouquet : Graph := ⟨[], [(0, 0), (0, 0)]⟩
 
 private def undeclaredRotation : RotationSystem undeclaredBouquet where
   rotate := torusRotation.rotate
@@ -194,6 +194,9 @@ private def undeclaredRotation : RotationSystem undeclaredBouquet where
 -- The endpoint guard is essential: undeclared roots make the Euler predicate vacuous.
 example : undeclaredRotation.NumericalGenusZero := by
   intro _ h
-  cases h
+  simp at h
 
-example : ¬ (∀ v ∈ undeclaredBouquet.incidenceVertices, v ∈ undeclaredBouquet.1) := by decide
+example : ¬ (∀ v ∈ undeclaredBouquet.incidenceVertices, v ∈ undeclaredBouquet.vertices) := by
+  intro h
+  have := h 0 (by decide)
+  simp at this

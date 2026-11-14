@@ -55,20 +55,44 @@ private noncomputable def deterministicPair : SamplablePair where
 
 -- The interface has a concrete instance, and zero gap does not assert unpredictability.
 example : deterministicPair.HasGap (fun _ => 0) := by
-  intro adversary _
+  intro predictor _
   apply Filter.Eventually.of_forall
   intro n
-  change _ ≤ 1 - conditionalEntropy (PMF.pure ((), false)) - 0
-  norm_num [conditionalEntropy]
-  exact Game.succProbability_le_one _
+  have hentropy : conditionalEntropy (deterministicPair.joint n) = 0 := by
+    change conditionalEntropy (PMF.pure ((), false)) = 0
+    norm_num [conditionalEntropy]
+  have hle := Cslib.Probability.PMF.toReal_apply_le_one
+    (ProbComp.eval (predictionExperiment (deterministicPair.latentSample n) Prod.fst Prod.snd
+      (predictor n))) true
+  rw [hentropy]
+  linarith
 
 -- A completely predictable pair cannot be assigned a positive prediction gap.
 example : ¬ deterministicPair.HasGap (fun _ => 1 / 10) := by
   intro hgap
-  have h := hgap (fun _ _ => pure false) (by ppt)
+  have h := hgap (fun _ _ => pure false) (by
+    unfold SamplablePair.Predictor.IsPPT
+    ppt)
   obtain ⟨n, hn⟩ := h.exists
+  have hlaw : ProbComp.eval (predictionExperiment (deterministicPair.latentSample n) Prod.fst
+      Prod.snd fun _ => pure false) = PMF.pure true := by
+    simp only [ProbComp.eval_predictionExperiment, deterministicPair.eval_latentSample]
+    simp [predictionExperiment, deterministicPair]
   change _ ≤ 1 - conditionalEntropy (PMF.pure ((), false)) - 1 / 10 at hn
-  norm_num [deterministicPair, predictionGame, conditionalEntropy, Game.succProbability] at hn
+  rw [hlaw] at hn
+  norm_num [conditionalEntropy] at hn
+
+-- Typed predictor inputs encode to the word layouts of the word-level gap: `(1ⁿ, encode n x)`,
+-- and `((1ⁿ, advice), encode n x)` as in `encAdvisedInput`.
+example (pair : SamplablePair) (x : pair.PredictorInput) :
+    pair.encPredictorInput x =
+      encPair encUnary encBits (x.parameter, pair.encode _ x.observation) :=
+  rfl
+
+example (pair : SamplablePair) (x : pair.AdvisedPredictorInput) :
+    pair.encAdvisedPredictorInput x =
+      encAdvisedInput ((x.parameter, x.advice), pair.encode _ x.observation) :=
+  rfl
 
 example {sample : ℕ → ProbComp (List Bool × Bool)}
     (hsample : IsPPTOn encUnary (encPair encBits encBool) sample) {adversary : Distinguisher}

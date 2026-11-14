@@ -24,10 +24,10 @@ section Opened
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
 /-- The edge `1 — 2`. -/
-def edge : Graph := ([1, 2], [(1, 2)])
+def edge : Graph := ⟨[1, 2], [(1, 2)]⟩
 
 /-- The vertices `1` and `2` without edges. -/
-def noEdge : Graph := ([1, 2], [])
+def noEdge : Graph := ⟨[1, 2], []⟩
 
 /-- The certificate naming the ordering `[1, 2]` of the vertices of `edge` and `noEdge`. -/
 def cert : List Bool := [false, false, true, false]
@@ -51,6 +51,8 @@ example : LongPath.verifier (⟨edge, 1⟩, [false, false, false, false]) = fals
 example {x y : LongPathInstance} (hG : x.graph = y.graph) (hk : x.target = y.target) :
     x = y :=
   LongPathInstance.ext hG hk
+
+example : (default : LongPathInstance) = ⟨default, default⟩ := rfl
 
 /-- `encLongPath` exposes polynomial-time projections and constructor to `fun_prop`. -/
 example : ComputableInPolyTime LongPathInstance.graph encLongPath encGraph := by fun_prop
