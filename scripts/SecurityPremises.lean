@@ -49,12 +49,34 @@ synonyms of the listed modules unfolded, is
   or an embedding: so a program, a scheme or adversary structure, or a key;
 * or a function whose final result is none of a number, `Bool`, `Prop` or an embedding (a
   predicate, test, numeric function or family of encodings), and which is not an ensemble or game
-  family, a function of security parameters `ℕ → … → PMF _` or `→ Game`.
+  family, a function of security parameters `ℕ → … → PMF _` or `→ Game`;
+* or a distribution, game, ensemble or game family as above, when one of its `k` arguments is
+  explicit and its domain is an *object type*: a type other than a sort, a type variable, a
+  function type, a number, `Bool`, `Set`, `PMF` or `Game`, such as an adversary or scheme
+  structure. So `simulatorView A`, with `simulatorView : Adversary → ℕ → PMF Bool`, is
+  constructed.
 
 Reductions, distinguishers (including `PMF`-valued and `Experiment`-valued ones), simulators,
 extractors, key generators, schemes and adapters are constructed; games, experiments, advantages,
 ideal laws, predicates and encodings are not. Bound variables (the input adversary, generic
 components supplied by the caller) are never constants, so they never count.
+
+**Known gaps.** Review covers these; the fixture in `scripts/test_check_security_premises.py`
+pins each one.
+
+* A distribution applied only to numbers or functions counts as infrastructure: a key law at
+  fixed parameters (`keyLawOf 3`), or one applied to an adversary given as a function rather than
+  a structure.
+* A bound that mentions no advantage-named constant, such as `forgeExperiment (reduction A) 0 ≤ ε`,
+  is not a security claim.
+* A premise whose own definition builds the constructed object in its body, rather than taking it
+  as an argument, is not seen.
+* A caller-supplied object whose existence is what the theorem should prove (the extractor of a
+  proof of knowledge) is a bound variable, so it never counts.
+
+Conversely, a named assumption instantiated at an object of the library, such as `DDH G` for a
+group family `G` that the library defines, is flagged through its unfolding. Such a premise is
+allowed by the rule and belongs in the baseline with its justification.
 
 A *flagged premise* is a hypothesis with a security claim whose subjects mention a constructed
 constant. The conclusion is flagged (as the binder `⊢`) when, under an `∃` reached through `∀` and
@@ -123,6 +145,11 @@ def ignoredContainers : NameSet :=
   [`PMF.support, `Set.range, `Finset.range, `List.range, `Finset.univ, `Set.univ,
     `Finset.Icc, `Finset.Ico, `Set.Icc, `Set.Ico, `Set.Iio, `Set.Ioi].foldl (·.insert ·) {}
 
+/-- A binder's name, or `#i` for the `i`-th binder when its name is inaccessible, as for a premise
+written with an arrow. -/
+def binderLabel (n : Name) (i : Nat) : String :=
+  if n.hasMacroScopes || n.isAnonymous then s!"#{i}" else n.toString
+
 /-- The domains of the leading `∀`s of `e`. -/
 partial def forallDomains : Expr → Array Expr
   | .forallE _ t b _ => #[t] ++ forallDomains b
@@ -168,9 +195,28 @@ def typeHead (env : Env) (type : Expr) : Option Name :=
   | .const c _ => some c
   | _ => none
 
+/-- Whether a binder domain is an object type, such as an adversary or a scheme: not a sort, a
+type variable, a function, a number, truth value, set, distribution or game. -/
+def objectDomain (env : Env) (domain : Expr) : Bool :=
+  match (unfoldSynonyms env 8 domain).consumeMData with
+  | .sort _ | .forallE .. => false
+  | d =>
+    match typeHead env d with
+    | some h => !infrastructure.contains h
+    | none => false
+
+/-- Whether one of the first `k` binders of `type` is explicit with an object domain. -/
+def objectArgument (env : Env) (type : Expr) : Nat → Bool
+  | k + 1 =>
+    match type.consumeMData with
+    | .forallE _ d b bi => bi.isExplicit && objectDomain env d || objectArgument env b k
+    | _ => false
+  | 0 => false
+
 /-- Whether the constant `c`, applied to `k` arguments, is a constructed object (see the module
 docstring): a value of an algorithmic type (a program, a structure such as a scheme or adversary),
-or a function other than a predicate, test or numeric function. -/
+a function other than a predicate, test or numeric function, or a distribution, ensemble or game
+applied to an object. -/
 def constructedAt (env : Env) (c : Name) (k : Nat) : Bool := Id.run do
   let some info := env.consts[c]? | return false
   let some m := env.moduleOf[c]? | return false
@@ -182,18 +228,20 @@ def constructedAt (env : Env) (c : Name) (k : Nat) : Bool := Id.run do
   let s := (last c).toLower
   if s.contains "game" || s.contains "experiment" || advantageName (last c) then return false
   let rest := unfoldSynonyms env 8 (dropForall k info.type)
+  -- A distribution, ensemble or game applied to an object, such as `simulatorView A`.
+  let derived := objectArgument env info.type k
   match rest.consumeMData with
   | .forallE .. =>
     match typeHead env (stripForall rest) with
     | some h =>
-      let ensemble := ensembleCodomain.contains h &&
-        (forallDomains rest).all (·.consumeMData.isConstOf `Nat)
-      !infrastructureCodomain.contains h && !ensemble
+      if ensembleCodomain.contains h &&
+          (forallDomains rest).all (·.consumeMData.isConstOf `Nat) then derived
+      else !infrastructureCodomain.contains h
     | none => true
   | .sort _ => false
   | r =>
     match typeHead env r with
-    | some h => !infrastructure.contains h
+    | some h => !infrastructure.contains h || ensembleCodomain.contains h && derived
     | none => true
 
 /-- The constructed constants of `e`, each judged at the number of arguments it is applied to. -/
@@ -406,16 +454,18 @@ unsafe def run (libDir : System.FilePath) : IO Unit := do
       scanned := scanned + 1
       let mut hyps : Array Json := #[]
       let mut t := v.type
+      let mut index := 0
       repeat
         match t with
         | .mdata _ b => t := b
         | .forallE n ty b bi =>
+          index := index + 1
           unless bi.isInstImplicit do
             let fs := findings env 3 none ty
             unless fs.isEmpty do
               let kinds := (fs.map (·.1)).toList.eraseDups
               let cs := (fs.foldl (fun acc (_, cs) => acc ++ cs) #[]).toList.eraseDups
-              hyps := hyps.push <| Json.mkObj [("b", toJson n.toString),
+              hyps := hyps.push <| Json.mkObj [("b", toJson (binderLabel n index)),
                 ("k", toJson kinds), ("c", toJson (cs.map (privateToUserName · |>.toString)))]
           t := b
         | _ => break

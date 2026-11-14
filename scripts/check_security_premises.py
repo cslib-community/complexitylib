@@ -5,51 +5,57 @@ Usage: python3 scripts/check_security_premises.py [--base REF | --all | --report
            [--update-baseline] [--no-build-check] [--baseline FILE]
 
 This checks the rule "Security theorems" in AGENTS.md. A security theorem may assume named
-hardness assumptions about independently defined problems, that the adversary is in the admitted
-class, and efficiency or correctness of generic components that the caller supplies. It must not
-assume anything about an object that the library constructs: the advantage or success of a
-reduction, its membership in an adversary class, its efficiency, or the quality of a scheme's own
-key generator.
+hardness assumptions, stated relative to the setup sampler or component they concern, that the
+adversary is in the admitted class, and properties of components that the cited result takes as
+given. It must not assume anything about an object that its proof derives from the adversary (a
+reduction, distinguisher, simulator, extractor or hybrid): its advantage or success, its
+membership in an adversary class, or its efficiency.
 
 `scripts/SecurityPremises.lean` reads the built `.olean` files of the library, so it sees
 elaborated statements. A *flagged premise* of a public theorem under `CslibFrontier/Crypto` or in
 the namespace `Cslib.Crypto` is a hypothesis whose claim is `Negligible …`, an advantage or
 success-probability inequality, a membership `… ∈ 𝒟` or abstract admissibility `Admissible …`,
 an `IsPPT…`/`IsOraclePPT…` predicate or an `…Indistinguishable…` predicate, directly or after
-unfolding a predicate of the library applied to it, and whose subject mentions a *constructed object*: a definition of the Crypto tree that
-is a reduction, distinguisher, adversary, simulator, extractor, key generator, scheme or similar
-program, as opposed to a game, experiment, advantage, ideal law, predicate or encoding. Bound
-variables (the input adversary, generic components) never count. The checker also flags a
-conclusion `∃ x, … Adv ≤ … Adv(B … x …)` whose bound holds only for some existentially chosen
-parameters `x` of a constructed reduction `B`, since the reduction then is not uniform. The Lean
-file's docstring gives the exact rules.
+unfolding a predicate of the library applied to it, and whose subject mentions a *constructed
+object*: a definition of the Crypto tree that is a reduction, distinguisher, adversary, simulator,
+extractor, key generator, scheme or similar program, or a distribution or game applied to an
+adversary or scheme structure, as opposed to a game, experiment, advantage, ideal law, predicate
+or encoding. Bound variables (the input adversary, generic components) never count. The checker
+also flags a conclusion `∃ x, … Adv ≤ … Adv(B … x …)` whose bound holds only for some
+existentially chosen parameters `x` of a constructed reduction `B`, since the reduction then is
+not uniform. The Lean file's docstring gives the exact rules and the known gaps.
 
 `scripts/security_premises_baseline.json` records the flagged theorems that are allowed, one per
-line, as `{theorem: {"module": source path, "premises": [binder names], "why": justification}}`
-(the conclusion counts as the premise `⊢`). An entry is a deliberately conditional lemma, named
-and documented as such (an *algebraic helper*, such as a concrete bound in terms of `Adv(B_A)` that
-an asymptotic theorem consumes together with `B_A`'s efficiency proof), an explicit assumption that
-review accepted (such as circular security, or a named assumption about a library wrapper of a
-caller's component), or a misformalization being fixed under #5293. Every entry needs a one-line
-justification.
+line, as `{theorem: {"module": source path, "premises": [binder names], "why": justification}}`.
+The conclusion counts as the premise `⊢`, and a premise without an accessible name, such as one
+written with an arrow, as `#i` for the theorem's `i`-th binder. An entry is a deliberately
+conditional lemma, named and documented as such (an *algebraic helper*, such as a concrete bound
+in terms of `Adv(B_A)` that an asymptotic theorem consumes together with `B_A`'s efficiency proof),
+a premise that the rule allows but the checker cannot tell apart (a named assumption about a
+component the scheme uses, such as circular security or collision resistance of its hash, or the
+hypothesis of a cited generic theorem), or a misformalization being fixed under #5293. Every entry
+needs a one-line justification.
 
 In a module that the change touches (adds, modifies or deletes, against the merge base of
 `--base`, default `origin/main`, and the working tree, as `scripts/check_changed_files.py`
 computes it), a flagged premise without an entry fails, and so does an entry that no longer
 matches a flagged premise, until the baseline drops it in the same change: the baseline only
-shrinks unless a change adds an entry on purpose. Differences in other modules are reported but do
-not fail. Pull requests run this mode. `--all` enforces every module. `--report` prints every
-difference and always succeeds; merge groups and pushes to `main` run it, so that a queued pull
-request is never ejected by a change elsewhere. `--list [PREFIX]` ignores the baseline and prints
-every flagged theorem in the modules under the path PREFIX. `--update-baseline` adds entries with
-an empty justification for the unrecorded flagged premises of the enforced modules and removes
-their stale entries; fill in each `why`, or the check fails.
+shrinks unless a change adds an entry on purpose. A change that adds or modifies the checker or
+the baseline enforces every module. Differences in other modules are printed as a notice but do
+not fail: a change can cause them without touching those modules, for example by changing a
+definition that a flagged premise unfolds. Pull requests run this mode. `--all` enforces every
+module. `--report` prints every difference and always succeeds; merge groups and pushes to `main`
+run it, so that a queued pull request is never ejected by a change elsewhere. `--list [PREFIX]`
+ignores the baseline and prints every flagged theorem in the modules under the path PREFIX.
+`--update-baseline` adds entries with an empty justification for the unrecorded flagged premises
+of the enforced modules and removes their stale entries; fill in each `why`, or the check fails.
 
 This is a post-build check: it needs the outputs of `lake build CslibFrontier`, and refuses stale
-ones unless `--no-build-check` is given. The rules are syntactic over elaborated terms, so a premise
-that hides the constructed object behind a definition of its own (rather than an argument) is not
-seen, and a caller-supplied component that ought to have been constructed counts as generic.
-Review still checks that a security theorem's premises are the intended ones.
+ones unless `--no-build-check` is given. The rules are syntactic over elaborated terms, so some
+premises escape them: one that hides the constructed object in its own definition body, a
+distribution applied only to numbers or functions, a bound without an advantage-named constant,
+and a caller-supplied object whose existence is what the theorem should prove. Review still checks
+that a security theorem's premises are the intended ones.
 """
 
 from __future__ import annotations
@@ -57,6 +63,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -68,6 +75,10 @@ import lean_outputs as lo  # noqa: E402
 
 BASELINE = ROOT / "scripts/security_premises_baseline.json"
 TOOL = "scripts/SecurityPremises.lean"
+# A change to the checker or its baseline enforces every module, so that its own CI run sees
+# whether the whole library still matches.
+CHECKER_FILES = frozenset({TOOL, "scripts/check_security_premises.py",
+                           "scripts/security_premises_baseline.json"})
 UPDATE = "python3 scripts/check_security_premises.py --update-baseline"
 RULE = "AGENTS.md, Security theorems"
 CONCLUSION = "⊢"
@@ -185,6 +196,19 @@ def compare(hits: dict[str, Hit], baseline: dict[str, dict], paths: set[str] | N
     return Problems(new, stale, unjustified)
 
 
+def outside(everywhere: Problems, here: Problems) -> Problems:
+    """The differences of `everywhere` that are not in `here`."""
+    return Problems([p for p in everywhere.new if p not in here.new],
+                    [p for p in everywhere.stale if p not in here.stale],
+                    [p for p in everywhere.unjustified if p not in here.unjustified])
+
+
+def checker_changed(root: Path, ref: str) -> bool:
+    """Whether the change adds or modifies the checker or its baseline."""
+    added, modified = cer.ccf.changed_files(root, ref)
+    return bool(CHECKER_FILES.intersection(added + modified))
+
+
 def describe(hit: Hit, binders: list[str]) -> list[str]:
     out = [f"  {hit.path}:{hit.line}: {hit.name}"]
     for b in binders:
@@ -197,9 +221,10 @@ def describe(hit: Hit, binders: list[str]) -> list[str]:
 def report(problems: Problems) -> str:
     out = []
     if problems.new:
-        out += [f"Security theorems may not assume anything about objects the library constructs "
-                f"({RULE}). Prove the premise instead: certify the reduction with an "
-                "`isPPT_…`/`isOraclePPT_…` lemma and apply the named hardness assumption to it. "
+        out += ["Security theorems may not assume anything about an object that their proof "
+                f"derives from the adversary ({RULE}). Prove the premise instead: certify the "
+                "reduction with an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a "
+                "circuit-size bound) and apply the named hardness assumption to it. "
                 "A deliberately conditional lemma (an algebraic helper, such as a bound in terms "
                 "of `Adv(B_A)`) must say so in its name and docstring and needs a baseline entry "
                 f"with a justification (`{UPDATE}`, then fill in `why`).", ""]
@@ -271,6 +296,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     baseline = load_baseline(args.baseline) if args.baseline.exists() else {}
     whole = args.all or args.report
+    if not whole and checker_changed(ROOT, args.base):
+        whole = True
+        print("This change edits the security-premise checker or its baseline, so every module "
+              "is enforced.")
     paths = None if whole else cer.touched_modules(ROOT, args.base)
     scope_text = "every module" if whole else f"{len(paths)} changed module(s)"
     if args.update_baseline:
@@ -288,6 +317,16 @@ def main(argv: list[str] | None = None) -> int:
             print(report(problems) + "\n")
         print(f"{status}; report only, nothing is enforced.")
         return 0
+    elsewhere = outside(compare(hits, baseline, None), problems) if paths is not None else None
+    if elsewhere:
+        print("Not enforced: differences from the baseline in modules this change does not touch. "
+              "They fail the next change to those modules. A change can cause them without "
+              "touching those modules, for example by changing a definition that a flagged "
+              "premise unfolds; if this one did, fix them here.\n\n" + report(elsewhere) + "\n")
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            count = len(elsewhere.new) + len(elsewhere.stale) + len(elsewhere.unjustified)
+            print(f"::notice title=Security premises::{count} difference(s) from the baseline in "
+                  "modules this change does not touch; see the step log.")
     if problems:
         print(report(problems), file=sys.stderr)
         return 1

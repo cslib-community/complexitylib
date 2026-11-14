@@ -120,14 +120,25 @@ class BaselineTests(unittest.TestCase):
         self.assertNotIn("Cslib.Crypto.Gone.thm", c.update(hits, baseline, None))
 
 
+class CheckerChangedTests(unittest.TestCase):
+    def test_only_the_checker_and_its_baseline_count(self) -> None:
+        for changed, expected in ((["scripts/security_premises_baseline.json"], True),
+                                  (["scripts/SecurityPremises.lean"], True),
+                                  (["CslibFrontier/Crypto/Schnorr.lean", "AGENTS.md"], False)):
+            with mock.patch.object(c.cer.ccf, "changed_files", return_value=(changed, [])):
+                self.assertEqual(c.checker_changed(c.ROOT, "origin/main"), expected, changed)
+
+
 class MainTests(unittest.TestCase):
     def setUp(self) -> None:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.baseline = pathlib.Path(tmp.name) / "baseline.json"
         hits, _ = c.parse(OUTPUT)
+        self.checker_changed = mock.patch.object(c, "checker_changed", return_value=False)
         for patcher in (mock.patch.object(c, "scan", return_value=hits),
-                        mock.patch.object(c.cer, "touched_modules", return_value={SCHNORR_PATH})):
+                        mock.patch.object(c.cer, "touched_modules", return_value={SCHNORR_PATH}),
+                        self.checker_changed):
             patcher.start()
             self.addCleanup(patcher.stop)
 
@@ -145,6 +156,23 @@ class MainTests(unittest.TestCase):
         self.assertIn(f"{SCHNORR_PATH}:10: {SCHNORR}", err)
         self.assertIn("premise hDL: negligible about `Cslib.Crypto.Schnorr.reduction`", err)
         self.assertNotIn(HELPER, err)
+
+    def test_pull_request_mode_reports_untouched_modules(self) -> None:
+        code, out, err = self.run_main({SCHNORR: entry(SCHNORR_PATH, ["hDL"])})
+        self.assertEqual(code, 0)
+        self.assertIn("Not enforced", out)
+        self.assertIn(f"{HELPER_PATH}:20: {HELPER}", out)
+        self.assertEqual(err, "")
+        with mock.patch.dict(c.os.environ, {"GITHUB_ACTIONS": "true"}):
+            out = self.run_main(None)[1]
+        self.assertIn("::notice title=Security premises::1 difference(s)", out)
+
+    def test_a_change_to_the_checker_enforces_every_module(self) -> None:
+        with mock.patch.object(c, "checker_changed", return_value=True):
+            code, out, err = self.run_main({SCHNORR: entry(SCHNORR_PATH, ["hDL"])})
+        self.assertEqual(code, 1)
+        self.assertIn("every module is enforced", out)
+        self.assertIn(f"{HELPER_PATH}:20: {HELPER}", err)
 
     def test_report_mode_succeeds(self) -> None:
         code, out, _ = self.run_main({}, "--report")
@@ -167,6 +195,10 @@ class MainTests(unittest.TestCase):
 FIXTURE = """module
 public import Init
 public section
+
+/-- Stands in for Mathlib's `PMF`: an infrastructure type by name. -/
+structure PMF (α : Type) where
+  weight : α → Nat
 
 namespace Cslib.Crypto
 
@@ -195,6 +227,21 @@ def reductionWith (A : Adversary) (_m : Nat) : Adversary := A
 def distinguisher (A : Adversary) : Nat → List Bool := fun n => [A.run n]
 def keyLaw (_n : Nat) : Nat := 0
 def isValid (_n : Nat) : Bool := true
+def simulatorView (_A : Adversary) (_n : Nat) : PMF Bool := ⟨fun _ => 0⟩
+def realView (_A : Adversary) (_n : Nat) : PMF Bool := ⟨fun _ => 1⟩
+def generatorLaw (_generator : Nat → Nat) (_n : Nat) : PMF Bool := ⟨fun _ => 0⟩
+def keyLawOf (_k _n : Nat) : PMF Bool := ⟨fun _ => 0⟩
+def idealKeys (_n : Nat) : PMF Bool := ⟨fun _ => 1⟩
+def forgeExperiment (_A : Adversary) (n : Nat) : Nat := n
+def ComputationallyIndistinguishable (_X _Y : Nat → PMF Bool) : Prop := True
+
+/-- A group description, and one that the library fixes. -/
+structure Group where
+  order : Nat
+def concreteGroup : Group := ⟨5⟩
+def groupAdvantage (G : Group) (_A : Adversary) (n : Nat) : Nat := G.order + n
+/-- A named assumption relative to a group. -/
+def GroupHard (G : Group) : Prop := ∀ A : Adversary, Negligible (groupAdvantage G A)
 
 /-- A named assumption about bound adversaries only. -/
 def Hard : Prop := ∀ A : Adversary, A.IsPPT → Negligible (advantage A)
@@ -220,6 +267,12 @@ theorem functionPremise (A : Adversary)
 theorem notionPremise (A : Adversary) (_h : Secure (reduction A)) : True := trivial
 theorem existentialConclusion (A : Adversary) :
     ∃ m : Nat, advantage A 0 ≤ advantage (reductionWith A m) 0 := ⟨0, Nat.le_refl _⟩
+theorem simulatorPremise (A : Adversary)
+    (_h : ComputationallyIndistinguishable (realView A) (simulatorView A)) : True := trivial
+theorem arrowPremise (A : Adversary) : Negligible (advantage (reduction A)) → True :=
+  fun _ => trivial
+/-- Flagged by design: a named assumption at a library object goes in the baseline. -/
+theorem instantiatedAssumption (_h : GroupHard concreteGroup) : True := trivial
 
 theorem adversaryPremise (A : Adversary) (_hA : A.IsPPT) (_h : Negligible (advantage A)) :
     True := trivial
@@ -231,6 +284,12 @@ theorem infrastructurePremise (A : Adversary) (_h : Negligible (securityGame A))
   trivial
 theorem existentialWitness : ∃ B : Adversary, advantage B 0 ≤ 1 := ⟨⟨fun _ => true⟩, by decide⟩
 theorem hiddenPremise (A : Adversary) (_h : ReductionSecure A) : True := trivial
+theorem generatorPremise (generator : Nat → Nat)
+    (_h : ComputationallyIndistinguishable (generatorLaw generator) idealKeys) : True := trivial
+theorem fixedKeyLawPremise (_h : ComputationallyIndistinguishable (keyLawOf 3) idealKeys) : True :=
+  trivial
+theorem unnamedBoundPremise (A : Adversary) (ε : Nat) (_h : forgeExperiment (reduction A) 0 ≤ ε) :
+    True := trivial
 private theorem privatePremise (A : Adversary) (_h : Negligible (advantage (reduction A))) :
     True := trivial
 
@@ -279,33 +338,52 @@ class CompiledFixtureTests(unittest.TestCase):
                          ("Cslib.Crypto.Fixture.distinguisher",))
         self.assertEqual(self.kinds("notionPremise"), ("unfolded negligible",))
         self.assertEqual(self.kinds("existentialConclusion", c.CONCLUSION), ("exists advantage",))
+        self.assertEqual(self.kinds("simulatorPremise"), ("indistinguishable",))
+        self.assertEqual(self.flagged["simulatorPremise"]["_h"][1],
+                         ("Cslib.Crypto.Fixture.realView", "Cslib.Crypto.Fixture.simulatorView"))
+        # A premise written with an arrow is reported by its position.
+        self.assertEqual(self.kinds("arrowPremise", "#2"), ("negligible",))
+
+    def test_named_assumptions_at_library_objects_are_flagged(self) -> None:
+        # Allowed by the rule, so such a premise needs a baseline entry with its justification.
+        self.assertEqual(self.kinds("instantiatedAssumption"), ("unfolded negligible",))
+        self.assertEqual(self.flagged["instantiatedAssumption"]["_h"][1],
+                         ("Cslib.Crypto.Fixture.concreteGroup",))
 
     def test_bound_variables_assumptions_and_infrastructure_are_not(self) -> None:
         for name in ("adversaryPremise", "admissibleAdversary", "assumptionPremise",
-                     "infrastructurePremise", "existentialWitness"):
+                     "infrastructurePremise", "existentialWitness", "generatorPremise"):
             self.assertNotIn(name, self.flagged)
 
     def test_private_theorems_are_not_scanned(self) -> None:
         self.assertFalse([n for n in self.flagged if "privatePremise" in n])
 
-    def test_known_limitation_a_premise_hidden_in_a_definition_body(self) -> None:
+    def test_known_limitations(self) -> None:
+        # Review covers these cases (the reader's docstring, "Known gaps").
         # `ReductionSecure A` builds `reduction A` inside its own body; only constructed objects
-        # passed as arguments are followed into an unfolded definition. Review covers this case.
+        # passed as arguments are followed into an unfolded definition.
         self.assertNotIn("hiddenPremise", self.flagged)
+        # A distribution applied only to numbers counts as an ideal law.
+        self.assertNotIn("fixedKeyLawPremise", self.flagged)
+        # A bound without an advantage-named constant is not a security claim.
+        self.assertNotIn("unnamedBoundPremise", self.flagged)
 
     def test_exactly_the_expected_theorems(self) -> None:
-        self.assertEqual(len(self.flagged), 10)
+        self.assertEqual(len(self.flagged), 13)
         self.assertEqual(self.summary["missing"], [])
 
 
 class CommittedFilesTests(unittest.TestCase):
+    """These run on every event, merge groups included, so they check only the baseline file
+    itself. Whether its entries match the library (a moved or deleted module, say) is the pull
+    request check's job, which merge groups only report."""
+
     def test_baseline_is_canonical_and_justified(self) -> None:
         baseline = c.load_baseline(c.BASELINE)
         self.assertEqual(c.BASELINE.read_text(encoding="utf-8"), c.baseline_text(baseline))
         for name, value in baseline.items():
             self.assertTrue(value["why"].strip(), name)
             self.assertTrue(value["premises"], name)
-            self.assertTrue((c.ROOT / value["module"]).is_file(), value["module"])
 
 
 if __name__ == "__main__":

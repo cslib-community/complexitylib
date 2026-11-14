@@ -192,24 +192,29 @@ Improving an interface never weakens the mathematics: keep the models, encodings
 resource bounds and nonvacuity of the results it touches.
 
 **Security premises** ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
-A security theorem assumes nothing about an object the library constructs
+A security theorem assumes nothing about an object that its proof derives from the adversary
 ([AGENTS.md](AGENTS.md#security-theorems)). After a build,
 `python3 scripts/check_security_premises.py` reads the elaborated statements of the public Crypto
 theorems from the `.olean` files. It flags each premise that is `Negligible …`, an advantage
 inequality, a class membership (`… ∈ 𝒟` or `Admissible …`), an `IsPPT…` predicate or an
 indistinguishability predicate about a reduction, distinguisher, simulator, extractor, key
-generator or other program defined in the Crypto tree, directly or through a predicate applied to
-it. It also flags an advantage bound that holds only for parameters an `∃` chooses for such a
+generator or other program defined in the Crypto tree, or about a distribution or game that such
+a definition builds from an adversary or scheme structure, directly or through a predicate applied
+to it. It also flags an advantage bound that holds only for parameters an `∃` chooses for such a
 program. Games, experiments, advantages, ideal laws, encodings and the theorem's own variables
 never count. `scripts/security_premises_baseline.json` records the allowed hits, one per line
-with a justification: algebraic helpers that say so, a few explicit premises that review
-accepted, and the §1 items of #5293 that are being fixed. CI fails a pull request whose changed
-modules have an unrecorded hit or a baseline entry that no longer matches; merge groups only
-report. To add a deliberately conditional helper, name and document it as such, run
+with a justification: algebraic helpers that say so, premises that the rule allows but the
+checker cannot tell apart (a named assumption about a component the scheme uses, the hypothesis
+of a cited generic theorem), and the §1 items of #5293 that are being fixed. CI fails a pull
+request whose changed modules have an unrecorded hit or a baseline entry that no longer matches,
+and prints such differences in other modules as a notice; a change to the checker or its
+baseline is checked against every module, and merge groups only report. To add a deliberately
+conditional helper, name and document it as such, run
 `python3 scripts/check_security_premises.py --update-baseline` and fill in its `why`; `--list`
-shows every hit. The rules are syntactic over elaborated terms: a premise whose definition builds
-the constructed object in its own body, or a caller-supplied component that ought to have been
-constructed, is left to review.
+shows every hit. The rules are syntactic over elaborated terms, so review covers what they miss:
+a premise whose definition builds the constructed object in its own body, a distribution applied
+only to numbers or functions (such as a key law at fixed parameters), a bound without an
+advantage-named constant, and a caller-supplied object whose existence the theorem should prove.
 
 ### Algorithms are programs
 
