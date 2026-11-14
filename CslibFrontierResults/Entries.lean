@@ -181,6 +181,7 @@ import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Crypto.Computational.SIS.Ajtai
 import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
+import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
@@ -5253,6 +5254,42 @@ register_result "fujisaki-okamoto-bot-ind-cca" where
     roIndCcaBotGame and eagerIndCcaBotGame draw both real (H) replies and the independent ideal \
     challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
     standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4)."
+
+register_result "fujisaki-okamoto-notbot-word-rom-ind-cca" where
+  title := "ROM IND-CCA security of the word-level FO-notbot KEM from IND-CPA of the PKE family"
+  topic := "cryptography"
+  sources := [
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
+      locator := "§3.1 (Theorem 3.2, p. 12; remark closing its proof, p. 13), §3.2.2 \
+        (Theorem 3.4, p. 16), §1.1.2 table (p. 6) and KEM-notbot row of the §3.3 bounds table \
+        (p. 22) (IACR ePrint 2017/604, version of 2 November 2021)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.INDCPA.romINDCCA
+  ]
+  scope := "Asymptotic, random oracle model; implicit-rejection FO-notbot = U-notbot ∘ T only. \
+    Let P be a word-level PKE family (at parameter n: messages of length msgLen n, uniform coins \
+    of length coinLen n, ciphertext space the words of length at most ctLen n) that is \
+    efficient (uniform strict PPT key generation; polynomial-time encryption, decryption and \
+    lengths), whose ciphertexts lie in its ciphertext space (CiphertextFits), and that is \
+    δ-correct (HHK17 §2.1) with δ negligible and 2^{-msgLen n} negligible; let keyLen be \
+    polynomial-time. If P is IND-CPA secure against uniform strict PPT adversaries \
+    (single-challenge two-stage game of HHK17 Def. 2.2, both challenge messages of length \
+    msgLen n), its FO-notbot KEM with keys of length keyLen n is IND-CCA secure (HHK17 Def. 2.4 \
+    / Fig. 4) against uniform strict oracle PPT adversaries with oracles G, H and \
+    decapsulation; no premise bounds the number of decapsulation queries. G and H are lazily \
+    sampled random oracles on word domains, and a request outside a domain gets the empty word. \
+    H is domain-separated (H(false, m, c) for keys, H(true, s, c) for implicit rejection) in \
+    place of HHK17's untagged H(m, c) and H(s, c). Decapsulation refuses the challenge \
+    ciphertext, rejects words longer than ctLen n with ⊥, and treats decryption results of the \
+    wrong length as ⊥. The advantage is the two-world difference between b = 0 and b = 1, twice \
+    HHK17's |Pr[b' = b] - 1/2|. As in the source, no γ-spreadness is assumed (§1.1.2 table, \
+    p. 6; KEM-notbot row of the §3.3 table, p. 22): the composition uses Theorem 3.2 in its \
+    OW-PCA form (remark closing its proof, p. 13). The proof composes the T and U-notbot hops \
+    directly instead of through standalone OW-PCA, and applies IND-CPA to the explicit reduction \
+    romCpaReductionWord, certified uniform strict PPT (IsEfficient.isPPT_romCpaReductionWord); \
+    it gives no concrete runtime map. FO^⊥ has no word-level theorem; its fixed-scheme concrete \
+    bound is fujisaki-okamoto-bot-ind-cca."
 
 register_result "cgks-pir-coalition-lower-bound" where
   title := "Chor–Goldreich–Kushilevitz–Sudan: coalition t-privacy and full-coalition \
