@@ -744,6 +744,30 @@ counts the points of `y² = x³ + 3x + 3` over `ZMod 7` (Example 9.69 of
 that attain both ends of the bound, and applies each form of the theorem to them. Build it with
 `lake build CslibFrontierTests.Foundations.AlgebraicGeometry.EllipticCurveHasse`.
 
+### The `B_{p,∞}` quaternion presentation used by SQIsign
+
+Import [`Quaternion/BpInfinity.lean`](../../CslibFrontier/Foundations/Algebra/Quaternion/BpInfinity.lean)
+(`CslibFrontier.Foundations.Algebra.Quaternion.BpInfinity`) for the rational quaternion algebra
+used by SQIsign v3.0. Its source identification applies to the scheme prime
+`p = c · 2^f - 1`, where `f > 1` and `c` is odd, hence `p ≡ 3 (mod 4)`; the reusable Lean type
+itself accepts any rational parameter. `Cslib.BpInfinity p` specializes Mathlib's
+`QuaternionAlgebra` to the presentation `i² = -1`, `j² = -p`, and `ij = k = -ji`; the declarations
+`BpInfinity.i`, `BpInfinity.j`, and `BpInfinity.k` name these generators, and `i_eq_mk`, `j_eq_mk`,
+and `k_eq_mk` connect them to Mathlib's ordinary quaternion coordinates. `BpInfinity.star_mk`
+gives coordinate conjugation, while `BpInfinity.reducedNorm_mk` and `BpInfinity.reducedTrace_mk` give
+`x² + y² + p(z² + t²)` and `2x`. `BpInfinity.reducedNorm_pos` proves positive definiteness for
+`p > 0`.
+
+This is only the exact algebra presentation from SQIsign v3.0, Facts 12–13, Section 2.2.1, and
+Algorithms 4.38–4.40. The name records the specification's `B_{p,∞}`; the module does not prove
+ramification at `p` and infinity. It also does not supply the maximal order `O₀`, quaternion
+lattices or ideals, norm-equation algorithms, the Deuring correspondence, isogenies, SQIsign
+algorithms, or any ROM/QROM security statement. The
+[checked client](../../CslibFrontierTests/Foundations/Algebra/QuaternionBpInfinity.lean) evaluates
+the combined generator expression `1 + 2i + 3j + 4k` at `p = 3` through the ordinary import and
+also checks the corresponding explicit-coordinate norm. Positivity and the defining generator
+relations are exercised there as well.
+
 ### HQC fixed-weight support sampling
 
 Import [`HQC/SupportSampling.lean`](../../CslibFrontier/Crypto/Primitives/HQC/SupportSampling.lean)

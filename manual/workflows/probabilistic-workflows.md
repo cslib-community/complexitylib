@@ -18,10 +18,26 @@ This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draf
 printed page 319 (PDF page 335): the source's first coordinate is indexed by one
 in the book. Distance uses the probability convention (half the L1 distance).
 These are information-theoretic distributions; no sampler or runtime is asserted.
-Exercise 12 and the broader extractor objectives in issue #895 remain open.
+Exercise 12 is covered by the hashing corollary below; broader extractor objectives in issue #895 remain open.
 The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
 `n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
 From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
+## Apply the draft leftover hash lemma
+
+Import [Extractor/LeftoverHash.lean](../../CslibFrontier/Probability/Extractor/LeftoverHash.lean).
+For `hash : BitString t → BitString n → BitString k`, prove positive `δ` and
+`IsUniversalHash (PMF.uniformOfFintype (BitString t)) hash
+(ENNReal.ofReal ((1 + δ) / (2 : ℝ) ^ k))`.
+Apply `IsUniversalHash.isStrongExtractor_of_entropy_div` for a strong extractor,
+or `IsUniversalHash.isExtractor_append_of_entropy_div` for the book's output
+`Fin.append (hash s x) s`: digest first, seed last. Both require source min-entropy
+at least `(k : ℝ) / δ` and give error `Real.sqrt (2 * δ)`.
+These are Lemma 16.42 and Exercise 16.12 of the January 2007 draft, for all lengths
+and positive `δ`, including zero digest length. They assert no runtime or short seed.
+The [checked clients](../../CslibFrontierTests/LeftoverHashDraft.lean) use an 8-bit
+uniform source and Boolean matrix hash, and check zero digest, large error and order.
+Run `scripts/build.sh CslibFrontierTests.LeftoverHashDraft` in a configured checkout.
 
 ## Transport a distribution bound through a map
 
