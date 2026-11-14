@@ -31,7 +31,7 @@ open scoped NNReal ENNReal
 open NativeInterface.Interaction
 
 /-- A genuine query-buffer write, external call, and post-response private coin. -/
-def machine : MultiTapePTM 0 Bool (Fin 3) Unit where
+@[expose] def machine : MultiTapePTM 0 Bool (Fin 3) Unit where
   initial := 0
   tr c _ _ _ bit := if c = 1 then .query () 2 else .step
     { inputTape := 0, workTapes := Fin.elim0,
@@ -40,30 +40,31 @@ def machine : MultiTapePTM 0 Bool (Fin 3) Unit where
     (fun _ => if c = 0 then some true else none) (fun _ => 0)
 
 /-- A resource-bearing reply and a genuine zero-resource reply have the same empty word. -/
-def reply (hidden : Bool) : Reply := if hidden then ⟨[], 2, 1⟩ else ⟨[], 0, 0⟩
+@[expose] def reply (hidden : Bool) : Reply := if hidden then ⟨[], 2, 1⟩ else ⟨[], 0, 0⟩
 
 /-- Positive charges arise only for the actual preformed word `[true]`. -/
-def env : Environment Unit Bool := fun q memory =>
+@[expose] def env : Environment Unit Bool := fun q memory =>
   PMF.pure ((if q.2 = [true] then reply memory.privateState else reply false), memory.privateState)
 
 /-- The source samples its hidden bit independently of all subsequent native coins. -/
-def initial : PMF (Memory Unit Bool) :=
+@[expose] def initial : PMF (Memory Unit Bool) :=
   (PMF.uniformOfFintype Bool).map fun s => ⟨s, []⟩
 
 /-- Concrete native configuration with its actual Unit query buffer. -/
-def config (c : Option (Fin 3)) (query out : List Bool) : Config 0 Bool (Fin 3) Unit [] :=
+@[expose] def config (c : Option (Fin 3)) (query out : List Bool) : Config 0 Bool (Fin 3) Unit [] :=
   ⟨{ Cfg.init 0 [] with state := c, output := out }, fun _ => ⟨query, [], 0⟩⟩
 
 /-- Actual initial source memory for one hidden bit. -/
-def realMemory (s : Bool) : Memory Unit Bool := ⟨s, []⟩
+@[expose] def realMemory (s : Bool) : Memory Unit Bool := ⟨s, []⟩
 /-- Real source memory after the actually encoded query. -/
-def realAfter (s : Bool) : Memory Unit Bool :=
+@[expose] def realAfter (s : Bool) : Memory Unit Bool :=
   (realMemory s).record ((), [true]) (reply s) s
-private def dummyAfter (s : Bool) : Memory Unit Unit :=
+/-- Dummy private ledger contains the visible reply but no real oracle-private bit. -/
+@[expose] def dummyAfter (s : Bool) : Memory Unit Unit :=
   (⟨(), []⟩ : Memory Unit Unit).record ((), [true]) (reply s) ()
 
 /-- Full newest-first history, including the real zero-resource query when `s=false`. -/
-def history (s : Bool) : List (Option (Unit × List Bool) × Reply) :=
+@[expose] def history (s : Bool) : List (Option (Unit × List Bool) × Reply) :=
   [(none, reply false), (some ((), [true]), reply s), (none, reply false)]
 
 private def state0 (s : Bool) : NativeInterface.Interaction.State 0 (Fin 3) Unit Bool [] :=
@@ -85,16 +86,18 @@ private theorem initial_law : InteractionProcess.initialLaw actualPolicy actualS
     PMF.pure_bind, initial, PMF.map_comp, Function.comp_def]
   rfl
 
-private theorem instruction_write (bit : Bool) :
-    instruction machine (⟨config (some 0) [] [], ⟨(), []⟩⟩ : World 0 (Fin 3) Unit Unit []) bit =
-      .local ⟨config (some 1) [true] [], ⟨(), []⟩⟩ := by
+/-- The actual first instruction writes its raw query without touching oracle memory. -/
+theorem instruction_write (memory : Memory Unit Unit) (bit : Bool) :
+    instruction machine (⟨config (some 0) [] [], memory⟩ : World 0 (Fin 3) Unit Unit []) bit =
+      .local ⟨config (some 1) [true] [], memory⟩ := by
   simp only [instruction, config, machine, Fin.isValue]
   norm_num [Config.step, Action.apply, Cfg.init]
   constructor <;> funext i <;> exact Fin.elim0 i
 
-private theorem instruction_output (s bit : Bool) :
-    instruction machine (⟨config (some 2) [] [], dummyAfter s⟩ : World 0 (Fin 3) Unit Unit []) bit =
-      .local ⟨config none [] [bit], dummyAfter s⟩ := by
+/-- The post-response instruction writes a fresh private bit while preserving memory. -/
+theorem instruction_output (memory : Memory Unit Unit) (bit : Bool) :
+    instruction machine (⟨config (some 2) [] [], memory⟩ : World 0 (Fin 3) Unit Unit []) bit =
+      .local ⟨config none [] [bit], memory⟩ := by
   simp only [instruction, config, machine, Fin.isValue]
   norm_num [Config.step, Action.apply, Cfg.init]
   constructor <;> funext i <;> exact Fin.elim0 i

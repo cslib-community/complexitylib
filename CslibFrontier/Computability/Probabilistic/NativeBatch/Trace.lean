@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.NativeBatch
+import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
+import CslibFrontier.Probability.PMF.ObservedProcess.Map
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
@@ -49,10 +51,7 @@ variable (machine : MultiTapePTM k Bool Control Unit)
 private theorem prepare_state
     (world : World k Control Unit (ServerState n Private) input) (bit : Bool) :
     server (.pending (instruction machine world bit)) = world.memory.privateState := by
-  unfold instruction
-  split
-  · rfl
-  · split <;> rfl
+  exact congrArg Memory.privateState (instruction_memory machine world bit)
 
 /-- No accepted batch is dispatched during silent execution, including actual
 rejected native transactions. All hidden oracle state and accepted receipts persist. -/
@@ -90,20 +89,12 @@ theorem seek_state (phase hit : Phase k Control Unit (ServerState n Private) inp
     server hit = server phase := by
   simp only [seekSourceFrom] at hh
   obtain ⟨_, fuel, hf⟩ := (StoppedProcess.terminal_support _ _ _ _ _).mp hh
-  have he (fuel : ℕ) :
-      (ObservedProcess.stateLaw (sourceSilent limits sample machine) fuel phase).map server =
-        PMF.pure (server phase) := by
-    induction fuel with
-    | zero => simp [ObservedProcess.stateLaw]
-    | succ fuel ih =>
-      rw [ObservedProcess.stateLaw, PMF.map_bind]
-      simp only [silent_state]
-      exact ih
   have hm : server hit ∈
       ((ObservedProcess.stateLaw (sourceSilent limits sample machine) fuel phase).map
         server).support :=
     (PMF.mem_support_map_iff _ _ _).mpr ⟨hit, hf, rfl⟩
-  rw [he fuel, PMF.mem_support_pure_iff] at hm
+  rw [ObservedProcess.stateLaw_map_pure (sourceSilent limits sample machine) server
+    (silent_state limits sample machine), PMF.mem_support_pure_iff] at hm
   exact hm
 
 /-- One accepted concurrent receipt, or a zero-call halt/divergence decision. -/

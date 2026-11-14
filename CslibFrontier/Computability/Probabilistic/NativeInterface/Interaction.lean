@@ -81,6 +81,24 @@ real memory unchanged; an actual reply records all resources exactly once. -/
     InteractionProcess.Source (Option (Operation × List Bool)) Reply (Memory Operation Private) :=
   ⟨initial, fun _ memory q => response env memory q⟩
 
+/-- No-call instruction padding carries no source information and preserves its
+complete filtered memory, including all earlier resource receipts. -/
+theorem filter_none (env : Environment Operation Private)
+    (initial : PMF (Memory Operation Private))
+    (history : List (Option (Operation × List Bool) × Reply)) :
+    (source env initial).filter ((none, (⟨[], 0, 0⟩ : Reply)) :: history) =
+      (source env initial).filter history := by
+  rw [InteractionProcess.Source.filter_cons]
+  have he : (source env initial).draw history none = (PMF.pure (⟨[], 0, 0⟩ : Reply)).bind
+      (fun _ => ((source env initial).filter history).map
+        (fun memory => (⟨[], 0, 0⟩, memory))) := by
+    simp only [InteractionProcess.Source.draw, source, response, PMF.pure_bind]
+    rfl
+  rw [he]
+  simpa only [PMF.pure_bind] using
+    PMF.conditionalSnd_bind_pair (PMF.pure (⟨[], 0, 0⟩ : Reply))
+      (fun _ : Reply => (source env initial).filter history) ⟨[], 0, 0⟩ (by simp)
+
 variable [DecidableEq Operation]
 
 /-- The actual private native instruction sampler. Saved selections retain the
@@ -111,7 +129,9 @@ original continuation and fresh private coin; only dummy memory is stored here. 
   (InteractionProcess.law (policy machine config) (source env initial) fuel).map
     fun state => (state.history, world state)
 
-private theorem dispatch_response (env : Environment Operation Private)
+/-- A complete real response followed by fixed-reply private dispatch recovers
+the actual selected-instruction dispatch with real source memory. -/
+theorem dispatch_response (env : Environment Operation Private)
     (memory : Memory Operation Private) (chosen : Instruction k Control Operation Unit input) :
     (response env memory (request chosen)).bind (fun (reply, nextMemory) =>
       (dispatch (fun _ _ => PMF.pure (reply, ())) chosen).map fun next =>

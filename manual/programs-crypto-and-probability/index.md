@@ -2313,9 +2313,55 @@ the existing local clock induction in `StoppedProcess.terminal_map`.
 projection. Native instruction preparation commutes with arbitrary oracle-memory
 maps; no corresponding arbitrary dispatch-memory claim is used.
 
-This is a finite instruction-clock theorem for typed native programs. Collapsing
-unbounded silent work, removing no-call padding from source-epoch histories, and
-transferring the source deadline/turn-budget optimum remain further obligations.
+The instruction-clock theorem by itself does not collapse unbounded private work.
+The raw-epoch connection below handles those local stopping segments. Accepted-batch
+guards and the source deadline/turn-budget optimum remain further obligations.
+
+For unbounded local computation before each raw query, import
+`CslibFrontier.Computability.Probabilistic.NativeEpoch.Interaction`.
+The policy actually runs the existing `NativeEpoch.seekFrom` on dummy-memory native
+checkpoints until it reaches a query or committed halt; its stopping law also
+retains silent-divergence mass. `seek_mapMemory` proves this law commutes with
+arbitrary replacement of source memory, across private-state types and unrelated
+handlers. No handler is called before the raw-query boundary, so selection remains
+private even without a common local instruction clock or almost-sure termination.
+
+The real source kernel is the same fixed `NativeInterface.Interaction.source` as
+before. A saved query is dispatched with its actual complete reply; a halt or
+silent divergence issues no call. Each `Outcome` keeps optional native configuration
+and real source memory in separate fields. `configuration = none` denotes private
+divergence; an actually halted configuration remains present. `memory` retains
+all earlier invoices in either case. Its `world` projection returns the ordinary
+optional native world and therefore drops ledger access on divergence. Use the
+retained `memory` field for accounting on such paths.
+
+`execution_epochs` proves that optional-world readback is the original raw epoch
+process. `execution_resume` composes every finite prefix with the existing native
+terminal continuation. `outcome_posterior` derives the conditional product of
+optional private configuration and retained source memory at reached complete
+histories; `source_posterior` gives the shared source filter even when the private
+checkpoint is absent. The padding fact `filter_none` preserves that filter on a
+zero-reply no-call decision.
+
+The [raw-epoch client](../../CslibFrontierTests/NativeRawEpochs.lean) checks the real
+write/query/private-output program at two query epochs. Its divergent example
+first issues a fee-bearing query and then executes an actual private loop forever.
+The optional configuration disappears while the rich outcome keeps the paid
+invoice and duration. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.NativeInteraction CslibFrontierTests.NativeRawEpochs
+```
+
+`Phase.mapMemory` and `instruction_memory` provide shared memory facts used by the
+raw selection proof and existing native clients. `ObservedProcess.stateLaw_map_pure`
+replaces both repeated native inductions for an observation which stays fixed along
+every step; the existing raw-memory and accepted-server-memory callers use it.
+
+These epochs count actual raw requests. A request rejected by a source's batch
+protocol is still a raw request here. Skipping such rejections, relating the
+filtered private state to accepted-batch histories, and transferring the physical
+source turn/deadline optimum remain separate obligations.
 
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
