@@ -40,7 +40,7 @@ the formula with a single empty clause, which has no exact-one model.
 * [AroraBarak07], Chapter 2 Exercise 16, printed page 63 / PDF page 79.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -48,7 +48,7 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- Exact-one satisfiability with at most three literal occurrences per clause and no polarity
 restriction. -/
-def OneInThreeSAT : Set (CNF ℕ) := {φ | (∀ c ∈ φ, c.length ≤ 3) ∧ φ.OneSatisfiable}
+@[expose] def OneInThreeSAT : Set (CNF ℕ) := {φ | (∀ c ∈ φ, c.length ≤ 3) ∧ φ.OneSatisfiable}
 
 namespace OneInThreeSAT
 
