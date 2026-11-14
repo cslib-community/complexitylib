@@ -7,9 +7,9 @@ Usage: python3 scripts/check_security_premises.py [--base REF | --all | --report
 This checks the rule "Security theorems" in AGENTS.md. A security theorem may assume named
 hardness assumptions, stated relative to the setup sampler or component they concern, that the
 adversary is in the admitted class, and properties of components that the cited result takes as
-given. It must not assume anything about an object that its proof derives from the adversary (a
-reduction, distinguisher, simulator, extractor or hybrid): its advantage or success, its
-membership in an adversary class, or its efficiency.
+given. It must not assume anything about an object that its proof constructs, whether from the
+adversary or not (a reduction, distinguisher, simulator, extractor or hybrid): its advantage or
+success, its membership in an adversary class, or its efficiency.
 
 `scripts/SecurityPremises.lean` reads the built `.olean` files of the library, so it sees
 elaborated statements. A *flagged premise* of a public theorem under `CslibFrontier/Crypto` or in
@@ -222,7 +222,8 @@ def report(problems: Problems) -> str:
     out = []
     if problems.new:
         out += ["Security theorems may not assume anything about an object that their proof "
-                f"derives from the adversary ({RULE}). Prove the premise instead: certify the "
+                f"constructs, from the adversary or not ({RULE}). Prove the premise instead: "
+                "certify the "
                 "reduction with an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a "
                 "circuit-size bound) and apply the named hardness assumption to it. "
                 "A deliberately conditional lemma (an algebraic helper, such as a bound in terms "

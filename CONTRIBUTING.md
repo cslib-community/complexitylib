@@ -192,8 +192,8 @@ Improving an interface never weakens the mathematics: keep the models, encodings
 resource bounds and nonvacuity of the results it touches.
 
 **Security premises** ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
-A security theorem assumes nothing about an object that its proof derives from the adversary
-([AGENTS.md](AGENTS.md#security-theorems)). After a build,
+A security theorem assumes nothing about an object that its proof constructs, from the adversary
+or not ([AGENTS.md](AGENTS.md#security-theorems)). After a build,
 `python3 scripts/check_security_premises.py` reads the elaborated statements of the public Crypto
 theorems from the `.olean` files. It flags each premise that is `Negligible …`, an advantage
 inequality, a class membership (`… ∈ 𝒟` or `Admissible …`), an `IsPPT…` predicate or an
