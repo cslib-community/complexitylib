@@ -16,36 +16,36 @@ import Mathlib.Data.List.GetD
 # Binary polynomials as bit lists
 
 The executable side of the explicit binary fields. A binary polynomial is represented by its list
-of coefficients, constant term first (`Cslib.AffineDisperser.polyOfBits`); the binary digits of
-a code `m` are the coefficients of `polyOfCode m` (`Cslib.AffineDisperser.polyOfBits_bits`).
+of coefficients, constant term first (`Cslib.polyOfBits`); the binary digits of a code `m` are the
+coefficients of `polyOfCode m` (`Cslib.polyOfBits_bits`).
 
 Reduction modulo a polynomial `g` of degree `m` uses one primitive, multiplication by `X` modulo
-`g` on coefficient lists of length `m` (`Cslib.AffineDisperser.mulXMod`): shift up and add `g`
+`g` on coefficient lists of length `m` (`Cslib.mulXMod`): shift up and add `g`
 when the top coefficient overflows. The remainder of `f` is the sum of the remainders of the powers
-`X ^ j` with `f j = 1` (`Cslib.AffineDisperser.modBits`), so `g ∣ f` exactly when that sum vanishes
-(`Cslib.AffineDisperser.modBits_all_false_iff`). Trial division by the polynomials of degree at
-most half the degree decides irreducibility (`Cslib.AffineDisperser.isIrreducibleCode_iff`), and
+`X ^ j` with `f j = 1` (`Cslib.modBits`), so `g ∣ f` exactly when that sum vanishes
+(`Cslib.modBits_all_false_iff`). Trial division by the polynomials of degree at most half the degree
+decides irreducibility (`Cslib.isIrreducibleCode_iff`), and
 an exhaustive search over codes finds the irreducible polynomial of least code
-(`Cslib.AffineDisperser.polyOfCode_leastIrreducibleCode`). The remainders of `X ^ e`,
+(`Cslib.polyOfCode_leastIrreducibleCode`). The remainders of `X ^ e`,
 `e < 2 m`, give the arithmetic of `𝔽₂[X] / (g)` in the power basis
-(`Cslib.AffineDisperser.pow_eq_sum_powerTable`).
+(`Cslib.pow_eq_sum_powerTable`).
 
 ## Main definitions
 
-* `Cslib.AffineDisperser.polyOfBits`: the binary polynomial with a given coefficient list.
-* `Cslib.AffineDisperser.mulXMod`, `Cslib.AffineDisperser.modBits`: reduction modulo a binary
+* `Cslib.polyOfBits`: the binary polynomial with a given coefficient list.
+* `Cslib.mulXMod`, `Cslib.modBits`: reduction modulo a binary
   polynomial.
-* `Cslib.AffineDisperser.isIrreducibleCode`: the irreducibility test by trial division.
-* `Cslib.AffineDisperser.leastIrreducibleCode`: the exhaustive search for the least code.
-* `Cslib.AffineDisperser.powerTable`: the remainders of the powers of `X`.
+* `Cslib.isIrreducibleCode`: the irreducibility test by trial division.
+* `Cslib.leastIrreducibleCode`: the exhaustive search for the least code.
+* `Cslib.powerTable`: the remainders of the powers of `X`.
 
 ## Main results
 
-* `Cslib.AffineDisperser.mk_polyOfBits_modBits`: `modBits g f` is congruent to `f` modulo `g`.
-* `Cslib.AffineDisperser.modBits_all_false_iff`: the divisibility test.
-* `Cslib.AffineDisperser.isIrreducibleCode_iff`: trial division decides irreducibility.
-* `Cslib.AffineDisperser.polyOfCode_leastIrreducibleCode`: the search finds `leastIrreducible p`.
-* `Cslib.AffineDisperser.pow_eq_sum_powerTable`: powers of a root in the power basis.
+* `Cslib.mk_polyOfBits_modBits`: `modBits g f` is congruent to `f` modulo `g`.
+* `Cslib.modBits_all_false_iff`: the divisibility test.
+* `Cslib.isIrreducibleCode_iff`: trial division decides irreducibility.
+* `Cslib.polyOfCode_leastIrreducibleCode`: the search finds `leastIrreducible p`.
+* `Cslib.pow_eq_sum_powerTable`: powers of a root in the power basis.
 
 ## References
 
@@ -54,7 +54,7 @@ an exhaustive search over codes finds the irreducible polynomial of least code
 
 @[expose] public section
 
-namespace Cslib.AffineDisperser
+namespace Cslib
 
 open BitString Polynomial
 
@@ -328,10 +328,6 @@ private theorem natDegree_polyOfCode_eq_log (m : ℕ) : (polyOfCode m).natDegree
   · simp
   · exact natDegree_polyOfCode hm
 
-private theorem polyOfCode_one : polyOfCode 1 = 1 := by
-  rw [← polyOfBits_bits, Nat.one_bits]
-  simp [bitEquiv_symm_true]
-
 /-- The divisibility test on codes: for `d ≠ 0`, some coefficient of the remainder of `f` modulo
 the polynomial with code `d` is one exactly when that polynomial does not divide `f`. -/
 theorem any_modBits_bits_iff {d : ℕ} (hd : d ≠ 0) (f : List Bool) :
@@ -459,4 +455,4 @@ theorem pow_eq_sum_powerTable {A : Type*} [CommRing A] [Algebra (ZMod 2) A] (l :
   rw [map_sub, sub_eq_zero] at h0
   rw [h0, aeval_X_pow]
 
-end Cslib.AffineDisperser
+end Cslib

@@ -912,6 +912,24 @@ not construct the symmetrizer `W`, the structured MQ map, the pull-back bijectio
 verification, rank-failure estimates, or the QROM reduction; those remain obligations of the
 [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
+### UOV concrete binary fields and encodings
+
+Import [`UOV/Field.lean`](../../CslibFrontier/Crypto/Protocols/UOV/Field.lean) for the exact fields
+and individual-element encodings fixed by [UOV v3.0][uov26] §3.3, p. 19. `UOV.F16` and
+`UOV.F256` reuse `BinaryField 4` and `BinaryField 8`; `UOV.f16_modulus` and `UOV.f256_modulus`
+identify their least-code irreducible polynomials as `X^4 + X + 1` and
+`X^8 + X^4 + X^3 + X + 1`. `UOV.f16EquivNibble` and `UOV.f256EquivByte` compose the existing
+power-basis coordinates with little-endian `BitString.equivFin`, while `UOV.f16PairEquivByte`
+packs the first of two `F16` elements into the low nibble (`low + 16 * high`).
+
+The [client module](../../CslibFrontierTests/Crypto/UOVField.lean) covers nontrivial round trips,
+the convention-sensitive generator value `X ↦ 2`, the quotient evaluations `X^4 ↦ 0x03` and
+`X^8 ↦ 0x1b`, and low-first packing `(X, 1) ↦ 0x12`. This module does not serialize vectors or
+matrices and does not construct UOV keys, signing, verification, retries, assumptions, or a
+security reduction; those remain obligations of
+[#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and the
+[post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 ### Canonical upper-triangular quadratic representatives
 
 Import [`Matrix/UpperTriangularQuadratic.lean`](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/UpperTriangularQuadratic.lean)
