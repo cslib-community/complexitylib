@@ -44,7 +44,7 @@ theorem upper_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
@@ -83,13 +83,13 @@ theorem upper_controller (width : ℕ) :
   let impl := BatchPlanner.controller n width
   let program := impl.program
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
     a r hr p hp c Hprod Hcost
   let world : World impl.tapes impl.Controls Unit (ServerState n Private)
       (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   have hnum := BatchOutput.upper_controller (n := n) width Private limits sample data seed ell
-    hn hw hc he hcut hd hbudget hallot hx a r hr p hp c Hprod Hcost
+    hn hw hc he hlat hd hbudget hallot hx a r hr p hp c Hprod Hcost
   obtain ⟨hcert, htail, hmean, hbudgetBill, hfinite⟩ := hnum
   obtain ⟨hae, hi, heq⟩ := PathCost.totalBill_real limits sample program charge rfl world
     (initial_invariant limits seed) hfinite

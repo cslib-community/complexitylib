@@ -105,7 +105,8 @@ private theorem first_aligned (seed first : ℕ) :
     BatchAdmission.Aligned limits 2 3 1 (state1 seed first) (memory1 seed first) := by
   have h := BatchAdmission.after_reply_aligned limits (sample false) 2 3 1
     (by decide) (by decide) (by decide) (by norm_num)
-    (by intro _; norm_num [limits]) (by norm_num [limits])
+    (hasDurationBound_of_cutoff limits _ 1 (by intro _; norm_num [limits]))
+    (by norm_num [limits])
     initial (start seed) (initial_aligned seed) initial_live _ _ (first_supported seed first)
   simpa only [state1, memory1, Memory.record] using h
 
@@ -246,7 +247,8 @@ example (seed first second : ℕ) :
     BatchAdmission.Aligned limits 2 3 1 (state2 seed first second) (memory2 seed first second) := by
   have h := BatchAdmission.after_reply_aligned limits (sample false) 2 3 1
     (by decide) (by decide) (by decide) (by norm_num)
-    (by intro _; norm_num [limits]) (by norm_num [limits]) _ _
+    (hasDurationBound_of_cutoff limits _ 1 (by intro _; norm_num [limits]))
+    (by norm_num [limits]) _ _
     (first_aligned seed first) (first_live seed first) _ _ (second_supported seed first second)
   simpa only [state2, memory2, Memory.record] using h
 
@@ -299,7 +301,9 @@ theorem native_selectionOnly : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
   refine ⟨impl.tapes, impl.Controls, impl.finite, impl.program, ?_⟩
   intro seed
   exact hp ℕ limits (sample false) (data 3) seed 1 rfl (by decide) (by decide)
-    (by decide) (by norm_num) (by intro _; norm_num [limits]) (by norm_num [data, limits])
+    (by decide) (by norm_num)
+    (hasDurationBound_of_cutoff limits _ 1 (by intro _; norm_num [limits]))
+    (by norm_num [data, limits])
     original_valid
 
 private def fullExchange (seed first : ℕ) : Exchange 6 :=
@@ -508,7 +512,9 @@ theorem native_epoch_stopping : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
   have hrho : ((data 3).startup.system.rho : ℝ) = 1 := by norm_num [data]
   simpa only [hrho] using hp ℕ limits (sample false) (data 3) seed 1 rfl (by decide)
     (by decide)
-    (by norm_num) (by intro _; norm_num [limits]) (by norm_num [data, limits])
+    (by norm_num)
+    (hasDurationBound_of_cutoff limits _ 1 (by intro _; norm_num [limits]))
+    (by norm_num [data, limits])
     rfl (by decide) original_valid t ht o ho
 
 /-- Actual full first-response completion yields a decoded covering output,
@@ -525,7 +531,8 @@ example (seed first : ℕ) :
       (fullMemory seed first).privateState.elapsed ≤ limits.deadline := by
   have ha := BatchAdmission.after_reply_aligned limits (sample true) 2 3 1
     (by decide) (by decide) (by decide) (by norm_num)
-    (by intro _; norm_num [limits]) (by norm_num [limits]) initial (start seed)
+    (hasDurationBound_of_cutoff limits _ 1 (by intro _; norm_num [limits]))
+    (by norm_num [limits]) initial (start seed)
     (initial_aligned seed) initial_live _ _ (full_supported seed first)
   change BatchAdmission.Aligned limits 2 3 1 (fullState seed first) (fullMemory seed first) at ha
   have hd : (Packets.decision (fullState seed first).work).1 = true := by

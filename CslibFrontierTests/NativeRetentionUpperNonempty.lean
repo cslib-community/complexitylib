@@ -150,7 +150,9 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
   have hrho : (data.startup.system.rho : ℝ) = 1 := by norm_num [data]
   dsimp only [I, parse] at Hprod
   have h := hp Unit lim sampler data () 1 rfl (by decide) (by decide)
-    (by norm_num) (by intro _; norm_num [lim]) (by norm_num [data, lim]) rfl (by decide)
+    (by norm_num)
+    (hasDurationBound_of_cutoff lim _ 1 (by intro _; norm_num [lim]))
+    (by norm_num [data, lim]) rfl (by decide)
     valid 1 1 (by norm_num [I, instanceOf, ground, data, List.range_succ])
     ⟨1, by norm_num⟩ (by norm_num) 1
     (by simpa only [hrho] using Hprod) Hcost

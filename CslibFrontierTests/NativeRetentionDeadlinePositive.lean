@@ -12,7 +12,8 @@ import Mathlib.Tactic
 # Positive-deadline, nontrivial native necessary success bound
 
 Two concurrent responses and their invoices share one fair bit. Every issued
-batch takes exactly one unit of oracle time. On a satisfiable positive-dual
+batch takes exactly one unit of oracle time, despite configured cutoffs of two.
+On a satisfiable positive-dual
 singleton instance, the named native controller succeeds with probability exactly
 one half. The necessary success-target bound is one half for every admitted
 competitor on this same oracle, not a zero-deadline or zero-turn edge.
@@ -30,13 +31,23 @@ private theorem valid : Valid data.startup.system := by
   · intro j; cases j <;> norm_num
   · intro e; cases e <;> norm_num
   · intro j; cases j <;> norm_num [elements, ground, List.range_succ]
-private def limits : Limits 2 := ⟨fun _ => 1, by intro _; norm_num, 1, 1⟩
+private def limits : Limits 2 := ⟨fun _ => 2, by intro _; norm_num, 2, 1⟩
 private def path (b : Bool) : CallTrace :=
   ⟨some (1, [b]), fun _ => if b then 2 else 1, by intro _ _ _; rfl⟩
 private def sample : Sampler 2 Unit := fun _ _ =>
   (PMF.uniformOfFintype Bool).map fun b => (fun _ => path b, ())
+-- Configured cutoffs are strictly larger than the actual per-batch latency.
+-- The old global cutoff premise at ell=1 is false for this source.
+example : ¬ ∀ i, limits.cutoff i ≤ 1 := by norm_num [limits]
+
+private theorem duration_bound : HasDurationBound limits sample 1 := by
+  apply hasDurationBound_of_returned
+  intro state batch draw hd i _
+  obtain ⟨b, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hd
+  exact ⟨1, [b], rfl, le_rfl⟩
+
 private def batchReceipt (batch : Batch 2) (b : Bool) : Exchange 2 :=
-  ConcurrentBatch.observe limits 1 batch (fun _ => path b)
+  ConcurrentBatch.observe limits 2 batch (fun _ => path b)
 private def nativeStart {k : ℕ} {Control : Type} (machine : MultiTapePTM k Bool Control Unit) :
     World k Control Unit (ServerState 2 Unit) (GuardedStartup.encoding data) :=
   ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩
@@ -70,6 +81,19 @@ private theorem receipt_facts (batch : Batch 2) (b : Bool) : ReceiptFacts batch 
     Finset.filter_singleton, Instance.retain, Instance.Certified, Instance.covered,
     Instance.cost, elements, ground,
     Finset.sum_insert, Finset.sup_insert]
+
+-- The actual-duration predicate is nonvacuous: this source cannot satisfy a
+-- zero latency envelope on its positive-time nonempty batch.
+example : ¬ HasDurationBound limits sample 0 := by
+  intro h
+  let batch : Batch 2 := ⟨fun _ => some [], ⟨0, by simp [active]⟩⟩
+  have hd : ((fun _ => path true), ()) ∈ (sample (ConcurrentBatch.initial ()) batch).support := by
+    exact (PMF.mem_support_map_iff _ _ _).mpr ⟨true, by simp, rfl⟩
+  have hh := h (ConcurrentBatch.initial ()) batch ((fun _ => path true), ()) hd
+  have hz : (batchReceipt batch true).duration ≤ 0 := by
+    simpa only [ConcurrentBatch.initial, tsub_zero, limits, batchReceipt] using hh
+  rw [(receipt_facts batch true).duration] at hz
+  norm_num at hz
 
 private theorem first {k : ℕ} {Control : Type} (machine : MultiTapePTM k Bool Control Unit)
     (o : Observation 2)
@@ -212,7 +236,7 @@ example :
     simp only [List.tail_cons, List.headD_cons, (receipt_facts batch _).productive]
     norm_num [tsum_bool, PMF.uniformOfFintype_apply, ENNReal.ofReal_div_of_pos]
   have hu := BatchOutput.upper_controller (n := 2) 2 Unit limits sample data () 1 rfl
-    (by decide) (by decide) (by norm_num) (by intro _; norm_num [limits])
+    (by decide) (by decide) (by norm_num) duration_bound
     (by norm_num [limits]) rfl (by decide) valid 1 1
     (by norm_num [instanceOf, ground, List.range_succ]) ⟨1 / 2, by norm_num⟩ (by norm_num) 4
     (by simpa only [program, impl, nativeStart,
@@ -221,7 +245,7 @@ example :
         subst t; exact (cost_first program o ho hi).2)
   have hs := BatchAdmission.selectionOnly_controller (n := 2) 2 Unit limits sample data () 1
     rfl (by decide) (by decide) (by decide) (by norm_num)
-    (by intro _; norm_num [limits]) (by norm_num [limits]) valid
+    duration_bound (by norm_num [limits]) valid
   have hsel : NativeUnboundedExecution.SelectionOnly program (environment limits sample)
       (candidateParser (n := 2) 1) (decodeFamily 1) (BatchOutput.accept data.startup.system valid)
       (nativeStart program) := by intro fuel next hn C hC _; exact hs fuel next hn C hC rfl

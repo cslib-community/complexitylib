@@ -75,7 +75,7 @@ theorem output_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n) (_ : data.startup.turns ≤ limits.turns)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (hx : Valid data.startup.system),
         let μ := NativeUnboundedExecution.terminal program (environment limits sample)
@@ -88,7 +88,7 @@ theorem output_controller (width : ℕ) :
   let context := impl.context
   have hp := BatchAdmission.admitted_controller (n := n) width
   dsimp only
-  intro Private limits sample data seed ell hn hw hc ht he hcut hd hx
+  intro Private limits sample data seed ell hn hw hc ht he hlat hd hx
   apply PMF.map_true_mono
   intro outcome ho hcomplete
   cases outcome with
@@ -99,7 +99,7 @@ theorem output_controller (width : ℕ) :
     have hobs := (PMF.mem_support_map_iff
       (Option.map (NativeReplyContext.observe context)) _ _).mpr ⟨some next, ho, rfl⟩
     obtain ⟨state, memory, hread, ha, hsystem⟩ := hp Private limits sample data seed ell
-      hn hw hc ht he hcut hd _ hobs
+      hn hw hc ht he hlat hd _ hobs
     have hout := congrArg (Option.map NativeReplyContext.Observation.output) hread
     have hmem := congrArg (Option.map NativeReplyContext.Observation.memory) hread
     simp only [Option.map_some, Option.some.injEq, NativeReplyContext.observe] at hout hmem
@@ -203,7 +203,7 @@ theorem upper_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
@@ -237,14 +237,14 @@ theorem upper_controller (width : ℕ) :
           (c : ℝ≥0∞) * limits.turns ∧
         Quantitative.expected limits sample program charge (limits.turns + 1) world ≠ ∞ := by
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
     a r hr p hp c Hprod Hcost
   have hnum := BatchUpper.upper_controller (n := n) width Private limits sample data seed ell
-    hn hw hc he hcut hd hbudget hallot hx a r hr p hp c Hprod Hcost
+    hn hw hc he hlat hd hbudget hallot hx a r hr p hp c Hprod Hcost
   refine ⟨?_, hnum.2⟩
   apply hnum.1.trans
   rw [terminal_completion width limits sample data seed hx]
   exact output_controller width Private limits sample data seed ell hn hw hc hbudget.le
-    he hcut hd hx
+    he hlat hd hx
 
 end Cslib.Probability.StochasticOracle.NativeRetention.BatchOutput

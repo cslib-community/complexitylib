@@ -6471,6 +6471,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveReachable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Duration
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FlatEncoding
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Mixture

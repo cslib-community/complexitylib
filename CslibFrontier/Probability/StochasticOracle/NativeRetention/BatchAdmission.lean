@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPlanner
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Duration
 import Mathlib.Tactic
 
 /-!
@@ -15,8 +16,8 @@ import Mathlib.Tactic
 
 [Wang2027], model pp. 4--6, Theorem 5 p. 12/App. A.5 p. 16. Every live iteration
 of the constructed block planner decodes to a preformed nonempty batch, consumes
-fresh labels and is accepted by the same stateful concurrent oracle. Per-call
-cutoffs and the configured whole-run allotment imply deadline feasibility; a
+fresh labels and is accepted by the same stateful concurrent oracle. A primitive
+actual-response duration envelope and the whole-run allotment imply deadline feasibility; a
 scalar reservation counter is not treated as an observed clock. Native local
 computation remains outside this physical oracle-duration convention.
 
@@ -54,7 +55,7 @@ structure Aligned (limits : Limits n) (width budget : ℕ) (ell : ℝ≥0)
   /-- Source labels consumed so far are exactly the earlier blocks. -/
   used : memory.privateState.used =
     BatchPlanner.consumed n width memory.privateState.history.length
-  /-- The actual duration bound follows from configured call cutoffs. -/
+  /-- Actual accepted batches have duration at most `ell` by the source envelope. -/
   duration : memory.privateState.elapsed ≤ memory.privateState.history.length * ell
   /-- Stored replies are actual oracle replies, rather than supplied proposals. -/
   history : state.work.history = memory.events.map (fun e => e.reply.word)
@@ -118,23 +119,12 @@ theorem admit_request (limits : Limits n) (width budget : ℕ) (ell : ℝ≥0)
   rw [BatchPlanner.decode_request n width state hw hcap]
   simp only [htime, (hlt.trans_le ht), hdisj, and_self, ↓reduceIte]
 
-private theorem observe_duration_cutoff (limits : Limits n) (ell : ℝ≥0)
-    (hcut : ∀ i, limits.cutoff i ≤ ell) (remaining : ℝ≥0) (b : Batch n)
-    (paths : Fin n → CallTrace) : (observe limits remaining b paths).duration ≤ ell := by
-  apply Finset.sup_le
-  intro i _
-  change (if (b.slots i).isSome then
-    (paths i).stop (min (limits.cutoff i) remaining) else 0) ≤ ell
-  split_ifs
-  · exact ((paths i).stop_le _).trans ((min_le_left _ _).trans (hcut i))
-  · exact zero_le
-
 /-- One actual correlated source response advances exactly the computed block,
 updates authenticated runtime history and retains the joint charged resources. -/
 theorem after_reply_aligned (limits : Limits n) (sample : Sampler n Private)
     (width budget : ℕ) (ell : ℝ≥0) (hw : 0 < width) (hc : budget * width ≤ n)
     (ht : budget ≤ limits.turns) (he : 0 < ell)
-    (hcut : ∀ i, limits.cutoff i ≤ ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
+    (hlat : HasDurationBound limits sample ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
     (state : RuntimeControl.State) (memory : Memory Unit (ServerState n Private))
     (ha : Aligned limits width budget ell state memory)
     (hs : RuntimeControl.stopped state = false) (reply : Reply) (next : ServerState n Private)
@@ -142,6 +132,7 @@ theorem after_reply_aligned (limits : Limits n) (sample : Sampler n Private)
       (environment limits sample ((), BatchPlanner.request n width state) memory).support) :
     Aligned limits width budget ell (RuntimeControl.afterReply state reply.word)
       (memory.record ((), BatchPlanner.request n width state) reply next) := by
+  have htime := hlat.reply ((), BatchPlanner.request n width state) memory reply next hr
   obtain ⟨batch, hslots, haccept⟩ :=
     admit_request limits width budget ell hw hc ht he hd state memory ha hs
   rcases batch with ⟨slots, nonempty⟩
@@ -173,7 +164,7 @@ theorem after_reply_aligned (limits : Limits n) (sample : Sampler n Private)
       (memory.privateState.history.length + 1 : ℕ) * ell
     calc
       _ ≤ memory.privateState.history.length * ell + ell :=
-        add_le_add ha.duration (observe_duration_cutoff limits ell hcut _ _ paths)
+        add_le_add ha.duration htime
       _ = _ := by simp [add_mul]
   · simpa [RuntimeControl.afterReply, Memory.record] using congrArg
       (List.cons (replyOf (observe limits (limits.deadline - memory.privateState.elapsed)
@@ -253,7 +244,7 @@ including cancellation, hidden correlation and computed early completion. -/
 theorem run_aligned (limits : Limits n) (sample : Sampler n Private)
     (width budget : ℕ) (ell : ℝ≥0) (hw : 0 < width) (hc : budget * width ≤ n)
     (ht : budget ≤ limits.turns) (he : 0 < ell)
-    (hcut : ∀ i, limits.cutoff i ≤ ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
+    (hlat : HasDurationBound limits sample ell) (hd : (budget : ℝ≥0) * ell ≤ limits.deadline)
     (fuel : ℕ) (state : RuntimeControl.State) (channels : Unit → Channel Bool)
     (memory : Memory Unit (ServerState n Private))
     (ha : Aligned limits width budget ell state memory) (outcome : Feedback.Outcome _)
@@ -276,14 +267,14 @@ theorem run_aligned (limits : Limits n) (sample : Sampler n Private)
         PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at ho
       obtain ⟨⟨reply, next⟩, hr, ho⟩ := ho
       exact ih _ _ _ (after_reply_aligned limits sample width budget ell hw hc ht he
-        hcut hd state memory ha hs reply next hr) _ ho
+        hlat hd state memory ha hs reply next hr) _ ho
 
 /-- The constructed same-code native program, starting with original encoded input
 and blank work tapes, has only authenticated accepted batch events. Its output,
 source used-set, cancellation charges and concurrent physical duration are jointly
 those of the actual final source memory. No admission or execution law is a premise.
 The supported scheduler has fixed positive block width/interface, fitting turn
-budget and configured cutoff allotments; this is not the unrestricted upper theorem. -/
+budget and an actual source-duration envelope; arbitrary schedulers remain separate. -/
 theorem admitted_controller (width : ℕ) :
     let impl := BatchPlanner.controller n width
     let program := impl.program
@@ -292,7 +283,7 @@ theorem admitted_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n) (_ : data.startup.turns ≤ limits.turns)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (observation : Option (NativeReplyContext.Observation (ServerState n Private)))
         (_ : observation ∈ ((NativeUnboundedExecution.terminal program (environment limits sample)
@@ -309,12 +300,12 @@ theorem admitted_controller (width : ℕ) :
   let context := impl.context
   have hlaw := impl.law
   dsimp only
-  intro Private limits sample data seed ell hn hw hc ht he hcut hd observation ho
+  intro Private limits sample data seed ell hn hw hc ht he hlat hd observation ho
   rw [hlaw] at ho
   simp only [PMF.mem_support_map_iff] at ho
   obtain ⟨outcome, houtcome, rfl⟩ := ho
   refine ⟨outcome.state, outcome.memory, rfl, ?_, ?_⟩
-  · exact run_aligned limits sample width data.startup.turns ell hw hc ht he hcut hd _ _ _ _
+  · exact run_aligned limits sample width data.startup.turns ell hw hc ht he hlat hd _ _ _ _
       (initial_aligned limits width ell data seed hn) outcome houtcome
   · exact Feedback.run_original_system _ _ _ _ _ _ outcome houtcome
 
@@ -329,7 +320,7 @@ theorem selectionOnly_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n) (_ : data.startup.turns ≤ limits.turns)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : Valid data.startup.system),
         NativeUnboundedExecution.SelectionOnly program (environment limits sample)
@@ -342,7 +333,7 @@ theorem selectionOnly_controller (width : ℕ) :
   let context := impl.context
   have hp := admitted_controller (n := n) width
   dsimp only
-  intro Private limits sample data seed ell hn hw hc ht he hcut hd hx fuel world hworld C hC _
+  intro Private limits sample data seed ell hn hw hc ht he hlat hd hx fuel world hworld C hC _
   cases hcontrol : world.config.tapes.state with
   | some control => simp [NativeOpenSelection.result, hcontrol] at hC
   | none =>
@@ -352,7 +343,7 @@ theorem selectionOnly_controller (width : ℕ) :
       (Option.map (NativeReplyContext.observe context)) _ _).mpr
       ⟨some world, hterminal, rfl⟩
     obtain ⟨state, memory, hobs, ha, hsystem⟩ := hp Private limits sample data seed ell
-      hn hw hc ht he hcut hd _ hobservation
+      hn hw hc ht he hlat hd _ hobservation
     have houtput := congrArg (Option.map NativeReplyContext.Observation.output) hobs
     have hmemory := congrArg (Option.map NativeReplyContext.Observation.memory) hobs
     simp only [Option.map_some, Option.some.injEq, NativeReplyContext.observe] at houtput hmemory

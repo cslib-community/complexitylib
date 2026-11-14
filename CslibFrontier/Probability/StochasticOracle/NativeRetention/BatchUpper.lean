@@ -41,7 +41,8 @@ variable {n : ℕ}
 /-- One constructed native program satisfies the actual pre-response stopping
 conditions needed by the native survival-sum cost theorem. Both issued and
 no-call decisions are connected to actual retained completion. The only hypotheses
-are original source budgets/cutoffs and ordinary WSC validity. In particular its
+are original source budgets, actual batch-duration bounds and ordinary WSC validity.
+In particular its
 history/representation/stopping law is derived rather than supplied. -/
 theorem stopping_controller (width : ℕ) :
     let impl := BatchPlanner.controller n width
@@ -50,7 +51,7 @@ theorem stopping_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system)
@@ -69,7 +70,7 @@ theorem stopping_controller (width : ℕ) :
   let context := impl.context
   have hlaw := impl.law
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
   have ht : data.startup.turns ≤ limits.turns := hbudget.le
   let world : World impl.tapes impl.Controls Unit (ServerState n Private)
       (GuardedStartup.encoding data) :=
@@ -95,11 +96,11 @@ theorem stopping_controller (width : ℕ) :
         ⟨ConcurrentBatch.initial seed, []⟩⟩).map _).support at hobs
     rw [hlaw] at hobs
     obtain ⟨outcome, ho, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hobs
-    have hsafe := run_safe limits sample width data.startup.turns ell hw hc ht he hcut hd
+    have hsafe := run_safe limits sample width data.startup.turns ell hw hc ht he hlat hd
       _ _ _ _ (BatchAdmission.initial_aligned limits width ell data seed hn) (by trivial) outcome ho
     change Safe data.startup.system outcome.memory.privateState.history at hsafe
     have ha := BatchAdmission.run_aligned limits sample width data.startup.turns ell hw hc ht
-      he hcut hd _ _ _ _ (BatchAdmission.initial_aligned limits width ell data seed hn) outcome ho
+      he hlat hd _ _ _ _ (BatchAdmission.initial_aligned limits width ell data seed hn) outcome ho
     have hopps : (GuardedStartup.state data).turns ≤ (GuardedStartup.state data).opportunities := by
       change data.startup.turns ≤ data.startup.opportunities
       rw [hn]
@@ -213,7 +214,7 @@ theorem upper_controller (width : ℕ) :
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
-        (_ : 0 < ell) (_ : ∀ i, limits.cutoff i ≤ ell)
+        (_ : 0 < ell) (_ : HasDurationBound limits sample ell)
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
@@ -250,7 +251,7 @@ theorem upper_controller (width : ℕ) :
   let program := impl.program
   have hstop := stopping_controller (n := n) width
   dsimp only
-  intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  intro Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
   have ht : data.startup.turns ≤ limits.turns := hbudget.le
   intro a r hr p hp c Hprod Hcost
   let world : World impl.tapes impl.Controls Unit (ServerState n Private)
@@ -258,7 +259,7 @@ theorem upper_controller (width : ℕ) :
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   let I := instanceOf data.startup.system hx
   let parse := BatchReceipts.proposal (n := n) data.startup.system
-  have hguard := hstop Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
+  have hguard := hstop Private limits sample data seed ell hn hw hc he hlat hd hbudget hallot hx
   have Hfull (t : ℕ) (hlt : t < limits.turns) (o : Observation n)
       (ho : o ∈ ((select limits sample program
         (law limits sample program t world)).map (Quantitative.observe limits)).support) :

@@ -2654,8 +2654,8 @@ and unbounded replies are runtime data. This is weaker than one size-uniform
 machine reading arbitrary interface sizes, and does not compile arbitrary schedulers.
 
 `BatchAdmission.admitted_controller` derives acceptance for every
-live iteration from fitting original turn/block budgets, positive cutoff allotments
-and a deadline covering those allotments. No batch validity, used-set, execution-law
+live iteration from fitting original turn/block budgets, a positive actual batch
+latency bound and a deadline covering those batch allowances. No batch validity, used-set, execution-law
 or success witness is supplied. `Aligned` identifies actual accepted source history,
 consumed labels, authenticated reply history and the joint bill/duration/provenance
 ledger. `selectionOnly_controller` additionally derives the existing native
@@ -2666,6 +2666,22 @@ used-set counts its labels. Cancellation still consumes those labels and charges
 accrued tokens. The handler enforces cutoffs and the absolute oracle-time deadline;
 the planner's fitting allotments prevent rejection before its last allowed turn.
 Local native instructions are excluded from that duration, as in the paper.
+
+The duration premise is `ConcurrentBatch.HasDurationBound limits sample ell`, a
+uniform primitive envelope over source states and batches, bounding the maximum
+observed return/cancellation time of supported draws at the actual remaining deadline. It assumes neither completion nor
+policy termination. Import
+[ConcurrentBatch.Duration](../../CslibFrontier/Probability/StochasticOracle/ConcurrentBatch/Duration.lean)
+for `hasDurationBound_of_cutoff`, which recovers the earlier sufficient cutoff
+condition, and `hasDurationBound_of_returned`, which uses actual return times even
+when cutoffs are longer. The envelope is preserved through `BatchUpper`,
+`BatchOutput`, `BatchOptimum` and `BatchPathCost`; it is not a bound on the sum of
+concurrent call times or on local instructions. The
+[positive-deadline client](../../CslibFrontierTests/NativeRetentionDeadlinePositive.lean)
+now has configured cutoffs and deadline two, actual return time one, and a false
+cutoff-at-most-one premise. Its named controller still has certified success exactly one half and the
+same universal competitor bound. This expands the implemented latency model;
+the fixed-block scheduler and arbitrary-policy retention/emission gap remain.
 
 To compare the executed guard with the mathematical progress process, import
 `CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping`.
