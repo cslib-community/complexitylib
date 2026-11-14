@@ -443,11 +443,9 @@ private def checkFlattenedParents (env : Environment) (s : Name)
   elabCommand (← `($vis:visibility theorem $fieldsDeg:ident $params* :
     ComputableInDegree (fun $a : $S => $fieldsOf) $encRef $fieldsTerm 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
-  let fieldsPoly : Term ← `((ComputableInPolyTime.of_eq fun _ => rfl :
-    ComputableInPolyTime (fun $a : $S => $fieldsOf) $encRef $fieldsTerm))
   let g ← freshIdent `g
   let c ← freshIdent `c
-  let declareProjectionRules (projection : Name) (fn compFn e degBody poly : Term) :
+  let declareProjectionRules (projection : Name) (fn compFn e degBody : Term) :
       CommandElabM Unit := do
     let deg := app name s!"_{projection}_deg"
     let degTerm := applied deg
@@ -471,7 +469,8 @@ private def checkFlattenedParents (env : Environment) (s : Name)
       {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
       (h : ComputableInPolyTime $g encIn $encRef) :
       ComputableInPolyTime $compFn encIn $e :=
-        ComputableInPolyTime.comp (f := $fn) (g := $g) $poly h))
+        ComputableInPolyTime.comp (f := $fn) (g := $g)
+          (ComputableInDegree.computableInPolyTime $degTerm) h))
     registerRule polyRule
   for f in fs, e in slots, i in Array.range n do
     -- The field read, as a function of the structure and applied to `g c`.
@@ -482,8 +481,7 @@ private def checkFlattenedParents (env : Environment) (s : Name)
     let compFn : Term ← `(fun $c => $ofG)
     let degBody ←
       liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
-    let poly ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInPolyTime fieldsPoly i n
-    declareProjectionRules f.getId fn compFn e degBody poly
+    declareProjectionRules f.getId fn compFn e degBody
   for parent in parents, parentEnc in parentEncs, checked in checkedParents do
     let (path, indices) := checked
     let parentProjs := pathProjs env s path
@@ -496,10 +494,8 @@ private def checkFlattenedParents (env : Environment) (s : Name)
       let fieldDeg ← liftMacroM <|
         component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
       parentDeg ← `(ComputableInDegree.prod $fieldDeg $parentDeg)
-    let degTerm := applied (app name s!"_{parent.getId}_deg")
     let degBody : Term ← `(ComputableInDegree.of_enc_eq $parentDeg fun _ => rfl)
-    let poly : Term ← `(ComputableInDegree.computableInPolyTime $degTerm)
-    declareProjectionRules parent.getId parentFn parentOfG parentEnc degBody poly
+    declareProjectionRules parent.getId parentFn parentOfG parentEnc degBody
   let p ← plainIdent `p
   let comps ← (List.range n).toArray.mapM fun i => do
     let mut t : Term ← `($p)
