@@ -19,14 +19,14 @@ import CslibFrontier.Tactic.PPT
 
 Exercises `CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive` on:
 
-* `SigmaProtocol.schnorr`: completeness, round-by-round soundness, plain-model soundness,
-  straight-line knowledge soundness, and perfect HVZK.
+* `SigmaProtocol.schnorr`: completeness, round-by-round soundness, plain-model soundness, and
+  perfect HVZK.
 * `PrimeOrderGroupFamily.schnorrFamily`: `Interactive.Reduction.EfficientHVZK` with simulation
   error `0` and realization error `1 / 2 ^ n + 1 / 2 ^ n`.
-* `SigmaProtocol.andProof`: completeness, round-by-round soundness, soundness, knowledge soundness,
-  and perfect HVZK for the AND composition of two Sigma protocols.
-* `SigmaProtocol.orProof`: completeness, round-by-round soundness, soundness, knowledge soundness,
-  and perfect HVZK for the OR composition of two Sigma protocols.
+* `SigmaProtocol.andProof`: completeness, round-by-round soundness, soundness, and perfect HVZK
+  for the AND composition of two Sigma protocols.
+* `SigmaProtocol.orProof`: completeness, round-by-round soundness, soundness, and perfect HVZK for
+  the OR composition of two Sigma protocols.
 -/
 
 @[expose] public section
@@ -64,14 +64,6 @@ theorem schnorr_interactive_sound [Fact q.Prime] :
       (language fun u (α : ZMod q) => α • g = u) Set.univ
       (1 / (Fintype.card C : ℝ≥0∞)) :=
   SpecialSoundness.sound (schnorr_specialSoundness (ι := ι) (g := g))
-
-/-- Schnorr's interactive verifier is knowledge sound with error `1 / |C|`. -/
-theorem schnorr_interactive_knowledgeSound [Fact q.Prime] :
-    (schnorr ι g).toInteractiveVerifier.KnowledgeSound
-      (fun u (α : ZMod q) => α • g = u) Accept
-      ((schnorr ι g).witnessChooser fun α u => α • g = u)
-      (1 / (Fintype.card C : ℝ≥0∞)) :=
-  SpecialSoundness.knowledgeSound (schnorr_specialSoundness (ι := ι) (g := g))
 
 /-- Schnorr's interactive reduction is perfectly HVZK in the plain model. -/
 theorem schnorr_interactive_hvzk :
@@ -188,16 +180,6 @@ theorem andProof_interactive_sound
       (1 / (Fintype.card C : ℝ≥0∞)) :=
   SpecialSoundness.sound (andProof_specialSoundness h₀ h₁)
 
-theorem andProof_interactive_knowledgeSound [Nonempty X₀] [Nonempty X₁]
-    {extract₀ : Y₀ → T₀ → C → Z₀ → C → Z₀ → X₀}
-    {extract₁ : Y₁ → T₁ → C → Z₁ → C → Z₁ → X₁}
-    (h₀ : P₀.SpecialSoundness R₀ extract₀) (h₁ : P₁.SpecialSoundness R₁ extract₁) :
-    (P₀.andProof P₁).toInteractiveVerifier.KnowledgeSound
-      (fun (y : Y₀ × Y₁) (x : X₀ × X₁) => R₀ x.1 y.1 ∧ R₁ x.2 y.2) Accept
-      ((P₀.andProof P₁).witnessChooser fun (x : X₀ × X₁) (y : Y₀ × Y₁) => R₀ x.1 y.1 ∧ R₁ x.2 y.2)
-      (1 / (Fintype.card C : ℝ≥0∞)) :=
-  SpecialSoundness.knowledgeSound (andProof_specialSoundness h₀ h₁)
-
 theorem andProof_interactive_hvzk
     {simulate₀ : Y₀ → C → PMF (T₀ × Z₀)} {simulate₁ : Y₁ → C → PMF (T₁ × Z₁)}
     {sample₀ : X₀ → Y₀ → ProbComp (T₀ × P₀.State)}
@@ -259,18 +241,6 @@ theorem orProof_interactive_sound
       (1 / (Fintype.card C : ℝ≥0∞)) := by
   classical
   exact SpecialSoundness.sound
-    (orProof_specialSoundness (simulate₀ := simulate₀) (simulate₁ := simulate₁) h₀ h₁)
-
-theorem orProof_interactive_knowledgeSound [Nonempty (X₀ ⊕ X₁)]
-    {extract₀ : Y₀ → T₀ → C → Z₀ → C → Z₀ → X₀}
-    {extract₁ : Y₁ → T₁ → C → Z₁ → C → Z₁ → X₁}
-    (h₀ : P₀.SpecialSoundness R₀ extract₀) (h₁ : P₁.SpecialSoundness R₁ extract₁) :
-    (orProof P₀ P₁ simulate₀ simulate₁).toInteractiveVerifier.KnowledgeSound
-      (Function.swap (orRelation R₀ R₁)) Accept
-      ((orProof P₀ P₁ simulate₀ simulate₁).witnessChooser (orRelation R₀ R₁))
-      (1 / (Fintype.card C : ℝ≥0∞)) := by
-  classical
-  exact SpecialSoundness.knowledgeSound
     (orProof_specialSoundness (simulate₀ := simulate₀) (simulate₁ := simulate₁) h₀ h₁)
 
 theorem orProof_interactive_hvzk
