@@ -4720,6 +4720,7 @@ public import CslibFrontier.Crypto.Primitives.Hash.Keccak
 public import CslibFrontier.Crypto.Primitives.Hash.Sponge
 public import CslibFrontier.Crypto.Primitives.IdealCipher.Compression
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
+public import CslibFrontier.Crypto.Primitives.PRF.MultiKey
 public import CslibFrontier.Crypto.Primitives.PRG.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.Game
 public import CslibFrontier.Crypto.Primitives.PRG.NextBit
