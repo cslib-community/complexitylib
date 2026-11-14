@@ -341,7 +341,7 @@ private theorem rowDenomProd_poly {α : Type} {encIn : α ↪ List Bool} {r : α
     ComputableInPolyTime (fun a => rowDenomProd (r a)) encIn encNat := by
   have hbase : ComputableInPolyTime rowDenomProd (encList encRat) encNat := by
     unfold rowDenomProd
-    refine .of_tidy (ComputableTidilyInPolyTime.foldlWith_spec
+    refine (ComputableInPolyTime.foldlWith_spec
       (encP := encBool) (encA := encRat) (encB := encNat)
       (par := fun _ => false) (list := fun row => row) (init := fun _ => 1)
       (step := fun _ acc q => acc * q.den)
@@ -352,11 +352,7 @@ private theorem rowDenomProd_poly {α : Type} {encIn : α ↪ List Bool} {r : α
       (size := fun row => (encList encRat row).length + 1)
       (PolyBounded.self.add (.const 1))
       (fun row consumed state hpre hinv => ?_)).1
-    · have hden := (rat_den : ComputableInPolyTime Rat.den encRat encNat).tidy
-      exact ComputableTidilyInPolyTime.binary_mul.comp
-        (((ComputableTidilyInPolyTime.snd _ _).comp
-          (ComputableTidilyInPolyTime.fst _ _)).prod
-          (hden.comp (ComputableTidilyInPolyTime.snd _ _)))
+    · exact binary_mul' ((snd _ _).comp (fst _ _)) (rat_den.comp (snd _ _))
     · have hval : value.den ≤ 2 ^ (encRat value).length :=
         (den_lt_two_pow_length_encRat value).le
       have hlen : (encList encRat (consumed ++ [value])).length =
@@ -386,10 +382,8 @@ private theorem clearRow_poly {α : Type} {encIn : α ↪ List Bool} {r : α →
     unfold clearRow
     have hdiv : ComputableInPolyTime (fun p : List ℚ × ℚ => rowDenomProd p.1 / p.2.den)
         (encPair (encList encRat) encRat) encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.binary_div'
-        ((rowDenomProd_poly (fst (encList encRat) encRat)).tidy)
-        ((rat_den : ComputableInPolyTime Rat.den encRat encNat).tidy.comp
-          (ComputableTidilyInPolyTime.snd _ _)))
+      binary_div' (rowDenomProd_poly (fst (encList encRat) encRat))
+        (rat_den.comp (snd _ _))
     have hcast : ComputableInPolyTime Int.ofNat encNat encIntBin := intBin_natCast
     have hmul : ComputableInPolyTime
         (fun p : List ℚ × ℚ => p.2.num * Int.ofNat (rowDenomProd p.1 / p.2.den))
@@ -424,7 +418,7 @@ private theorem findPivotRow_base :
           decide (Cslib.rowEntry p.1.1.table.rows p.2 p.1.2 ≠ 0))
       (encPair (encPair BareissState.enc encUnary) encUnary) encBool := by
     fun_prop
-  exact .of_tidy (ComputableTidilyInPolyTime.findWithInput hr.tidy ht.tidy)
+  exact findWithInput hr ht
 
 private theorem findPivotRow_poly {α : Type} {encIn : α ↪ List Bool}
     {st : α → BareissState} {c : α → ℕ}
@@ -501,20 +495,17 @@ private theorem bareissElimCols_poly_of_bound {γ : Type} {encIn : γ ↪ List B
         (hrows.mul (((PolyBounded.const 2).mul hrows).add (.const 1)))).add (.const 1)
     have hpivCols := hrows.mul (((PolyBounded.const 2).mul hcols).add (.const 1))
     exact (htable.add (.const 1)).add (hpivDet.add (hpivRows.add hpivCols))
-  refine .of_tidy (ComputableTidilyInPolyTime.foldlWith_spec
+  refine (ComputableInPolyTime.foldlWith_spec
     (encP := encBool) (encA := encUnary) (encB := BareissState.enc)
     (par := fun _ => false) (list := fun x => List.range (colLimit x))
     (init := fun x => ⟨toTable x, 1, [], []⟩)
     (step := fun _ st c => bareissStep st c)
-    (.const false) (unary_range' hcolLimit).tidy
-    (by
-      have h0 : ComputableInPolyTime (fun x => (⟨toTable x, 1, [], []⟩ : BareissState))
-          encIn BareissState.enc := by fun_prop
-      exact h0.tidy)
+    (.const false) (unary_range' hcolLimit)
+    (by fun_prop)
     (bareissStep_poly
       ((ComputableInPolyTime.snd encBool BareissState.enc).comp
         (ComputableInPolyTime.fst (encPair encBool BareissState.enc) encUnary))
-      (ComputableInPolyTime.snd (encPair encBool BareissState.enc) encUnary)).tidy
+      (ComputableInPolyTime.snd (encPair encBool BareissState.enc) encUnary))
     (fun x consumed st =>
       ∃ k ≤ colLimit x, consumed = List.range k ∧ BareissInv (toTable x) k st)
     (fun x => ⟨0, Nat.zero_le _, rfl, bareissInv_init (hwf x)⟩)
@@ -812,7 +803,7 @@ theorem ratSolve_computableInPolyTime :
   have hno : ComputableInPolyTime
       (fun sys => LinearSolveResult.mk none (stOf sys).pivotRows (stOf sys).pivotCols)
       LinearSystemInput.enc LinearSolveResult.enc := by fun_prop
-  exact .of_tidy (ComputableTidilyInPolyTime.cond hcons.tidy hyes.tidy hno.tidy)
+  exact hcons.ite hyes hno
 
 end PolyTimeImpl
 

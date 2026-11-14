@@ -472,8 +472,8 @@ theorem computableInPolyTime_dominationGraph :
       computableInPolyTime_properEdges
   unfold dominationGraph
   exact encGraph_mk_polyTime
-    (of_tidy (ComputableTidilyInPolyTime.listAppend' hV.tidy hW.tidy))
-    (of_tidy (ComputableTidilyInPolyTime.listAppend' hEV.tidy hEW.tidy))
+    (listAppend' hV hW)
+    (listAppend' hEV hEW)
 
 /-- The reduction `toDominatingSet` is polynomial-time: the binary target is compared with the
 number of distinct declared vertices, computed in unary. -/
