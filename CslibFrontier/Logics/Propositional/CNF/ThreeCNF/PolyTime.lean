@@ -16,7 +16,7 @@ import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
-import Mathlib.Data.List.GetD
+import CslibFrontier.Foundations.Data.List.EmitChain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
@@ -54,36 +54,18 @@ private theorem splitAux_eq_map (fresh : ℕ → W) (j : ℕ) (carry : Literal W
           (fresh (j + i), true)]) ++
       [(if rest.length - 2 = 0 then carry else (fresh (j + (rest.length - 2 - 1)), false)) ::
         rest.drop (rest.length - 2)] := by
-  induction j, carry, rest using Clause.splitAux.induct fresh with
-  | case1 j carry b c d rest ih =>
-    rw [Clause.splitAux, ih]
-    have htwo : (c :: d :: rest).length - 2 = rest.length := by
-      simp [Nat.add_assoc]
-    have hthree : (b :: c :: d :: rest).length - 2 = rest.length + 1 := by
-      simp [Nat.add_assoc]
-    simp only [htwo, hthree, List.range_succ_eq_map, List.map_cons, List.map_map,
-      Function.comp_def, ite_true, List.getD_cons_zero, Nat.add_zero, List.cons_append,
-      List.drop_succ_cons, Nat.succ_ne_zero, ite_false, Nat.add_one_sub_one]
-    congr 1
-    have hcarry (i : ℕ) :
-        (if i = 0 then (fresh j, false) else (fresh (j + 1 + (i - 1)), false)) =
-          (fresh (j + i), false) := by
-      cases i <;> simp [Nat.add_comm, Nat.add_left_comm]
-    apply congrArg₂ List.append
-    · apply List.map_congr_left
-      intro i hi
-      have hi' : i < (c :: d :: rest).length := by
-        simp only [List.mem_range] at hi
-        simp only [List.length_cons]
-        lia
-      rw [hcarry i, List.getD_cons_succ, List.getD_eq_getElem _ _ hi',
-        List.getD_eq_getElem _ _ hi']
-      simp [Nat.add_right_comm, Nat.add_assoc]
-    · rw [hcarry]
-  | case2 j carry rest hrest =>
-    match rest, hrest with
-    | [], _ | [_], _ | [_, _], _ => simp [Clause.splitAux]
-    | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
+  have h := List.eq_flatMap_range_of_emit (Clause.splitAux fresh)
+    (fun j => (fresh j, false)) (fun j u v => [[u, v, (fresh j, true)]])
+    (fun carry rest => [carry :: rest]) 2
+    (fun j carry rest hs => by
+      match rest with
+      | [] | [_] | [_, _] => rfl
+      | _ :: _ :: _ :: _ => simp only [List.length_cons] at hs; omega)
+    (fun j carry b rest hs => by
+      match rest with
+      | [] | [_] => simp only [List.length_cons, List.length_nil] at hs; omega
+      | _ :: _ :: _ => rfl) j carry rest
+  simpa only [← List.map_eq_flatMap] using h
 
 /-- Split a clause tail with a certified fresh-variable routine and runtime chain index. -/
 @[fun_prop]
