@@ -6,7 +6,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 
 ## Reading map
 
-- [RAM variants](ram-variants.md): unbounded natural registers, unit/logarithmic cost, generic partial operations, exact real/prime-field arithmetic and native representation obligations.
+- [RAM variants and pointer machines](ram-variants.md): unbounded natural registers, unit/logarithmic cost, generic partial operations, exact real/prime-field arithmetic, allocating pointer machines, and native representation obligations.
 - [Word-RAM and proved bridges](wordram-and-bridges.md): instruction semantics, uniformity, output conventions, randomized execution, expected time, and actual Turing simulations.
 - [Memory and state-transition specifications](memory-specifications.md): relational adaptive clients, refinement, amortization, memory charges, native callable contracts, framing and traces.
 - [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, splay-tree amortized bounds (balance, static optimality, static finger, working set), Count-Min and native streaming folds.
@@ -29,6 +29,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 
 | Layer | Model or interface | Cost convention |
 |---|---|---|
+| Machine | Allocating pointer machine with pointer/data registers and linked records | One unit per instruction; space counts records; valid inputs and total undefined-data semantics |
 | Machine | Natural RAM extending URM registers | Unit cost or separately specified bit-length/logarithmic cost |
 | Machine schema | `GenericRAM.Model` | One step per instruction; partial operation, address, control and admissibility checks |
 | Machine instances | Tagged exact real / prime-field RAM | Unit-cost exact field operations plus bounded natural-word addresses |

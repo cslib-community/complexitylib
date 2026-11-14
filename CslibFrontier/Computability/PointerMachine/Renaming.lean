@@ -7,7 +7,7 @@ Authors: Stefan Langerman
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PointerMachine.Abstract
+public import CslibFrontier.Computability.PointerMachine.Defs
 public import Mathlib.Logic.Equiv.Defs
 
 /-!
@@ -15,9 +15,19 @@ public import Mathlib.Logic.Equiv.Defs
 
 A permutation of the data which commutes with the primitives of the model commutes with
 execution. Pointers, control and cost are unchanged.
+
+## Main definitions
+
+* `Model.Renaming`: compatible data permutations, with identity, inverse and composition.
+* `State.rename`: apply a data permutation to registers and records.
+
+## Main results
+
+* `State.rename_symm`: inverse renaming recovers the state.
+* `Executes.rename_iff`: preservation and reflection of successful runs with exact cost.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PointerMachine
 
@@ -34,13 +44,52 @@ structure Model.Renaming (M : Model) where
   /-- Predicates are invariant under the permutation. -/
   test : ∀ p a b, M.evalTest p (value a) (value b) = M.evalTest p a b
 
+/-- The identity data renaming. -/
+@[expose] def Model.Renaming.refl (M : Model) : M.Renaming where
+  value := Equiv.refl _
+  undefined := rfl
+  op := fun _ _ _ => rfl
+  test := fun _ _ _ => rfl
+
+/-- The inverse of a data renaming. -/
+@[expose] def Model.Renaming.symm (ρ : M.Renaming) : M.Renaming where
+  value := ρ.value.symm
+  undefined := by rw [Equiv.symm_apply_eq, ρ.undefined]
+  op := by
+    intro o a b
+    apply ρ.value.injective
+    simpa using (ρ.op o (ρ.value.symm a) (ρ.value.symm b)).symm
+  test := by
+    intro p a b
+    simpa using (ρ.test p (ρ.value.symm a) (ρ.value.symm b)).symm
+
+/-- Apply one data renaming and then another. -/
+@[expose] def Model.Renaming.trans (ρ τ : M.Renaming) : M.Renaming where
+  value := ρ.value.trans τ.value
+  undefined := by simp [ρ.undefined, τ.undefined]
+  op := by intro o a b; simp [τ.op, ρ.op]
+  test := by intro p a b; simp [τ.test, ρ.test]
+
 /-- Rename the data fields of a record. -/
-def Record.rename (ρ : M.Renaming) (n : Record M L) : Record M L :=
+@[expose] def Record.rename (ρ : M.Renaming) (n : Record M L) : Record M L :=
   { n with data := ρ.value ∘ n.data }
 
 /-- Rename all data of a state. -/
-def State.rename (ρ : M.Renaming) (x : State M L) : State M L :=
+@[expose] def State.rename (ρ : M.Renaming) (x : State M L) : State M L :=
   { x with data := ρ.value ∘ x.data, heap := x.heap.map (Record.rename ρ) }
+
+/-- Undo a data renaming. -/
+@[simp] theorem State.rename_symm (ρ : M.Renaming) (x : State M L) :
+    (x.rename ρ).rename ρ.symm = x := by
+  have hr : (Record.rename ρ.symm ∘ Record.rename ρ : Record M L → Record M L) = id := by
+    funext n
+    cases n
+    simp [Record.rename, Model.Renaming.symm, Function.comp_def]
+  cases x
+  simp only [State.rename, List.map_map, hr, List.map_id]
+  congr 1
+  funext s
+  exact ρ.value.symm_apply_apply _
 
 /-- Instructions commute with renaming. -/
 theorem Instr.effect_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
@@ -90,18 +139,13 @@ theorem step_rename (ρ : M.Renaming) (code : List (Instr M L)) (x : State M L) 
   rw [hpc]
   cases code[x.pc]? with
   | none => rfl
-  | some i => cases i <;> simp [Instr.effect_rename, Instr.next_rename] <;> rfl
+  | some i => cases i <;> simp only [Instr.effect_rename, Instr.next_rename] <;> rfl
 
 /-- Renaming changes neither a run's control flow nor its instruction count. -/
 theorem Runs.rename (ρ : M.Renaming) {code : List (Instr M L)}
     {x y : State M L} {n : ℕ} (h : Runs code x y n) :
     Runs code (x.rename ρ) (y.rename ρ) n := by
-  induction h with
-  | refl => exact .refl _
-  | tail _ _ _ _ hxy ih =>
-    apply Relation.RelatesInSteps.tail _ _ _ _ ih
-    rw [step_rename, hxy]
-    rfl
+  exact h.map (State.rename ρ) fun a b hab => by rw [step_rename, hab]; rfl
 
 /-- Successful executions are invariant under renaming, with the same cost. -/
 theorem Executes.rename (ρ : M.Renaming) {code : List (Instr M L)}
@@ -109,5 +153,11 @@ theorem Executes.rename (ρ : M.Renaming) {code : List (Instr M L)}
     Executes code (x.rename ρ) (y.rename ρ) n := by
   obtain ⟨m, hr, hh, hn⟩ := h
   exact ⟨m, hr.rename ρ, hh, hn⟩
+
+/-- Data renaming preserves and reflects successful execution at the same cost. -/
+theorem Executes.rename_iff (ρ : M.Renaming) {code : List (Instr M L)}
+    {x y : State M L} {n : ℕ} :
+    Executes code (x.rename ρ) (y.rename ρ) n ↔ Executes code x y n :=
+  ⟨fun h => by simpa using h.rename ρ.symm, fun h => h.rename ρ⟩
 
 end Cslib.PointerMachine

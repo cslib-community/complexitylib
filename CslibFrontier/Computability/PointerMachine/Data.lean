@@ -15,20 +15,28 @@ public import CslibFrontier.Computability.PointerMachine.Basic
 A predicate on data that holds of the undefined value and is closed under the operations of the
 model is preserved by execution. This separates a general data basis from restricted ones such
 as equality-only symbols.
+
+## Main definitions
+
+* `Model.Closed`, `State.DataValid`: closed data predicates and their state invariant.
+
+## Main results
+
+* `Runs.dataValid`, `Executes.dataValid`: preservation through runs and halting executions.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PointerMachine
 
 variable {M : Model} {L : Layout}
 
 /-- A predicate on data which holds of `undefined` and is closed under every operation. -/
-def Model.Closed (M : Model) (P : M.Value → Prop) : Prop :=
+@[expose] def Model.Closed (M : Model) (P : M.Value → Prop) : Prop :=
   P M.undefined ∧ ∀ o a b, P a → P b → P (M.evalOp o a b)
 
 /-- All data in registers and records satisfy a predicate. -/
-def State.DataValid (x : State M L) (P : M.Value → Prop) : Prop :=
+@[expose] def State.DataValid (x : State M L) (P : M.Value → Prop) : Prop :=
   (∀ s, P (x.data s)) ∧ ∀ n ∈ x.heap, ∀ f, P (n.data f)
 
 /-- Closed predicates on data survive every instruction. -/
@@ -77,5 +85,12 @@ theorem Runs.dataValid {P : M.Value → Prop} (closed : M.Closed P)
   | tail _ _ _ _ hxy ih =>
     obtain ⟨i, -, -, rfl⟩ := step_eq_some_iff.mp hxy
     exact i.effect_dataValid closed ih
+
+/-- Closed data predicates survive successful execution. -/
+theorem Executes.dataValid {P : M.Value → Prop} (closed : M.Closed P)
+    {code : List (Instr M L)} {x y : State M L} {time : ℕ}
+    (h : Executes code x y time) (hx : x.DataValid P) : y.DataValid P := by
+  obtain ⟨n, hr, -, -⟩ := h
+  exact hr.dataValid closed hx
 
 end Cslib.PointerMachine

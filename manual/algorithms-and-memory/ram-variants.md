@@ -1,4 +1,4 @@
-# Natural, generic, and exact algebraic RAM
+# RAM variants and allocating pointer machines
 
 ## Unbounded natural registers
 
@@ -36,7 +36,7 @@ The local documentation maps the real instance to Erickson–van der Hoog–Milt
 
 ## Allocating pointer-machine foundation
 
-Import `CslibFrontier.Computability.PointerMachine.Abstract` for `Cslib.PointerMachine`.
+Import `CslibFrontier.Computability.PointerMachine.Defs` for `Cslib.PointerMachine`.
 That file is the whole model and contains no proofs. `PointerMachine.Basic` supplies
 invariants and resource bounds.
 
@@ -62,7 +62,7 @@ labels are zero-based. `step` is undefined at `halt` and outside the program;
 
 `State.Valid` requires every nonnull pointer in a register or record to specify a
 record. It allows cycles, sharing and unreachable records. Applications supply valid
-input states, with preparation cost separate; `Runs.valid` preserves the hypothesis.
+input states, with preparation cost separate; `Runs.valid` and `Executes.valid` preserve the hypothesis.
 Outside valid states a pointer that specifies no record acts like null until a
 later creation gives it one; `Instr.create_fresh` shows that in a valid state no
 register or record already holds the pointer that `create` returns.
@@ -70,23 +70,23 @@ register or record already holds the pointer that `create` returns.
 `Runs` reuses CSLib's `Relation.RelatesInSteps`; `Executes` also charges the final halt.
 Each instruction costs one unit, including a data primitive or a creation.
 Space is `heap.length`: initial records plus creations, including unreachable
-records. There is no deletion or garbage collection. `Runs.length_le` bounds
+records. There is no deletion or garbage collection. `Runs.length_le` (or `Executes.length_le` for a halting run) bounds
 space by initial records plus instructions executed. These are instruction
 and record measures, not bit-time, bit-space, or host allocation costs. Changing the
 primitives changes what one instruction can accomplish.
 
 `PointerMachine.Data` shows that a predicate on data which holds of `undefined` and is
-closed under the operations is preserved by execution. `PointerMachine.Renaming` shows
-that a permutation of the data commuting with the primitives commutes with execution,
+closed under the operations is preserved by execution. `PointerMachine.Renaming` supplies identity, inverse and composition of data renamings.
+`Executes.rename_iff` shows that a permutation of the data commuting with the primitives commutes with execution,
 with the same cost.
 
 For symbols, the carrier type alone does not establish opacity: an operation from
 symbols to integers would reveal an encoding. The protected-symbol instance
 is `Symbols.model` from `CslibFrontier.Computability.PointerMachine.Symbols`.
 Its values are undefined, a symbol or an integer. It supplies equality of data,
-integer addition and subtraction, and integer order; arithmetic on a symbol returns
+integer constants, addition and subtraction, and integer order; arithmetic on a symbol returns
 `undefined`. Abstract symbols and integer counters can therefore coexist in one
-record, as they do in Tarjan's weighted-union example. `Symbols.hasSymbol_of_runs`
+record, as they do in Tarjan's weighted-union example. `Symbols.hasSymbol_of_executes`
 and `Symbols.symbolRenaming` state that programs neither produce symbols nor tell
 them apart except by equality.
 
@@ -94,7 +94,9 @@ After the [standard setup](../workflows/getting-started.md), check the
 [clients](../../CslibFrontierTests/PointerMachine.lean) with
 `lake build CslibFrontierTests.PointerMachine --wfail --iofail`.
 They run one program on symbols, integers and pointers with exact instruction
-accounting, and cover null access, new records and invalid pointers. The clients
+accounting, initialize integer fields from reset data registers, and chase parent links in a
+loop using pointer equality and copying. They also cover null access, new records and invalid
+pointers. The clients
 are model examples, not a verified union-find implementation or lower bound.
 
 GenericRAM was assessed for reuse: its `evalOp` receives only register operands and
@@ -106,7 +108,8 @@ instruction semantics while reusing the common exact-step relation and its resou
 lemma. A common control engine or certified GenericRAM lowering would need a separate
 semantic preservation argument.
 
-The source is [Tarjan 1979](https://doi.org/10.1016/0022-0000(79)90042-4),
+The sources are [Tarjan 1977](../sources.md#tarjan77), §2, pp. 4–7, and
+[Tarjan 1979](../sources.md#tarjan79),
 §2, pp. 111–112: separate data and pointer registers and fields, identical records,
 access by explicit reference only, binary data operations and predicates, record
 creation, null access doing nothing, a final halt, and one unit per instruction.
@@ -114,8 +117,13 @@ The formalization differs in four ways. Labels start at zero, and running past t
 last instruction is not a successful halt. The source fills every field of a new
 record with a special undefined value; here pointer fields are null and only data
 fields are undefined. The source has a built-in equality test on data; here equality
-is a predicate the model may supply. The source does not say what an operation does
-on undefined data; here the model decides. No claim of a step-exact translation of
+is a predicate the model may supply. Tarjan halts on an attempted use of an undefined register or field, while allowing it to
+be overwritten. This model instead permits reads of null initial pointer fields and treats
+undefined data through total, model-chosen operations and predicates. For example,
+`Symbols.evalTest .eq .undefined .undefined` is true. This is a semantic relaxation, not
+a proved equivalence: source-faithful upper-bound programs must initialize slots before
+reading them. Transferring a lower bound also requires a correspondence argument; none
+is supplied here. No claim of a step-exact translation of
 every source program, or of equivalence with pure atomistic SMM/KUM models, is made.
 
 Tarjan's union-find application adds assumptions (3.1)–(3.5), pp. 113–114. Element and

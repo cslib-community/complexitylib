@@ -702,13 +702,8 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 ## Machines, RAM and data structures
 
-- **General pointer machines:** develop a Tarjan-style foundation with opaque references,
-  fixed-format records/registers, explicit data-operation signatures, protected
-  symbols, fresh allocation, provenance and instruction/record resource accounting.
-  Establish invariance under reordering the heap, the source-program correspondence
-  and any claimed RAM simulation, keeping
-  union-find separation and invocation assumptions distinct from the general model;
-  see the [model discussion](manual/algorithms-and-memory/ram-variants.md#allocating-pointer-machine-foundation).
+- **Pointer machines and disjoint sets** ([#5441](https://github.com/cslib-community/cslib-frontier/issues/5441)): Prove injective heap simulation with allocation, separation/locality, and source-program correspondence accounting for undefined-value traps and invocation conventions.
+  Establish certified machine simulations and native union-find algorithms and lower bounds with explicit symbol-opacity and set-separation assumptions.
 
 - **Efficient universal simulation** ([#800](https://github.com/cslib-community/cslib-frontier/issues/800)): A universal function that runs in time `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D` and largest input symbol `M`, with a storage bound in terms of the simulated machine's space rather than its time.
   Both a clocked form and an unclocked form that runs until the simulated machine halts are in scope.

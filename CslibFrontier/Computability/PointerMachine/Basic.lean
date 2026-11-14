@@ -7,23 +7,29 @@ Authors: Stefan Langerman
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PointerMachine.Abstract
+public import CslibFrontier.Computability.PointerMachine.Defs
 
 /-!
 # Pointer-machine invariants
 
 Validity, pointer provenance, allocation freshness, determinism and the space bound.
-The model itself is defined in `Abstract`.
+The model itself is defined in `Defs`.
+
+## Main results
+
+* `Executes.valid`, `Executes.length_le`: validity and record-space bounds for halting runs.
+* `Executes.unique`: uniqueness of the final state and instruction count.
+* `Instr.effect_provenance`, `Instr.effect_heap_provenance`: register and heap-edge provenance.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PointerMachine
 
 variable {M : Model} {L : Layout}
 
 /-- No records, null pointer registers and undefined data registers. -/
-def State.empty : State M L := ⟨0, fun _ => none, fun _ => M.undefined, []⟩
+@[expose] def State.empty : State M L := ⟨0, fun _ => none, fun _ => M.undefined, []⟩
 
 /-- The empty state is valid. -/
 theorem State.empty_valid : (State.empty : State M L).Valid := by
@@ -147,6 +153,37 @@ theorem Instr.effect_provenance {i : Instr M L} {x : State M L} {r : Fin L.ptrRe
     try simp only [Function.update_apply] at ha
     grind
 
+/-- Every nonnull pointer stored in a record after an instruction was previously in a
+register or a record. Allocation itself only puts null pointers in the new record. -/
+theorem Instr.effect_heap_provenance {i : Instr M L} {x : State M L}
+    {n : Record M L} (hn : n ∈ (i.effect x).heap) {f : Fin L.ptrFields} {a : ℕ}
+    (ha : n.ptr f = some a) :
+    (∃ r, x.ptr r = some a) ∨ ∃ m ∈ x.heap, ∃ g, m.ptr g = some a := by
+  have old {m : Record M L} (hm : m ∈ x.heap) {g : Fin L.ptrFields}
+      (hg : m.ptr g = some a) :
+      (∃ r, x.ptr r = some a) ∨ ∃ m ∈ x.heap, ∃ g, m.ptr g = some a :=
+    .inr ⟨m, hm, g, hg⟩
+  cases i <;> simp only [Instr.effect] at hn
+  case loadPtr r f base | loadData s f base =>
+    cases he : x.deref base <;> simp only [he, Option.elim] at hn <;> exact old hn ha
+  case storePtr g base r =>
+    rcases State.mem_heap_modify hn with hm | ⟨m, hm, rfl⟩
+    · exact old hm ha
+    · simp only [Function.update_apply] at ha
+      split_ifs at ha
+      · exact .inl ⟨r, ha⟩
+      · exact old hm ha
+  case storeData g base s =>
+    rcases State.mem_heap_modify hn with hm | ⟨m, hm, rfl⟩
+    · exact old hm ha
+    · exact old hm ha
+  case create r =>
+    rcases List.mem_append.mp hn with hm | hm
+    · exact old hm ha
+    · rw [List.mem_singleton.mp hm] at ha
+      cases ha
+  all_goals exact old hn ha
+
 /-- In a valid state, `create` returns a pointer that no register or record held. -/
 theorem Instr.create_fresh {x : State M L} (hx : x.Valid) {r : Fin L.ptrRegs} :
     ((Instr.create r).effect x).ptr r = some x.heap.length ∧
@@ -196,5 +233,51 @@ theorem Runs.length_le {code : List (Instr M L)} {x y : State M L} {n : ℕ}
 theorem step_deterministic {code : List (Instr M L)} {x y z : State M L}
     (hy : step code x = some y) (hz : step code x = some z) : y = z :=
   Option.some.inj (hy.symm.trans hz)
+
+/-- Successful execution preserves validity. -/
+theorem Executes.valid {code : List (Instr M L)} {x y : State M L} {time : ℕ}
+    (h : Executes code x y time) (hx : x.Valid) : y.Valid := by
+  obtain ⟨n, hr, -, -⟩ := h
+  exact hr.valid hx
+
+/-- Space is bounded by the initial heap plus nonhalting instructions. -/
+theorem Executes.length_le {code : List (Instr M L)} {x y : State M L} {time : ℕ}
+    (h : Executes code x y time) : y.heap.length ≤ x.heap.length + (time - 1) := by
+  obtain ⟨n, hr, -, rfl⟩ := h
+  simpa using hr.length_le
+
+/-- Runs with the same initial state and number of steps have the same final state. -/
+theorem Runs.deterministic {code : List (Instr M L)} {x y z : State M L} {n : ℕ}
+    (h : Runs code x y n) (h' : Runs code x z n) : y = z := by
+  induction h generalizing z with
+  | refl => exact h'.zero
+  | tail _ _ _ _ hs ih =>
+    obtain ⟨z', hr, hz⟩ := h'.succ
+    cases ih hr
+    exact step_deterministic hs hz
+
+/-- Successful execution determines both the final state and the instruction count. -/
+theorem Executes.unique {code : List (Instr M L)} {x y z : State M L} {t u : ℕ}
+    (h : Executes code x y t) (h' : Executes code x z u) : y = z ∧ t = u := by
+  obtain ⟨n, hr, hh, rfl⟩ := h
+  obtain ⟨m, hr', hh', rfl⟩ := h'
+  suffices y = z ∧ n = m by grind
+  induction hr using Relation.RelatesInSteps.head_induction_on generalizing m with
+  | hrefl =>
+    cases m with
+    | zero => exact ⟨hr'.zero, rfl⟩
+    | succ m =>
+      obtain ⟨w, hw, -⟩ := hr'.succ'
+      simp [step, hh] at hw
+  | hhead hs hr ih =>
+    cases m with
+    | zero =>
+      cases hr'.zero
+      simp [step, hh'] at hs
+    | succ m =>
+      obtain ⟨w, hw, hw'⟩ := hr'.succ'
+      cases step_deterministic hs hw
+      obtain ⟨rfl, rfl⟩ := ih m hw'
+      exact ⟨rfl, rfl⟩
 
 end Cslib.PointerMachine

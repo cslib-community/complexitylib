@@ -5,7 +5,6 @@ Authors: Stefan Langerman
 -/
 
 module
--- upstream: candidate
 
 import CslibFrontier.Computability.PointerMachine.Symbols
 import Mathlib.Tactic.FinCases
@@ -31,48 +30,48 @@ private abbrev layout : Layout := ⟨3, 2, 1, 2⟩
 private abbrev S := State (Symbols.model Name) layout
 
 private def initial : S :=
-  (State.empty.setData 0 (Symbols.Value.symbol Name.oak)).setData 1 (Symbols.Value.int 3)
+  State.empty.setData 0 (Symbols.Value.symbol Name.oak)
 
 private def code : List (Instr (Symbols.model Name) layout) :=
-  [.create 0, .create 1, .storePtr 0 0 1,   -- record 0 links to record 1
+  [.op (.const 3) 1 1 1, .create 0, .create 1, .storePtr 0 0 1,   -- record 0 links to record 1
    .storeData 0 1 0,                        -- record 1 holds the symbol
    .op .add 1 1 1, .storeData 1 1 1,        -- and the integer 3 + 3
    .null 1, .loadPtr 2 0 0,                 -- reach record 1 through the link only
    .moveData 0 1, .loadData 0 0 2,          -- overwrite the symbol, then read it back
-   .ifTest .eq 0 0 12, .goto 99, .halt]
+   .ifTest .eq 0 0 13, .goto 99, .halt]
 
 /-- The state after `n` steps. -/
 private def state : ℕ → S
   | 0 => initial
   | n + 1 => (step code (state n)).getD (state n)
 
-private theorem transition (n : Fin 11) : step code (state n) = some (state (n + 1)) := by
+private theorem transition (n : Fin 12) : step code (state n) = some (state (n + 1)) := by
   fin_cases n <;> rfl
 
-private theorem execution : Executes code initial (state 11) 12 := by
-  refine ⟨11, ?_, by rfl, rfl⟩
-  have run (n : ℕ) (hn : n ≤ 11) : Runs code initial (state n) n := by
+private theorem execution : Executes code initial (state 12) 13 := by
+  refine ⟨12, ?_, by rfl, rfl⟩
+  have run (n : ℕ) (hn : n ≤ 12) : Runs code initial (state n) n := by
     induction n with
     | zero => exact .refl _
     | succ n ih => exact .tail _ _ _ _ (ih (by omega)) (transition ⟨n, by omega⟩)
-  exact run 11 le_rfl
+  exact run 12 le_rfl
 
 -- The output: the symbol read back, the sum, the link, and two records of space.
-example : (state 11).data 0 = Symbols.Value.symbol Name.oak := by rfl
-example : (state 11).data 1 = Symbols.Value.int 6 := by rfl
-example : (state 11).ptr 0 = some 0 ∧ (state 11).ptr 1 = none ∧ (state 11).ptr 2 = some 1 := by
+example : (state 12).data 0 = Symbols.Value.symbol Name.oak := by rfl
+example : (state 12).data 1 = Symbols.Value.int 6 := by rfl
+example : (state 12).ptr 0 = some 0 ∧ (state 12).ptr 1 = none ∧ (state 12).ptr 2 = some 1 := by
   refine ⟨?_, ?_, ?_⟩ <;> rfl
-example : (state 11).heap.length = 2 := by rfl
+example : (state 12).heap.length = 2 := by rfl
 
 -- The same program and cost work after swapping the two names; integers are fixed.
 example : Executes code
     (initial.rename (Symbols.symbolRenaming (Equiv.swap Name.oak Name.ash)))
-    ((state 11).rename (Symbols.symbolRenaming (Equiv.swap Name.oak Name.ash))) 12 :=
-  execution.rename _
+    ((state 12).rename (Symbols.symbolRenaming (Equiv.swap Name.oak Name.ash))) 13 :=
+  (Executes.rename_iff _).2 execution
 
 -- No symbol appears that was not in the input.
-example : ¬Symbols.HasSymbol (state 11) Name.ash := fun h => by
-  rcases Symbols.hasSymbol_of_runs execution.choose_spec.1 h with ⟨s, hs⟩ | ⟨n, hn, -⟩
+example : ¬Symbols.HasSymbol (state 12) Name.ash := fun h => by
+  rcases Symbols.hasSymbol_of_executes execution h with ⟨s, hs⟩ | ⟨n, hn, -⟩
   · fin_cases s <;> simp [initial, State.setData, State.empty] at hs
   · simp [initial, State.setData, State.empty] at hn
 
@@ -90,7 +89,7 @@ example : ((Instr.create 0).effect initial).deref 0 = some .blank := rfl
 example : ¬({ initial with ptr := fun _ => some 0 } : S).Valid := by
   simp [State.Valid, initial, State.setData, State.empty, layout]
 
-example : (state 11).Valid := execution.choose_spec.1.valid State.empty_valid
+example : (state 12).Valid := execution.valid State.empty_valid
 
 -- Access through a pointer that specifies no record also does nothing.
 example : (Instr.loadPtr 1 0 0).effect ({ initial with ptr := fun _ => some 0 } : S) =
@@ -100,3 +99,40 @@ example : (Instr.loadPtr 1 0 0).effect ({ initial with ptr := fun _ => some 0 } 
 private def pureModel : Model := ⟨Unit, (), Empty, Empty, nofun, nofun⟩
 
 example : ((Instr.create 0).effect (.empty : State pureModel ⟨1, 0, 2, 0⟩)).heap.length = 1 := rfl
+
+-- A reset data bank can construct a nonzero integer without a preseeded constant.
+example : ((Instr.op (Symbols.Op.const 1) 0 0 0).effect
+    (State.empty : S)).data 0 = Symbols.Value.int 1 := rfl
+
+-- Initialize the size field of a newly allocated record to one.
+example : (((Instr.storeData 0 0 0).effect
+    ((Instr.op (Symbols.Op.const 1) 0 0 0).effect
+      ((Instr.create 0).effect (State.empty : S)))).deref 0).map (fun n => n.data 0) =
+    some (Symbols.Value.int 1) := rfl
+
+-- Chase two parent links, retaining the last nonnull pointer in register 1.
+private abbrev chaseLayout : Layout := ⟨3, 0, 1, 0⟩
+private abbrev ChaseState := State pureModel chaseLayout
+private def chaseInput : ChaseState :=
+  ⟨0, (fun r => if r = 0 then some 0 else none), nofun,
+    [⟨fun _ => some 1, nofun⟩, ⟨fun _ => none, nofun⟩]⟩
+private def chaseCode : List (Instr pureModel chaseLayout) :=
+  [.ifPtrEq 0 2 4, .movePtr 1 0, .loadPtr 0 0 0, .goto 0, .halt]
+private def chaseState : ℕ → ChaseState
+  | 0 => chaseInput
+  | n + 1 => (step chaseCode (chaseState n)).getD (chaseState n)
+private theorem chaseTransition (n : Fin 9) :
+    step chaseCode (chaseState n) = some (chaseState (n + 1)) := by
+  fin_cases n <;> rfl
+private theorem chaseExecution : Executes chaseCode chaseInput (chaseState 9) 10 := by
+  refine ⟨9, ?_, rfl, rfl⟩
+  have run (n : ℕ) (hn : n ≤ 9) : Runs chaseCode chaseInput (chaseState n) n := by
+    induction n with
+    | zero => exact .refl _
+    | succ n ih => exact .tail _ _ _ _ (ih (by omega)) (chaseTransition ⟨n, by omega⟩)
+  exact run 9 le_rfl
+example : (chaseState 9).ptr 0 = none ∧ (chaseState 9).ptr 1 = some 1 := ⟨rfl, rfl⟩
+example {y : ChaseState} {t : ℕ} (h : Executes chaseCode chaseInput y t) :
+    y = chaseState 9 ∧ t = 10 := h.unique chaseExecution
+example : (chaseState 9).heap.length ≤ chaseInput.heap.length + (10 - 1) :=
+  chaseExecution.length_le

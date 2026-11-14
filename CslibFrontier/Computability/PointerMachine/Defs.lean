@@ -18,6 +18,8 @@ The pointer machine of [Tarjan1979], §2: finitely many registers and an expanda
 records with identical fields. Registers and fields hold either pointers or data. Memory is
 reached only by following a pointer held in a register; no instruction computes on pointers.
 
+## Main definitions
+
 This file contains the whole model and no proofs:
 
 * `Model`: the data and the operations and predicates allowed on them.
@@ -31,14 +33,21 @@ Space is `State.heap.length`, the number of records.
 ## Differences from the source
 
 * Labels start at zero. Running past the last instruction is not a successful halt.
-* A new record's pointer fields are null. The source's *undefined* is kept for data only.
+* The source halts on using an undefined register or field. Here new pointer fields are null
+  and data operations/predicates are total, including on `undefined`. Source-faithful programs
+  must initialize before reading; no transfer theorem is proved.
 * Equality of data is a predicate the `Model` may supply, not a separate instruction.
 * Pointers are positions in the list of records, but no instruction takes or returns a position.
 
 Invariants are in `Basic`, data invariants in `Data` and `Renaming`, and symbols in `Symbols`.
+
+## References
+
+[Tarjan1977], §2, and [Tarjan1979], §2. The total semantics here relax the source’s
+undefined-value traps; see the differences above.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PointerMachine
 
@@ -94,7 +103,7 @@ structure State (M : Model) (L : Layout) where
 /-- A state is valid if every nonnull pointer in a register or in a record specifies a record.
 States are meant to be valid, and execution keeps them so (`Runs.valid` in `Basic`). In other
 states a pointer that specifies no record acts like null until a later `create` gives it one. -/
-def State.Valid (x : State M L) : Prop :=
+@[expose] def State.Valid (x : State M L) : Prop :=
   (∀ r a, x.ptr r = some a → a < x.heap.length) ∧
   ∀ n ∈ x.heap, ∀ f a, n.ptr f = some a → a < x.heap.length
 
@@ -130,24 +139,25 @@ inductive Instr (M : Model) (L : Layout) where
   | halt
 
 /-- A new record: null pointers and undefined data. -/
-def Record.blank : Record M L := ⟨fun _ => none, fun _ => M.undefined⟩
+@[expose] def Record.blank : Record M L := ⟨fun _ => none, fun _ => M.undefined⟩
 
 namespace State
 
 /-- Place a pointer in register `r`. -/
-def setPtr (x : State M L) (r : Fin L.ptrRegs) (p : Pointer) : State M L :=
+@[expose] def setPtr (x : State M L) (r : Fin L.ptrRegs) (p : Pointer) : State M L :=
   { x with ptr := Function.update x.ptr r p }
 
 /-- Place a datum in register `s`. -/
-def setData (x : State M L) (s : Fin L.dataRegs) (v : M.Value) : State M L :=
+@[expose] def setData (x : State M L) (s : Fin L.dataRegs) (v : M.Value) : State M L :=
   { x with data := Function.update x.data s v }
 
 /-- The record specified by the contents of `r`, if any. -/
-def deref (x : State M L) (r : Fin L.ptrRegs) : Option (Record M L) :=
+@[expose] def deref (x : State M L) (r : Fin L.ptrRegs) : Option (Record M L) :=
   (x.ptr r).bind (x.heap[·]?)
 
 /-- Change the record specified by the contents of `r`, if any. -/
-def modify (x : State M L) (r : Fin L.ptrRegs) (g : Record M L → Record M L) : State M L :=
+@[expose] def modify (x : State M L) (r : Fin L.ptrRegs)
+    (g : Record M L → Record M L) : State M L :=
   match x.ptr r with
   | none => x
   | some a => { x with heap := x.heap.modify a g }
@@ -155,7 +165,7 @@ def modify (x : State M L) (r : Fin L.ptrRegs) (g : Record M L → Record M L) :
 end State
 
 /-- The effect of an instruction on registers and records. -/
-def Instr.effect (x : State M L) : Instr M L → State M L
+@[expose] def Instr.effect (x : State M L) : Instr M L → State M L
   | .null r => x.setPtr r none
   | .movePtr r r' => x.setPtr r (x.ptr r')
   | .moveData s s' => x.setData s (x.data s')
@@ -170,14 +180,14 @@ def Instr.effect (x : State M L) : Instr M L → State M L
   | .goto _ | .ifPtrEq .. | .ifTest .. | .halt => x
 
 /-- The label of the instruction executed after this one. -/
-def Instr.next (x : State M L) : Instr M L → ℕ
+@[expose] def Instr.next (x : State M L) : Instr M L → ℕ
   | .goto label => label
   | .ifPtrEq r₁ r₂ label => if x.ptr r₁ = x.ptr r₂ then label else x.pc + 1
   | .ifTest p s₁ s₂ label => if M.evalTest p (x.data s₁) (x.data s₂) then label else x.pc + 1
   | _ => x.pc + 1
 
 /-- Execute one instruction. There is no step from a `halt` or from outside the program. -/
-def step (code : List (Instr M L)) (x : State M L) : Option (State M L) :=
+@[expose] def step (code : List (Instr M L)) (x : State M L) : Option (State M L) :=
   match code[x.pc]? with
   | none | some .halt => none
   | some i => some { i.effect x with pc := i.next x }
@@ -188,7 +198,7 @@ abbrev Runs (code : List (Instr M L)) :=
 
 /-- `Executes code x y time`: the program takes `x` to `y` and halts there, having executed
 `time` instructions including the `halt`. -/
-def Executes (code : List (Instr M L)) (x y : State M L) (time : ℕ) : Prop :=
+@[expose] def Executes (code : List (Instr M L)) (x y : State M L) (time : ℕ) : Prop :=
   ∃ n, Runs code x y n ∧ code[y.pc]? = some .halt ∧ time = n + 1
 
 end Cslib.PointerMachine

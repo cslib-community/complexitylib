@@ -1532,6 +1532,16 @@ Madhu Sudan, Luca Trevisan and Salil Vadhan. *Pseudorandom Generators without th
 
 Robert Endre Tarjan. "Depth-First Search and Linear Graph Algorithms." *SIAM Journal on Computing* 1(2), 146–160, 1972. https://doi.org/10.1137/0201010 . Bibliographic data from the DOI record; the paper was not inspected in this pass.
 
+<a id="tarjan77"></a>
+## tarjan77
+
+Robert Endre Tarjan. *Reference Machines Require Non-Linear Time to Maintain Disjoint Sets*. Stanford CS-TR-77-603, March 1977. [Report PDF](https://ftpmirror.your.org/pub/misc/bitsavers/pdf/stanford/Stanford_CS_TR_Collection_2025-12-12/PDF/1977/CS-TR-77-603.pdf). Section 2, pp. 4–7, checked on 2026-11-14: explicit-reference memory, instruction/record costs, undefined-value traps (p. 6), and equality-only symbols. This check corrects the earlier manual claim that behavior on undefined data was unspecified. The local model uses total semantics and does not prove source equivalence or the lower bound.
+
+<a id="tarjan79"></a>
+## tarjan79
+
+Robert Endre Tarjan. “A Class of Algorithms Which Require Nonlinear Time to Maintain Disjoint Sets.” *Journal of Computer and System Sciences* 18(2), 110–127, 1979. https://doi.org/10.1016/0022-0000(79)90042-4 . The pointer-machine development cites §2, pp. 111–112, and the disjoint-set application in §3, pp. 113–115. The original implementation records inspection of the journal PDF; the 2026-11-14 correction independently checked the accessible 1977 report above, not the journal PDF. The chapter distinguishes the formal model from source-faithful algorithms and lower bounds.
+
 <a id="thaler22"></a>
 ## thaler22
 
