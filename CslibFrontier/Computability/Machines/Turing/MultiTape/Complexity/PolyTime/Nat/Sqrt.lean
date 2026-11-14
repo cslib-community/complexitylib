@@ -99,7 +99,9 @@ theorem binary_sqrt : ComputableInPolyTime Nat.sqrt encNat encNat := by
   have hstep : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => isqrtStep p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encNat) encUnary) encNat := by
-    have hcand := binary_add' ((snd _ _).comp (fst _ _))
+    have hcand : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2 + 2 ^ p.2)
+        (encPair (encPair encNat encNat) encUnary) encNat :=
+      binary_add' ((snd _ _).comp (fst _ _))
       (binary_pow' (const 2) (snd _ _))
     exact (binary_le' (binary_mul' hcand hcand) ((fst _ _).comp (fst _ _))).ite'
       hcand ((snd _ _).comp (fst _ _))
