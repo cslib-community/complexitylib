@@ -211,17 +211,27 @@ uniform real triple when `w` is the Diffie–Hellman element and to a uniform tr
 efficient form, so `ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of
 fixed triple families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
 inverse-polynomial fixed-group advantage into one that decides every triple except with
-negligible error (`negligible_ddhAmplifiedDecider_error`). The
+negligible error (`negligible_ddhAmplifiedDecider_error`). Fixed-first-coordinate rerandomization, single-exponent shifting, and Multi-DDH (I) ([bs23][bs23],
+Exercises 10.8, 10.9, and 10.11) live in
+[`DiffieHellman/MultiDDH.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman/MultiDDH.lean),
+providing both the finite-index and block distributional laws (`ddhFixedURerandomizeLaw`,
+`multiDDHRerandomizeLaw`, `ddhShiftAndRerandomizeLaw`) and the `ProbComp` reductions and uniform
+strict PPT witnesses (`ddhFixedUSelfReduceDistinguisher`,
+`singleSecretMultiDDHToDDHDistinguisher`, `DDH.singleSecretMultiDDH`,
+`multiDDHToDDHDistinguisher`, `DDH.multiDDH`). The
 [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean) checks the DDH input layout,
 runs the CDH-to-DDH reduction and the rerandomization on concrete `d23` elements, and
-instantiates the amplified decider. The
+instantiates the amplified decider; the
+[Multi-DDH client](../../CslibFrontierTests/Crypto/MultiDDH.lean) checks fixed-first-coordinate
+rerandomization, single-exponent shifting, and both `DDH.singleSecretMultiDDH` and
+`DDH.multiDDH` on concrete PPT distinguishers. The
 [nonvacuity client](../../CslibFrontierTests/Crypto/AssumptionNonvacuity.lean) evaluates the real
 and random games with fixed group parameters to probabilities `1 / q` and `1 / q²` for the same
 efficient identity test, so a constant group fails the hardness assumptions. From the
-repository root, check both clients with:
+repository root, check these clients with:
 
 ```bash
-scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.AssumptionNonvacuity
+scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.MultiDDH CslibFrontierTests.Crypto.AssumptionNonvacuity
 ```
 
 Inversion and prediction are each stated once, for a fixed function and input distribution, in
