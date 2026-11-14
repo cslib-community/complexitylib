@@ -130,6 +130,7 @@ import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.QUADEQ
+import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Signed
 import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TMSAT
@@ -379,6 +380,20 @@ register_result "quadeq-np-complete" where
     their values. Membership by a polynomial-time verifier with first-occurrence certificates; \
     hardness by a polynomial-time reduction from SAT (the exercise's hint), composed with \
     Cook–Levin."
+
+register_result "exactly-one-3sat-np-complete" where
+  title := "Exactly One 3SAT is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 16",
+      locator := "Web draft 2007-01-08, printed p. 63; PDF p. 79" }
+  ]
+  theorems := [Cslib.Complexity.OneInThreeSAT_npComplete]
+  scope := "CNFs over binary natural-number labels under encCNF, with literals of either \
+    polarity and at most three literal occurrences per clause, having an assignment that makes \
+    exactly one literal occurrence true in every clause; repeated literals count separately. \
+    Membership guards the unrestricted exact-one verifier by the width check; hardness is a \
+    guarded identity reduction from positive 1-in-3SAT."
 
 register_result "pcp" where
   title := "The PCP theorem"
