@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.PolyTime
+public import CslibFrontier.Computability.Circuit.Boolean.WordConstant.PolyTime
 import CslibFrontier.Computability.Circuit.Boolean.EncodingSize
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -126,48 +127,6 @@ theorem computableInPolyTime_leCircuit :
       nlinarith [Nat.pow_le_pow_left hi 2])
   simpa only [Function.comp_def, heq] using h.snd'
 
-namespace PopulationCount
-
-/-- The two constant gates and their selected output wires for a binary numeral. -/
-def numeralCode (n w q : ℕ) : List (Op × List ℕ) × List ℕ :=
-  ([(.const false, []), (.const true, [])],
-    (List.range w).map (fun i => if q.testBit i then n + 1 else n))
-
-private theorem numeralCode_eq (n w : ℕ) (q : Fin (2 ^ w)) :
-    numeralCode n w q.val = (wordConstCircuit n ((BitString.equivFin w).symm q)).code := by
-  have hw (i : Fin w) :
-      ((wordConstCircuit n ((BitString.equivFin w).symm q)).outputs i).toNat =
-        if q.val.testBit i.val then n + 1 else n := by
-    dsimp only [wordConstCircuit, Circuit.comp, Circuit.wiring, Function.comp_apply,
-      Program.appendedWire]
-    rw [BitString.equivFin_symm_apply]
-    cases q.val.testBit i.val <;> rfl
-  apply Prod.ext
-  · rfl
-  · apply List.ext_getElem (by simp [numeralCode, Circuit.code])
-    intro i hi hj
-    simp only [numeralCode, List.getElem_map, List.getElem_range, Circuit.code,
-      List.getElem_ofFn, hw]
-
-private theorem numeralCode_polyTime {α : Type} {enc : α ↪ List Bool}
-    {n w q : α → ℕ} (hn : ComputableInPolyTime n enc encNat)
-    (hw : ComputableInPolyTime w enc encUnary) (hq : ComputableInPolyTime q enc encNat) :
-    ComputableInPolyTime (fun a => numeralCode (n a) (w a) (q a)) enc encCode := by
-  have hi : ComputableInPolyTime
-      (fun p : α × ℕ => if (q p.1).testBit p.2 then n p.1 + 1 else n p.1)
-      (encPair enc encUnary) encNat := by
-    have hn' := (hn.comp (fst enc encUnary)).tidy
-    have hq' := (hq.comp (fst enc encUnary)).tidy
-    have hi' := (snd enc encUnary).tidy
-    have ht := ComputableTidilyInPolyTime.binary_testBit hq' hi'
-    exact .of_tidy (ht.cond
-      (ComputableTidilyInPolyTime.binary_add.comp
-        (hn'.prod (ComputableTidilyInPolyTime.const 1))) hn')
-  exact (const (encOut := encList encGate) [(Op.const false, []), (Op.const true, [])]).prod
-    (mapWithInput (range.comp hw) hi)
-
-end PopulationCount
-
 /-- A native polynomial-time compiler for the whole linear-size threshold circuit. The number
 of inputs and the cutoff are supplied in unary; all output circuit references are binary. -/
 theorem computableInPolyTime_linearThresholdCircuit :
@@ -185,7 +144,7 @@ theorem computableInPolyTime_linearThresholdCircuit :
     fun_prop
   have hp := computableInPolyTime_compCode hn' (computableInPolyTime_leCircuit.comp hw)
     (computableInPolyTime_appendCode hn'
-      (PopulationCount.numeralCode_polyTime hn' hw hq')
+      (computableInPolyTime_wordConstCode hn' hw hq')
       (computableInPolyTime_populationCountCircuit.comp hn))
   have hz : ComputableInPolyTime (fun p : ℕ × ℕ => ([(Op.const false, [])], [p.1]))
       (encPair encUnary encUnary) encCode := by fun_prop
@@ -196,7 +155,7 @@ theorem computableInPolyTime_linearThresholdCircuit :
   intro p
   dsimp only [linearThresholdCircuit, Function.comp_apply]
   split_ifs with hq
-  · rw [← compCode_code, ← appendCode_code, ← PopulationCount.numeralCode_eq]
+  · rw [← compCode_code, ← appendCode_code, ← wordConstCode_eq]
   · rfl
 
 end Cslib.Circuits.Boolean

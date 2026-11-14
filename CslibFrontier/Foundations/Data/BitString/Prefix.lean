@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -38,6 +38,7 @@ widely imported `CslibFrontier/Foundations/Data/BitString/Basic.lean`.
   is `(equivFin q v).val % 2 ^ M`.
 * `Cslib.BitString.val_equivFin_eq_div_mod_of_testBit`: a bit string read off the binary digits
   `s, …, s + d - 1` of a number `N` has value `N / 2 ^ s % 2 ^ d`.
+* `Cslib.BitString.val_equivFin_zeroExtend_of_ge`: widening by zeros preserves the unsigned value.
 -/
 
 public section
@@ -99,5 +100,17 @@ unsigned integer value modulo `2 ^ M`. -/
 theorem val_equivFin_zeroExtend_of_le {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
     (equivFin M (zeroExtend v)).val = (equivFin q v).val % 2 ^ M := by
   rw [← restrictBitsAddHom_eq_zeroExtend hM v, val_equivFin_restrictBitsAddHom hM v]
+
+/-- Extending a word with zero high bits preserves its unsigned value. -/
+theorem val_equivFin_zeroExtend_of_ge {q M : ℕ} (hM : q ≤ M) (v : BitString q) :
+    (equivFin M (zeroExtend v)).val = (equivFin q v).val := by
+  have hlt := (equivFin q v).isLt.trans_le (Nat.pow_le_pow_right (by decide) hM)
+  rw [val_equivFin_eq_div_mod_of_testBit (s := 0) (N := equivFin q v) (fun i => ?_),
+    Nat.pow_zero, Nat.div_one, Nat.mod_eq_of_lt hlt]
+  simp only [zeroExtend, Nat.zero_add]
+  split_ifs with hi
+  · exact (testBit_equivFin v ⟨i.val, hi⟩).symm
+  · exact (Nat.testBit_lt_two_pow ((equivFin q v).isLt.trans_le
+      (Nat.pow_le_pow_right (by decide) (Nat.le_of_not_lt hi)))).symm
 
 end Cslib.BitString
