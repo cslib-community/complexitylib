@@ -19,6 +19,7 @@ public import Mathlib.Algebra.Field.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Foundations.Data.Int.Order
@@ -1042,8 +1043,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     (hq : ComputableInPolyTime q encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => polyAdd (p x) (q x)) encIn (encList encIntBin) := by
   have hp1 := fst encIn encUnary; have hi := snd encIn encUnary
-  exact mapWithInput (range.comp' ((of_tidy ComputableTidilyInPolyTime.unary_max).comp'
-      ((length_listIntBin hp).prod (length_listIntBin hq))))
+  exact mapWithInput (range.comp' (unary_max' (length_listIntBin hp) (length_listIntBin hq)))
     (intBin_add' (listGetDWithInput (hp.comp' hp1) hi 0) (listGetDWithInput (hq.comp' hp1) hi 0))
 
 /-- Polynomial-time certificate for `cauchyCoeff`. -/

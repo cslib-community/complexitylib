@@ -71,6 +71,10 @@ statements does not discharge this work. Deferral is exceptional under
 [Improving library ergonomics](#improving-library-ergonomics).
 
 Optimize for trustworthy, reusable results, not the number of closed issues or merged PRs.
+Correct statements that are faithful to their sources take priority over forward progress. When
+the two conflict, fix the statement or the name, even if the milestone slips; do not land a weaker
+result under the name of the stronger one
+([Faithful headlines](#faithful-headlines)).
 When narrowing a task, preserve its original objective and record the bounded deliverable and
 remaining gap prominently. A restricted model, conditional result, or partial theorem does not
 complete a broader objective. Do not silently retitle an ambitious issue into an easier completed
@@ -544,6 +548,44 @@ a new copy of an argument the library already makes is a finding when the
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
+**Check every new or changed headline before anything else**
+([Faithful headlines](#faithful-headlines)). In the review, quote its statement (abridged) and
+compare the name, docstring, PR title and any inventory entry with what the statement proves. For
+a theorem that claims a cited result, classify each hypothesis as one of:
+
+- (i) an assumption the cited source names, stated relative to the problem, sampler or component
+  it concerns;
+- (ii) membership of the adversary or input in the admitted class;
+- (iii) a property of a generic component that the source takes as given;
+- (iv) anything else: a step of the cited proof, a property of an object the proof builds, a
+  caller-supplied object whose existence or efficiency is what the result proves, or unassumed
+  idealized behaviour of the construction's own algorithms.
+
+For original mathematics or internal library infrastructure
+([New statements and definitions](#new-statements-and-definitions)), an absent cited source is not
+a defect: check instead that its name, docstring and PR title accurately match its actual
+hypotheses and scope, that it is non-vacuous and genuinely reusable, and that it does not imply a
+cited endpoint was proved.
+
+Any vacuous hypothesis blocks approval. When a statement is presented as the cited endpoint, or
+advertises a headline property that its premises assume rather than establish, any (iv)
+hypothesis, undisclosed deviation, overclaiming name/title or weaker stand-in blocks approval.
+Such a finding is not a nit, and it is not deferred to a follow-up under
+[Improving library ergonomics](#improving-library-ergonomics); a reviewer does not offer "document
+it as a milestone" in place of fixing it. Resolve it either by proving the faithful statement,
+or—when the conditional statement is a useful, non-vacuous intermediate step—by renaming
+(`…_of_reduction_le`, `…_of_realization`) and documenting it as a helper under rule 2 of
+[Faithful headlines](#faithful-headlines): such a helper is permitted provided the published
+theorem stays open and the helper never occupies its name, PR title or
+[results inventory](results/README.md) entry. Also check that the change removes or demotes any
+stand-in it supersedes (rule 4). In `Cslib.Crypto`, `scripts/check_security_premises.py`
+supplements this gate on elaborated premise shapes ([Security theorems](#security-theorems)),
+without replacing semantic review.
+
+Before a published theorem enters the [results inventory](results/README.md), a human maintainer
+checks the statement against the source and records that check in a comment written by the human,
+not by an agent posting from their account. Agent review alone does not admit an entry.
+
 Before approving library changes, read the **Parallel-definition**, **Duplicate-statement** and
 **Repeated-proof-block** notices in the CI job summary or step logs for the reviewed revision. Inspect both
 declarations or proof blocks for each relevant candidate. Record its resolution by reuse or
@@ -716,6 +758,52 @@ Syntactic similarity is a prompt to inspect reuse, not proof that models should 
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
 
+### Faithful headlines
+
+A *headline* is a theorem presented as a cited result or as the property its name advertises
+("security", "soundness", "hardness", "proof of knowledge", "is PPT"), whether by its name, its
+docstring, its module documentation, a manual page, a PR title or a
+[results inventory](results/README.md) entry. Lean checks proofs, not whether a statement says what
+its presentation claims, so this is the part of a change that review exists to check.
+
+1. **A headline states the result it names.** For a cited result, its quantifiers, hypotheses,
+   model, admitted adversaries or inputs, resource conventions and conclusion match the source,
+   apart from deviations that the docstring names as part of the result's scope and that review
+   accepts as the same theorem in a different formal setting (for example, the library's two-world
+   advantage in place of the source's `|Pr[b' = b] - 1/2|`, with the factor of two carried
+   through). Original mathematics and internal library infrastructure need no cited source
+   ([New statements and definitions](#new-statements-and-definitions)); their names, docstrings and
+   PR titles state their actual hypotheses and scope, they are genuinely reusable, and they do not
+   imply that a cited endpoint was proved.
+2. **Disclosure does not license a weaker headline.** A result is a *stand-in* when it assumes a
+   step of the cited proof, something about an object that its own proof builds (a reduction,
+   simulator, extractor, hybrid or decoder), or a caller-supplied object whose existence or
+   efficiency is what the result proves. It is also a stand-in when it replaces the construction's
+   algorithms with idealized ones, proves the claim for a fixed finite instance instead of a
+   family, or weakens the notion, model or adversary class (including parameters chosen after the
+   adversary). A theorem the source itself states conditionally, such as a hardness-magnification
+   implication, is not a stand-in when its hypothesis is the source's.
+   A useful, non-vacuous stand-in may land as an intermediate step, never as the headline for the
+   cited result: its name states the condition (`…_of_reduction_le`, `…_of_realization`), its
+   docstring opens by saying it is a step or helper and not the cited result, it cites the source
+   as "a step of" or "after" rather than as its endpoint, the cited objective stays open, and
+   neither the PR title nor the results inventory presents it as the cited result. Listing the gap
+   under "Limitations", in the PR body, at the end of a docstring or in an inventory scope note
+   does not meet this rule.
+3. **No vacuous headlines.** A headline—or a step landed under rule 2—whose hypotheses cannot hold
+   together, or whose conclusion follows trivially (an extractor that ignores the transcript), is a
+   misformalization even when it is documented. When a hypothesis might be unsatisfiable, check a
+   satisfying instance.
+4. **The faithful statement supersedes its stand-ins.** A change that proves the faithful
+   statement deletes or demotes every stand-in it supersedes, together with their docstrings,
+   manual text, `ROADMAP.md` lines and inventory entries. Search for them by conclusion, by
+   `_of_…` names and in the milestone's issue, not only by name.
+
+Stand-ins already on `main` are misformalizations to fix under these rules, not precedents to copy.
+Record them in an issue (#5293 for cryptography). Domain contracts, such as
+[Security theorems](#security-theorems) for cryptography, refine what counts as a named assumption
+and a generic component in their area.
+
 ### Structures for domain objects and records
 
 Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
@@ -824,7 +912,7 @@ information-theoretic), the notion (single- or multi-challenge, one-time or many
 honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
 cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
 to an honestly named and documented helper, and updates its ROADMAP, manual and
-[results inventory](results/README.md) mentions (#5293).
+[results inventory](results/README.md) mentions ([Faithful headlines](#faithful-headlines); #5293).
 `scripts/check_security_premises.py` checks the premise rule after a build against a justified
 baseline ([details](CONTRIBUTING.md#library-quality-standard)).
 

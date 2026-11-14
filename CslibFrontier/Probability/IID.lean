@@ -52,6 +52,9 @@ bounds.
   and pairing of `piFin`.
 * `Cslib.Probability.PMF.iid_map`, `Cslib.Probability.PMF.iid_eq_pi`,
   `Cslib.Probability.PMF.iid_uniformOfFintype`: images, finite products, and uniform tuples.
+* `Cslib.Probability.PMF.bind_uniformOfFintype_fin_three`,
+  `Cslib.Probability.PMF.bind_uniformOfFintype_fin_four`: a uniform triple or quadruple is three
+  or four independent uniform draws.
 * `Cslib.Probability.PMF.iid_bind`: independent draws through a randomized map.
 * `Cslib.Probability.PMF.iid_card_ge_le`: the majority tail bound.
 
@@ -205,6 +208,29 @@ theorem iid_bind [Finite α] [Finite β] (μ : PMF α) (K : α → PMF β) (k : 
 theorem iid_uniformOfFintype [Fintype α] [Nonempty α] (k : ℕ) :
     iid (PMF.uniformOfFintype α) k = PMF.uniformOfFintype (Fin k → α) := by
   rw [iid_eq_pi, pi_uniformOfFintype]
+
+/-- Three independent uniform draws are the coordinates of a uniform triple. -/
+theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonempty X]
+    (F : X → X → X → PMF β) :
+    (PMF.uniformOfFintype (Fin 3 → X)).bind (fun f => F (f 0) (f 1) (f 2)) =
+      (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
+        (PMF.uniformOfFintype X).bind fun c => F a b c := by
+  rw [← iid_uniformOfFintype]
+  simp only [iid, monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.pure_bind,
+    Function.comp_def]
+  rfl
+
+/-- Four independent uniform draws are the coordinates of a uniform quadruple. -/
+theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonempty X]
+    (F : X → X → X → X → PMF β) :
+    (PMF.uniformOfFintype (Fin 4 → X)).bind (fun f => F (f 0) (f 1) (f 2) (f 3)) =
+      (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
+        (PMF.uniformOfFintype X).bind fun c => (PMF.uniformOfFintype X).bind fun d =>
+          F a b c d := by
+  rw [← iid_uniformOfFintype]
+  simp only [iid, monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.pure_bind,
+    Function.comp_def]
+  rfl
 
 /-- If `0 ≤ a ≤ b`, `r ≤ t` and `t + u = 2 r`, then `a ^ t b ^ u ≤ (a b) ^ r`. -/
 private theorem pow_mul_pow_le {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b) {r t u : ℕ} (ht : r ≤ t)

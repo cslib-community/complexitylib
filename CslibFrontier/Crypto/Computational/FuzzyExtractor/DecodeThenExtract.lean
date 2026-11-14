@@ -71,10 +71,12 @@ recover `s`, and derives the key from `s`.
 * Hardness of LWE with error distribution `W` (Theorems 4.6 and 4.8 of the paper, which rest on
   Döttling and Müller-Quade and on Regev); the security theorem is a reduction to that
   assumption, stated as an inequality between advantages.
-* Running time of the reductions (they are explicit `ProbComp` programs, but efficiency is not
-  formalized), and an asymptotic security statement. The parameters `m, k, l, q` are fixed, so
-  `securityAdvantage_lweFuzzyExtractor_le` is a concrete reduction inequality, not a security
-  theorem on its own.
+* Running time of the reductions and asymptotic security, here. The parameters `m, k, l, q` are
+  fixed, so `securityAdvantage_lweFuzzyExtractor_le` is a concrete reduction inequality, not a
+  security theorem on its own. The module
+  `CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security` certifies the
+  reductions as strict PPT and proves the asymptotic theorem
+  `computationallySecure_lweFuzzyExtractor`.
 * Correctness of the decoder of Construction 4.9 (Lemma 4.10); it is a hypothesis.
 * The symbol-fixing and block-source results of Section 5.
 * No security claim is made for `decodeThenExtract` with a general `ext`: with a public seed and
@@ -519,7 +521,8 @@ uniform secret in dimension `l` and error distribution `W`, of the two explicit 
 
 This is an exact statement with no hypotheses; it does not bound the running time of the
 reductions, and it does not prove that LWE with error distribution `W` is hard (the paper obtains
-this from Theorem 4.6 for uniform-interval errors). -/
+this from Theorem 4.6 for uniform-interval errors). The asymptotic theorem built on it is
+`computationallySecure_lweFuzzyExtractor`, whose reductions are certified strict PPT. -/
 theorem securityAdvantage_lweFuzzyExtractor_le
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))

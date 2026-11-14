@@ -1763,6 +1763,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
 
+<a id="uov26"></a>
+## uov26
+
+Ward Beullens, Ming-Shing Chen, Jintai Ding, Boru Gong, Matthias J. Kannwischer, Jacques Patarin, Bo-Yuan Peng, Dieter Schmidt, Cheng-Jhih Shih, Chengdong Tao, Bo-Yin Yang. *UOV: Unbalanced Oil and Vinegar, Algorithm Specifications and Supporting Documentation*, Version 3.0, August 30, 2026 (bibliography key `UOV2026`). https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/UOV_Specification_R3.pdf . Checked against that PDF on 2026-11-14 (SHA-256 `ce9044adf1b4e407467968438fa66794882bcaa6411d3509bed72ff54380181a`): Section 3.1 (printed pp. 11–13, specifically p. 12) defines `Upper(M)` as the unique upper-triangular matrix `M'` such that `M' - M` is alternating. `CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic` formalizes only this generic matrix construction (`Matrix.upperQuadratic`), its `Matrix.IsUpperTriangular` and `LinearMap.IsAlt` properties, `Matrix.toQuadraticForm'` equality, and uniqueness; UOV block keys, oil subspaces, signing/verification, restart bounds, and security reductions remain open under [#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 <a id="valiant84"></a>
 ## valiant84
 
