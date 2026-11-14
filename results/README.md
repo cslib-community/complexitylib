@@ -42,6 +42,8 @@ for *Computational Complexity: A Conceptual Perspective*, including the any-outp
 endpoints of Exercises 4.6–4.7 in the documented total-decoder representation. It is not a claim of
 book-wide coverage. Exercise 8.43 has the varying-density product and constant-set
 real half-length power, with normalized spectral-parameter transport; Exercise 8.44 remains open.
+Exercise 9.21 now has plurality correction and the unconditional rejection bound for all finite
+abelian groups, including trivial groups, without computational representation claims.
 Its companion [exercise inventory](goldreich-2007-exercises.md) classifies the end-of-chapter
 exercises of chapters 2 and 5–10 as establishing new theory, covered, a source issue or routine.
 
