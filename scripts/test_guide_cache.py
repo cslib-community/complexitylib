@@ -81,7 +81,15 @@ class GuideCacheTests(unittest.TestCase):
         source = self.root / ".lake/packages/verso/Source.lean"
         source.write_text("source remains\n")
         cleanup = step((ACTION / "action.yml").read_text(), "Discard an incomplete Guide cache restore")
-        self.assertIn("if: steps.restore.outcome == 'failure'", cleanup)
+        condition = cleanup.split("if: ", 1)[1].splitlines()[0]
+        # actions/cache may catch extraction errors and report a successful miss. That case
+        # must clean partial outputs too; only a confirmed exact hit keeps them.
+        for outcome, hit, expected in (("failure", "", True), ("success", "", True),
+                                        ("success", "false", True), ("success", "true", False)):
+            with self.subTest(outcome=outcome, hit=hit):
+                expression = condition.replace("steps.restore.outcome", repr(outcome))
+                expression = expression.replace("steps.restore.outputs.cache-hit", repr(hit))
+                self.assertEqual(eval(expression, {"__builtins__": {}}), expected)
         script = textwrap.dedent(cleanup.split("run: |\n", 1)[1])
         subprocess.run(["bash", "-eu", "-c", script], cwd=self.root, check=True)
         self.assertTrue(source.is_file())

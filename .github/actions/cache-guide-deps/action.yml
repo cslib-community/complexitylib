@@ -36,9 +36,11 @@ runs:
         path: ${{ steps.key.outputs.paths }}
         key: ${{ steps.key.outputs.key }}
     - name: Discard an incomplete Guide cache restore
-      if: steps.restore.outcome == 'failure'
+      if: steps.restore.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        # The cache toolkit can turn extraction errors into successful misses. Keep restored
+        # outputs only after a confirmed exact hit, including when the action merely warns.
         # These are disposable hosted-workspace outputs, never source or global Lake caches.
         for package in verso subverso MD4Lean illuminate; do
           rm -rf -- ".lake/packages/$package/.lake/build"
