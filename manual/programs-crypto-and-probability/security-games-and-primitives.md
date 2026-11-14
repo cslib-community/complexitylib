@@ -1392,7 +1392,10 @@ Concrete `BitString 8` evaluations and non-vacuous bounds are in
 The uniform statement is in
 [`Encryption/CTRMode/Uniform.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode/Uniform.lean)
 (Boneh–Shoup v0.6, §5.4.2 and Theorem 5.3 [bs23][bs23]). `ctrWordEncrypt` is randomized counter
-mode with `n`-bit blocks at parameter `n` for a word-level family, with certified honest algorithms
+mode with `n`-bit blocks at parameter `n` for a word-level family, an instance of the random-IV
+stream envelope `ivStreamEncrypt`
+([`Encryption/IVStream.lean`](../../CslibFrontier/Crypto/Computational/Encryption/IVStream.lean)),
+with certified honest algorithms
 (`isPPTOn_ctrWordEncrypt`, `computableInPolyTime_ctrWordDecrypt`) and correctness
 (`ctrWordDecrypt_ctrWordEncrypt`). The reduction `ctrToPrfDistinguisher` makes one PRF query per
 block and is uniform strict oracle PPT (`isOraclePPT_ctrToPrfDistinguisher`).

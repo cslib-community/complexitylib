@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.Encryption.IVStream
 public import CslibFrontier.Crypto.Computational.Encryption.SymmetricCPA
 public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
@@ -44,7 +45,8 @@ Randomized counter mode ([BonehShoup2023], Section 5.4.2, printed p. 189) encryp
 length and `N = 2 ^ n`: the PRF `family` takes `n`-bit keys and `n`-bit inputs to `n`-bit outputs,
 and the `j`-th counter block is `ctrWordCounter n x j`, the `n`-bit little-endian representation
 of `x + j mod 2 ^ n`. A message is any word made of whole blocks. `ctrWordEncrypt` outputs the
-word `x ++ c`, and `ctrWordDecrypt` inverts it.
+word `x ++ c`, and `ctrWordDecrypt` inverts it; both are the shared envelope `ivStreamEncrypt`,
+`ivStreamDecrypt` with the counter keystream `ctrWordKeystream`.
 
 Security is many-query left-or-right CPA security (`SymmetricINDCPAOn`, Attack Game 5.2) on
 equal-length pairs of whole blocks (`blockPairValid`), in the standard model, against uniform
@@ -126,21 +128,16 @@ def ctrWordKeystream (family : List Bool → List Bool → List Bool) (n : ℕ) 
 initial value `iv` and output `iv` followed by the message XORed with the keystream of
 `msg.length / n` blocks. -/
 @[expose]
-noncomputable def ctrWordEncrypt (family : List Bool → List Bool → List Bool) (n : ℕ)
-    (k msg : List Bool) : ProbComp (List Bool) := do
-  let iv ← BitString.sampleList n
-  return iv ++ List.zipWith xor (ctrWordKeystream family n k iv (msg.length / n)) msg
+noncomputable def ctrWordEncrypt (family : List Bool → List Bool → List Bool) :
+    ℕ → List Bool → List Bool → ProbComp (List Bool) :=
+  ivStreamEncrypt (ctrWordKeystream family)
 
 /-- Counter-mode decryption: accept an `n`-bit initial value followed by whole blocks, and XOR the
 blocks with the keystream from that initial value. -/
 @[expose]
-def ctrWordDecrypt (family : List Bool → List Bool → List Bool) (n : ℕ) (k ct : List Bool) :
-    Option (List Bool) :=
-  if (decide (n ≤ ct.length) && ((ct.length - n) % n == 0)) = true then
-    some (List.zipWith xor (ctrWordKeystream family n k (ct.take n) ((ct.length - n) / n))
-      (ct.drop n))
-  else
-    none
+def ctrWordDecrypt (family : List Bool → List Bool → List Bool) :
+    ℕ → List Bool → List Bool → Option (List Bool) :=
+  ivStreamDecrypt (ctrWordKeystream family)
 
 @[simp]
 theorem length_ctrWordCounter (n : ℕ) (iv : List Bool) (j : ℕ) :
@@ -167,20 +164,8 @@ theorem ctrWordDecrypt_ctrWordEncrypt {family : List Bool → List Bool → List
     (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
     {n : ℕ} {k : List Bool} (hk : k.length = n) {msg : List Bool} (hmsg : msg.length % n = 0)
     {ct : List Bool} (hct : ct ∈ (ProbComp.eval (ctrWordEncrypt family n k msg)).support) :
-    ctrWordDecrypt family n k ct = some msg := by
-  simp only [ctrWordEncrypt, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hct
-  obtain ⟨iv, hiv, rfl⟩ := hct
-  have hivLen : iv.length = n := BitString.length_of_mem_support_uniformList hiv
-  have hblocks : msg.length / n * n = msg.length := Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero hmsg)
-  have hksLen : (ctrWordKeystream family n k iv (msg.length / n)).length = msg.length := by
-    rw [length_ctrWordKeystream hlen hk, hblocks]
-  set body := List.zipWith xor (ctrWordKeystream family n k iv (msg.length / n)) msg
-  have hctLen : (iv ++ body).length = n + msg.length := by
-    simp [body, hivLen, hksLen]
-  rw [ctrWordDecrypt, hctLen, Nat.add_sub_cancel_left, ← hivLen, List.take_left, List.drop_left,
-    hivLen]
-  simp [hmsg, body, BitString.zipWith_xor_self_left _ _ hksLen]
+    ctrWordDecrypt family n k ct = some msg :=
+  ivStreamDecrypt_ivStreamEncrypt (fun iv _ => length_ctrWordKeystream hlen hk iv _) hmsg hct
 
 /-! ### Efficiency of the honest algorithms -/
 
@@ -217,33 +202,25 @@ theorem computableInPolyTime_ctrWordKeystream {family : List Bool → List Bool 
     (computableInPolyTime_ctrWordCounter (hn.comp (ComputableInPolyTime.fst _ _))
       (hiv.comp (ComputableInPolyTime.fst _ _)) (ComputableInPolyTime.snd _ _)))
 
+/-- The keystream as a function of `(n, k, iv, blocks)` is computable in polynomial time. -/
+private theorem computableInPolyTime_ctrWordKeystream_tuple
+    {family : List Bool → List Bool → List Bool}
+    (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
+      (encPair encBits encBits) encBits) :
+    ComputableInPolyTime
+      (fun ((n, k, iv, blocks) : ℕ × List Bool × List Bool × ℕ) =>
+        ctrWordKeystream family n k iv blocks)
+      (encPair encUnary (encPair encBits (encPair encBits encUnary))) encBits :=
+  computableInPolyTime_ctrWordKeystream hpoly (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop)
+
 /-- Counter-mode encryption is uniformly strict PPT in `(n, k, msg)`. -/
 theorem isPPTOn_ctrWordEncrypt {family : List Bool → List Bool → List Bool}
     (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
       (encPair encBits encBits) encBits) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun ((n, k, msg) : ℕ × List Bool × List Bool) => ctrWordEncrypt family n k msg) := by
-  let EIn := encPair (encPair encUnary (encPair encBits encBits)) encBits
-  have hn : ComputableInPolyTime (fun p : (ℕ × List Bool × List Bool) × List Bool => p.1.1)
-      EIn encUnary := by dsimp only [EIn]; fun_prop
-  have hk : ComputableInPolyTime (fun p : (ℕ × List Bool × List Bool) × List Bool => p.1.2.1)
-      EIn encBits := by dsimp only [EIn]; fun_prop
-  have hmsg : ComputableInPolyTime (fun p : (ℕ × List Bool × List Bool) × List Bool => p.1.2.2)
-      EIn encBits := by dsimp only [EIn]; fun_prop
-  have hiv : ComputableInPolyTime (fun p : (ℕ × List Bool × List Bool) × List Bool => p.2)
-      EIn encBits := by dsimp only [EIn]; fun_prop
-  have hblocks : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool) × List Bool => p.1.2.2.length / p.1.1)
-      EIn encUnary := by dsimp only [EIn]; fun_prop
-  have hpost : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool) × List Bool =>
-        p.2 ++ List.zipWith xor
-          (ctrWordKeystream family p.1.1 p.1.2.1 p.2 (p.1.2.2.length / p.1.1)) p.1.2.2)
-      EIn encBits :=
-    ComputableInPolyTime.bitsAppend hiv
-      (ComputableInPolyTime.bitsZipWithInput xor
-        (computableInPolyTime_ctrWordKeystream hpoly hn hk hiv hblocks) hmsg)
-  exact (ComputableInPolyTime.sampleList (ComputableInPolyTime.fst _ _)).bind_with hpost.isPPTOn
+      (fun ((n, k, msg) : ℕ × List Bool × List Bool) => ctrWordEncrypt family n k msg) :=
+  isPPTOn_ivStreamEncrypt (computableInPolyTime_ctrWordKeystream_tuple hpoly)
 
 /-- Counter-mode decryption is computable in polynomial time on `(n, k, ct)`. -/
 theorem computableInPolyTime_ctrWordDecrypt {family : List Bool → List Bool → List Bool}
@@ -251,37 +228,8 @@ theorem computableInPolyTime_ctrWordDecrypt {family : List Bool → List Bool �
       (encPair encBits encBits) encBits) :
     ComputableInPolyTime
       (fun ((n, k, ct) : ℕ × List Bool × List Bool) => ctrWordDecrypt family n k ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
-  let EIn := encPair encUnary (encPair encBits encBits)
-  have hn : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.1) EIn encUnary := by
-    dsimp only [EIn]; fun_prop
-  have hk : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.1) EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hct : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2) EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hcond : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        decide (p.1 ≤ p.2.2.length) && ((p.2.2.length - p.1) % p.1 == 0))
-      EIn encBool := by
-    dsimp only [EIn]; fun_prop
-  have hblocks : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => (p.2.2.length - p.1) / p.1) EIn encUnary := by
-    dsimp only [EIn]; fun_prop
-  have hiv : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2.take p.1)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hbody : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2.drop p.1)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hzip : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        List.zipWith xor (ctrWordKeystream family p.1 p.2.1 (p.2.2.take p.1)
-          ((p.2.2.length - p.1) / p.1)) (p.2.2.drop p.1))
-      EIn encBits :=
-    ComputableInPolyTime.bitsZipWithInput xor
-      (computableInPolyTime_ctrWordKeystream hpoly hn hk hiv hblocks) hbody
-  exact ComputableInPolyTime.ite hcond ((ComputableInPolyTime.optionSome encBits).comp hzip)
-    (ComputableInPolyTime.const none)
+      (encPair encUnary (encPair encBits encBits)) (encOption encBits) :=
+  computableInPolyTime_ivStreamDecrypt (computableInPolyTime_ctrWordKeystream_tuple hpoly)
 
 /-! ### The reduction to the PRF game -/
 
@@ -363,7 +311,8 @@ theorem run_ctrPrfHandler {family : List Bool → List Bool → List Bool}
   · have hlenEq : (unframe request.2).length = (dropFrame request.2).length := by
       simpa [blockPairValid] using (Bool.and_eq_true _ _).mp hvalid |>.1
     simp only [hvalid, ↓reduceIte, ProbOracleComp.run_bind, ProbOracleComp.run_sample,
-      ProbOracleComp.run_map, run_ctrKeystreamQueries hlen hk, map_pure, ctrWordEncrypt]
+      ProbOracleComp.run_map, run_ctrKeystreamQueries hlen hk, map_pure, ctrWordEncrypt,
+      ivStreamEncrypt]
     cases bit <;> simp [hlenEq]
   · simp [hvalid]
 
