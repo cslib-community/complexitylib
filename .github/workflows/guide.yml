@@ -12,13 +12,12 @@ jobs:
       key: ${{ steps.deps.outputs.key }}
     runs-on: cslib-ubuntu-24.04-8core
     timeout-minutes: 20
-    env:
-      LAKE_CACHE_DIR: ${{ runner.temp }}/guide-cache-probe
     steps:
       - name: Honor repository cache kill switch
         run: |
           test "$DISABLE_CACHE_RESTORE" != true
           test "$DISABLE_CACHE_RESTORE" != 1
+          echo "LAKE_CACHE_DIR=$RUNNER_TEMP/guide-cache-probe" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 100
@@ -73,13 +72,12 @@ jobs:
     needs: writer
     runs-on: cslib-ubuntu-24.04-8core
     timeout-minutes: 20
-    env:
-      LAKE_CACHE_DIR: ${{ runner.temp }}/guide-cache-probe
     steps:
       - name: Honor repository cache kill switch
         run: |
           test "$DISABLE_CACHE_RESTORE" != true
           test "$DISABLE_CACHE_RESTORE" != 1
+          echo "LAKE_CACHE_DIR=$RUNNER_TEMP/guide-cache-probe" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 100
