@@ -15,7 +15,7 @@ public section
 
 namespace SLHDSAWOTSDigitTests
 
-open Cslib.BitString Cslib.Crypto.SLHDSA Cslib.Crypto.SLHDSA.WOTS
+open Cslib.BitString Cslib.Crypto Cslib.Crypto.SLHDSA Cslib.Crypto.SLHDSA.WOTS
 
 example : Base2bInput [0x0f] 4 2 := by decide
 example : (base2b [0x0f] 4 2 (by decide) 0).val = 0 := by decide +kernel
@@ -30,7 +30,7 @@ example : checksum zeroMessage = 480 := by decide +kernel
 example : (checksumDigits zeroMessage ⟨0, by simp [len2]⟩).val = 1 := by decide +kernel
 example : (checksumDigits zeroMessage ⟨1, by simp [len2]⟩).val = 14 := by decide +kernel
 example : (checksumDigits zeroMessage ⟨2, by simp [len2]⟩).val = 0 := by decide +kernel
-example : binaryValue (byteStringBits (checksumByteString zeroMessage)) =
+example : binaryValue (bytesToBitsBE (checksumByteString zeroMessage)) =
     (shiftedChecksum zeroMessage).val :=
   binaryValue_checksumByteString zeroMessage
 example :

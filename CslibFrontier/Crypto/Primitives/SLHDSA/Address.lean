@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Data.BitString.List.Binary
-public import CslibFrontier.Init
+public import CslibFrontier.Crypto.Primitives.ByteString
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Nat.Size
 
@@ -20,12 +19,13 @@ Figures 2--9 and Table 1. An address consists of a 32-bit layer address, a 96-bi
 a 32-bit type, and three 32-bit type-dependent words. `Address.setTypeAndClear` implements the
 standard's requirement that changing the type clears the final 12 bytes.
 
-`Address.toBits` is the canonical 32-byte, big-endian encoding used by the SHAKE parameter sets.
-The SHA2 parameter sets instead use the 22-byte compressed address `Address.toCompressedBits`
-from FIPS 205, Section 11.2, Figure 18 and Table 3. Compression retains only one byte of the layer,
-eight bytes of the tree, and one byte of the type. `Address.FitsCompressed` records the bounds
-under which that projection is injective; the unrestricted compressed encoding is deliberately
-not claimed to be injective.
+`Address.toBits` is the canonical 32-byte, big-endian encoding used by the SHAKE parameter sets,
+and `Address.toBytes` gives its typed byte view. The SHA2 parameter sets instead use the 22-byte
+compressed address `Address.toCompressedBits` from FIPS 205, Section 11.2, Figure 18 and Table 3;
+`Address.toCompressedBytes` gives its typed byte view. Compression retains only one byte of the
+layer, eight bytes of the tree, and one byte of the type. `Address.FitsCompressed` records the
+bounds under which that projection is injective; the unrestricted compressed encoding is
+deliberately not claimed to be injective.
 
 This is only the address-domain layer. It does not define the FIPS 205 hash instantiations,
 WOTS+, XMSS, FORS, the hypertree, signing or verification, or any security reduction.
@@ -36,7 +36,9 @@ WOTS+, XMSS, FORS, the hypertree, signing or verification, or any security reduc
 * `Cslib.Crypto.SLHDSA.Address`: the eight-word canonical address.
 * `Cslib.Crypto.SLHDSA.Address.setTypeAndClear`: change the type and clear the final three words.
 * `Cslib.Crypto.SLHDSA.Address.toBits`: the canonical 256-bit big-endian encoding.
+* `Cslib.Crypto.SLHDSA.Address.toBytes`: the canonical typed 32-byte encoding.
 * `Cslib.Crypto.SLHDSA.Address.toCompressedBits`: the 176-bit SHA2 address encoding.
+* `Cslib.Crypto.SLHDSA.Address.toCompressedBytes`: the typed 22-byte SHA2 address encoding.
 * `Cslib.Crypto.SLHDSA.Address.WellFormed`: the type-specific padding and fixed-field conditions.
 
 ## Main results
@@ -57,7 +59,7 @@ WOTS+, XMSS, FORS, the hypertree, signing or verification, or any security reduc
 
 namespace Cslib.Crypto.SLHDSA
 
-open Cslib.BitString
+open Cslib.BitString Cslib.Crypto
 
 private theorem binaryWord_pad {small large value : ℕ} (hwidth : small ≤ large)
     (hvalue : value < 2 ^ small) :
@@ -195,6 +197,9 @@ def toBits (a : Address) : List Bool :=
 @[simp] theorem length_toBits (a : Address) : a.toBits.length = 256 := by
   simp [toBits, typeBits]
 
+/-- The canonical address as exactly 32 big-endian bytes. -/
+def toBytes (a : Address) : FixedBytes 32 := bitsToFixedBytesBE 32 a.toBits
+
 private theorem addressWordBits_injective : Function.Injective addressWordBits := by
   intro x y h
   apply Fin.ext
@@ -237,6 +242,10 @@ def toCompressedBits (a : Address) : List Bool :=
 /-- A SHA2 compressed address encoding is exactly 22 bytes. -/
 @[simp] theorem length_toCompressedBits (a : Address) : a.toCompressedBits.length = 176 := by
   simp [toCompressedBits]
+
+/-- The compressed SHA2 address as exactly 22 big-endian bytes. -/
+def toCompressedBytes (a : Address) : FixedBytes 22 :=
+  bitsToFixedBytesBE 22 a.toCompressedBits
 
 /-- If a layer address fits in the retained byte, reading that byte recovers it. -/
 theorem binaryValue_drop24_addressWordBits_of_lt {x : AddressWord} (h : x.val < 2 ^ 8) :

@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test)
 
 public import CslibFrontier.Crypto.Primitives.SLHDSA.Address
+public meta import CslibFrontier.Crypto.Primitives.SLHDSA.Address
 
 /-! Checked layouts and serialization clients for the FIPS 205 SLH-DSA address system. -/
 
@@ -15,13 +16,17 @@ public section
 
 namespace SLHDSAAddressTests
 
-open Cslib.BitString Cslib.Crypto.SLHDSA
+open Cslib.BitString Cslib.Crypto Cslib.Crypto.SLHDSA
+
+set_option linter.hashCommand false
 
 def sampleWOTSHash : Address := Address.wotsHash 1 2 3 4 5
 
 example : sampleWOTSHash.WellFormed := by simp [sampleWOTSHash]
 example : sampleWOTSHash.toBits.length = 32 * 8 := by simp
 example : sampleWOTSHash.toCompressedBits.length = 22 * 8 := by simp
+example : sampleWOTSHash.toBytes.toList.length = 32 := by simp
+example : sampleWOTSHash.toCompressedBytes.toList.length = 22 := by simp
 
 -- The canonical words are big-endian and occupy their FIPS 205 Figure 3 positions.
 example : binaryValue (sampleWOTSHash.toBits.take 32) = 1 := by decide +kernel
@@ -30,6 +35,16 @@ example : binaryValue ((sampleWOTSHash.toBits.drop 128).take 32) = 0 := by decid
 example : binaryValue ((sampleWOTSHash.toBits.drop 160).take 32) = 3 := by decide +kernel
 example : binaryValue ((sampleWOTSHash.toBits.drop 192).take 32) = 4 := by decide +kernel
 example : binaryValue ((sampleWOTSHash.toBits.drop 224).take 32) = 5 := by decide +kernel
+
+-- The byte APIs preserve those exact layouts and record their lengths in their result types.
+#guard sampleWOTSHash.toBytes.toList ==
+  [0, 0, 0, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+    0, 0, 0, 0,
+    0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5]
+#guard sampleWOTSHash.toCompressedBytes.toList ==
+  [1, 0, 0, 0, 0, 0, 0, 0, 2, 0,
+    0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5]
 
 -- All seven typed constructors satisfy the padding and fixed-layer requirements in Figures 3--9.
 example : (Address.wotsHash 1 2 3 4 5).WellFormed := by simp

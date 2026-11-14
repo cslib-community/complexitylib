@@ -279,11 +279,13 @@ The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
 [`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
 layouts in [`SLHDSAAddress.lean`](../../CslibFrontierTests/Crypto/SLHDSAAddress.lean).
 `Address.toBits` serializes the common layer and tree fields, the seven-valued address type and the
-three type-dependent words as the standard's canonical 32-byte big-endian address.
+three type-dependent words as the standard's canonical 32-byte big-endian address;
+`Address.toBytes` exposes the same layout as a typed `FixedBytes 32` value.
 `Address.setTypeAndClear` preserves the common fields while clearing all final 12 bytes, and the
 seven typed constructors satisfy the padding, fixed-layer and fixed-height requirements in
 Figures 3–9. `Address.toCompressedBits` is literally the byte-slice projection of Figure 18 used
-by the SHA2 parameter sets; it is injective under `Address.FitsCompressed`, which records that the
+by the SHA2 parameter sets, and `Address.toCompressedBytes` gives its typed 22-byte form. The
+compressed projection is injective under `Address.FitsCompressed`, which records that the
 one-byte layer and eight-byte tree fields do not overflow. The unrestricted compressed format is
 not injective, and the checked client exhibits the discarded high tree word. This module does not
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
@@ -300,6 +302,18 @@ inverse, and `take_shake256` proves prefix consistency for every pair of request
 the inverse and prefix APIs, and the first Falcon-512 KAT's `salt || message` prefix. This is an
 executable specification, not a collision/preimage result, constant-time implementation or FIPS
 validation.
+
+The shared byte and SHA-2 boundary used by the FIPS 205 SHA2 parameter sets is in
+[`ByteString.lean`](../../CslibFrontier/Crypto/Primitives/ByteString.lean) and
+[`SHA2.lean`](../../CslibFrontier/Crypto/Primitives/Hash/SHA2.lean) [fips1804][fips1804].
+`FixedBytes n` records digest and truncation lengths in the type, while `sha256` and `sha512`
+implement FIPS 180-4's byte-aligned padding, message schedule, compression and digest conversion
+under the standard's input-length domains. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/SHA2.lean) checks NIST's official
+one- and two-block SHA-256 and SHA-512 examples and both padding boundaries. This is reusable
+executable infrastructure: it does not yet package FIPS 205's `F`, `H`, `T_l`, `PRF`, `PRF_msg` or
+`H_msg` calls, and establishes neither asymptotic security nor concrete candidate-parameter
+advantage, query, machine-resource or program-size bounds.
 
 Falcon's current checked layer ([falcon2020][falcon2020]) is deliberately narrower than a security
 theorem. Import
@@ -333,7 +347,9 @@ edge checks in [`SLHDSAWOTSDigits.lean`](../../CslibFrontierTests/Crypto/SLHDSAW
 [fips205][fips205]. `base2b` is Algorithm 4's big-endian byte-to-base conversion. For the three
 standard values `n = 16, 24, 32`, `WOTS.digits` implements the common first seven lines of
 `wots_sign` and `wots_pkFromSig`: the `2n` base-16 message digits followed by the three complement
-checksum digits, including the specified four-bit left shift and two-byte encoding. This milestone
+checksum digits, including the specified four-bit left shift and two-byte encoding. The client now
+uses the same `Byte` and `bytesToBitsBE` boundary as SHA-2 rather than a parallel serialization.
+This milestone
 does not define the WOTS+ hash chain, key generation, signing, public-key reconstruction, concrete
 FIPS 205 hash instantiations, or any security reduction; those remain obligations under the NIST
 post-quantum portfolio roadmap item.
@@ -1473,6 +1489,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [falcon2020]: ../sources.md#falcon2020
+[fips1804]: ../sources.md#fips1804
 [fips202]: ../sources.md#fips202
 [fips203]: ../sources.md#fips203
 [fips205]: ../sources.md#fips205
