@@ -712,6 +712,7 @@ theorem ntails_lt_maxTailItems_of_r_lt {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ
 
 /-- Parameter-free `Memory.Prog` operation appending one tail item to bucket `b = d.2.2` at
 `base = d.2.1`. -/
+@[expose]
 def appendTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := do
   let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
   let t_new ← readGMGenProg (d.1, (d.2.1, 1))
@@ -724,24 +725,18 @@ def appendTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := 
 
 /-- `Memory.Prog` operation appending one tail item to bucket `b = d.2` at `base = d.1`
 (`0 < bucketBits n_max`) and returning the newly allocated physical tail offset `t_new = gm 1`. -/
-def appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ := do
-  let r_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2 + 1)
-  let t_new ← readGMProg U V w n_max h_space (d.1, 1)
-  let d_new := d.2 * tailCapPerBucket n_max + r_b
-  writeGMProg U V w n_max h_space ((d.1, gmTailPtrBase n_max + d_new), t_new)
-  writeGMProg U V w n_max h_space ((d.1, gmTailOwnerBase n_max + t_new), d_new)
-  writeGMProg U V w n_max h_space ((d.1, 4 + 3 * d.2 + 1), r_b + 1)
-  let _ ← writeGMProg U V w n_max h_space ((d.1, 1), t_new + 1)
-  pure t_new
+abbrev appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+  appendTailItemGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem appendTailItemGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
     appendTailItemGenProg (mkDictParams U V w n_max h_space, d) =
-      appendTailItemProg U V w n_max h_space d := by rfl
+      appendTailItemProg U V w n_max h_space d := by   rfl
 
 @[simp]
 theorem memoryCost_appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (appendTailItemProg U V w n_max h_space d) s = 20 := by
-  simp [appendTailItemProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
+  simp [appendTailItemProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
+    appendTailItemGenProg]
 
 /-- Pure state effect and return value of `appendTailItemProg`. -/
 theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
@@ -783,7 +778,7 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
       (by unfold gmTailPtrBase gmSlabDirBase at hptr_idx_lt; omega)
   have ht1_val_lt : gm 1 + 1 < 2 ^ globalPtrBits n_max :=
     lt_two_pow_globalPtrBits_of_le_n_max (by omega)
-  unfold appendTailItemProg
+  simp only [appendTailItemProg, appendTailItemGenProg]
   dsimp only at s' ⊢
   rw [StateTransitionSpec.clientResult_bind, clientState_readGMProg,
     clientResult_readGMProg s hr_idx_lt,
@@ -801,7 +796,7 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
         (writeGMProg U V w n_max h_space ((base, 4 + 3 * b + 1), gm (gmRIdx b) + 1)))
       (writeGMProg U V w n_max h_space ((base, 1), gm 1 + 1)) := by
     change (Memory.spec 0).clientState s (appendTailItemProg U V w n_max h_space (base, b)) = _
-    unfold appendTailItemProg
+    simp only [appendTailItemProg, appendTailItemGenProg]
     dsimp only
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
       clientResult_readGMProg s hr_idx_lt,
@@ -932,6 +927,7 @@ theorem realizes_appendTailItemGen :
 
 /-- Parameter-free `Memory.Prog` operation removing the last tail item of bucket `b = d.2.2` at
 `base = d.2.1`. -/
+@[expose]
 def removeLastTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
   let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
   let r_del := r_b - 1
@@ -955,34 +951,19 @@ def removeLastTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Uni
 (`0 < bucketBits n_max`, `1 ≤ gm (gmRIdx b)`), compacting the tail pool by moving the payload at
 physical slot `(n_max - 1) - (gm 1 - 1)` into `(n_max - 1) - t_del` and updating `GlobalMeta` via
 `gmRemoveTail`. -/
-def removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit := do
-  let r_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2 + 1)
-  let r_del := r_b - 1
-  let t_del ← readGMProg U V w n_max h_space
-    (d.1, gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + r_del))
-  let n_tails ← readGMProg U V w n_max h_space (d.1, 1)
-  let t_last := n_tails - 1
-  let d_last ← readGMProg U V w n_max h_space (d.1, gmTailOwnerBase n_max + t_last)
-  let g_last := (n_max - 1) - t_last
-  let g_del := (n_max - 1) - t_del
-  let q_move ← readQuotProg U w n_max h_space (d.1, g_last)
-  writeQuotProg U w n_max h_space ((d.1, g_del), q_move)
-  let v_move ← readValProg U V w n_max h_space (d.1, g_last)
-  writeValProg U V w n_max h_space ((d.1, g_del), v_move)
-  writeGMProg U V w n_max h_space ((d.1, gmTailPtrBase n_max + d_last), t_del)
-  writeGMProg U V w n_max h_space ((d.1, gmTailOwnerBase n_max + t_del), d_last)
-  writeGMProg U V w n_max h_space ((d.1, 4 + 3 * d.2 + 1), r_del)
-  writeGMProg U V w n_max h_space ((d.1, 1), t_last)
+abbrev removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+  removeLastTailItemGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem removeLastTailItemGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
     removeLastTailItemGenProg (mkDictParams U V w n_max h_space, d) =
-      removeLastTailItemProg U V w n_max h_space d := by rfl
+      removeLastTailItemProg U V w n_max h_space d := by   rfl
 
 @[simp]
 theorem memoryCost_removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ)
     (s : Memory.State) :
     memoryCost (removeLastTailItemProg U V w n_max h_space d) s = 36 := by
-  simp [removeLastTailItemProg, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
+  simp [removeLastTailItemProg, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
+    removeLastTailItemGenProg]
 
 /-- Pure state effect of `removeLastTailItemProg`. -/
 theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
@@ -1080,7 +1061,7 @@ theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
     dsimp only [s₁, g_del, g_last, t_del, t_last, r_del, gm,
       gmTailPtrIdx, gmTailPtrFlatIdx, gmRIdx] at hv1_at
     change (Memory.spec 0).clientState s (removeLastTailItemProg U V w n_max h_space (base, b)) = s₆
-    unfold removeLastTailItemProg
+    simp only [removeLastTailItemProg, removeLastTailItemGenProg]
     dsimp only
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
       clientResult_readGMProg s (by exact hr_idx_lt),

@@ -278,25 +278,20 @@ def prependIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) :
 
 /-- `Memory.Prog` operation prepending `j_new = d.2` to micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_new < min n_max (effBucketCap n_max)`. -/
-@[expose]
-def prependIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
-  let cap ← pure (min n_max (effBucketCap n_max))
-  if d.2 < cap then
-    lmPrependProg U V w n_max h_space d
-  else
-    pure ()
+abbrev prependIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+  prependIfIndexedGenProg ((mkDictParams U V w n_max h_space, d.1), d.2)
 
 @[simp]
 theorem prependIfIndexedGenProg_mk (U V w n_max h_space : ℕ)
     (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) :
     prependIfIndexedGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
       prependIfIndexedProg U V w n_max h_space (d1, d2) := by
-  simp only [prependIfIndexedGenProg, prependIfIndexedProg, p_minCap_mk, lmPrependGenProg_mk]
+  rfl
 
 theorem memoryCost_prependIfIndexedProg_le (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (prependIfIndexedProg U V w n_max h_space d) s ≤ 18 := by
-  unfold prependIfIndexedProg
+  simp only [prependIfIndexedProg, prependIfIndexedGenProg, p_minCap_mk, lmPrependGenProg_mk]
   simp only [pure_bind]
   split_ifs
   · exact memoryCost_lmPrependProg_le U V w n_max h_space d s
@@ -370,7 +365,7 @@ theorem prependIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_new 
     have hs' : s' = (Memory.spec 0).clientState s
         (lmPrependProg U V w n_max h_space (((base, b), m), j_new)) := by
       change (Memory.spec 0).clientState s (prependIfIndexedProg U V w n_max h_space d) = _
-      unfold prependIfIndexedProg
+      simp only [prependIfIndexedProg, prependIfIndexedGenProg, p_minCap_mk, lmPrependGenProg_mk]
       simp only [pure_bind, d]
       rw [ite_eq_left hj_min]
     have hold_le : lmHead n_max (lmAt base U V w n_max h_space s.mem) b m ≤ effBucketCap n_max :=
@@ -403,7 +398,7 @@ theorem prependIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_new 
   · have hj_not_cap : ¬(j_new < effBucketCap n_max) := fun hc => hj_min (lt_min hj_n hc)
     have hs' : s' = s := by
       change (Memory.spec 0).clientState s (prependIfIndexedProg U V w n_max h_space d) = s
-      unfold prependIfIndexedProg
+      simp only [prependIfIndexedProg, prependIfIndexedGenProg, p_minCap_mk, lmPrependGenProg_mk]
       simp only [pure_bind, d]
       rw [ite_eq_right hj_min]
       rfl
@@ -428,25 +423,20 @@ def unlinkIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : 
 
 /-- `Memory.Prog` operation unlinking `j_del = d.2` from micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_del < min n_max (effBucketCap n_max)`. -/
-@[expose]
-def unlinkIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
-  let cap ← pure (min n_max (effBucketCap n_max))
-  if d.2 < cap then
-    lmUnlinkProg U V w n_max h_space d
-  else
-    pure ()
+abbrev unlinkIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+  unlinkIfIndexedGenProg ((mkDictParams U V w n_max h_space, d.1), d.2)
 
 @[simp]
 theorem unlinkIfIndexedGenProg_mk (U V w n_max h_space : ℕ)
     (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) :
     unlinkIfIndexedGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
       unlinkIfIndexedProg U V w n_max h_space (d1, d2) := by
-  simp only [unlinkIfIndexedGenProg, unlinkIfIndexedProg, p_minCap_mk, lmUnlinkGenProg_mk]
+  rfl
 
 theorem memoryCost_unlinkIfIndexedProg_le (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (unlinkIfIndexedProg U V w n_max h_space d) s ≤ 12 := by
-  unfold unlinkIfIndexedProg
+  simp only [unlinkIfIndexedProg, unlinkIfIndexedGenProg, p_minCap_mk, lmUnlinkGenProg_mk]
   simp only [pure_bind]
   split_ifs
   · exact memoryCost_lmUnlinkProg_le U V w n_max h_space d s
@@ -524,7 +514,7 @@ theorem unlinkIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_del :
     have hs' : s' = (Memory.spec 0).clientState s
         (lmUnlinkProg U V w n_max h_space (((base, b), m), j_del)) := by
       change (Memory.spec 0).clientState s (unlinkIfIndexedProg U V w n_max h_space d) = _
-      unfold unlinkIfIndexedProg
+      simp only [unlinkIfIndexedProg, unlinkIfIndexedGenProg, p_minCap_mk, lmUnlinkGenProg_mk]
       simp only [pure_bind, d]
       rw [ite_eq_left hj_min]
     have hp_le : lmPrev n_max (lmAt base U V w n_max h_space s.mem) b j_del ≤ effBucketCap n_max :=
@@ -540,7 +530,7 @@ theorem unlinkIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_del :
   · have hj_not_cap : ¬(j_del < effBucketCap n_max) := fun hc => hj_min (lt_min hj_n hc)
     have hs' : s' = s := by
       change (Memory.spec 0).clientState s (unlinkIfIndexedProg U V w n_max h_space d) = s
-      unfold unlinkIfIndexedProg
+      simp only [unlinkIfIndexedProg, unlinkIfIndexedGenProg, p_minCap_mk, lmUnlinkGenProg_mk]
       simp only [pure_bind, d]
       rw [ite_eq_right hj_min]
       rfl
@@ -567,33 +557,23 @@ def readTotalSlotsGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
     pure (n_slabs * dpSlabSize d.1 + n_tails)
 
 /-- `Memory.Prog` reader returning `totalSlots n_max gm` at `base`. -/
-@[expose]
-def readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog ℕ :=
-  if bucketBits n_max = 0 then do
-    let i0 ← pure 0
-    readGMProg U V w n_max h_space (base, i0)
-  else do
-    let i0 ← pure 0
-    let i1 ← pure 1
-    let n_slabs ← readGMProg U V w n_max h_space (base, i0)
-    let n_tails ← readGMProg U V w n_max h_space (base, i1)
-    pure (n_slabs * slabSize n_max + n_tails)
+abbrev readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog ℕ :=
+  readTotalSlotsGenProg (mkDictParams U V w n_max h_space, base)
 
 @[simp]
 theorem readTotalSlotsGenProg_mk (U V w n_max h_space base : ℕ) :
     readTotalSlotsGenProg (mkDictParams U V w n_max h_space, base) =
       readTotalSlotsProg U V w n_max h_space base := by
-  by_cases hb0 : bucketBits n_max = 0 <;>
-    simp [readTotalSlotsGenProg, readTotalSlotsProg, hb0, ← PFunctor.FreeM.bind_eq_bind]
+  rfl
 
 theorem clientState_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readTotalSlotsProg U V w n_max h_space base) = s := by
-  unfold readTotalSlotsProg
+  simp only [readTotalSlotsProg, readTotalSlotsGenProg]
   split_ifs <;> rfl
 
 theorem memoryCost_readTotalSlotsProg_le (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     memoryCost (readTotalSlotsProg U V w n_max h_space base) s ≤ 4 := by
-  unfold readTotalSlotsProg
+  simp only [readTotalSlotsProg, readTotalSlotsGenProg]
   split_ifs
   · change 2 ≤ 4; omega
   · change 4 ≤ 4; omega
@@ -601,7 +581,7 @@ theorem memoryCost_readTotalSlotsProg_le (U V w n_max h_space : ℕ) (base : ℕ
 theorem clientResult_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (readTotalSlotsProg U V w n_max h_space base) =
       totalSlots n_max (gmAt base U V w n_max h_space s.mem) := by
-  unfold readTotalSlotsProg totalSlots
+  simp only [readTotalSlotsProg, totalSlots, readTotalSlotsGenProg]
   have h0_lt : 0 < globalMetaLen n_max := by
     unfold globalMetaLen
     exact Nat.lt_of_lt_of_le (by decide : 0 < 4) (Nat.le_add_right 4 _)
@@ -651,25 +631,20 @@ def copyLastPayloadGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Pr
 
 /-- `Memory.Prog` helper copying `(quotAt, valAt)` from the last logical slot
 `lastSlotOfProg (base, b)` of bucket `b = d.1.2` (`base = d.1.1`) into `phys_del = d.2`. -/
-@[expose]
-def copyLastPayloadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit := do
-  let phys_last ← lastSlotOfProg U V w n_max h_space d.1
-  let q_last ← readQuotProg U w n_max h_space (d.1.1, phys_last)
-  let v_last ← readValProg U V w n_max h_space (d.1.1, phys_last)
-  writeQuotProg U w n_max h_space ((d.1.1, d.2), q_last)
-  writeValProg U V w n_max h_space ((d.1.1, d.2), v_last)
+abbrev copyLastPayloadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+  copyLastPayloadGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem copyLastPayloadGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
     copyLastPayloadGenProg (mkDictParams U V w n_max h_space, d) =
       copyLastPayloadProg U V w n_max h_space d := by
-  simp only [copyLastPayloadGenProg, copyLastPayloadProg, lastSlotOfGenProg_mk,
-    readQuotGenProg_mk, readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk]
+  rfl
 
 theorem memoryCost_copyLastPayloadProg_le (U V w n_max h_space : ℕ)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (copyLastPayloadProg U V w n_max h_space d) s ≤ 20 := by
-  unfold copyLastPayloadProg
+  simp only [copyLastPayloadProg, copyLastPayloadGenProg, lastSlotOfGenProg_mk, readQuotGenProg_mk,
+    readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
     memoryCost_readQuotProg, memoryCost_readValProg,
     memoryCost_writeQuotProg, memoryCost_writeValProg]
@@ -757,7 +732,8 @@ theorem copyLastPayloadProg_effect {U V w n_max h_space base b phys_del : ℕ}
   have hs' : s' = (Memory.spec 0).clientState s₁
       (writeValProg U V w n_max h_space ((base, phys_del), v_last)) := by
     dsimp only [s', s₁, q_last, v_last, phys_last, gm]
-    unfold copyLastPayloadProg
+    simp only [copyLastPayloadProg, copyLastPayloadGenProg, lastSlotOfGenProg_mk, readQuotGenProg_mk,
+      readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk]
     rw [StateTransitionSpec.clientState_bind, clientState_lastSlotOfProg,
       clientResult_lastSlotOfProg (base, b) s hinv hb hbc,
       StateTransitionSpec.clientState_bind, clientState_readQuotProg,
