@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.NativeEpoch
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Protocol
+import CslibFrontier.Computability.Probabilistic.NativeInterface.Memory
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
 
@@ -221,14 +222,6 @@ theorem sourceSilent_independent (other : Sampler n Private) :
         simp [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary, phaseStep,
           dispatch, environment, serve, ha]
 
-private theorem prepared_memory
-    (world : World k Control Unit (ServerState n Private) input) (bit : Bool) :
-    (worldOf (.pending (instruction machine world bit))).memory = world.memory := by
-  unfold instruction
-  split
-  · rfl
-  · split <;> rfl
-
 /-- Actual selected/dispatch interface ticks preserve source feasibility and joint meters. -/
 theorem phase_invariant
     (phase next : Phase k Control Unit (ServerState n Private) input)
@@ -245,7 +238,7 @@ theorem phase_invariant
     · rw [prepare, PMF.map_comp, PMF.mem_support_map_iff] at hn
       obtain ⟨bit, _, rfl⟩ := hn
       change Invariant limits (worldOf (.pending (instruction machine world bit))).memory
-      rw [prepared_memory]
+      rw [instruction_memory]
       exact hi
   | pending chosen =>
     simp only [phaseStep, PMF.mem_support_map_iff] at hn

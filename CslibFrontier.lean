@@ -3596,6 +3596,8 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch.TerminalReso
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Trace
 public import CslibFrontier.Computability.Probabilistic.NativeContextLoader
 public import CslibFrontier.Computability.Probabilistic.NativeEpoch
+public import CslibFrontier.Computability.Probabilistic.NativeEpoch.Interaction
+public import CslibFrontier.Computability.Probabilistic.NativeEpoch.Memory
 public import CslibFrontier.Computability.Probabilistic.NativeFeedbackLoop
 public import CslibFrontier.Computability.Probabilistic.NativeGuardedContext
 public import CslibFrontier.Computability.Probabilistic.NativeInterface
