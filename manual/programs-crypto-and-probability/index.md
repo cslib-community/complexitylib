@@ -2205,7 +2205,9 @@ These posterior response kernels depend on the machine. Using one common kernel
 for different competitors still requires a source-state filtering argument; this
 representation alone does not identify a common-oracle optimum.
 The [native private-coin client](../../CslibFrontierTests/NativeRecordedRetention.lean)
-uses the existing full-response reader to issue an actual encoded batch and run a
+shares the [singleton source fixture](../../CslibFrontierTests/NativeBatchSingleton.lean)
+with the deterministic successful native client. It uses the full-response reader
+to issue an actual encoded batch and run a
 private-coin continuation after its reply. It derives the same invoice and physical
 duration for both retained and discarded outcomes. From a warm checkout, run:
 

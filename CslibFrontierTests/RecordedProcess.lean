@@ -4,7 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.PMF.RecordedProcess
+module
+-- upstream: candidate
+
+public import CslibFrontier.Probability.PMF.RecordedProcess
+import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
 
 /-!
@@ -15,6 +19,7 @@ loses the hidden state, but appends a zero receipt and keeps the earlier invoice
 The constructed response/output laws must preserve both observations.
 -/
 
+public section
 noncomputable section
 open Cslib.Probability
 open scoped ENNReal NNReal
