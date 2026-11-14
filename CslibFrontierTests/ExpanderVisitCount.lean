@@ -22,7 +22,8 @@ example : (dens {p : V × (Fin 4 → D) |
 
 example (t : ℕ) : (dens {p : V × (Fin t → D) |
     ∀ i ∈ (∅ : Finset ℕ), G.walkAt p i ∈ W} : ℝ) ≤ 1 := by
-  simpa only [card_empty, Nat.cast_zero, zero_div, Real.rpow_zero] using G.dens_filter_selected_walkAt_mem_le W t ∅ (empty_subset _)
+  simpa only [card_empty, Nat.cast_zero, zero_div, Real.rpow_zero] using
+    G.dens_filter_selected_walkAt_mem_le W t ∅ (empty_subset _)
 
 example {t : ℕ} (p : V × (Fin t → D)) : G.visitCount ∅ p = 0 := by
   simp
