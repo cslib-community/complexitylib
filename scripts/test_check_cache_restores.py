@@ -313,7 +313,7 @@ class RealLakeTests(IsolatedLakeFixture):
     def assert_unchanged_warning(self, edited_base: str, warning_file: str) -> None:
         """A changed import can hide a warning in any unchanged source on a built client's path."""
         # Run quick mode's actual subprocess audit in this private project, stopping at its failure.
-        for name in ("quick_check.py", "check_cache_restores.py", "QuickImports.lean"):
+        for name in ("quick_check.py", "check_progress.py", "check_cache_restores.py", "QuickImports.lean"):
             self.write(f"scripts/{name}", (REPO / "scripts" / name).read_text())
         baseline = self.lake("build", "--wfail", "--iofail", "DemoTests.Client")
         self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)

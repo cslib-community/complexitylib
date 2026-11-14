@@ -2,6 +2,43 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
+## Witness seedless extraction failure
+
+Import [Extractor/Basic.lean](../../CslibFrontier/Probability/Extractor/Basic.lean).
+For a deterministic `f : BitString n → BitString m` and explicit proofs `hn : 1 ≤ n`
+and `hm : 1 ≤ m`, apply `exists_minEntropy_map_first_eq_pure hn hm f`.
+The resulting source has real min-entropy at least `(n : ℝ) - 1`; its first output
+coordinate (index zero) is a point mass, and its output has statistical distance at
+least `1 / 2` from uniform. `not_isExtractor_bitString` gives the immediate failure
+of extraction with a `Unit` seed and error strictly below `1 / 2`.
+For arbitrary finite nonempty inputs, `exists_minEntropy_map_eq_pure_bool` supplies
+the reusable Boolean-fiber witness, with entropy `log₂ |Input| - 1`.
+
+This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draft,
+printed page 319 (PDF page 335): the source's first coordinate is indexed by one
+in the book. Distance uses the probability convention (half the L1 distance).
+These are information-theoretic distributions; no sampler or runtime is asserted.
+Exercise 12 is covered by the hashing corollary below; broader extractor objectives in issue #895 remain open.
+The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
+`n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
+From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
+## Apply the draft leftover hash lemma
+
+Import [Extractor/LeftoverHash.lean](../../CslibFrontier/Probability/Extractor/LeftoverHash.lean).
+For `hash : BitString t → BitString n → BitString k`, prove positive `δ` and
+`IsUniversalHash (PMF.uniformOfFintype (BitString t)) hash
+(ENNReal.ofReal ((1 + δ) / (2 : ℝ) ^ k))`.
+Apply `IsUniversalHash.isStrongExtractor_of_entropy_div` for a strong extractor,
+or `IsUniversalHash.isExtractor_append_of_entropy_div` for the book's output
+`Fin.append (hash s x) s`: digest first, seed last. Both require source min-entropy
+at least `(k : ℝ) / δ` and give error `Real.sqrt (2 * δ)`.
+These are Lemma 16.42 and Exercise 16.12 of the January 2007 draft, for all lengths
+and positive `δ`, including zero digest length. They assert no runtime or short seed.
+The [checked clients](../../CslibFrontierTests/LeftoverHashDraft.lean) use an 8-bit
+uniform source and Boolean matrix hash, and check zero digest, large error and order.
+Run `scripts/build.sh CslibFrontierTests.LeftoverHashDraft` in a configured checkout.
+
 ## Transport a distribution bound through a map
 
 Import [TotalVariation/Map.lean](../../CslibFrontier/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
@@ -680,6 +717,67 @@ sample per stage never gives relative error `1 / 2` there. Run
 `scripts/build.sh CslibFrontierTests.MarkovChain CslibFrontierTests.PathCoupling CslibFrontierTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
+
+## Bound expected hitting and return times of a finite Markov chain
+
+Import [MarkovChain/HittingTime.lean](../../CslibFrontier/Probability/MarkovChain/HittingTime.lean).
+For `P : MarkovChain V` with `[Fintype V] [DecidableEq V]`, `survival P v t x` is the probability
+`P_x(τ_v > t)` that the chain started at `x` avoids `v` at times `0, …, t`, defined by conditioning
+on the first step. `hittingTime P v x = ∑' t, survival P v t x` is the expected hitting time
+`E_x[τ_v]`, and `returnTime P v` is the expected return time `E_v[τ⁺_v]`. Both take values in
+`ℝ≥0∞`: they are exact expectations, possibly `⊤`, not truncated sums, and need no summability
+side conditions.
+
+Work with them through these lemmas rather than unfolding the tail sums.
+`hittingTime_eq_of_ne` and `returnTime_eq` are the first-step equations, and
+`hittingTime_le_add` is the triangle inequality `E_x[τ_w] ≤ E_x[τ_v] + E_v[τ_w]`.
+`mul_survival_le_hittingTime` is Markov's inequality `(t + 1) P_x(τ_v > t) ≤ E_x[τ_v]`, which
+turns an expectation bound into a bound on the probability that a `t`-step walk misses `v`.
+Kac's formula `mul_returnTime_eq` needs a stationary measure `π : V → ℝ≥0∞`, given as
+`∀ y, ∑ x, π x * P x y = π y`, and finiteness of `∑ x, π x * hittingTime P v x`; it gives
+`π v * returnTime P v = ∑ x, π x`. `IsStationary.mul_returnTime_eq_one` is the version for a
+stationary `PMF`. Finiteness comes from `hittingTime_ne_top`: give a set `S` closed under
+transitions of positive probability from which `v` is reachable along such transitions. Pass
+`Set.univ` for an irreducible chain, or a connected component.
+
+[MarkovChain/RandomWalk.lean](../../CslibFrontier/Probability/MarkovChain/RandomWalk.lean) is the
+worked client. `randomWalk G` is the simple random walk on a finite `SimpleGraph`, and an
+isolated vertex stays put, so it is a chain for every graph. The degrees are stationary
+(`sum_degree_mul_randomWalk`), so Kac's formula gives `degree_mul_returnTime_randomWalk`,
+`deg v * E_v[τ⁺_v] = 2 |E|`, for a connected graph. Then `hittingTime_randomWalk_add_degree_le`
+proves `E_u[τ_v] + deg v ≤ 2 |E|` for every edge (Goldreich, Exercise 6.19), and
+`hittingTime_randomWalk_le_dist_mul` proves `E_u[τ_v] ≤ dist(u, v) · 2 |E|`. The
+[checked clients](../../CslibFrontierTests/RandomWalkHitting.lean) state Exercise 6.19 in the
+source's form, compute `E_0[τ_1] = 1` and `E_0[τ⁺_0] = 2` on a single edge (so the edge bound is
+an equality there), and instantiate it on a triangle. Run
+`scripts/build.sh CslibFrontierTests.RandomWalkHitting`.
+
+For regular multigraphs, import
+[MarkovChain/RotationMap.lean](../../CslibFrontier/Probability/MarkovChain/RotationMap.lean).
+`G.randomWalk` follows a uniformly random edge label of `G : RotationMap V D`, with
+`randomWalk_apply` giving `edgeCount x y / |D|`. Use it when the statement counts label
+sequences, as Arora and Barak's Chapter 7 does: `survival_randomWalk_mul_pow` identifies
+`survival` with the fraction of label sequences `k : Fin T → D` whose `walkAt` avoids the target.
+The uniform law is the unique stationary law on a connected graph
+(`isStationary_randomWalk_iff`), from the maximum principle `eq_of_forall_sum_edgeCount_mul_eq`
+in [Expander/Harmonic.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Harmonic.lean),
+which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives the expected return
+time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
+`ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
+`hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the
+textbook `100 k n²` and `1000 n³`-step statements.
+[Expander/Visits.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Visits.lean)
+adds the law of large numbers for visit counts without aperiodicity. It is a graph module and needs
+no Markov-chain import. `eventually_visits_mem_Icc` bounds the fraction of label sequences whose
+`visits u v` fall outside `[(1 - ε) t / n, (1 + ε) t / n]`, and `visits_eq` unfolds `visits` to
+the number of times `1, …, t` at which `walkAt` is at `v`. Its reusable step is `exists_abs_sum_walk_pow_le`, uniform
+Cesàro convergence `∑_{j < N} Pʲ f = o(N)` for `f` of total `0` on a connected graph, which comes
+from Mathlib's mean ergodic theorem applied to `walkEuclidean`. The
+[checked clients](../../CslibFrontierTests/RegularRandomWalk.lean) restate them in source form and
+compute the return time `2` on a single edge; run
+`scripts/build.sh CslibFrontierTests.RegularRandomWalk`. If a proof needs `∑ y, P x y = 1`, use
+`sum_apply`. Do not convert to `ℝ` before the finiteness lemmas are available, since `toReal`
+sends `⊤` to `0`.
 
 ## Test for a perfect matching with a random determinant
 
@@ -3177,6 +3275,26 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Bound bad visits along an expander walk
+
+Import [VisitCount.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean).
+Let `G : RotationMap V D`, with finite nonempty vertex type `V` and incident-port type `D`.
+Write `L = t + 1` for the number of visited vertices, `m : ℕ` for an integer visit threshold,
+and `q = dens W + G.spectralExpansion ^ 2` for a bad-vertex set `W`.
+For this set, `G.visitCount W p` counts all `t+1` vertices, including the
+initial vertex. Apply `dens_filter_selected_walkAt_mem_le` to arbitrary selected times,
+`expect_choose_visitCount_le` for factorial moments, and `dens_filter_visitCount_gt_le`
+for strict integer tails. `dens_filter_visitCount_half_lt` bounds a strict majority of
+bad samples by `(32 * dens W)^((t+1)/4)` when expansion is below `sqrt(dens W)`.
+The [checked clients](../../CslibFrontierTests/ExpanderVisitCount.lean) cover nonconsecutive
+times excluding zero, computed counts, boundaries, and even/odd majority events.
+Goldreich Exercise 8.44's strict displayed integer bound needs positive `q` and
+`1≤m≤L`; the general non-strict tails include degenerate cases. These are uniform-start
+probabilities on vertices and port sequences, not a sampler or runtime certificate.
+
+From the repository root, run `scripts/build.sh CslibFrontierTests.ExpanderVisitCount`
+to check the examples.
 
 ## Bound adapted Bernoulli counts and hitting times by stochastic domination
 

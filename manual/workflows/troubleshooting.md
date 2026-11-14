@@ -81,11 +81,17 @@ After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_
 
 The audit fails on any message or elaboration failure. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. Files are elaborated one at a time, so each restored file adds its elaboration time to the check; a full check after a large restore can take appreciably longer. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
 
-The restored-source audit reports its selected count, current source and elapsed audit time
-before each local elaboration, so a long-running file remains visible. The final summary also
-reports total elapsed time. When `CI` is set, per-file progress is quiet by default; use
+Full and quick checks stream the restored-source audit's selected count, current source and
+elapsed time before each elaboration, while retaining the complete output in their failure logs.
+The final summary also reports total elapsed time. Successful audits currently leave synthetic
+traces unchanged, so repeating the check can repeat that elaboration; ordinary targeted builds
+do not run this audit. Follow the [focused validation workflow](getting-started.md#prerequisites-and-the-checkouts-version)
+and use hosted CI for full validation when available.
+
+When running the audit directly with `CI` set, per-file progress is quiet by default; use
 `python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to suppress
-it locally. Both modes retain all selected checks, failure messages and the final summary.
+it locally. Both modes retain all selected checks, failure messages and the final summary;
+the full and quick wrappers explicitly request progress.
 
 ## Diagnose "failed to read file" on whole-library imports
 
@@ -126,6 +132,16 @@ phase timings and archive counts in `CACHE_STAGING_METRICS`. The mapping-produci
 pack missing module archives even when no Lean source needs recompilation. The
 [cache publication profiling procedure](../../scripts/cache/README.md#profile-cache-publication)
 gives the clean-checkout command, metric meanings and controls for a comparison. Separate this
-preparation from upload time: both GCS and MIT receive the same staged files.
+preparation from upload time: both publishers consume the same complete staged files, while
+MIT can transfer only missing archive payloads. Its `CACHE_HTTP_PUBLICATION` log reports the
+request body sizes and whether it used incremental transfer or a full compatibility/race
+fallback. The [protocol contract](../../tools/cache-origin/README.md#publication-contract)
+explains those modes; a smaller upload does not mean staging became cheaper.
+
+CI saves `.lake` after staging so subsequent builds can reuse the new archives. Ordinary builds
+and successful handoffs preserve unchanged archives; source changes still let Lake invalidate
+them. Include Actions restore/save bytes and time and handoff transfer costs when comparing the
+whole cycle. Larger snapshots can evict older caches, and cancellation before the late save loses
+that run's snapshot; a failed check remains failed even when its reusable build outputs are saved.
 
 [complexitylib]: ../sources.md#complexitylib

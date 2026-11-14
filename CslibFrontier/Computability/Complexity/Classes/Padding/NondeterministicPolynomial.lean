@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Language
 public import CslibFrontier.Computability.Complexity.Classes.Time
 import CslibFrontier.Computability.Complexity.Classes.Time.Verifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
@@ -22,17 +23,19 @@ after multiplying the exponents by a positive integer `k`, up to one more degree
 `NTIME ((n + 1) ^ (b * k)) ⊆ NTIME ((n + 1) ^ (a * (k + 1) + 1))`
 (`Cslib.Complexity.NTIME_pow_mul_subset_of_subset`).
 
-The padded language of `A` consists of the words `x` carrying a word `y = unframe x` framed at
-their start, with `(y.length + 1) ^ (k + 1) ≤ x.length` and `y ∈ A`. Both directions guess a
+The padded language `Cslib.Complexity.polynomialPadded A (k + 1)` of `A` consists of the words
+`x` carrying a word `y = unframe x` framed at their start, with
+`(y.length + 1) ^ (k + 1) ≤ x.length` and `y ∈ A`
+(`CslibFrontier.Computability.Complexity.Classes.Padding.Language`). Both directions guess a
 certificate and run a verifier (`Cslib.Complexity.setOf_exists_mem_NTIME`), with the linear-time
 verifier of the other language (`Cslib.Complexity.exists_verifier_of_mem_NTIME`).
 
-* **Padding** (`Cslib.Complexity.setOf_padded_mem_NTIME`). If `A` is in
+* **Padding** (`Cslib.Complexity.polynomialPadded_mem_NTIME`). If `A` is in
   `NTIME ((n + 1) ^ (b * k))`, the padded language is in `NTIME ((n + 1) ^ b)`. Test the padding
   in quadratic time, then guess a certificate for `y` of a length rounded to a power of two. The
   padding exponent is `k + 1` rather than `k`: writing the rounded length in unary costs one
   more factor `y.length + 1`, and the padding pays for it.
-* **Unpadding** (`Cslib.Complexity.mem_NTIME_of_setOf_padded_mem`). If the padded language is in
+* **Unpadding** (`Cslib.Complexity.mem_NTIME_of_polynomialPadded_mem`). If the padded language is in
   `NTIME ((n + 1) ^ a)`, then `A` is in `NTIME ((n + 1) ^ (a * (k + 1) + 1))`. Write the padding
   of `y`, rounded to a power of two, then guess a certificate for the padded word. Writing the
   certificate length in unary costs the extra degree.
@@ -47,8 +50,8 @@ hidden in the statements.
 
 ## Main results
 
-* `Cslib.Complexity.setOf_padded_mem_NTIME`: padding into nondeterministic time.
-* `Cslib.Complexity.mem_NTIME_of_setOf_padded_mem`: unpadding out of nondeterministic time.
+* `Cslib.Complexity.polynomialPadded_mem_NTIME`: padding into nondeterministic time.
+* `Cslib.Complexity.mem_NTIME_of_polynomialPadded_mem`: unpadding out of nondeterministic time.
 * `Cslib.Complexity.NTIME_pow_mul_subset_of_subset`: a nondeterministic polynomial-time collapse
   propagates after multiplying both exponents by the same positive integer, up to one degree.
 
@@ -64,19 +67,13 @@ namespace Cslib.Complexity
 
 open Turing.MultiTapeTM
 
-/-- Unframing is linear. -/
-private theorem computableInO_unframe :
-    ComputableInO unframe encBits encBits (fun x => x.length) (fun x => x.length) :=
-  .of_linear (.of_unframe fun _ => rfl)
-
 /-- **Padding into nondeterministic time.** If `A` is in nondeterministic time
-`O((n + 1) ^ (b * k))`, with `2 ≤ b` and `1 ≤ k`, then the words carrying a word `y` of `A` framed
-at their start, padded to a length of at least `(y.length + 1) ^ (k + 1)`, form a problem in
-nondeterministic time `O((n + 1) ^ b)`. -/
-theorem setOf_padded_mem_NTIME {A : Set (List Bool)} {b k : ℕ} (hb : 2 ≤ b) (hk : 1 ≤ k)
+`O((n + 1) ^ (b * k))`, with `2 ≤ b` and `1 ≤ k`, then its padded language with exponent `k + 1`,
+of the words carrying a word `y` of `A` framed at their start padded to a length of at least
+`(y.length + 1) ^ (k + 1)`, is in nondeterministic time `O((n + 1) ^ b)`. -/
+theorem polynomialPadded_mem_NTIME {A : Set (List Bool)} {b k : ℕ} (hb : 2 ≤ b) (hk : 1 ≤ k)
     (hA : A ∈ NTIME encBits (fun n => (n + 1) ^ (b * k))) :
-    {x : List Bool | ((unframe x).length + 1) ^ (k + 1) ≤ x.length ∧ unframe x ∈ A} ∈
-      NTIME encBits (fun n => (n + 1) ^ b) := by
+    polynomialPadded A (k + 1) ∈ NTIME encBits (fun n => (n + 1) ^ b) := by
   classical
   obtain ⟨V, c, hV, hc⟩ := exists_verifier_of_mem_NTIME hA
   -- the certificate length for `y = unframe x`, rounded to a power of two, when padded enough
@@ -96,23 +93,22 @@ theorem setOf_padded_mem_NTIME {A : Set (List Bool)} {b k : ℕ} (hb : 2 ≤ b) 
       _ ≤ 2 * c * ((unframe x).length + 1) ^ (b * k) := by nlinarith
       _ ≤ 2 ^ (c + 1) * 2 ^ (b * k * Nat.size ((unframe x).length + 1)) := Nat.mul_le_mul hc' hp
       _ = L x := by rw [Nat.mul_comm, ← pow_add]
-  have hset :
-      {x : List Bool | ((unframe x).length + 1) ^ (k + 1) ≤ x.length ∧ unframe x ∈ A} =
-        {x | ∃ w : List Bool, w.length = ℓ x ∧ V' (x, w) = true} := by
+  have hset : polynomialPadded A (k + 1) =
+      {x | ∃ w : List Bool, w.length = ℓ x ∧ V' (x, w) = true} := by
     ext x
-    simp only [Set.mem_ofPred_eq, ℓ, V', guard]
+    simp only [mem_polynomialPadded_iff, Set.mem_ofPred_eq, ℓ, V', guard]
     by_cases hg : ((unframe x).length + 1) ^ (k + 1) ≤ x.length
     · simp only [hg, decide_true, ↓reduceIte, true_and]
       exact hc (unframe x) (L x) (by simpa only [encBits_apply] using hL x)
     · simp [hg]
   rw [hset]
   -- the certificate length and the verifier, as plain computations
-  have hlen := ComputableInO.lengthNat.comp computableInO_unframe
+  have hlen := ComputableInO.lengthNat.comp ComputableInO.unframe
   have hℓ := (computableInO_polynomialPaddingGuard (k + 1)).ite
     ((computableInO_unary_roundedPower (k := b * k) (Nat.one_le_iff_ne_zero.mpr
       (Nat.mul_ne_zero (by omega) (by omega))) (c + 1)).comp hlen)
     (ComputableInO.const (encIn := encBits) (encMid := encUnary) 0)
-  have hpair := (computableInO_unframe.comp (ComputableInO.fst encBits encBits)).prod
+  have hpair := (ComputableInO.unframe.comp (ComputableInO.fst encBits encBits)).prod
     (ComputableInO.snd encBits encBits)
   have hV' := ((computableInO_polynomialPaddingGuard (k + 1)).comp
     (ComputableInO.fst encBits encBits)).ite (hV.comp hpair)
@@ -164,13 +160,11 @@ theorem setOf_padded_mem_NTIME {A : Set (List Bool)} {b k : ℕ} (hb : 2 ≤ b) 
       _ ≤ (40 + 8 * 2 ^ (b * k + (c + 1))) * (n + 1) ^ b := Nat.mul_le_mul_right _ (by omega)
       _ ≤ _ := Nat.le_add_right _ _
 
-/-- **Unpadding out of nondeterministic time.** If the words carrying a word `y` of `A` framed at
-their start, padded to a length of at least `(y.length + 1) ^ (k + 1)`, form a problem in
-nondeterministic time `O((n + 1) ^ a)`, with `1 ≤ a`, then `A` is in nondeterministic time
+/-- **Unpadding out of nondeterministic time.** If the padded language of `A` with exponent `k + 1`
+is in nondeterministic time `O((n + 1) ^ a)`, with `1 ≤ a`, then `A` is in nondeterministic time
 `O((n + 1) ^ (a * (k + 1) + 1))`. -/
-theorem mem_NTIME_of_setOf_padded_mem {A : Set (List Bool)} {a k : ℕ} (ha : 1 ≤ a)
-    (hB : {x : List Bool | ((unframe x).length + 1) ^ (k + 1) ≤ x.length ∧ unframe x ∈ A} ∈
-      NTIME encBits (fun n => (n + 1) ^ a)) :
+theorem mem_NTIME_of_polynomialPadded_mem {A : Set (List Bool)} {a k : ℕ} (ha : 1 ≤ a)
+    (hB : polynomialPadded A (k + 1) ∈ NTIME encBits (fun n => (n + 1) ^ a)) :
     A ∈ NTIME encBits (fun n => (n + 1) ^ (a * (k + 1) + 1)) := by
   classical
   obtain ⟨V, c, hV, hc⟩ := exists_verifier_of_mem_NTIME hB
@@ -205,13 +199,8 @@ theorem mem_NTIME_of_setOf_padded_mem {A : Set (List Bool)} {a k : ℕ} (ha : 1 
       _ = ℓ y := by rw [hRa, Nat.mul_comm, ← pow_add]
   have hset : A = {y | ∃ w : List Bool, w.length = ℓ y ∧ V' (y, w) = true} := by
     ext y
-    have hmem : y ∈ A ↔ pad y ∈
-        {x : List Bool | ((unframe x).length + 1) ^ (k + 1) ≤ x.length ∧ unframe x ∈ A} := by
-      simp only [Set.mem_ofPred_eq, pad, unframe_frame_append]
-      have := hR y
-      have := hpadlen y
-      simp only [pad] at this
-      exact ⟨fun h => ⟨by omega, h⟩, fun h => h.2⟩
+    have hmem : y ∈ A ↔ pad y ∈ polynomialPadded A (k + 1) :=
+      (frame_append_replicate_mem_polynomialPadded_iff (hR y)).symm
     rw [hmem, hc (pad y) (ℓ y) (by simpa only [encBits_apply] using hℓ' y)]
     rfl
   rw [hset]
@@ -258,6 +247,6 @@ theorem NTIME_pow_mul_subset_of_subset {a b k : ℕ} (ha : 1 ≤ a) (hb : 2 ≤ 
     (h : NTIME encBits (fun n => (n + 1) ^ b) ⊆ NTIME encBits (fun n => (n + 1) ^ a)) :
     NTIME encBits (fun n => (n + 1) ^ (b * k)) ⊆
       NTIME encBits (fun n => (n + 1) ^ (a * (k + 1) + 1)) :=
-  fun _ hA => mem_NTIME_of_setOf_padded_mem ha (h (setOf_padded_mem_NTIME hb hk hA))
+  fun _ hA => mem_NTIME_of_polynomialPadded_mem ha (h (polynomialPadded_mem_NTIME hb hk hA))
 
 end Cslib.Complexity

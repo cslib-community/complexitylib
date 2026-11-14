@@ -16,6 +16,7 @@ on:
       - "scripts/check_docs.py"
       - "lean-toolchain"
       - ".github/actions/install-lean/**"
+      - ".github/actions/cache-guide-deps/**"
       - ".github/workflows/guide.yml"
   workflow_dispatch:
 
@@ -35,7 +36,7 @@ concurrency:
 
 jobs:
   guide:
-    runs-on: ubuntu-latest
+    runs-on: cslib-ubuntu-24.04-8core
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +56,7 @@ jobs:
             fi
             guide_changes="$(git diff --name-only "$GUIDE_BASE_SHA" HEAD -- \
               guide scripts/guide.sh scripts/check_docs.py lean-toolchain \
-              .github/actions/install-lean .github/workflows/guide.yml)"
+              .github/actions/install-lean .github/actions/cache-guide-deps .github/workflows/guide.yml)"
             if [[ -z "$guide_changes" ]]; then
               render=false
             fi
@@ -85,6 +86,14 @@ jobs:
         run: scripts/cache/get-missing.sh
       - name: Check documentation pins
         run: python3 scripts/check_docs.py --config-only
+      # Only main's API docs workflow writes this small, immutable dependency entry.
+      - name: Restore Guide dependencies
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: ./.github/actions/cache-guide-deps
+        with:
+          generation: ${{ env.CACHE_RECOVERY_GENERATION }}
       - name: Compile guide examples
         run: lake -q -d guide build --log-level=error CslibFrontierGuide
       - name: Build the guide
