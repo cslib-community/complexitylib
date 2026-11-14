@@ -115,6 +115,16 @@ abbrev DRMWord (μ : ℕ) := Fin μ × RMPoint → Bool
 def rmEncode (m : RMMessage) : RMWord :=
   fun x => m.sign ^^ hadamardCode m.slope x
 
+/-- The source generator-matrix multiplication, stated in byte coordinates: byte bit `7`
+multiplies the all-one row, while byte bit `i` multiplies coordinate `i` of the binary column.
+Thus this also records the reversal between the source's top-to-bottom matrix rows and its
+least-significant-bit-first byte indices. -/
+theorem rmEncode_apply_generatorMatrix (m : RMMessage) (x : RMPoint) :
+    rmEncode m x = (rmMessageByteEquiv m (Fin.last 7) ^^
+      ∑ i : Fin 7, (rmMessageByteEquiv m i.castSucc && x i)) := by
+  simp only [rmEncode, rmMessageByteEquiv_apply_last, rmMessageByteEquiv_apply_castSucc,
+    hadamardCode_apply, dotProduct, Bool.mul_eq_and]
+
 /-- The source's `dRM.Encode`: repeat the same `RM(1, 7)` word `μ` times. -/
 def drmEncode (μ : ℕ) (m : RMMessage) : DRMWord μ :=
   fun x => rmEncode m x.2
@@ -398,6 +408,20 @@ private theorem hammingDist_drmEncode_true_add_false {μ : ℕ} (w : DRMWord μ)
     hammingDist (drmEncode μ ⟨true, a⟩) w +
         hammingDist (drmEncode μ ⟨false, a⟩) w = 128 * μ := by
   rw [drmEncode_true_eq_not, hammingDist_not_left_add, card_drmWordIndex]
+
+/-- At the encoded slope, the corrected coefficient is `-64 * μ` for a clear source sign bit and
+`64 * μ` for a set sign bit.  This pins the source decoder's coefficient-sign convention. -/
+theorem drmHadamardCoeff_encode (μ : ℕ) (m : RMMessage) :
+    drmHadamardCoeff (drmEncode μ m) m.slope =
+      if m.sign then (64 * μ : ℤ) else -(64 * μ : ℤ) := by
+  rcases m with ⟨b, a⟩
+  rw [drmHadamardCoeff_eq_hammingDist_sub]
+  cases b
+  · simp only [Bool.false_eq_true, ite_false, hammingDist_self, Nat.cast_zero, zero_sub]
+  · simp only [ite_true]
+    have htotal := hammingDist_drmEncode_true_add_false (drmEncode μ ⟨true, a⟩) a
+    rw [hammingDist_self, zero_add] at htotal
+    omega
 
 private theorem hammingDist_chosenSign_add_natAbs {μ : ℕ} (w : DRMWord μ) (a : RMPoint) :
     hammingDist (drmEncode μ ⟨0 < drmHadamardCoeff w a, a⟩) w +

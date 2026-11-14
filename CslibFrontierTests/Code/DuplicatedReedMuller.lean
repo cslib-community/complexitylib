@@ -60,6 +60,40 @@ private def zeroMessage : RMMessage := ⟨false, 0⟩
 private def firstSlopeMessage : RMMessage :=
   ⟨false, ![true, false, false, false, false, false, false]⟩
 
+/-- The source byte `0x81`: the sign and first (least-significant) slope bit are set. -/
+private def byte81Message : RMMessage :=
+  ⟨true, ![true, false, false, false, false, false, false]⟩
+
+/-- The source byte `0x80`: only the sign bit is set. -/
+private def byte80Message : RMMessage :=
+  ⟨true, 0⟩
+
+private theorem drmFindPeak_encode {μ : ℕ} (hμ : 0 < μ) (m : RMMessage) :
+    drmFindPeak (drmEncode μ m) = m.slope := by
+  simpa only [drmDecode] using congrArg RMMessage.slope (drmDecode_leftInverse hμ m)
+
+example : rmMessageByteEquiv byte81Message =
+    ![true, false, false, false, false, false, false, true] := by decide
+
+/-- Generator column zero reads only the source sign bit. -/
+example : rmEncode byte81Message 0 = true := by decide
+
+/-- Generator column one also reads the least-significant slope bit. -/
+example : rmEncode byte81Message ![true, false, false, false, false, false, false] = false := by
+  decide
+
+/-- An exact codeword with clear sign has a strictly negative selected coefficient. -/
+example : drmHadamardCoeff (drmEncode 3 zeroMessage) (drmFindPeak (drmEncode 3 zeroMessage)) =
+    -192 := by
+  rw [drmFindPeak_encode (by decide)]
+  simpa [zeroMessage] using drmHadamardCoeff_encode 3 zeroMessage
+
+/-- An exact codeword with set sign has a strictly positive selected coefficient. -/
+example : drmHadamardCoeff (drmEncode 3 byte80Message)
+    (drmFindPeak (drmEncode 3 byte80Message)) = 192 := by
+  rw [drmFindPeak_encode (by decide)]
+  simpa [byte80Message] using drmHadamardCoeff_encode 3 byte80Message
+
 example : hammingDist (drmEncode 3 zeroMessage) (drmEncode 3 firstSlopeMessage) = 192 := by
   simpa using hammingDist_drmEncode_of_slope_ne 3 (m := zeroMessage)
     (m' := firstSlopeMessage) (by decide)
@@ -105,10 +139,6 @@ example : ¬(drmDecode (drmEncode 1 zeroMessage + boundaryErrorZero) = zeroMessa
   rw [boundaryZero_eq, boundaryFirst_eq]
   rintro ⟨hzero, hfirst⟩
   exact (show zeroMessage ≠ firstSlopeMessage by decide) (hzero.symm.trans hfirst)
-
-/-- The source byte `0x81` selects the sign and first (least-significant) slope bit. -/
-example : rmMessageByteEquiv ⟨true, ![true, false, false, false, false, false, false]⟩ =
-    ![true, false, false, false, false, false, false, true] := by decide
 
 /-- The unique word at multiplicity zero. -/
 private def emptyWord : DRMWord 0 :=
