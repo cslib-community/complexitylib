@@ -140,9 +140,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 ### Concurrent and quantum security
 
 - **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
-  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain source-required sampling, abort, transform and failure obligations, including evolving/unsupported claims.
+  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain sampling, abort, transform and failure obligations, including evolving claims.
   Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
-  FAEST challenge decoding [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); BAVC, VOLE, correctness and QROM security remain.
+  FAEST parsing is [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); row-to-VOLE is [#5246](https://github.com/cslib-community/cslib-frontier/issues/5246). BAVC, QuickSilver, correctness and ROM/QROM security remain.
 - **SQIsign foundations** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Extend its `B_{p,∞}` presentation with maximal orders and ideals, finite-field and elliptic-curve arithmetic, isogenies and Deuring, protocol algorithms, failure analysis, distribution switches, assumptions and security reductions.
 
 - **SDitH foundations**: [#5212](https://github.com/cslib-community/cslib-frontier/issues/5212) is the completed bounded binary-RSD milestone. Seed expansion, the PIOP, commitments, grinding, signing and verification, SD/RSD hardness, and EUF-CMA/QROM security remain under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
@@ -463,6 +463,8 @@ Organize modules by subject, not chapter.
 - **Streaming and sketching**: native time and space bounds for Count-Min with hash-seed storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown length, and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS sketches and CountSketch.
   Also turnstile updates as stream items, merging of Misra–Gries summaries, heavy-hitter recovery over the whole universe (dyadic or group-testing schemes) and heavy-hitter space lower bounds, and multi-pass communication-to-streaming transfers with pass counts.
 - **Join-size sketches** ([#3551](https://github.com/cslib-community/cslib-frontier/issues/3551)): the Alon–Gibbons–Matias–Szegedy tug-of-war join signature over turnstile streams with insertions and deletions, and their signature-size lower bound for join sizes (Theorem 4.3).
+- **SQL query semantics** ([#5282](https://github.com/cslib-community/cslib-frontier/issues/5282)): an executable semantics for a SQL fragment with `NULL`, three-valued predicates, resolved column references and bag-semantics queries, adapting Evelyn Mitchell's `sql_equiv`.
+  Ordered, bag and set equivalence of queries with proved transformation laws, a proof-producing simplifier, and equijoin row counts as the streaming join size.
 - **Distinct elements** ([#3340](https://github.com/cslib-community/cslib-frontier/issues/3340)): the space-optimal `F₀` estimators (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
 - **Locality-sensitive hashing** ([#3361](https://github.com/cslib-community/cslib-frontier/issues/3361)): MinHash, sensitive families, AND/OR/banding and S-curve gap, bit sampling, measure-theoretic LSH, SimHash, `p ∈ {1, 2}` `p`-stable LSH (`ℓ₁` Cauchy, `ℓ₂` Gaussian), and the `(c, r)`-ANN structure (`e⁻¹ + 1/3` failure), realized on the word RAM with hashed buckets, seed storage and native `n^ρ` query and preprocessing time.
   Also `p ∈ (0, 2) \ {1, 2}` `p`-stable LSH, smaller min-wise families, and LSH lower bounds (O'Donnell–Wu–Zhou, source unverified).
