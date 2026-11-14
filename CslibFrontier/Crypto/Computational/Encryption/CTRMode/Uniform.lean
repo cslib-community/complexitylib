@@ -127,14 +127,12 @@ def ctrWordKeystream (family : List Bool → List Bool → List Bool) (n : ℕ) 
 /-- Randomized counter-mode encryption ([BonehShoup2023], Section 5.4.2): draw a uniform `n`-bit
 initial value `iv` and output `iv` followed by the message XORed with the keystream of
 `msg.length / n` blocks. -/
-@[expose]
 noncomputable def ctrWordEncrypt (family : List Bool → List Bool → List Bool) :
     ℕ → List Bool → List Bool → ProbComp (List Bool) :=
   ivStreamEncrypt (ctrWordKeystream family)
 
 /-- Counter-mode decryption: accept an `n`-bit initial value followed by whole blocks, and XOR the
 blocks with the keystream from that initial value. -/
-@[expose]
 def ctrWordDecrypt (family : List Bool → List Bool → List Bool) :
     ℕ → List Bool → List Bool → Option (List Bool) :=
   ivStreamDecrypt (ctrWordKeystream family)
@@ -235,14 +233,12 @@ theorem computableInPolyTime_ctrWordDecrypt {family : List Bool → List Bool �
 
 /-- One keystream block from the function oracle: query the `j`-th counter block, keep at most
 `n` bits of the reply and append them to the keystream so far. -/
-@[expose]
 def ctrKeystreamStep (n : ℕ) (iv : List Bool) (state : ℕ × List Bool) :
     WordOracleComp Unit (ℕ × List Bool) :=
   (fun block => (state.1 + 1, state.2 ++ block)) <$>
     (List.take n <$> ProbOracleComp.query ((), ctrWordCounter n iv state.1))
 
 /-- The keystream of `blocks` blocks from the function oracle, with one query per block. -/
-@[expose]
 def ctrKeystreamQueries (n : ℕ) (iv : List Bool) (blocks : ℕ) : WordOracleComp Unit (List Bool) :=
   Prod.snd <$> OracleComp.iterate blocks (ctrKeystreamStep n iv) (0, [])
 
@@ -250,7 +246,6 @@ def ctrKeystreamQueries (n : ℕ) (iv : List Bool) (blocks : ℕ) : WordOracleCo
 on an admissible pair, draw a uniform `n`-bit initial value, obtain the keystream from the
 function oracle and XOR it with the message selected by `bit`; answer inadmissible requests with
 `[]` and no query. -/
-@[expose]
 noncomputable def ctrPrfHandler (n : ℕ) (bit : Bool) (request : Unit × List Bool) :
     WordOracleComp Unit (List Bool) :=
   let m0 := unframe request.2
@@ -265,7 +260,6 @@ noncomputable def ctrPrfHandler (n : ℕ) (bit : Bool) (request : Unit × List B
 /-- The PRF distinguisher built from a left-or-right CPA adversary against counter mode
 ([BonehShoup2023], proof of Theorem 5.3): run the adversary and answer every request with
 `ctrPrfHandler n bit`. -/
-@[expose]
 noncomputable def ctrToPrfDistinguisher (adversary : OracleDistinguisher) (bit : Bool) :
     OracleDistinguisher :=
   fun n _ => ProbOracleComp.simulate (ctrPrfHandler n bit) (adversary n [])
