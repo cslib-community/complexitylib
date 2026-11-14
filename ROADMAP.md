@@ -141,10 +141,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 
 ### Concurrent and quantum security
 
-- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987); machine-witness accounting [#5285](https://github.com/cslib-community/cslib-frontier/issues/5285)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
-  Concrete endpoints separately charge constructed adversary/reduction description size and online time, space, randomness, query and circuit resources; asymptotic endpoints certify polynomial uniform composition.
-  Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain sampling, abort, transform and failure obligations, including evolving claims.
-  Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987); machine witnesses [#5285](https://github.com/cslib-community/cslib-frontier/issues/5285)): Faithful protocols and exact concrete/asymptotic quantum reductions for ML-KEM/DSA, SLH/FN-DSA, HQC and active signatures.
+  Concrete endpoints charge constructed-program size and online time, space, randomness, queries and circuits; asymptotic reductions certify uniform polynomial composition.
+  Preserve sampling, abort, transform, failure, controller-layout/relocation and evolving-claim obligations; operational QPPT/QROM security remains open.
 - **FAEST security**: Parsing is [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); row-to-VOLE is [#5246](https://github.com/cslib-community/cslib-frontier/issues/5246). BAVC, QuickSilver, correctness and ROM/QROM security remain.
 - **HQC security** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Connect the finite Theorem 6.3 game hops to classical ([#5290](https://github.com/cslib-community/cslib-frontier/issues/5290)) and native ([#5281](https://github.com/cslib-community/cslib-frontier/issues/5281)) DQCSD assumptions with machine and circuit resource certificates.
   Then complete the sampler/seed model, numerical DFR, the published Theorem 6.4 salted Fujisaki–Okamoto/ROM and KEM endpoint ([#5279](https://github.com/cslib-community/cslib-frontier/issues/5279)), and the separate QROM upgrade ([#5280](https://github.com/cslib-community/cslib-frontier/issues/5280)).
