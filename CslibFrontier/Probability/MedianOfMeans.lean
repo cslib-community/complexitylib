@@ -99,7 +99,6 @@ theorem dens_abs_medianOfMeans_sub_gt_le [Nonempty Ω] {r k : ℕ} [NeZero k] (g
     refine (Fintype.dens_lt_abs_le_expect_sq_div_sq
       (fun ω : Fin k → Ω => 𝔼 l, g (ω l) - μ) ht).trans ?_
     rw [expect_expect_sub_sq, div_le_iff₀ (sq_pos_of_pos ht), div_le_iff₀ hk]
-    dsimp only [μ]
     nlinarith [hvar]
   exact dens_abs_median_sub_gt_le (fun ω : Fin k → Ω => 𝔼 l, g (ω l)) hbad r
 
