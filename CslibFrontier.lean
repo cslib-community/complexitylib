@@ -1722,6 +1722,8 @@ public import CslibFrontier.Computability.Circuit.Quantum.RealEncoding
 public import CslibFrontier.Computability.Circuit.Quantum.Reversible
 public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Circuit
 public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Resources
+public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Sampling
+public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Sampling.Resources
 public import CslibFrontier.Computability.Circuit.Quantum.SuperdenseCoding
 public import CslibFrontier.Computability.Circuit.Quantum.Teleportation
 public import CslibFrontier.Computability.Circuit.Quantum.Uniform
