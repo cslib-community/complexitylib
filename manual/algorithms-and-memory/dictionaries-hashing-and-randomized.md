@@ -112,6 +112,27 @@ Import `CslibFrontier.Algorithms.Lean.Freivalds` ([CslibFrontier/Algorithms/Lean
 
 The probability core is in [CslibFrontier/Probability/Freivalds.lean](../../CslibFrontier/Probability/Freivalds.lean). It contains the counting bound `card_filter_mulVec_eq_mul_card_le`, its `k`-vector form, and `isUniversalHash_mulVec`, which states `M ↦ M *ᵥ (e ∘ x)` as a `1/|S|`-universal family under the existing `IsUniversalHash` predicate. The [checked examples](../../CslibFrontierTests/Freivalds.lean) include several things. One is a `2 × 2` product that one vector misses and another exposes. Another is a `1 × 1` instance whose acceptance probability is exactly `1/2`, which shows the `0`/`1` bound is attained. A third is a `ZMod 4` instance where the encoding `id` fails the injectivity hypothesis and the counting bound fails with it. The randomized verifier is not a machine program: Karp–Rabin fingerprinting, rolling-hash matching, the fingerprint equality protocol and bit-level costs remain open ([ROADMAP](../../ROADMAP.md#randomized-verification-and-fingerprinting)).
 
+## Bilinear matrix fingerprints
+
+Import `CslibFrontier.Probability.BilinearFingerprint`
+([source](../../CslibFrontier/Probability/BilinearFingerprint.lean)).
+For a nonzero rectangular matrix over any finite field,
+`toOuterMeasure_bilinear_ne_zero_ge` gives probability at least
+`(1 - 1 / |F|)^2` that `∑ i, r i * (M *ᵥ s) i ≠ 0`.
+Sampling is explicitly the uniform law on the product of the column-vector and row-vector
+spaces, hence the vectors are independent. There is no positive-dimension assumption:
+a nonzero matrix already rules out empty row or column types.
+
+The prime specialization `toOuterMeasure_bilinear_zmod_ne_zero_ge` is Goldreich's
+Exercise 9.22 (r5.pdf, printed page 452 / PDF page 70).
+`toOuterMeasure_bilinear_ne_zero_eq` factors success into `1 - 1 / |F|` times the
+probability that `M *ᵥ s ≠ 0`.
+`toOuterMeasure_bilinear_vecMulVec` proves sharpness for outer products of nonzero vectors.
+This is a probability endpoint, with no running-time or general rank-formula claim.
+The [ordinary-import examples](../../CslibFrontierTests/BilinearFingerprint.lean) apply
+the prime theorem to a rectangular matrix, attain equality in characteristic two, and
+check why the zero-matrix hypothesis is necessary.
+
 ## Luby's randomized maximal independent set
 
 Import `CslibFrontier.Algorithms.Lean.LubyMIS` ([CslibFrontier/Algorithms/Lean/LubyMIS.lean](../../CslibFrontier/Algorithms/Lean/LubyMIS.lean)). It formalizes the random-priority variant of Luby's algorithm, Algorithm 7.12 ("Fast MIS 2") of [Wattenhofer][wattenhofer16], which the source attributes to Métivier, Robson, Saheb-Djahromi and Zemmari. The graph is a Mathlib `SimpleGraph V` on a finite type, and the target is Mathlib's `Maximal G.IsIndepSet`. A `State` holds the chosen and the live vertices. `phase` is a `ProbComp` that draws a uniform ranking `σ : V ≃ Fin (card V)`, a uniform random permutation. It then takes the deterministic `step`: every live vertex that ranks below all its live neighbours joins (`joiners`), and the joiners and their neighbours stop being live. `run k` iterates `phase` `k` times from the all-live state (`OracleComp.iterate`), and `lubyMIS k` answers the chosen set. Probabilities are statements about `ProbComp.eval`.

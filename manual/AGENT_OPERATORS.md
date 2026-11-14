@@ -185,6 +185,10 @@ example cannot be followed, or the task expanded beyond the agreed scope. Ask it
 the useful work, state the remaining objective and return to a concrete next step. When two
 agents overlap, have the coordinator resolve ownership before either overwrites the other's work.
 
+Ask for a PR description that explains the setting, central idea and result to someone who has
+not followed the task. Use the [writing guidance and example](../AGENTS.md#writing-in-issues-and-prs)
+to judge whether the explanation gives you enough context to understand the change.
+
 For a handoff, request the issue and PR, branch and revision, actual validation, review state,
 remaining work and the next action. Put that record in the issue/PR or commit, according to the
 [durable-record rules](../AGENTS.md#durable-records). A new agent should inspect those records

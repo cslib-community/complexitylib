@@ -46,6 +46,7 @@ and `FundamentalTheorem` combines the two into the realizable characterization o
 
 - `mem_lossClass`: membership in the loss class.
 - `growthFunction_lossClass_le`: the loss class has at most the growth function of `C`.
+- `card_le_of_setShatters_lossClass`: the loss class shatters no larger finite sets than `C`.
 - `IsConsistent.ae_not_isEpsNet_of_lt_error`: a consistent learner with error above `ε` on a
   realizable sample witnesses that the sample is not an ε-net for the loss class.
 - `IsConsistent.measure_pi_lt_error_mul_two_pow_le`: the tail bound
@@ -100,6 +101,55 @@ theorem growthFunction_lossClass_le (C : ConceptClass α Bool) (m : ℕ) :
         Set.ncard_le_ncard hsub (Set.toFinite _)
     _ ≤ (restriction C (fun i => (x i).1)).ncard := Set.ncard_image_le (Set.toFinite _)
     _ ≤ growthFunction C m := ncard_restriction_le_growthFunction C _
+
+/-- The loss class shatters no larger finite sets than `C`: two labeled points of a set shattered
+by `lossClass C` have distinct domain points, and their domain points are shattered by `C`. -/
+theorem card_le_of_setShatters_lossClass {C : ConceptClass α Bool} {d : ℕ}
+    (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) (W : Finset (α × Bool))
+    (hW : SetShatters (lossClass C) ↑W) : W.card ≤ d := by
+  classical
+  -- Two points of `W` with the same domain point would have to be misclassified together.
+  have hinj : Set.InjOn Prod.fst (W : Set (α × Bool)) := by
+    rintro ⟨x, y⟩ hp ⟨x', y'⟩ hq (rfl : x = x')
+    by_contra hne
+    have hyy : y ≠ y' := fun h => hne (by rw [h])
+    obtain ⟨f, hf, hfW⟩ := hW {(x, y), (x, y')}
+      (Set.insert_subset_iff.2 ⟨hp, Set.singleton_subset_iff.2 hq⟩)
+    obtain ⟨h, -, rfl⟩ := mem_lossClass.1 hf
+    have h1 : (x, y) ∈ ({(x, y), (x, y')} : Set (α × Bool)) := Set.mem_insert _ _
+    have h2 : (x, y') ∈ ({(x, y), (x, y')} : Set (α × Bool)) := Set.mem_insert_of_mem _ rfl
+    rw [← hfW] at h1 h2
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff,
+      decide_eq_true_eq] at h1 h2
+    have ha : h x ≠ y := h1.1
+    have hb : h x ≠ y' := h2.1
+    cases hx : h x <;> cases y <;> cases y' <;> simp_all
+  -- The domain points of `W` are shattered by `C`.
+  have hsh : SetShatters C ↑(W.image Prod.fst) := by
+    intro U hU
+    obtain ⟨f, hf, hfW⟩ := hW {p | p ∈ W ∧ decide (p.1 ∈ U) ≠ p.2} fun p hp => hp.1
+    obtain ⟨h, hh, rfl⟩ := mem_lossClass.1 hf
+    have hlab : ∀ p ∈ W, h p.1 = decide (p.1 ∈ U) := by
+      rintro ⟨a, y⟩ hp
+      have key : h a ≠ y ↔ decide (a ∈ U) ≠ y := by
+        have := congrArg ((a, y) ∈ ·) hfW
+        simp only [eq_iff_iff, Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff,
+          decide_eq_true_eq, Finset.mem_coe, Set.mem_ofPred_eq] at this
+        simpa [hp] using this
+      revert key
+      cases h a <;> cases y <;> cases decide (a ∈ U) <;> simp
+    refine ⟨h, hh, ?_⟩
+    ext a
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Finset.coe_image,
+      Set.mem_image, Finset.mem_coe]
+    constructor
+    · rintro ⟨hha, p, hp, rfl⟩
+      rwa [hlab p hp, decide_eq_true_eq] at hha
+    · intro ha
+      obtain ⟨p, hp, rfl⟩ := Finset.mem_image.1 (Finset.mem_coe.1 (hU ha))
+      exact ⟨by rw [hlab p hp, decide_eq_true_eq]; exact ha, p, hp, rfl⟩
+  calc W.card = (W.image Prod.fst).card := (Finset.card_image_of_injOn hinj).symm
+    _ ≤ d := hC _ hsh
 
 variable [MeasurableSpace α]
 

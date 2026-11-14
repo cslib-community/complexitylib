@@ -5,12 +5,13 @@ Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--built-unde
                                             [--jobs N] [--progress | --quiet]
 
 `lakefile.toml` enables Lake's local artifact cache, which checkouts on the same machine share.
-Lake stores a module's outputs there whenever it builds them, also when the build logged warnings.
-Only `--wfail` and `--iofail` turn those warnings into failures. A cache entry keeps the outputs
-but not the messages. When another checkout later builds the same source, Lake restores the
-outputs and writes a trace marked `"synthetic": true` with an empty log, so
-`lake build --wfail --iofail` and `lake test --wfail --iofail` pass without showing the warnings.
-CI does not hit this, because its remote cache is published only from `main`.
+Lake stores a module's outputs there even when the build logged warnings. Individual-artifact
+(`.arts`) restoration without the original trace writes `"synthetic": true` with an empty log,
+so `lake build --wfail --iofail` and `lake test --wfail --iofail` can pass without showing those
+warnings. An ordinary `.ltar` archive can preserve the original trace and its messages; such a
+restore need not be re-elaborated by this audit. Later individual-artifact reuse can lose those
+messages again. CI publishes its remote cache only from `main`; this local check recovers
+diagnostics rather than establishing artifact provenance or proof trust.
 
 After the Lean gates, `scripts/full_check.py` runs this check for all built sources of the root
 package, including unchanged clients, tests and executables. This also covers deletions and
@@ -25,9 +26,10 @@ informational output too. `lake lean` first builds the file's imports and replay
 a reported message can also come from an import. Up to 8 files are elaborated concurrently by
 default (`--jobs N` or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`), with `LEAN_NUM_THREADS=1`
 in each worker when `N > 1` so parallel workers do not multiply Lean's internal thread pool, and
-failures are reported in deterministic source-path order. This local audit does not change Lake:
-a bare `lake build` still cannot replay a cached module's messages. Outside CI, progress lists the
-selected count, worker count and each source before elaboration, with elapsed audit time.
+failures are reported in deterministic source-path order. A successful audit leaves traces
+unchanged and records no receipt, so repeating it can re-elaborate the same sources. It does not
+repair the missing diagnostic metadata in Lake's individual-artifact cache. Outside CI, progress
+lists the selected count, worker mode and each source before elaboration, with elapsed audit time.
 `--progress` enables those lines in CI; `--quiet` suppresses them locally. Failures and the final
 summary are always printed.
 """

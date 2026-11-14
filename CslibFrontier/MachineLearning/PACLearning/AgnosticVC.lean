@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.MachineLearning.PACLearning.UniformConvergenceProperty
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 import CslibFrontier.MachineLearning.PACLearning.VCDimension
 
@@ -44,6 +45,8 @@ computationally hard.
   finite VC dimension is at most `⌈(64 / ε²) (2 vcDim C log (20 / ε) + log (4 / δ))⌉`.
 - `isPACLearnable_univ_of_hasFiniteVCDim`: **finite VC dimension implies agnostic PAC
   learnability** on a countable domain.
+- `hasUniformConvergence_univ_of_hasFiniteVCDim`: a class of finite VC dimension has the uniform
+  convergence property over all distributions.
 
 ## References
 
@@ -126,5 +129,15 @@ theorem isPACLearnable_univ_of_hasFiniteVCDim {C : ConceptClass α Bool}
   intro ε δ
   obtain ⟨d, hd⟩ := hasFiniteVCDim_iff.1 hC
   exact ⟨_, isPACLearnerFor_univ_of_uniformConvergenceSampleSize_le hd (Nat.le_ceil _)⟩
+
+/-- **Finite VC dimension implies the uniform convergence property** over all distributions on a
+countable domain [ShalevShwartzBenDavid2014, Theorem 6.7, 6 ⇒ 1]: the threshold at accuracy `ε`
+and confidence `δ` is `⌈(16 / ε²) (2 vcDim C log (10 / ε) + log (4 / δ))⌉`. -/
+theorem hasUniformConvergence_univ_of_hasFiniteVCDim {C : ConceptClass α Bool}
+    (hC : HasFiniteVCDim C) : HasUniformConvergence C Set.univ :=
+  fun ε δ hε hε1 hδ _ => ⟨⌈uniformConvergenceSampleSize (vcDim C) ε δ⌉₊, fun _ hm D _ _ =>
+    measure_pi_not_isRepresentative_le_of_uniformConvergenceSampleSize_le D
+      (fun _ hW => hW.card_le_vcDim hC) hε (by linarith) hδ
+      ((Nat.le_ceil _).trans (by exact_mod_cast hm))⟩
 
 end Cslib.MachineLearning.PACLearning

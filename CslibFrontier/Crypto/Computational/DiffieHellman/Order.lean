@@ -102,18 +102,18 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
         (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹) +
         (∑' d, setup n d *
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))) := by
-    simp only [ddhRealGame, ddhRealExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
-      PMF.monad_bind_eq_bind]
+    simp only [ddhRealGame, Game.withSetup, ddhRealExperiment, ddhZeroDistinguisher,
+      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero,
+      F.generator_ne_zero, or_false]
     rw [PMF.bind_apply, ← tsum_add]
     refine tsum_congr fun d => ?_
     rw [uniform_mul_decide_eq_zero_apply F d, mul_add]
   have hideal :
       (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) true =
         ∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹ := by
-    simp only [ddhRandomGame, ddhRandomExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
-      PMF.bind_const, PMF.monad_bind_eq_bind]
+    simp only [ddhRandomGame, Game.withSetup, ddhRandomExperiment, ddhZeroDistinguisher,
+      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero,
+      F.generator_ne_zero, or_false, PMF.bind_const]
     rw [PMF.bind_apply]
     refine tsum_congr fun d => congrArg (setup n d * ·) ?_
     simpa only [eq_comm, ZMod.card] using uniformOfFintype_bind_decide_eq_apply_true

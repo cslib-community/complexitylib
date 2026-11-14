@@ -81,12 +81,17 @@ After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_
 
 The audit fails on any message or elaboration failure, reporting failures in source-path order. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. By default, it elaborates up to eight files concurrently (`min(8, os.cpu_count() or 1)`), setting `LEAN_NUM_THREADS=1` in each worker when `--jobs` exceeds `1` so parallel checks do not multiply Lean's internal thread pool or exhaust memory and file handles; `--jobs N` (or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`) overrides the worker limit. Even in parallel, a full check after restoring thousands of modules still re-elaborates each restored root-package source. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
 
-The restored-source audit reports its selected count, worker mode, each source before its local
-elaboration starts and elapsed audit time, so a long-running file remains visible. The final
-summary also reports total elapsed time. When `CI` is set, per-file progress is quiet by default;
-use `python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to
-suppress it locally. Both modes retain all selected checks, failure messages and the final
-summary.
+Full and quick checks stream the restored-source audit's selected count, worker mode, each source
+before its local elaboration starts and elapsed time, while retaining the complete output in their
+failure logs. The final summary also reports total elapsed time. Successful audits currently leave
+synthetic traces unchanged, so repeating the check can repeat that elaboration; ordinary targeted
+builds do not run this audit. Follow the [focused validation workflow](getting-started.md#prerequisites-and-the-checkouts-version)
+and use hosted CI for full validation when available.
+
+When running the audit directly with `CI` set, per-file progress is quiet by default; use
+`python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to suppress
+it locally. Both modes retain all selected checks, failure messages and the final summary;
+the full and quick wrappers explicitly request progress.
 
 ## Diagnose "failed to read file" on whole-library imports
 
