@@ -20,16 +20,15 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
+import CslibFrontier.Crypto.Computational.Encryption.BlockModeWord
 import CslibFrontier.Crypto.Computational.Encryption.CTRMode
 import CslibFrontier.Foundations.Data.BitString.Binary
-import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Languages.Probabilistic.QueryCount.Congr
-import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.Negligible
@@ -58,7 +57,8 @@ keystream block with one query to its own function oracle, keeping at most `n` b
 2. Against the keyed oracle, its output law is that of the adversary in the CPA game with
    challenge bit `bit` (`eval_prfRealGame_ctrToPrfDistinguisher`).
 3. Against a uniform random function, it is the typed reduction `ctrReduction ctrModCounter` of
-   `CTRMode.lean` run on the adversary read as a block-mode adversary, and the typed collision
+   `CTRMode.lean` run on the adversary read as a block-mode adversary (`blockModeWordAdversary`),
+   and the typed collision
    bound `advantage_idealExperiment_ctrReduction_le` applies. This gives the concrete bound
    `advantage_ctrWordCPAGame_le` and then `PseudorandomFunction.indcpa_ctrWordEncrypt`.
 
@@ -509,58 +509,11 @@ theorem isOraclePPT_ctrToPrfDistinguisher {adversary : OracleDistinguisher}
 
 /-! ### The ideal game -/
 
-/-- The first `m.length / n` blocks of `n` bits of `m`. -/
-private def ctrMessageBlocks (n : ℕ) (m : List Bool) : List (BitString n) :=
-  List.ofFn (BitString.block (BitString.ofList (m.length / n * n) m))
-
-private theorem length_ctrMessageBlocks (n : ℕ) (m : List Bool) :
-    (ctrMessageBlocks n m).length = m.length / n :=
-  List.length_ofFn
-
-/-- A word made of whole blocks is the concatenation of its blocks. -/
-private theorem flatMap_ofFn_ctrMessageBlocks {n : ℕ} {m : List Bool} (hm : m.length % n = 0) :
-    (ctrMessageBlocks n m).flatMap List.ofFn = m := by
-  have hlen : m.length / n * n = m.length := Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero hm)
-  rw [ctrMessageBlocks, List.flatMap_def, List.map_ofFn, Function.comp_def,
-    ← BitString.ofFn_blocksEquiv_symm, BitString.blocksEquiv_symm_block]
-  exact BitString.ofFn_ofList hlen.symm
-
-/-- XOR of concatenated blocks is the concatenation of the blockwise sums. -/
-private theorem flatMap_ofFn_zipWith_add {n : ℕ} :
-    ∀ (X Y : List (BitString n)), X.length = Y.length →
-      (List.zipWith (· + ·) X Y).flatMap List.ofFn =
-        List.zipWith xor (X.flatMap List.ofFn) (Y.flatMap List.ofFn)
-  | [], [], _ => rfl
-  | [], _ :: _, h => by simp at h
-  | _ :: _, [], h => by simp at h
-  | x :: X, y :: Y, h => by
-    rw [List.zipWith_cons_cons, List.flatMap_cons, List.flatMap_cons, List.flatMap_cons,
-      List.zipWith_append (by simp), BitString.ofFn_add,
-      flatMap_ofFn_zipWith_add X Y (by simpa using h)]
-
 /-- The word counter at the bits of `iv` is the bits of `ctrModCounter iv j`. -/
 private theorem ctrWordCounter_ofFn {n : ℕ} (iv : BitString n) (j : ℕ) :
     ctrWordCounter n (List.ofFn iv) j = List.ofFn (ctrModCounter iv j) := by
   rw [ctrWordCounter, BitString.lsbValue_ofFn, ctrModCounter,
     ← BitString.lowBits_eq_ofFn_equivFin_symm, BitString.lowBits_mod_two_pow]
-
-/-- A word request as a block-mode query: the blocks of both messages, with the answer flattened
-back into a word. -/
-private def ctrBlockQuery (n : ℕ) (request : Unit × List Bool) :
-    ProbOracleComp (BlockModeSpec n) (List Bool) :=
-  let m0 := unframe request.2
-  let m1 := dropFrame request.2
-  if blockPairValid n m0 m1 then
-    (fun answer : BitString n × List (BitString n) =>
-        List.ofFn answer.1 ++ answer.2.flatMap List.ofFn) <$>
-      ProbOracleComp.query (spec := BlockModeSpec n) (ctrMessageBlocks n m0, ctrMessageBlocks n m1)
-  else
-    pure []
-
-/-- The word adversary at parameter `n` as a block-mode adversary. -/
-private noncomputable def ctrBlockAdversary (adversary : OracleDistinguisher) (n : ℕ) :
-    BlockModeAdversary n :=
-  ProbOracleComp.simulate (ctrBlockQuery n) (adversary n [])
 
 /-- Against a fixed function `f`, the reduction answers a request of at most `ℓ` bits as the
 block-mode reduction answers its block query. -/
@@ -568,29 +521,17 @@ private theorem eval_run_ctrPrfHandler_randomFunction {n : ℕ} (f : BitString n
     (ℓ : ℕ) (bit : Bool) (request : Unit × List Bool) (hℓ : request.2.length ≤ ℓ) :
     ProbComp.eval ((ctrPrfHandler n bit request).run
         fun r => pure (randomFunctionOracle n f r.2)) =
-      ProbComp.eval ((ctrBlockQuery n request).run
+      ProbComp.eval ((blockModeWordQuery n request).run
         fun q => (ctrQueryProgram ctrModCounter ℓ bit q).run fun x => pure (f x)) := by
-  unfold ctrPrfHandler ctrBlockQuery
+  unfold ctrPrfHandler blockModeWordQuery
   dsimp only
   by_cases hvalid : blockPairValid n (unframe request.2) (dropFrame request.2) = true
   · have hpair := hvalid
     simp only [blockPairValid, Bool.and_eq_true, beq_iff_eq] at hpair
     obtain ⟨hlenEq, hmod⟩ := hpair
-    have hm0 : (unframe request.2).length ≤ ℓ := (length_unframe_le _).trans hℓ
-    have hsel : blockModeSelect ℓ bit (ctrMessageBlocks n (unframe request.2),
-        ctrMessageBlocks n (dropFrame request.2)) =
-        ctrMessageBlocks n (if bit then dropFrame request.2 else unframe request.2) := by
-      have hc1 : (ctrMessageBlocks n (unframe request.2)).length =
-          (ctrMessageBlocks n (dropFrame request.2)).length := by
-        rw [length_ctrMessageBlocks, length_ctrMessageBlocks, hlenEq]
-      have hc2 : (ctrMessageBlocks n (unframe request.2)).length ≤ ℓ := by
-        rw [length_ctrMessageBlocks]
-        exact (Nat.div_le_self _ _).trans hm0
-      have hcond : (ctrMessageBlocks n (unframe request.2)).length =
-          (ctrMessageBlocks n (dropFrame request.2)).length ∧
-          (ctrMessageBlocks n (unframe request.2)).length ≤ ℓ := ⟨hc1, hc2⟩
-      rw [blockModeSelect, ite_eq_left hcond]
-      cases bit <;> rfl
+    have hm0 : (unframe request.2).length / n ≤ ℓ :=
+      (Nat.div_le_self _ _).trans ((length_unframe_le _).trans hℓ)
+    have hsel := blockModeSelect_padBlocks bit hvalid hm0
     have hmb : (if bit then dropFrame request.2 else unframe request.2).length =
         (unframe request.2).length := by
       cases bit <;> simp [hlenEq]
@@ -611,9 +552,10 @@ private theorem eval_run_ctrPrfHandler_randomFunction {n : ℕ} (f : BitString n
       ProbComp.eval_pure, ProbComp.eval_uniform, BitString.eval_sampleList, BitString.uniformList,
       PMF.bind_map, PMF.map_bind, Function.comp_def, PMF.pure_map]
     refine congrArg _ (funext fun iv => congrArg PMF.pure ?_)
-    rw [hks, flatMap_ofFn_zipWith_add _ _ (by
-        rw [length_ctrMaskBlocks, length_ctrMessageBlocks, hmb]),
-      flatMap_ofFn_ctrMessageBlocks hmbMod, length_ctrMessageBlocks, hmb]
+    rw [hks, BitString.flatMap_ofFn_zipWith_add _ _ (by
+        rw [length_ctrMaskBlocks, BitString.length_padBlocks, hmb]),
+      BitString.flatMap_ofFn_padBlocks (Nat.dvd_of_mod_eq_zero hmbMod), BitString.length_padBlocks,
+      hmb]
   · simp [hvalid]
 
 /-- Against a uniform random function, the reduction for an adversary whose requests have at most
@@ -623,27 +565,12 @@ private theorem eval_prfIdealGame_ctrToPrfDistinguisher (adversary : OracleDisti
     (hℓ : (adversary n []).QueriesSatisfy fun request => request.2.length ≤ ℓ) :
     ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher adversary bit) n) =
       ProbComp.eval (PRF.idealExperiment
-        (ctrReduction ctrModCounter ℓ bit (ctrBlockAdversary adversary n))) := by
+        (ctrReduction ctrModCounter ℓ bit (blockModeWordAdversary adversary n))) := by
   simp only [prfIdealGame, PRF.idealExperiment, ctrToPrfDistinguisher, ctrReduction,
-    blockModeReduction, ctrBlockAdversary, ProbOracleComp.run_simulate, ProbComp.eval_bind]
+    blockModeReduction, blockModeWordAdversary, ProbOracleComp.run_simulate, ProbComp.eval_bind]
   exact congrArg _ (funext fun f =>
     hℓ.eval_run_congr fun request hrequest =>
       eval_run_ctrPrfHandler_randomFunction f ℓ bit request hrequest)
-
-/-- An adversary making at most `Q` requests asks the block-mode adversary for at most `Q * ℓ`
-blocks of at most `ℓ` blocks each. -/
-private theorem isCostBounded_ctrBlockAdversary {adversary : OracleDistinguisher} {n Q : ℕ}
-    (hQ : (adversary n []).IsQueryBounded Q) (ℓ : ℕ) :
-    OracleComp.IsCostBounded (blockModeCost ℓ) (ctrBlockAdversary adversary n) (Q * ℓ) := by
-  have h : OracleComp.IsCostBounded (Sum.elim (fun _ => 0) fun _ => ℓ) (adversary n []) (Q * ℓ) :=
-    hQ.mul_of_le fun q => by cases q <;> simp
-  refine ProbOracleComp.isCostBounded_simulate (cost := fun _ => ℓ) (fun request => ?_) h
-  unfold ctrBlockQuery
-  dsimp only
-  split
-  · rw [OracleComp.isCostBounded_map_iff]
-    exact (ProbOracleComp.isCostBounded_query _ _).mono (blockModeBlocks_le ℓ _)
-  · exact OracleComp.IsCostBounded.pure _ ℓ
 
 /-- **Concrete CPA bound for counter mode** ([BonehShoup2023], Theorem 5.3). At parameter `n`,
 an adversary making at most `Q` requests of at most `L ≤ 2 ^ n` bits has CPA advantage against
@@ -669,7 +596,7 @@ theorem advantage_ctrWordCPAGame_le {family : List Bool → List Bool → List B
       2 * ((Q : ℝ) * L) ^ 2 / 2 ^ n := by
   rw [← eval_prfRealGame_ctrToPrfDistinguisher hlen adversary false n,
     ← eval_prfRealGame_ctrToPrfDistinguisher hlen adversary true n]
-  have hcost := isCostBounded_ctrBlockAdversary hQ L
+  have hcost := isCostBounded_blockModeWordAdversary hQ L
   have hintra : ∀ iv i j, i < L → j < L → i ≠ j → ctrModCounter iv i ≠ ctrModCounter iv j :=
     fun iv _ _ hi hj hij => ctrModCounter_injOn hLn iv hi hj hij
   have hiv : ∀ i < L, Function.Injective (fun iv : BitString n => ctrModCounter iv i) :=
@@ -680,7 +607,7 @@ theorem advantage_ctrWordCPAGame_le {family : List Bool → List Bool → List B
   rw [← eval_prfIdealGame_ctrToPrfDistinguisher adversary true hL] at h₁
   refine (advantage_le_four _
     (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher adversary false) n))
-    (ProbComp.eval (blockModeIdealExperiment L (ctrBlockAdversary adversary n)))
+    (ProbComp.eval (blockModeIdealExperiment L (blockModeWordAdversary adversary n)))
     (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher adversary true) n)) _).trans ?_
   rw [Nat.cast_mul] at h₀ h₁
   have hsplit : 2 * ((Q : ℝ) * L) ^ 2 / 2 ^ n =
