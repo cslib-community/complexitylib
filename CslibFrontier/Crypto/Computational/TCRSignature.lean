@@ -32,6 +32,7 @@ import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Target collision-resistant hash-and-sign and stateless signatures from one-way permutations
@@ -1582,8 +1583,7 @@ theorem exists_ots_bounds (S : SignatureScheme) (H : KeyedHashFamily) :
     hboundPoly.comp (computableInPolyTime_otsParam H), fun n keys hkeys => ?_,
     fun n => hbound (otsParam H n)⟩
   have hkPair := hkgLen (otsParam H n) keys hkeys
-  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
-  omega
+  enc_len at hkPair
 
 /-- **Existential reduction for `TCRSignature.scheme`** ([BonehShoup2023], Section 13.2.1,
 Theorem 13.2): every strict oracle-PPT indexed forger `adversary` induces a strict oracle-PPT

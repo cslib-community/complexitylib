@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.Encoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Bounding the complete binary encoding of a circuit
@@ -46,8 +47,7 @@ theorem length_encCode_le {n m : ℕ} (c : Circuit signature n m) :
         exact (length_encNat_le_self _).trans (Wire.toNat_lt (line.wires j)).le)
       have ha : line.code.2.length ≤ 2 := by grind [Line.length_code_snd]
       exact h.trans (Nat.mul_le_mul_right _ ha)
-    simp only [encGate, length_encPair, Line.code_fst]
-    omega
+    enc_len [encGate, Line.code_fst]
   have hgates : (encList encGate c.code.1).length ≤ c.size * (23 + 8 * (n + c.size)) := by
     have h := length_encList_le encGate c.code.1 (b := 11 + 4 * (n + c.size)) (fun g hg => by
       rw [Circuit.code, Program.code_eq_ofFn_lines] at hg

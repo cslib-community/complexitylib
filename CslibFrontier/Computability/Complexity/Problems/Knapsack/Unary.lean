@@ -15,6 +15,7 @@ import CslibFrontier.Algorithms.Lean.Knapsack.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Knapsack with unary values is in `P`
@@ -96,8 +97,7 @@ theorem computableInPolyTime_unaryDecider :
       encKnapsackUnary (encList encItemUnary) :=
     (computableInPolyTime_profitDP (encItemUnary_weight_polyTime id')
       (encItemUnary_value_polyTime id') fun a => by
-        simp only [encItemUnary_apply, length_encPair, encUnary_apply, List.length_replicate]
-        omega).comp ((encKnapsackUnary_capacity_polyTime id').prod
+        enc_len [encItemUnary_apply]).comp ((encKnapsackUnary_capacity_polyTime id').prod
           (encKnapsackUnary_items_polyTime id'))
   have hval : ComputableInPolyTime Item.value encItemUnary encNat :=
     ComputableInPolyTime.unary_to_binary.comp (encItemUnary_value_polyTime id')

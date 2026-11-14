@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.B
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Callback-sensitive native bounds for bit-encryption replay
@@ -142,8 +143,7 @@ theorem exists_encryptBitsCoins_time_bound
     have h := length_le_encList_of_mem encR hrow
     have := hparSize a
     have := hrowsSize a
-    simp only [length_encPair]
-    omega
+    enc_len
   have htimeMax (a : α) : listMax
       (fun row => 4 * (encPair encP encR (par a, row)).length +
         T ((n a, pk a, row.1), row.2)) (rows a) ≤

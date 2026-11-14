@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # `TQBF` is in polynomial space
@@ -310,8 +311,7 @@ private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.
   have hfirst : (encOption encBool f.first).length ≤ 2 := by cases f.first <;> simp [encOption]
   change (encFrameFields f.fields).length ≤ _
   rw [encQBF_apply]
-  simp only [Frame.fields, length_encPair, encList_cons, List.length_append, length_frame] at hs ⊢
-  omega
+  enc_len [Frame.fields] at hs ⊢
 
 /-- **The states of a run are of quadratic size**: a state satisfying the invariant on `φ` has an
 encoding of length at most `16 * ((encQBF φ).length + 1) ^ 2`. -/

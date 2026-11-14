@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 import Mathlib.Data.Set.Finite.List
 import Mathlib.NumberTheory.Chebyshev
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Tally problems
@@ -211,8 +212,7 @@ private theorem computableInPolyTime_residue {γ : Type} {encIn : γ ↪ List Bo
     (encB := encUnary) (step := fun m r b => (2 * r + b.toNat) % (m + 1)) hm hu (const 0) hstep
     (growth := fun x => m x + 1) (hm.polyBounded.add (.const 1)) fun x r b _ => by
       have : (2 * r + b.toNat) % (m x + 1) < m x + 1 := Nat.mod_lt _ (by omega)
-      simp only [encUnary_apply, List.length_replicate]
-      omega
+      enc_len
 
 /-- **Sparse problems reduce conjunctively to tally problems** (Buhrman, Longpré and Spaan; cited
 in [Arvind, Köbler and Mundhenk, proof of Lemma 3.2][ArvindKoblerMundhenk1992]): a sparse problem

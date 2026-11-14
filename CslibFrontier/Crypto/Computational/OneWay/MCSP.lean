@@ -33,6 +33,7 @@ import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # MCSP in BPP rules out one-way functions
@@ -258,8 +259,7 @@ theorem computableInPolyTime_tableQueries (d : ℕ) :
   · obtain ⟨n, aux⟩ := input
     dsimp only
     have hn : n ≤ (encPair encUnary encBits (n, aux)).length := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     set L := (encPair encUnary encBits (n, aux)).length
     have hpow : 2 ^ Nat.clog 2 n ≤ 2 * (L + 1) := (Nat.two_pow_clog_two_le n).trans (by omega)
     have hclog : Nat.clog 2 n ≤ 2 * (L + 1) := Nat.lt_two_pow_self.le.trans hpow

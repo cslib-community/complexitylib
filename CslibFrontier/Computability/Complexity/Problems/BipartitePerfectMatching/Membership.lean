@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Bipartite perfect matching is in P
@@ -258,8 +259,7 @@ private theorem labellingSize_iterate (w : List Bool) (n : ℕ) (M : List (ℕ �
 
 private theorem length_encEdge_le {n : ℕ} {e : ℕ × ℕ} (h : e.1 < n ∧ e.2 < n) :
     (encEdge e).length ≤ 3 * n := by
-  simp only [encEdge, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [encEdge]
 
 private theorem length_encPath_le {n i : ℕ} {q : List (ℕ × ℕ)} (hq : q.length ≤ i)
     (he : ∀ e ∈ q, e.1 < n ∧ e.2 < n) :
@@ -285,8 +285,7 @@ private theorem le_length_encRound (x : List Bool × ℕ × List (ℕ × ℕ)) :
   have h1 : (encPair encUnary (encList encEdge) x.2).length ≤ (encRound x).length :=
     length_le_encPair_right encBits (encPair encUnary (encList encEdge)) x
   have h2 := length_le_encPair_left encUnary (encList encEdge) x.2
-  simp only [encUnary_apply, List.length_replicate] at h2
-  omega
+  simpa only [encUnary_apply, List.length_replicate] using h2.trans h1
 
 private theorem labelling_size_le_cubic {n i N : ℕ} (hi : i ≤ n) (hn : n ≤ N) :
     n * (2 * (1 + i * (6 * n + 1)) + 1) ≤ 15 * (N + 1) ^ 3 := by

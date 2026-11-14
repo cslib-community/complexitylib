@@ -20,6 +20,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Chosen-plaintext attacks on public-key encryption
@@ -333,8 +334,7 @@ theorem isPPTOn_runWithEncryption {Caller α β : Type} {input : Caller ↪ List
       have hsize : (encPair encUnary (encPair encBits encBits)
           (param a, pk a, request.2)).length + 1 ≤
           2 * param a + 2 * (pk a).length + request.2.length + 5 := by
-        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-        lia
+        enc_len
       refine ⟨trivial, ?_, Nat.le_add_right _ _⟩
       exact (hlen (param a, pk a, request.2) ciphertext hciphertext).trans
         (Nat.mul_le_mul_left c (Nat.pow_le_pow_left hsize d))

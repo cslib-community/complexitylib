@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.DiscreteLog
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Polynomial Bit-Length Bounds for Encoded Group Elements
@@ -61,8 +62,7 @@ theorem exists_length_encode_le :
         (d, α.val, F.encode d (F.generator d))).length + 1 ≤
       2 * (F.encDesc d).length + 4 * (co * ((F.encDesc d).length + 1) ^ ko) +
         4 * (cg * ((F.encDesc d).length + 1) ^ kg) + 7 := by
-    simp only [length_encPair, encBits_apply]
-    lia
+    enc_len
   calc (F.smul (d, α.val, F.encode d (F.generator d))).length
       ≤ cs * ((encPair F.encDesc (encPair encNat encBits)
           (d, α.val, F.encode d (F.generator d))).length + 1) ^ ks := h1

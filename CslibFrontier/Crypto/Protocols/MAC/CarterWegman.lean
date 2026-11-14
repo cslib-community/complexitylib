@@ -39,6 +39,7 @@ import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.Negligible
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Carter–Wegman message authentication codes from Δ-universal hashing
@@ -3962,11 +3963,8 @@ theorem isOraclePPT_prfRandomNonceToPrfDistinguisher
       have hnonceLen : nonce.length = caller.1.1 :=
         BitString.length_of_mem_support_uniformList hnonce
       refine ⟨trivial, ?_, ?_⟩
-      · simp only [length_encPair, encBits_apply, hnonceLen, BitString.length_listXor]
-        lia
-      · simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply,
-          hnonceLen, BitString.length_listXor]
-        lia
+      · enc_len [hnonceLen, BitString.length_listXor]
+      · enc_len [hnonceLen, BitString.length_listXor]
     · have hcond' : (request.2.length == msgLen caller.1.1) = false :=
         Bool.eq_false_iff.mpr hcond
       simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.supportWith_pure,
@@ -3974,9 +3972,7 @@ theorem isOraclePPT_prfRandomNonceToPrfDistinguisher
       subst hresult
       refine ⟨trivial, ?_, ?_⟩
       · simp
-      · simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply,
-          List.length_nil]
-        lia
+      · enc_len
   have hk : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encBits
       (fun caller : ℕ × List Bool => ProbOracleComp.sample (seed caller.1)) :=
     (hseed.preprocess (ComputableInPolyTime.fst _ _)).isOraclePPTOn

@@ -31,6 +31,7 @@ import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Authenticated Encryption and Adaptive Chosen-Ciphertext Security
@@ -2423,9 +2424,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
     · simp only [hcap, ↓reduceIte] at hresult
       cases OracleComp.eq_of_mem_supportWith_pure hresult
       refine ⟨trivial, by simp, ?_⟩
-      simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
-        encBool_apply, List.length_singleton, encBits_apply]
-      lia
+      enc_len [EState, List.length_singleton]
     · simp only [hcap, Bool.false_eq_true, ↓reduceIte] at hresult
       by_cases hzero : (state.1 == 0) = true
       · simp only [hzero, ↓reduceIte] at hresult
@@ -2445,21 +2444,15 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
             obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
             obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
             refine ⟨trivial, (List.length_take_le _ _).trans (by lia), ?_⟩
-            simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
-              encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
-            lia
+            enc_len [EState, List.length_singleton]
           · simp only [hlenEq, Bool.false_eq_true, ↓reduceIte] at hresult
             cases OracleComp.eq_of_mem_supportWith_pure hresult
             refine ⟨trivial, by simp, ?_⟩
-            simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
-              encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
-            lia
+            enc_len [EState, List.length_singleton]
         · simp only [hreq, ↓reduceIte] at hresult
           cases OracleComp.eq_of_mem_supportWith_pure hresult
           refine ⟨trivial, by simp, ?_⟩
-          simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
-            encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
-          lia
+          enc_len [EState, List.length_singleton]
   have hsample : IsOraclePPTOn (encPair encUnary encBits) encUnary
       (fun caller : ℕ × List Bool =>
         ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) :=

@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Foundations.Data.Option
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Partial-string time-bounded Kolmogorov complexity (`MINKT*`)
@@ -130,20 +131,17 @@ enc_structure enc : Instance where
 
 /-- The unary size threshold is at most the encoded instance length. -/
 theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [enc_apply]
 
 /-- The unary time bound is at most the encoded instance length. -/
 theorem time_le_length_enc (i : Instance) : i.time ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [enc_apply]
 
 /-- The length of the partial string is at most the encoded instance length. -/
 theorem length_pattern_le_length_enc (i : Instance) : i.pattern.length ≤ (enc i).length := by
   have h := SizedListEncoding.length_le (encA := encOption encBool)
     (encL := encList (encOption encBool)) i.pattern
-  simp only [enc_apply, length_encPair]
-  omega
+  enc_len [enc_apply]
 
 /-- An instance belongs to `MINKT*` iff some consistent string has `K^t` at most the threshold. -/
 theorem mem_iff {i : Instance} :
@@ -257,9 +255,8 @@ theorem mem_NP : MINKTStar ∈ NP enc := by
       have hpat := length_pattern_le_length_enc i
       have hsize := size_le_length_enc i
       have hp := hw.2.1
-      simp only [length_encPair, encBits_apply, Polynomial.eval_add, Polynomial.eval_mul,
-        Polynomial.eval_ofNat, Polynomial.eval_X, Polynomial.eval_one]
-      omega⟩
+      enc_len [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_ofNat, Polynomial.eval_X,
+        Polynomial.eval_one]⟩
   convert h using 1
   ext i
   simp only [mem_iff_exists_program, Set.mem_ofPred_eq, Prod.exists]

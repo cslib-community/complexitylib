@@ -19,6 +19,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PolyTime.Init
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Counter-stateful signatures from indexed signatures
@@ -219,11 +220,8 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
         c * (2 * caller.2.2.length + 2 * S.capacity caller.1 + request.2.length + 3) ^ d :=
       Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by omega) d)
     refine ⟨trivial, ?_, ?_⟩
-    · simp only [length_encPair, encUnary_apply, encBits_apply, List.length_replicate]
-      omega
-    · simp only [length_encPair, encUnary_apply, encList_cons, List.length_append, length_frame,
-        encBits_apply, List.length_replicate]
-      omega
+    · enc_len
+    · enc_len
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst hresult
     exact ⟨trivial, by simp, by lia⟩
@@ -485,12 +483,10 @@ private theorem counterHandler_bound {bound : ℕ → ℕ → ℕ} (c : ℕ × L
   · obtain ⟨sig, hsig, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
     obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hsig
     have htake := List.length_take_le (bound c.1 request.2.length) raw
-    simp only [length_encPair, encUnary_apply, encBits_apply, List.length_replicate]
-    omega
+    enc_len
   · have h := OracleComp.eq_of_mem_supportWith_pure hresult
     subst h
-    simp only [List.length_nil, encUnary_apply, List.length_replicate]
-    omega
+    enc_len
 
 /-- The counter forger's reduction is uniformly strict oracle PPT for every oracle-PPT forger and
 every polynomial-time truncation bound. -/

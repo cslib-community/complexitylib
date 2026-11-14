@@ -25,6 +25,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The fast contraction algorithm, assembled
@@ -392,8 +393,7 @@ theorem le_of_le_encPair {γ β : Type} {encIn : γ ↪ List Bool} {encV : β �
   have hB1 : B ≤ B ^ (Ka + 1) := Nat.le_self_pow (by omega) _
   have hBK := Nat.mul_le_mul_left Ka
     (Nat.pow_le_pow_right (by omega : 1 ≤ B) (by omega : Ka ≤ Ka + 1))
-  simp only [length_encPair, add_mul]
-  omega
+  enc_len [add_mul]
 
 variable {mk}
 

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Reader.Defs
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import CslibFrontier.Tactic.Space
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Residues within linear work space
@@ -91,8 +92,7 @@ theorem unitInv_inSpace :
   have h₂ := length_encNat_add_le_add q.1 1
   have h₃ := length_encNat_add_le_add q.2 1
   have h₄ : (encNat 1).length = 1 := rfl
-  simp only [length_encPair] at h₁ h₂ h₃ ⊢
-  omega
+  enc_len at h₁ h₂ h₃ ⊢
 
 end Reader
 

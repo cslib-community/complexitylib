@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.PCP.Encoded.Encoding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Changing and tabulating constraint descriptors
@@ -178,8 +179,7 @@ theorem length_encoding_mapConstraints_le (g : Graph C) (f : C → C') (bound : 
   change (encPair encUnary (encList (Edge.encoding enc'))
       (g.vertices, g.edges.map fun e => ⟨e.src, e.dst, f e.constraint⟩)).length ≤
     (encPair encUnary (encList (Edge.encoding enc)) (g.vertices, g.edges)).length + _
-  simp only [length_encPair]
-  lia
+  enc_len
 
 /-- Normalization to fixed-alphabet tables adds at most a constant number of bits per edge. -/
 theorem length_encoding_tabulateConstraints_le [Fintype α] (g : Graph C)

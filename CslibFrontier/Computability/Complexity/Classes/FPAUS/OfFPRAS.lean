@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Tactic.SuppCases
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Approximate counting gives almost uniform sampling for self-reducible families
@@ -406,14 +407,12 @@ private theorem length_estimate_le {c d : ℕ}
   · simp only [h0, ↓reduceIte, ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at he
     subst he
     have h1 := length_encNat_mono (show (if [] ∈ W y then 1 else 0) ≤ 1 by split_ifs <;> omega)
-    simp only [length_encPair] at h1 ⊢
-    omega
+    enc_len at h1 ⊢
   · simp only [h0, ↓reduceIte] at he
     have h := hcd (y, p, t) e he
     have hle : (encPair enc (encPair encUnary encUnary) (y, p, t)).length ≤
         (encPair enc (encPair encUnary encUnary) (x, p, t)).length := by
-      simp only [length_encPair]
-      omega
+      enc_len
     have := Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hle 1) d)
     omega
 
@@ -504,9 +503,7 @@ private theorem isPPTOn_trial
           omega
         · omega
       unfold estBound at hE
-      simp only [encState, length_encPair, encBits_apply, encBool_apply, List.length_singleton,
-        encUnary_apply, List.length_replicate] at hE ⊢
-      omega)
+      enc_len [encState, List.length_singleton] at hE ⊢)
   have hfinish : ComputableInPolyTime (walkFinish W) (encState enc) (encOption encBits) := by
     unfold walkFinish
     have hnil : ComputableInPolyTime (fun s : WalkState α => decide ([] ∈ W s.1)) (encState enc)

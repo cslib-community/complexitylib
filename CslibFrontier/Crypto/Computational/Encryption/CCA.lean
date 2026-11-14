@@ -31,6 +31,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Chosen-ciphertext security for public-key encryption (1CCA and multi-challenge CCA / IND-CCA2)
@@ -318,19 +319,16 @@ theorem CCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List B
     fun n state ct => ?_, fun n pk State oracle s s' choice hmem => ?_⟩
   · have hsize : (encPair encUnary (encPair encBits encBits) (n, state, ct)).length + 1 ≤
         4 * (n + state.length + ct.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      lia
+      enc_len
     have hpoly := Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hsize d₂)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact (hguess (n, state, ct)).1.mono hpoly
   · have hbound := hlen (n, pk) State oracle s s' choice hmem
     have hstate : choice.2.length ≤ (encPair (encPair encMsg encMsg) encBits choice).length := by
-      simp only [length_encPair, encBits_apply]
-      lia
+      enc_len
     have hsize : (encPair encUnary encBits (n, pk)).length + 1 ≤
         2 * (n + pk.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      lia
+      enc_len
     have hpoly := Nat.mul_le_mul_left cs (Nat.pow_le_pow_left hsize ds)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact (hstate.trans hbound).trans hpoly
@@ -1049,8 +1047,7 @@ theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ L
     fun n state cts => ?_, fun n pk State oracle s s' choice hmem => ?_⟩
   · have hsize : (encPair encUnary (encPair encBits (encList encBits)) (n, state, cts)).length + 1 ≤
         4 * (n + state.length + (encList encBits cts).length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      lia
+      enc_len
     have hpoly := Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hsize d₂)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact (hguess (n, state, cts)).1.mono hpoly
@@ -1058,16 +1055,13 @@ theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ L
     have hchallenges :
         choice.1.length ≤ (encPair (encList (encPair encMsg encMsg)) encBits choice).length := by
       have hlist := length_le_length_encList (encPair encMsg encMsg) choice.1
-      simp only [length_encPair, encBits_apply]
-      lia
+      enc_len
     have hstate :
         choice.2.length ≤ (encPair (encList (encPair encMsg encMsg)) encBits choice).length := by
-      simp only [length_encPair, encBits_apply]
-      lia
+      enc_len
     have hsize : (encPair encUnary encBits (n, pk)).length + 1 ≤
         2 * (n + pk.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      lia
+      enc_len
     have hpoly := Nat.mul_le_mul_left cs (Nat.pow_le_pow_left hsize ds)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact ⟨(hchallenges.trans hbound).trans hpoly, (hstate.trans hbound).trans hpoly⟩

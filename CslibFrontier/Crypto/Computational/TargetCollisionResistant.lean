@@ -37,6 +37,7 @@ import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Finiteness
 import CslibFrontier.Crypto.Game.Order
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Target collision resistance and universal one-way hash families
@@ -1368,9 +1369,7 @@ theorem KeyedCompressionFamily.targetCollisionResistant_treeHash
   have hchoice_le {choice} (hchoice : choice ∈ (ProbComp.eval (adversary.choose n)).support) :
       choice.1.length ≤ maxBlocks n ∧ choice.2.length ≤ maxBlocks n := by
     have henc := hlen₁ n choice hchoice
-    simp only [length_encPair, encBits, Function.Embedding.refl_apply, encUnary_apply,
-      List.length_replicate, maxBlocks] at henc ⊢
-    omega
+    enc_len [encBits, Function.Embedding.refl_apply, maxBlocks] at henc ⊢
   unfold KeyedCompressionFamily.treeHash KeyedCompressionFamily.validInput
   dsimp only [redAdversary]
   refine succProbability_targetCollisionGame_uowhfTreeHash_le

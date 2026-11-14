@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Streaming local Boolean assignments
@@ -216,8 +217,7 @@ indices. This bounds temporary callback input as well as the persistent state. -
 theorem length_callback_input (n j : ℕ) (acc : β) :
     (encCallbackInput encB ((n, lowBits n j), acc)).length =
       6 * n + 3 + (encB acc).length := by
-  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply, length_lowBits]
-  omega
+  enc_len [length_lowBits]
 
 /-- Prepare the complete runtime width/word/captured-accumulator input for one callback. -/
 theorem prepare_polyTime :

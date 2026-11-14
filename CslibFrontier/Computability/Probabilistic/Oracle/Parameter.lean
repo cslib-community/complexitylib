@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Probabilistic.OracleSimulation
 public import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 public import CslibFrontier.Computability.Probabilistic.QueryBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Uniform oracle PPT with a security parameter
@@ -85,8 +86,7 @@ theorem IsOraclePPT.query_bounds (h : IsOraclePPT output program) :
   refine ⟨c * 2 ^ d, d, fun n input => ?_⟩
   have hsize : (encPair encUnary encBits (n, input)).length + 1 ≤
       2 * (n + input.length + 2) := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-    lia
+    enc_len
   have hpoly := Nat.mul_le_mul_left c (Nat.pow_le_pow_left hsize d)
   rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
   obtain ⟨hcalls, hsize⟩ := hbound (n, input)

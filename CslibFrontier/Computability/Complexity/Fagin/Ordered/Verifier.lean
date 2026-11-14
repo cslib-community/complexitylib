@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered
 public import CslibFrontier.Computability.Complexity.Fagin.Witness
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Ordered existential second-order queries are in NP
@@ -129,8 +130,7 @@ theorem exists_witnessInput_mem_queryLanguage_iff (a : EncodedStructure) :
     exact ⟨ha, hn, ℓ.certRel a.1 (encStructure a).length w, hmatrix⟩
   · rintro ⟨ha, hn, R, hR⟩
     have hN : 0 < (encStructure a).length := by
-      simp only [encStructure, length_encPair]
-      omega
+      enc_len [encStructure]
     obtain ⟨w, hw, hrel⟩ := ℓ.exists_certificate (card_le_length_encStructure a) hN R
     refine ⟨w, hw, (ℓ.mem_queryLanguage_witnessInput e v a w).2 ⟨ha, hn, ?_⟩⟩
     rw [hrel]

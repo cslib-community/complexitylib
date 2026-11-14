@@ -117,9 +117,8 @@ private theorem length_encList_spec_le (vs : List (List ℕ × T)) (d : ℕ × �
   induction vs with
   | nil => simp
   | cons v vs ih =>
-    simp only [length_encList, List.map_cons, List.map_map, List.sum_cons, List.length_cons,
-      Function.comp_def, length_encPair, add_one_mul] at ih ⊢
-    omega
+    enc_len [length_encList, List.map_cons, List.map_map, List.sum_cons, Function.comp_def,
+      add_one_mul] at ih ⊢
 
 /-- **The size of a call.** The input of the contraction at a digit point is at most
 `9 (n + 1) ^ 2` bits for an input of the reduction of length `n`: the specialized network copies

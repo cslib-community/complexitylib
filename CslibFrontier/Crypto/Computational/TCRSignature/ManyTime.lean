@@ -31,6 +31,7 @@ import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Many-time fresh-key TCR hash-and-sign on arbitrary-length bit words
@@ -720,10 +721,7 @@ private theorem isPPTOn_iterate_sampleStep {k : ℕ} {Control α : Type} [Finite
           2 * (otsk a).length + otsParam H (n a) + 2 := by omega
       exact hs.trans (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hle dsg))
   rw [encList_append]
-  simp only [List.length_append, encList_cons, encList_nil, List.append_nil, length_frame,
-    encTraceStep_apply, length_encPair, encBool_apply, encBits_apply, List.length_singleton,
-    hkLen, growth]
-  omega
+  enc_len [List.append_nil, encTraceStep_apply, List.length_singleton, hkLen, growth]
 
 /-- Uniform polynomial upper bound on the machine clock `c * ((wordOf n otvk).length + 1) ^ d`
 across all `otvk` of length at most `ckg * (otsParam H n + 1) ^ dkg`. -/
@@ -1529,8 +1527,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       have hwLen : (wordOf keys.1).length + 1 ≤
           4 * n + ckg * (otsParam H n + 1) ^ dkg + 3 := by
         dsimp only [wordOf, pkOf, simWordOf, simPkOf]
-        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-        omega
+        enc_len
       exact Nat.mul_le_mul_left c (Nat.pow_le_pow_left hwLen d)
     have hfuelLtD : fuelOf keys.1 < D :=
       Nat.lt_of_le_of_lt hfuelLe (lt_dyadicSize _)

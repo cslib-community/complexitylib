@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Probabilistic.Oracle.Replay
 public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Computability.Probabilistic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Saved coins independent of a generated auxiliary input

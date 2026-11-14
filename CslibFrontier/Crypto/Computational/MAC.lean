@@ -1933,8 +1933,7 @@ theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMAC
   have htag_le : tag.length ≤ c * (2 * caller.2.length + request.2.length + 3) ^ d :=
     htagLen.trans hpow
   refine ⟨trivial, by dsimp only; omega, ?_⟩
-  simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply]
-  omega
+  enc_len
 
 /-- Run the complete nonce-based MAC SUF-CMA experiment on its unary security parameter for any
 oracle-PPT forger. -/

@@ -113,8 +113,7 @@ theorem length_encoding_le (s : SparseMemory Address Value) :
   have h := length_encList_le (encPair encA encV) (entries s)
     (b := 2 * maxKeyLength encA s + 1 + maxValueLength encV s) (fun e he => by
       obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
-      simp only [length_encPair]
-      omega)
+      enc_len)
   simp only [encoding_apply]
   convert h using 1
   congr 1

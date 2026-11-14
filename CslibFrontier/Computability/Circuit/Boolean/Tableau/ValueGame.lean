@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The circuit-value game on the tableau
@@ -356,8 +357,7 @@ theorem length_encClaim_mono {x : List Bool} {T w w' : ℕ} {v v' : Bool} (h : w
   have hs : (encNat w).length ≤ (encNat w').length := by
     simp only [encNat_apply, Nat.size_eq_bits_len]
     exact Nat.size_le_size h
-  simp only [length_encPair, encBool_apply, List.length_singleton]
-  omega
+  enc_len [List.length_singleton]
 
 variable (tm)
 

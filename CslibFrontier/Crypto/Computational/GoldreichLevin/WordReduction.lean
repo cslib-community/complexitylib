@@ -16,6 +16,7 @@ import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The uniform Goldreich–Levin inverter
@@ -142,9 +143,7 @@ theorem fixedPredictor_distribution (adversary : Distinguisher)
   rw [hrealize]
   have hlen : (encPair encUnary encBits (n, image ++ List.ofFn query)).length + 1 =
       3 * n + image.length + 2 := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
-      List.length_append, List.length_ofFn]
-    lia
+    enc_len [List.length_ofFn]
   rw [hlen]
   simp only [uniformList, PMF.map_comp, Function.comp_def, coinBudget, fixedPredictor]
   rfl

@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native polynomial-time chronological forest search
@@ -113,8 +114,7 @@ private theorem poly_root : ComputableInPolyTime (fun p : WorkLog × ℕ => root
       (encWorkLog p.1).length at hb
     have hr : (encNat parentVariable).length ≤
         (encWorkExpansion ((constraint, port, parentVariable), outputs)).length := by
-      simp only [encWorkExpansion, encRecord, encOccurrenceRecord, length_encPair]
-      omega
+      enc_len [encWorkExpansion, encRecord, encOccurrenceRecord]
     dsimp only
     split <;> omega
 
@@ -274,13 +274,10 @@ private theorem step_size (input : Input) (s : State) :
               Nat.add_le_add_right
                 (Nat.add_le_add_left (Nat.mul_le_mul_left 2 hf) _) 4
             _ ≤ (encState (log, remaining, status)).length + 32 * B + 32 := by
-              simp only [encState, encWorkExpansion, length_encPair]
-              omega
+              enc_len [encState, encWorkExpansion]
         | some b =>
           have hb : (encRecord b).length ≤ 2 * B + 2 := by
-            simp only [encScanState, length_encPair, encOption_some, List.length_cons,
-              encList_nil, List.length_nil, encOption_none] at hs
-            omega
+            enc_len [encScanState] at hs
           simp [encState, encEvent]
           omega
       next => simp [encState]; omega
