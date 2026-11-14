@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontierTests.NativeBatchPolicy
+import CslibFrontierTests.NativeBatchSingleton
 import CslibFrontier.Computability.Probabilistic.NativeBatch.Retained
 import Mathlib.Tactic
 
@@ -23,19 +24,9 @@ open Cslib.Probability.StochasticOracle ConcurrentBatch PartialCover AdaptiveSel
 open Cslib.Probability.NativeBatch
 open scoped ENNReal
 namespace CslibFrontierTests.NativeBatchProgress
+open CslibFrontierTests.NativeBatchSingleton (coverInstance)
 open CslibFrontierTests.NativeBatchPolicy
 open CslibFrontierTests.ConcurrentBatch (limits sample paths)
-
-/-- A satisfiable nonempty ground with a feasible positive dual. -/
-def coverInstance : Instance Unit (Fin 1) where
-  ground := {()}
-  sets _ := {()}
-  sets_subset := by intro _; exact Finset.Subset.rfl
-  weight _ := 1
-  weight_nonneg := by intro _; norm_num
-  dual _ := 1
-  dual_nonneg := by intro _; norm_num
-  dual_feasible := by intro _; norm_num
 
 /-- Completed proposals from the actual first batch, excluding its canceled call. -/
 theorem first_proposals (u : Bool) :

@@ -32,7 +32,7 @@ private theorem valid : Valid data.startup.system := by
   · intro e; cases e <;> norm_num [data]
   · intro j; cases j <;> norm_num [data, elements, ground, List.range_succ]
 
-open CslibFrontierTests.NativeBatchSuccess in
+open CslibFrontierTests.NativeBatchSuccess CslibFrontierTests.NativeBatchSingleton in
 /-- The event bridge also applies to a concrete successful native program on
 its actual unbounded terminal law, independently of the startup input format. -/
 example :

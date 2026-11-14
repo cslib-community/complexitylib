@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Computability.Probabilistic.NativeBatch.RecordedObservation
-import CslibFrontier.Computability.Probabilistic.NativeResponseExecution
-import CslibFrontierTests.NativeBatchSuccess
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.RecordedObservation
+public import CslibFrontier.Computability.Probabilistic.NativeResponseExecution
+public import CslibFrontierTests.NativeBatchSingleton
+import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
 
 /-!
@@ -20,6 +24,7 @@ The posterior observation law is derived from execution, rather than supplied
 as a machine representation assumption. Two epochs finalize one issued call.
 -/
 
+public section
 noncomputable section
 namespace CslibFrontierTests.NativeRecordedRetention
 open Cslib Cslib.Probability Turing Turing.MultiTapeMachine Turing.MultiTapeTM
@@ -27,7 +32,7 @@ open NativeOpenExecution NativeInterface
 open Cslib.Probability.StochasticOracle
 open Cslib.Probability.StochasticOracle.ConcurrentBatch
 open Cslib.Probability.NativeBatch
-open NativeBatchSuccess (limits sample batch receipt)
+open NativeBatchSingleton (limits sample batch receipt coverInstance)
 open scoped ENNReal NNReal
 
 /-- One actual private-coin instruction, executed only after the response handoff. -/
@@ -88,7 +93,7 @@ private theorem source_reply :
   rfl
 
 /-- The actual full program's joint native law is the post-response private coin. -/
-theorem terminal_law :
+private theorem terminal_law :
     NativeUnboundedExecution.terminal machine (environment limits sample) start =
       (PMF.uniformOfFintype Bool).map fun bit => some (done bit) := by
   change NativeUnboundedExecution.terminal (NativeResponseExecution.machine coin)
@@ -101,7 +106,7 @@ theorem terminal_law :
   rfl
 
 /-- The actual output mask varies while all previously incurred resources are retained. -/
-theorem output_resources (bit : Bool) :
+private theorem output_resources (bit : Bool) :
     (done bit).config.tapes.output = [bit] ∧
       tokenBill (done bit).memory.events = 2 ∧ elapsed (done bit).memory.events = 1 := by
   cases bit <;>
@@ -112,17 +117,17 @@ theorem output_resources (bit : Bool) :
       Config.step, action, Action.apply, coin, start, machine,
       MultiTapeMachine.initialConfig, Cfg.init, Memory.record, tokenBill, elapsed,
       replyOf, receipt, ConcurrentBatch.observe,
-      NativeBatchSuccess.path, limits, batch,
+      NativeBatchSingleton.path, limits, batch,
       CallTrace.report, CallTrace.response, CallTrace.stop, Exchange.tokens, Exchange.duration,
       active, Finset.sup_const, MultiTapeTM.inCfg]
 
 /-- Both branches receive the same covering singleton; only local retention varies. -/
-theorem decoded_retention (bit : Bool) :
+private theorem decoded_retention (bit : Bool) :
     (done bit).memory.privateState.history = [receipt] ∧
       proposals 1 receipt.report = [{0}] ∧
       decodeFamily 1 (done bit).config.tapes.output =
         some (if bit then ({0} : Finset (Fin 1)) else ∅) := by
-  refine ⟨rfl, NativeBatchSuccess.receipt_proposals, ?_⟩
+  refine ⟨rfl, NativeBatchSingleton.receipt_proposals, ?_⟩
   rw [(output_resources bit).1]
   cases bit <;> decide
 
@@ -130,14 +135,14 @@ private def accepted (result : Option (World 2
     (NativeQueryAll.Control ⊕ (MarkWorkState ⊕ RewindWorkState) ⊕ Unit)
     Unit (ServerState 1 Unit) (encodeBatch batch))) : Bool :=
   result.any fun w => (decodeFamily 1 w.config.tapes.output).any fun C =>
-    decide (NativeBatchProgress.coverInstance.covered C = NativeBatchProgress.coverInstance.ground)
+    decide (coverInstance.covered C = coverInstance.ground)
 
 private theorem accepted_done (bit : Bool) : accepted (some (done bit)) = bit := by
   simp only [accepted, Option.any_some, (decoded_retention bit).2.2]
-  cases bit <;> norm_num [PartialCover.Instance.covered, NativeBatchProgress.coverInstance]
+  cases bit <;> norm_num [PartialCover.Instance.covered, coverInstance]
 
 /-- Half the actual native outcomes retain the cover, despite certain raw proposal coverage. -/
-theorem cover_probability :
+private theorem cover_probability :
     ((NativeUnboundedExecution.terminal machine (environment limits sample) start).map
       accepted) true = 1 / 2 := by
   rw [terminal_law, PMF.map_comp]

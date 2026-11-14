@@ -4,6 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
 import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Optimum
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Tactic
@@ -18,6 +22,10 @@ chooses only the full cover. Its provenance is checked against both raw proposal
 and the token infimum uses that complete decoder for every competing policy.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.ChosenRetention
 open Cslib.Probability Cslib.Probability.StochasticOracle

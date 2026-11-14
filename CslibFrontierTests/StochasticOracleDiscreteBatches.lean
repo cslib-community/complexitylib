@@ -4,8 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.FiniteTable
-import CslibFrontierTests.StochasticOracleDiscreteRetention
+module
+-- upstream: candidate
+
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.FiniteTable
+public import CslibFrontierTests.StochasticOracleDiscreteRetention
 import CslibFrontier.Probability.PMF.Event
 import Mathlib.Tactic
 
@@ -18,6 +21,10 @@ response supplies that batch's singleton; other responses supply nothing.
 Invoices are `x + 1` and physical duration is one. Completion halts the policy.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.DiscreteBatches
 open Cslib.Probability Cslib.Probability.StochasticOracle
