@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Crypto.Computational.Signature.WordRandomOracle
-public import CslibFrontier.Computability.Probabilistic.OracleSimulation
+import CslibFrontier.Computability.Probabilistic.OracleSimulation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Tactic.PPT
@@ -55,8 +55,8 @@ theorem are separate steps (#2568).
 * `schnorrForkRun`: the guarded replay run against `schnorrForkStep`.
 * `schnorrForkFinish`: the final check.
 * `schnorrForkPass`: one native pass.
-* `forkIndexCode`, `forkRunWords`: the native code of a named fork index, and the words a pass
-  returns for one typed run.
+* `forkIndexCode`, `forkRunWords`, `transcriptWords`: the native code of a named fork index, the
+  words a pass returns for one typed run, and the native view of a typed transcript.
 
 ## Main results
 
@@ -71,7 +71,7 @@ theorem are separate steps (#2568).
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 19.6.1. The native realization is original.
 -/
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -114,7 +114,8 @@ structure SchnorrForkBanks where
   /-- Challenge answers, one consumed per own hash query. -/
   answers : List (List Bool)
 
-/-- The encoding of the banks. -/
+/-- The encoding of the banks: the transcripts as a list of `encBits`-framed word triples
+`(t, c, z)`, then the answers as a list of `encBits`-framed words. -/
 enc_structure encSchnorrForkBanks : SchnorrForkBanks where
   transcripts : (encList (encPair encBits (encPair encBits encBits))), answers : (encList encBits)
 
@@ -124,7 +125,7 @@ returns the table's challenge for its point, or else the next unused answer, whi
 the pass's own query. Every call consumes one transcript, as in `ForkingReduction.handler`. Once
 the answers run out, a new point gets the empty reply and changes nothing, which keeps every tag
 at most the number of answers. -/
-def schnorrForkStep (banks : SchnorrForkBanks) (request : Bool × List Bool)
+@[expose] def schnorrForkStep (banks : SchnorrForkBanks) (request : Bool × List Bool)
     (state : SchnorrForkState) : List Bool × SchnorrForkState :=
   let (hash, word) := request
   if hash then
@@ -417,7 +418,7 @@ The result is the named index, the challenge word and the response word. The ind
 when the forgery wins and its point is the pass's own query number `j`, with `j` below both the
 number of answers and the number of own queries; otherwise it is `0`. This mirrors `validIndex`
 applied to `ForkingReduction.verdict`. -/
-def schnorrForkFinish (d : F.Desc) (pk : List Bool) (answers : List (List Bool))
+@[expose] def schnorrForkFinish (d : F.Desc) (pk : List Bool) (answers : List (List Bool))
     (out : (List Bool × List Bool) × SchnorrForkState) : ℕ × List Bool × List Bool :=
   let ((msg, sig), state) := out
   let (t, z) := (Decoder.bits.pair Decoder.bits).decode sig
@@ -600,7 +601,8 @@ private def positionTag : Option ℕ → ℕ
   | some i => i + 1
 
 /-- The native view of a typed transcript. -/
-def transcriptWords : List Bool × BitString m × List Bool → List Bool × List Bool × List Bool
+@[expose] def transcriptWords :
+    List Bool × BitString m × List Bool → List Bool × List Bool × List Bool
   | (t, c, z) => (t, List.ofFn c, z)
 
 /-- The native view of a typed table entry. -/
@@ -807,7 +809,7 @@ private theorem run_interpret_handler_forge {k : ℕ} {Control : Type}
 end Agreement
 
 /-- The native code of a named fork index: `0` for none and `j + 1` for index `j`. -/
-def forkIndexCode {q : ℕ} : Option (Fin q) → ℕ
+@[expose] def forkIndexCode {q : ℕ} : Option (Fin q) → ℕ
   | none => 0
   | some j => j.val + 1
 
@@ -818,7 +820,7 @@ theorem forkIndexCode_injective {q : ℕ} : Function.Injective (forkIndexCode (q
 
 /-- The words a native pass returns for one run of the typed forking algorithm: the code of the
 named index, the forgery's challenge as a word, and its response. -/
-def forkRunWords {q m : ℕ} {M T Z Query : Type} :
+@[expose] def forkRunWords {q m : ℕ} {M T Z Query : Type} :
     Option (Fin q) × ((Option ℕ × ForkingReduction.Outcome M T (BitString m) Z) × List Query) →
       ℕ × List Bool × Z
   | (index, (_, outcome), _) => (forkIndexCode index, List.ofFn outcome.challenge, outcome.response)

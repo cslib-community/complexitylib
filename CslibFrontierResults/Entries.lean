@@ -32,6 +32,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Complexity.Problems.SharpCycle
+import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Completeness
 
 import CslibFrontier.Computability.QueryComplexity.AdjacentPair
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
@@ -562,6 +563,21 @@ register_result "reingold" where
     row-major adjacency matrix (encUSTCON). One native machine halts on and decides every \
     encoded instance of length L within c·(⌊log₂ L⌋ + 1) work cells; malformed inputs are \
     unconstrained. The reduction-defined SL = L corollary is not part of this entry."
+
+register_result "strongly-connected-nl-complete" where
+  title := "Strongly connected digraphs are NL-complete"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 4, Exercise 4",
+      locator := "Web draft 2007-01-08, printed p. 89; PDF p. 105" }
+  ]
+  theorems := [Cslib.Complexity.StronglyConnected.logSpaceComplete]
+  scope := "Digraphs on Fin n with loops allowed, encoded by encDigraph: a unary header 1^n 0 \
+    and the row-major adjacency matrix (the encSTCON layout without s and t); the empty digraph \
+    is strongly connected. Native visited-cell NL: membership by one nondeterministic counter \
+    program that guesses a path for every ordered pair, every branch halting; hardness by a \
+    native logspace many-one reduction from STCON adding arcs v → s and t → v. Completeness for \
+    the draft's ever-non-blank space class needs the measure bridge of draft Theorem 4.16."
 
 register_result "primes" where
   title := "Agrawal–Kayal–Saxena: PRIMES is in P"
