@@ -48,8 +48,8 @@ For the canonical Section 5 parameter instantiation (`canonicalSchedule`) and en
   (`ChildRouterSeed`), whereas nodes with `nLow ℓ < childRouterThreshold epsInv alphaInv` switch
   to `(2 * childRouterHalfInd (nHigh ℓ))`-wise `trinomialPolyHash`, avoiding the doubly exponential
   `childRouterThreshold` lower bound on `thresholdN`.
-* **Out-of-scope gaps**: Word-RAM `Memory.Prog` compilation (in downstream Word-RAM realization
-  modules), Section 4 small-`R`
+* **Out-of-scope gaps**: Word-RAM compilation to executable memory programs (`Memory.Prog`, in
+  separate downstream Word-RAM realization modules), Section 4 small-`R`
   adapter trees (`R < n / log₂ ^ 0.1 n`), strong history independence, dynamic resizing in `|S|`,
   and super-polynomial key universes (`U > n ^ (1 + α_max)`) are out of scope here.
 
@@ -230,9 +230,11 @@ def sharedTablesBits : ℕ :=
     else 0
   matchBits + minimapTabBits + clmulBits + dfsBits
 
-/-- **Total pure tree representation bits** summing all leaf minimaps, inner/root `SuccinctBucket`
-storage tables, shared root value pool, waiting lists, Feistel / trinomial hash seeds, and shared
-global lookup tables. -/
+/-- **Total pure tree representation bit budget** summing the intended Section 5 layout bit
+budgets of all leaf minimaps, inner/root `SuccinctBucket` storage tables, shared root value pool,
+waiting lists, Feistel / trinomial hash seeds, and shared global lookup tables. This defines the
+arithmetic bit budget of the intended Section 5 layout and is not tied to `TreeState` by an
+explicit Word-RAM bit-packing encoding. -/
 @[expose]
 def totalTreeBits : ℕ :=
   P.allLeavesBits + P.allInnerTablesBits + P.allRootTablesBits +

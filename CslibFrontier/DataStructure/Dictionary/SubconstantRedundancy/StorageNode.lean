@@ -26,7 +26,8 @@ theorems from `NodeSeeds`.
 * `Cslib.DataStructure.Dictionary.SubconstantRedundancy.WaitingList`: bounded waiting list of pairs
   `(x_id^[ℓ], x_id^[ℓ - 1])` (`Section 5.2`, capacity `waitCap ℓ = 2 * delta ℓ`).
 * `StorageTableMeta`, `StorageTable`: inner and root storage tables separating `StorageTableMeta`
-  (`Section 5.6` ID-only slot locator `locateSlot`, bit width `succinctTableMetaBits`) from
+  (`Section 5.6` ID-only slot locator `locateSlot`, bit budget `succinctTableMetaBits`, though
+  modeled as a map with ~`m · 2^I` states without an explicit bit-packing encoding) from
   `(quot, val)` payload slots.
 * `TreeSchedule.LeafMeta`, `TreeSchedule.LeafNode`, `TreeSchedule.InnerMeta`,
   `TreeSchedule.InnerNode`, `TreeSchedule.RootMeta`, `TreeSchedule.RootNode`: leaf
@@ -301,8 +302,9 @@ theorem lookup_ofFinset (S : Finset (Fin (2 ^ I_cur))) (hS : S.card ≤ cap)
 end WaitingList
 
 /-- Pure storage-table ID metadata on `Fin (2 ^ I)` with `m` slots (`Section 5.6` metadata
-component of `SuccinctBucket`, bit width `succinctTableMetaBits I m`, independent of `Q` and `V`).
--/
+component of `SuccinctBucket`, matching the intended bit budget `succinctTableMetaBits I m`,
+though modeled here as a slot-assignment structure with ~`m · 2^I` states rather than packed to
+that bit budget by an explicit encoding). -/
 structure StorageTableMeta (I m : ℕ) where
   /-- Slot-to-active-ID assignment across the `m` table slots. -/
   slots : Fin m → Option (Fin (2 ^ I))
@@ -895,7 +897,9 @@ structure RootMeta where
   tableMeta : StorageTableMeta (P.idBits 1) (P.tableCap 1)
   deriving DecidableEq
 
-/-- Root node (`ℓ = 1`). -/
+/-- Root node (`ℓ = 1`), storing `(quot, val)` inline via `StorageTable` in the pure tree model
+(while the Section 5 layout bit budget arithmetic in `BitBudget.lean` accounts for a shared root
+value pool). -/
 structure RootNode where
   /-- Per-node hash seed at `ℓ = 1`. -/
   seed : P.NodeSeed 1

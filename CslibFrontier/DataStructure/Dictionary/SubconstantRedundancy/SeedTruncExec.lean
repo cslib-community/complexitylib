@@ -355,16 +355,8 @@ private theorem pi_pure {ι : Type} {spec : OracleSpec ι} {m : ℕ} {β : Fin m
 private theorem mem_support_pi {ι : Type} {spec : OracleSpec ι} {m : ℕ} {β : Fin m → Type}
     {programs : (i : Fin m) → OracleComp spec (β i)} {r : (i : Fin m) → β i}
     (hr : r ∈ (OracleComp.pi programs).support) (i : Fin m) :
-    r i ∈ (programs i).support := by
-  induction m with
-  | zero => exact i.elim0
-  | succ m ih =>
-    rw [OracleComp.pi_succ, OracleComp.mem_supportWith_bind_iff] at hr
-    obtain ⟨a0, ha0, hrest⟩ := hr
-    rw [OracleComp.mem_supportWith_map_iff] at hrest
-    obtain ⟨rest, hrest, hcons⟩ := hrest
-    subst hcons
-    exact Fin.cases ha0 (fun j => ih hrest j) i
+    r i ∈ (programs i).support :=
+  (OracleComp.mem_supportWith_pi_iff (fun _ => Set.univ) programs r).mp hr i
 
 private theorem isGoodNodeSeed_of_mem_support_queryGoodOrArb {P : TreeSchedule} {L : ℕ}
     (hL : L ≤ P.depth) {s : Finset (P.PrimId L)} (hb : P.validPrimBounds L s)

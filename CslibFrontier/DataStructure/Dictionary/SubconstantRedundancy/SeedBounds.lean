@@ -50,6 +50,7 @@ open Finset
 
 /-! ## Section 1: Inverse-redundancy scaling and sentinel-padding entropy bound -/
 
+/-- The key count `n` is bounded by `2 * R_eff * r`. -/
 theorem n_le_two_mul_effRedundancy_mul_ratio {n R : ℕ}
     (hR : 1 ≤ R) (hr1 : 1 ≤ redundancyRatio n R) :
     n ≤ 2 * effRedundancy n R * redundancyRatio n R := by
@@ -64,6 +65,7 @@ theorem n_le_two_mul_effRedundancy_mul_ratio {n R : ℕ}
   rw [← hr_eq] at hdiv
   nlinarith
 
+/-- Inverse-redundancy transfer bound: `Q * r ≤ C * n` implies `Q ≤ 2 * C * R_eff`. -/
 theorem le_two_mul_effRedundancy_of_mul_ratio_le {n R Q C : ℕ}
     (hR : 1 ≤ R) (hr1 : 1 ≤ redundancyRatio n R)
     (hQ : Q * redundancyRatio n R ≤ C * n) :
@@ -120,8 +122,8 @@ private theorem choose_add_le_choose_mul_pow_two {U E n Re : ℕ}
     le_of_mul_le_mul_left hch_r (pow_pos hWr_pos n)
   exact_mod_cast hres
 
-/-- Sentinel and top-level alignment padding from `U` to `(canonicalSchedule h).paddedUniv`
-increases `infoBits` by at most `2 * effRedundancy n R + 1` bits across `ValidRegime`. -/
+/-- Upper bound on the padded universe size:
+`paddedUniv ≤ U + n + 4096 * n * (log₂ U) ^ 27`. -/
 private theorem paddedUniv_le_add_mul_log_pow {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     (canonicalSchedule h).paddedUniv ≤ U + n + 4096 * n * (Nat.log 2 U) ^ 27 := by
@@ -183,6 +185,8 @@ private theorem paddedUniv_le_add_mul_log_pow {U V n R p_min q_min p_max q_max :
     omega
   omega
 
+/-- Sentinel and top-level alignment padding from `U` to `(canonicalSchedule h).paddedUniv`
+increases `infoBits` by at most `2 * effRedundancy n R + 1` bits across `ValidRegime`. -/
 theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     infoBits (canonicalSchedule h).paddedUniv V n ≤
@@ -405,6 +409,8 @@ private theorem paddedUniv_le_two_mul_pow {U V n R p_min q_min p_max q_max : ℕ
     _ ≤ n ^ (p_max + 2) + n ^ (p_max + 2) := Nat.add_le_add hU_pow hstep_n2
     _ = 2 * n ^ (p_max + 2) := (two_mul _).symm
 
+/-- Coarse power-of-two upper bound on the padded universe:
+`paddedUniv ≤ 2 ^ (2 * (p_max + 2) * log₂ n)`. -/
 theorem paddedUniv_le_two_pow_mul_log {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     (canonicalSchedule h).paddedUniv ≤ 2 ^ (2 * (p_max + 2) * Nat.log 2 n) := by
@@ -425,6 +431,7 @@ theorem paddedUniv_le_two_pow_mul_log {U V n R p_min q_min p_max q_max : ℕ}
     _ = 2 ^ ((L + 1) * (p_max + 2) + 1) := by rw [← Nat.pow_mul, ← pow_succ']
     _ ≤ 2 ^ (2 * (p_max + 2) * L) := Nat.pow_le_pow_right Nat.two_pos hexp
 
+/-- At every tree level `j ≤ depth`, floor load satisfies `nFloor j ≥ 256 ^ 9`. -/
 theorem nFloor_ge_pow_256 {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) {j : ℕ}
     (hj : j ≤ (canonicalSchedule h).depth) :

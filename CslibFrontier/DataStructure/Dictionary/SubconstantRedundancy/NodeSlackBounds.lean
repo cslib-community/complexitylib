@@ -57,26 +57,8 @@ theorem canonical_target_bounds {U V n R p_min q_min p_max q_max : ℕ}
     (by dsimp [minRedundancyRatio] at hr256; omega) h4r hj rfl,
     targetSize_le_of_step hstep⟩
 
-theorem canonicalSchedule_branchFactor_eq {U V n R p_min q_min p_max q_max : ℕ}
-    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
-    (canonicalSchedule h).branchFactor ℓ =
-      branchFactor n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
-
-theorem canonicalSchedule_nFloor_eq {U V n R p_min q_min p_max q_max : ℕ}
-    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
-    (canonicalSchedule h).nFloor ℓ =
-      nFloor n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
-
-theorem canonicalSchedule_delta_eq {U V n R p_min q_min p_max q_max : ℕ}
-    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
-    (canonicalSchedule h).delta ℓ =
-      delta n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
-
-theorem canonicalSchedule_idBits_eq {U V n R p_min q_min p_max q_max : ℕ}
-    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
-    (canonicalSchedule h).idBits ℓ =
-      idBits n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
-
+/-- At any valid level `ℓ ≤ depth`, `canonicalSchedule` floor load equals integer division
+`n / N_ℓ`. -/
 theorem canonicalSchedule_nFloor_div_eq {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) {ℓ : ℕ}
     (hℓ : ℓ ≤ (canonicalSchedule h).depth) :
@@ -84,6 +66,7 @@ theorem canonicalSchedule_nFloor_div_eq {U V n R p_min q_min p_max q_max : ℕ}
   rw [canonicalSchedule_nFloor_eq h ℓ, canonicalSchedule_numNodes_eq h hℓ]
   rfl
 
+/-- Window radius `delta j ≥ 1` at every level `j ≤ depth` in `canonicalSchedule`. -/
 theorem delta_pos_of_le_depth {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) {j : ℕ}
     (hj : j ≤ (canonicalSchedule h).depth) :
@@ -144,6 +127,7 @@ private theorem numNodes_mul_tableCap_of_schedule (P : TreeSchedule) {ℓ : ℕ}
     _ = 3 * (P.numNodes ℓ * P.branchFactor ℓ) * P.delta (ℓ + 1) := by ring
     _ = 3 * P.numNodes (ℓ + 1) * P.delta (ℓ + 1) := by rw [← P.numNodes_succ ℓ]
 
+/-- Level-`ℓ` storage table slots across the forest are bounded by `3 * N_{ℓ+1} * Δ_{ℓ+1}`. -/
 theorem numNodes_mul_tableCap_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) {ℓ : ℕ}
     (h1 : 1 ≤ ℓ) (hlt : ℓ < (canonicalSchedule h).depth) :
@@ -204,6 +188,7 @@ private theorem leaf_and_deficit_of_schedule (P : TreeSchedule) {n r : ℕ}
       _ ≤ 2 * n := Nat.mul_le_mul_left 2 hNd_r
   nlinarith
 
+/-- Total leaf-slack and value deficit bit budget scaled by `r` is bounded by `9 * n`. -/
 theorem leaf_and_deficit_slack_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     (3 * (canonicalSchedule h).numNodes (canonicalSchedule h).depth +
@@ -360,6 +345,8 @@ private theorem nonLeaf_tables_of_schedule (P : TreeSchedule) {n r : ℕ}
     exact (Nat.mul_le_mul_left _ hr_r2).trans h1
   nlinarith
 
+/-- Total metadata and payload overhead of all non-leaf tables scaled by `r` is bounded
+by `218 * n`. -/
 theorem nonLeaf_tables_slack_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     ((∑ ℓ ∈ Finset.Ico 2 (canonicalSchedule h).depth,
@@ -532,6 +519,7 @@ private theorem rootExtra_and_poolDir_of_schedule (P : TreeSchedule) {n r L s1 p
     linarith
   nlinarith
 
+/-- Root extra quotient bits and pool directory overhead scaled by `r` is bounded by `8 * n`. -/
 theorem rootExtra_and_poolDir_slack_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     (((canonicalSchedule h).numNodes 1 * (canonicalSchedule h).tableCap 1 -
@@ -790,6 +778,8 @@ private theorem waitingLists_and_hashSeeds_of_schedule (P : TreeSchedule) {n U r
   dsimp only [TreeSchedule.allHashSeedsBits]
   nlinarith
 
+/-- Total bits for waiting lists and all node hash seeds scaled by `r` is bounded by
+`1700 * n`. -/
 theorem waitingLists_and_hashSeeds_slack_le {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     ((canonicalSchedule h).allWaitingListsBits + (canonicalSchedule h).allHashSeedsBits) *

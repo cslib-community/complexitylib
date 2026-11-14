@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.SeedTruncExec
 
 /-!
@@ -56,18 +57,6 @@ open Finset
 namespace TreeSchedule
 
 /-! ## Section 1: Level Projection and Trace Rehash-Count Identity -/
-
-private theorem tsum_pmf_bind_mul {α β : Type*} (p : PMF α) (f : α → PMF β) (g : β → ℝ≥0∞) :
-    (∑' b, (p.bind f) b * g b) = ∑' a, p a * ∑' b, f a b * g b := by
-  simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, mul_assoc]
-  rw [tsum_comm]
-  exact tsum_congr fun _ => ENNReal.tsum_mul_left
-
-private theorem tsum_pmf_pure_mul {α : Type*} (a : α) (g : α → ℝ≥0∞) :
-    (∑' x, (PMF.pure a : PMF α) x * g x) = g a := by
-  classical
-  rw [tsum_eq_single a fun b hb => by rw [PMF.pure_apply_of_ne _ _ hb, zero_mul],
-    PMF.pure_apply_self, one_mul]
 
 private theorem expectedCost_queryGoodOrArb_eq_zero {P : TreeSchedule}
     (h : (q : P.GoodSeedQuery) → PMF (P.goodSeedSpec q))
@@ -256,12 +245,6 @@ private theorem expectedCost_runTraceA_zero_above {P : TreeSchedule}
     simp_rw [OracleComp.expectedCost_bind, expectedCost_runTraceA_zero_above h hℓ hlt sts]
     simp
 
-private theorem mem_support_of_evalWith_ne_zero {ι : Type} {spec : OracleSpec ι} {α : Type}
-    {h : (q : ι) → PMF (spec q)} {prog : OracleComp spec α} {a : α}
-    (hne : OracleComp.evalWith h prog a ≠ 0) : a ∈ prog.support :=
-  OracleComp.supportWith_mono (fun _ _ _ => trivial) prog
-    ((OracleComp.support_evalWith h prog) ▸ (PMF.mem_support_iff _ a).mpr hne)
-
 /-- Total number of `true` node-rehash flags across a recorded trace `tr`. -/
 def traceMaskCount {Step α : Type} {N : ℕ}
     (tr : List (TraceItem Step α (Fin N → Bool))) : ℕ :=
@@ -301,7 +284,7 @@ private theorem expectedCost_initTrunc_self {P : TreeSchedule}
       by_cases h0 : OracleComp.evalWith h (P.initTrunc ℓ (Nat.le_of_succ_le hℓ1) S₀) anc = 0
       · rw [h0, zero_mul, zero_mul]
       · have hg_anc := mem_support_initTrunc ℓ (Nat.le_of_succ_le hℓ1) hS₀
-          (mem_support_of_evalWith_ne_zero h0)
+          (OracleComp.mem_support_of_evalWith_ne_zero h0)
         congr 1
         rw [OracleComp.expectedCost_bind, OracleComp.expectedCost_pi]
         simp_rw [expectedCost_queryGoodOrArb_self h hℓ1 (hg_anc.validPrimBounds_succ hℓ1 _)]
@@ -320,9 +303,9 @@ private theorem expectedCost_stepTrunc_self {P : TreeSchedule}
     classical
     dsimp only [stepTrunc]
     rw [OracleComp.expectedCost_bind, OracleComp.expectedCost_pi, OracleComp.evalWith_bind,
-      tsum_pmf_bind_mul]
+      PMF.tsum_bind_mul]
     simp_rw [OracleComp.expectedCost_pure, mul_zero, tsum_zero, add_zero, OracleComp.evalWith_pure,
-      tsum_pmf_pure_mul]
+      PMF.tsum_pure_mul]
     let c0 : ℝ≥0∞ := ((∑ p : Fin (P.numNodes 0),
       if !decide (P.IsGoodNodeSeed 0 (ts.seed 0 le_rfl h0 p) (P.primSetZero st.postSet)) then 1
       else 0 : ℕ) : ℝ≥0∞)
@@ -346,18 +329,18 @@ private theorem expectedCost_stepTrunc_self {P : TreeSchedule}
     dsimp only [stepTrunc]
     rw [OracleComp.expectedCost_bind,
       expectedCost_stepTrunc_zero_above h (Nat.le_of_succ_le hℓ1) (Nat.lt_succ_self ℓ), zero_add,
-      OracleComp.evalWith_bind, tsum_pmf_bind_mul]
+      OracleComp.evalWith_bind, PMF.tsum_bind_mul]
     refine tsum_congr fun am => ?_
     by_cases h0 :
         OracleComp.evalWith h (P.stepTrunc ℓ (Nat.le_of_succ_le hℓ1) st ts.restrict) am = 0
     · rw [h0, zero_mul, zero_mul]
     · have hg_am := (mem_support_stepTrunc ℓ (Nat.le_of_succ_le hℓ1) st ts.restrict
-        (mem_support_of_evalWith_ne_zero h0)).1
+        (OracleComp.mem_support_of_evalWith_ne_zero h0)).1
       congr 1
       rw [OracleComp.expectedCost_bind, OracleComp.expectedCost_pi, OracleComp.evalWith_bind,
-        tsum_pmf_bind_mul]
+        PMF.tsum_bind_mul]
       simp_rw [OracleComp.expectedCost_pure, mul_zero, tsum_zero, add_zero,
-        OracleComp.evalWith_pure, tsum_pmf_pure_mul]
+        OracleComp.evalWith_pure, PMF.tsum_pure_mul]
       let c1 : ℝ≥0∞ := ((∑ p : Fin (P.numNodes (ℓ + 1)),
         if am.2 (P.parentNode ℓ p) || !decide (P.IsGoodNodeSeed (ℓ + 1) (ts.lastRow hℓ1 p)
             (am.1.toFull.primSetAt st.postSet (ℓ + 1) hℓ1 p)) then 1
@@ -388,16 +371,16 @@ private theorem expectedCost_runTruncSteps_eq_trace {P : TreeSchedule}
           (traceMaskCount tr : ℝ≥0∞)
   | [], a => by
     dsimp only [runTruncSteps, runTraceA]
-    rw [OracleComp.expectedCost_pure, OracleComp.evalWith_pure, tsum_pmf_pure_mul]
+    rw [OracleComp.expectedCost_pure, OracleComp.evalWith_pure, PMF.tsum_pure_mul]
     simp [traceMaskCount]
   | st :: sts, a => by
     dsimp only [runTruncSteps, runTraceA]
     rw [OracleComp.expectedCost_bind, expectedCost_stepTrunc_self h ℓ hℓ st a,
-      OracleComp.evalWith_bind, tsum_pmf_bind_mul, ← tsum_add]
+      OracleComp.evalWith_bind, PMF.tsum_bind_mul, ← tsum_add]
     refine tsum_congr fun am => ?_
     rw [← mul_add, expectedCost_runTruncSteps_eq_trace h ℓ hℓ sts am.1, OracleComp.evalWith_bind,
-      tsum_pmf_bind_mul]
-    simp_rw [OracleComp.evalWith_pure, tsum_pmf_pure_mul]
+      PMF.tsum_bind_mul]
+    simp_rw [OracleComp.evalWith_pure, PMF.tsum_pure_mul]
     congr 1
     have hc1 : ((∑ p : Fin (P.numNodes ℓ), if am.2 p then 1 else 0 : ℕ) : ℝ≥0∞) =
         ∑' tr, OracleComp.evalWith h (runTraceA (P.stepTrunc ℓ hℓ) sts am.1) tr *
@@ -788,12 +771,13 @@ theorem expectedCost_execTruncHistory_succ_le {P : TreeSchedule} (hcr : P.Concen
     intro a₀
     by_cases ha0 : OracleComp.evalWith (P.goodSeedLaw hcr) p₀ a₀ = 0
     · rw [ha0, zero_mul, zero_mul]
-    · have hg_a0 := mem_support_initTrunc ℓ hℓ hS₀ (mem_support_of_evalWith_ne_zero ha0)
+    · have hg_a0 := mem_support_initTrunc ℓ hℓ hS₀ (OracleComp.mem_support_of_evalWith_ne_zero ha0)
       refine mul_le_mul_of_nonneg_left (tsum_le_tsum fun tr => ?_) zero_le
       by_cases htr0 : OracleComp.evalWith (P.goodSeedLaw hcr) (runTraceA stepA sts a₀) tr = 0
       · rw [htr0, zero_mul, zero_mul]
       · obtain ⟨hlen_tr, hval_tr⟩ :=
-          validAncTrace_of_mem_support ℓ hℓ hg_a0 hchain (mem_support_of_evalWith_ne_zero htr0)
+          validAncTrace_of_mem_support ℓ hℓ hg_a0 hchain
+            (OracleComp.mem_support_of_evalWith_ne_zero htr0)
         refine mul_le_mul_of_nonneg_left ?_ zero_le
         rw [show runGivenTraceB stepB tr = runPiChain stepC tr from funext (htraceB_eq tr),
           expectedCost_pi_bind_runPiChain]
@@ -867,22 +851,6 @@ theorem expectedCost_execTruncHistory_succ_le {P : TreeSchedule} (hcr : P.Concen
   simp_rw [mul_add, tsum_add, ← mul_assoc, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   rfl
 
-private theorem expectedCost_const_mul {ι : Type} {spec : OracleSpec ι} {α : Type}
-    (h : (q : ι) → PMF (spec q)) (c : ℝ≥0∞) (cost : ι → ℝ≥0∞) (prog : OracleComp spec α) :
-    OracleComp.expectedCost h (fun q => c * cost q) prog =
-      c * OracleComp.expectedCost h cost prog := by
-  induction prog using OracleComp.induction with
-  | pure _ => simp
-  | query_bind q cont ih =>
-    rw [OracleComp.expectedCost_query_bind, OracleComp.expectedCost_query_bind, mul_add]
-    congr 1
-    simp_rw [ih]
-    have hcomm : ∀ a, h q a * (c * OracleComp.expectedCost h cost (cont a)) =
-        c * (h q a * OracleComp.expectedCost h cost (cont a)) := fun a => by
-      rw [← mul_assoc, mul_comm (h q a) c, mul_assoc]
-    simp_rw [hcomm]
-    exact ENNReal.tsum_mul_left
-
 /-- **Unconditional `Lemma 5.3` over padded step histories (`[LiLiangYuZhou2024, Section 5.5]`)**:
 across initialization on `S₀` (`validRootBounds S₀`) and any valid chain `sts` of `PaddedStep`s,
 the total expected rehashing work of `execSeedSteps S₀ sts` under `goodSeedLaw hcr` is at most
@@ -935,7 +903,7 @@ theorem expectedCost_execSeedSteps_le {P : TreeSchedule} (hcr : P.ConcentrationR
           (fun q => 2 * (P.nFloor ℓ : ℝ≥0∞) * levelRehashCost ℓ q) (P.execSeedSteps S₀ sts) =
         ENNReal.ofReal (2 * succRehashes ℓ * (P.nFloor ℓ : ℝ)) := fun ℓ hmem => by
     have hℓ : ℓ ≤ P.depth := Nat.lt_succ_iff.mp (Finset.mem_range.mp hmem)
-    rw [expectedCost_const_mul, expectedCost_level_execTrunc_eq _ hℓ, ← hofReal_eq ℓ hℓ,
+    rw [OracleComp.expectedCost_const_mul, expectedCost_level_execTrunc_eq _ hℓ, ← hofReal_eq ℓ hℓ,
       show (2 : ℝ≥0∞) * (P.nFloor ℓ : ℝ≥0∞) = ENNReal.ofReal (2 * (P.nFloor ℓ : ℝ)) by
         rw [ENNReal.ofReal_mul zero_le_two, ENNReal.ofReal_ofNat, ENNReal.ofReal_natCast],
       ← ENNReal.ofReal_mul (by positivity)]

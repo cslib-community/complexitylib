@@ -353,16 +353,7 @@ theorem WellFormedPadded.withSentCount
     (hwf : st.WellFormedPadded scheme d storeLvl) (sc : ℕ) :
     ({ st with sentCount := sc } : P.TreeState).WellFormedPadded scheme d storeLvl := by
   let st' : P.TreeState := { st with sentCount := sc }
-  have hsd : st'.seeds = st.seeds := by
-    ext ℓ hℓ u
-    by_cases h0 : ℓ = 0
-    · subst h0; rw [seeds_zero, seeds_zero]
-    · by_cases h1 : ℓ = 1
-      · subst h1; rw [seeds_one, seeds_one]
-      · by_cases hlt : ℓ < P.depth
-        · rw [seeds_inner st' (by omega) hlt hℓ, seeds_inner st (by omega) hlt hℓ]
-        · have hd : ℓ = P.depth := by omega
-          subst hd; rw [seeds_depth, seeds_depth]
+  have hsd : st'.seeds = st.seeds := st.seeds_withSentCount sc
   have hdom : ∀ (ℓ : ℕ) (h1 : 1 ≤ ℓ) (hℓ : ℓ ≤ P.depth) (u : Fin (P.numNodes ℓ)),
       st'.nodeDom ℓ h1 hℓ u = st.nodeDom ℓ h1 hℓ u := fun ℓ h1 hℓ u => by
     by_cases ho : ℓ = 1
@@ -603,20 +594,17 @@ namespace TreeState
 variable {P : TreeSchedule}
 
 /-- Insert or overwrite external key `u : Fin P.univ` with bounded value `v : Fin P.valBound`,
-maintaining sentinel padding in `{cap - 1, cap}` (`Section 5.3`). -/
+maintaining sentinel padding in `{cap - 1, cap}` (`Section 5.3`). Falls back to no-op on invalid
+state or capacity bounds via `Classical.choose`. -/
 noncomputable def insert (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) (v : Fin P.valBound) : P.TreeState :=
-  let x := P.embedReal u
-  if (st.rawQuery scheme x).isSome then
-    st.rawOverwrite scheme x v
-  else if #(P.paddedDom (st.rawQuery scheme)) < P.cap then
-    st.rawInsertFresh hcr scheme x v
-  else if hsc : 0 < st.sentCount ∧ st.sentCount ≤ P.cap then
-    let s_last := P.sentinelKey ⟨st.sentCount - 1, by omega⟩
-    let st₁ := { (st.rawDeleteMem hcr scheme s_last) with sentCount := st.sentCount - 1 }
-    st₁.rawInsertFresh hcr scheme x v
-  else st
+  st.insertWith (m := Id) (fun x v => st.rawOverwrite scheme x v)
+    (fun st' x v => st'.rawInsertFresh hcr scheme x v)
+    (fun st' z => st'.rawDeleteMem hcr scheme z)
+    (fun x => (st.rawQuery scheme x).isSome)
+    #(P.paddedDom (st.rawQuery scheme))
+    u v
 
 /-- **External `insert` preserves `WellFormed`** (either overwriting an existing key `u ∈ dom dict`
 or inserting a fresh key when `(dom dict).card < P.cap`). -/
@@ -632,7 +620,7 @@ theorem wellFormed_insert (hcr : P.ConcentrationReady)
   have hreal_iff : (d x).isSome ↔ u ∈ Dictionary.dom dict := by
     simp only [Dictionary.dom, mem_filter, Finset.mem_univ, true_and, ← hm.real_eq u,
       Option.isSome_map, x]
-  dsimp only [insert]
+  dsimp only [insert, insertWith_id]
   rw [hd_eq]
   by_cases hmem : (d x).isSome
   · rw [ite_eq_left hmem]
@@ -701,21 +689,17 @@ theorem query_insert (hcr : P.ConcentrationReady)
   rw [hq]
 
 /-- Delete external key `u : Fin P.univ` (no-op if absent), maintaining sentinel padding in
-`{cap - 1, cap}` (`Section 5.3` & `Algorithm 3`). -/
+`{cap - 1, cap}` (`Section 5.3` & `Algorithm 3`). Falls back to no-op on invalid state or capacity
+bounds via `Classical.choose`. -/
 noncomputable def delete (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) : P.TreeState :=
-  let x := P.embedReal u
-  if !(st.rawQuery scheme x).isSome then
-    st
-  else if P.cap ≤ #(P.paddedDom (st.rawQuery scheme)) then
-    st.rawDeleteMem hcr scheme x
-  else if hsc : st.sentCount < P.cap then
-    let s_new := P.sentinelKey ⟨st.sentCount, hsc⟩
-    let st₁ := { (st.rawInsertFresh hcr scheme s_new ⟨0, P.val_pos⟩) with
-      sentCount := st.sentCount + 1 }
-    st₁.rawDeleteMem hcr scheme x
-  else st
+  st.deleteWith (m := Id)
+    (fun st' s v => st'.rawInsertFresh hcr scheme s v)
+    (fun st' x => st'.rawDeleteMem hcr scheme x)
+    (fun x => (st.rawQuery scheme x).isSome)
+    #(P.paddedDom (st.rawQuery scheme))
+    u
 
 /-- **External `delete` preserves `WellFormed`**. -/
 theorem wellFormed_delete (hcr : P.ConcentrationReady)
@@ -726,7 +710,7 @@ theorem wellFormed_delete (hcr : P.ConcentrationReady)
   obtain ⟨d, storeLvl, hm, hwfp⟩ := hwf
   have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hwfp)
   let x := P.embedReal u
-  dsimp only [delete]
+  dsimp only [delete, deleteWith_id]
   rw [hd_eq]
   by_cases hmem : (d x).isSome
   · rw [ite_eq_right (by simp [x, hmem])]

@@ -71,8 +71,11 @@ In [LiLiangYuZhou2024] (`arXiv:2310.20536v1`):
   `BitBudget.lean` allocates a shared root value pool of exact capacity
   `rootValPoolCap = n - numNodes 2 * nLow 2` (while the pure `TreeState` model stores `Fin V` values
   directly in `RootNode` and satisfies `rootKeyCount ≤ rootValPoolCap`), so total value slots across
-  the entire tree equal `n` (`TreeSchedule.total_value_slots_eq_cap`) and total bit usage in
-  `Params.lean` is bounded by `infoBits U V n + O(R)` unconditionally for **all** `1 ≤ V`.
+  the entire tree equal `n` (`TreeSchedule.total_value_slots_eq_cap`). Note that `totalTreeBits`
+  is the bit budget of the intended Section 5 layout, not tied to `TreeState` by an encoding
+  (e.g. `RootNode` stores `(quot, val)` inline in the functional model, and `StorageTableMeta`
+  has ~`m · I` states without an explicit bit-packing encoding). Total bit usage in `Params.lean`
+  is bounded by `infoBits U V n + O(R)` unconditionally for **all** `1 ≤ V`.
 
 ## Scope and explicit out-of-scope gaps
 
@@ -135,8 +138,8 @@ def minRedundancyRatio : ℕ :=
   256
 
 /-- Clamped internal redundancy `R_eff = min R (max 1 (n / max 256 (2 ^ log* n)))`, ensuring
-`R_eff ≤ R`, `256 ≤ n / R_eff`, and `2 ^ log* n ≤ n / R_eff` ([LiLiangYuZhou2024, Section 5],
-PDF p. 26 / printed p. 25). -/
+`R_eff ≤ R`, `256 ≤ n / R_eff`, and `2 ^ log* n ≤ n / R_eff` when
+`R ≤ n / max 256 (2 ^ log* n)` ([LiLiangYuZhou2024, Section 5], PDF p. 26 / printed p. 25). -/
 @[expose]
 def effRedundancy (n R : ℕ) : ℕ :=
   min R (max 1 (n / max minRedundancyRatio (2 ^ Nat.logStar n)))
@@ -552,6 +555,22 @@ theorem numNodes_two_mul_nLow_two_le_cap : P.numNodes 2 * P.nLow 2 ≤ P.cap := 
     _ ≤ P.nFloor 0 := P.nFloor_step_le 0 (by have := P.two_le_depth; omega)
     _ = P.cap := P.nFloor_zero
 
+/-- Lower load bound for children at inner levels:
+`B_ℓ * nLow (ℓ + 1) ≤ nLow ℓ` for `2 ≤ ℓ < depth`. -/
+theorem branchFactor_mul_nLow_succ_le_nLow {ℓ : ℕ} (h1 : 2 ≤ ℓ) (hlt : ℓ < P.depth) :
+    P.branchFactor ℓ * P.nLow (ℓ + 1) ≤ P.nLow ℓ := by
+  dsimp only [nLow, branchFactor]
+  rw [ite_eq_right (by omega), ite_eq_right (by omega)]
+  exact P.inner_cap_le ℓ h1 hlt
+
+/-- Inner table capacity identity:
+`tableCap ℓ + B_ℓ * nLow (ℓ + 1) = nLow ℓ` for `2 ≤ ℓ < depth`. -/
+theorem tableCap_add_branchFactor_mul_nLow_succ {ℓ : ℕ} (h1 : 2 ≤ ℓ) (hlt : ℓ < P.depth) :
+    P.tableCap ℓ + P.branchFactor ℓ * P.nLow (ℓ + 1) = P.nLow ℓ := by
+  dsimp only [tableCap]
+  rw [ite_eq_right (by omega), ite_eq_left hlt,
+    Nat.sub_add_cancel (P.branchFactor_mul_nLow_succ_le_nLow h1 hlt)]
+
 /-- Telescoping slot identity across inner levels `2 .. depth - 1` and leaf level `depth`:
 `N_depth * nLow depth + ∑_{ℓ ∈ Ico 2 depth} N_ℓ * tableCap ℓ = N_2 * nLow 2`. -/
 theorem leaf_add_inner_slots_eq :
@@ -568,19 +587,10 @@ theorem leaf_add_inner_slots_eq :
     | zero => simp
     | succ d ih =>
       have hlt : 2 + d < P.depth := by omega
-      have hcap_eq : P.tableCap (2 + d) =
-          P.nLow (2 + d) - P.branchFactor (2 + d) * P.nLow (2 + d + 1) := by
-        dsimp only [tableCap]
-        rw [ite_eq_right (by omega), ite_eq_left hlt]
-      have hle_sub : P.branchFactor (2 + d) * P.nLow (2 + d + 1) ≤ P.nLow (2 + d) := by
-        dsimp only [nLow, branchFactor]
-        rw [ite_eq_right (by omega), ite_eq_right (by omega)]
-        exact P.inner_cap_le (2 + d) (by omega) hlt
       have hcomb : P.numNodes (2 + d + 1) * P.nLow (2 + d + 1) +
           P.numNodes (2 + d) * P.tableCap (2 + d) = P.numNodes (2 + d) * P.nLow (2 + d) := by
-        rw [hcap_eq, numNodes_succ, Nat.mul_assoc, ← Nat.mul_add]
-        congr 1
-        omega
+        rw [numNodes_succ, Nat.mul_assoc, ← Nat.mul_add, add_comm (P.branchFactor (2 + d) * _),
+          P.tableCap_add_branchFactor_mul_nLow_succ (by omega) hlt]
       rw [show 2 + (d + 1) = (2 + d) + 1 by omega, Finset.sum_Ico_succ_top (by omega)]
       linarith [ih (by omega), hcomb]
   exact hgen P.depth P.two_le_depth le_rfl

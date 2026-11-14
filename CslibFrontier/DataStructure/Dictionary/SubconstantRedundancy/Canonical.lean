@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.BitBudget
 import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.LogStar
 import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -188,21 +189,6 @@ theorem log_univ_bounds (h : ValidRegime U V n R p_min q_min p_max q_max) :
           Nat.pow_lt_pow_right Nat.one_lt_two (by nlinarith)
   exact Nat.lt_succ_iff.mp ((Nat.log_lt_iff_lt_pow Nat.one_lt_two (by omega)).mpr hU_lt)
 
-private theorem logStar_le_triple_clog_add_three (x : ℕ) :
-    Nat.logStar x ≤ Nat.clog 2 (Nat.clog 2 (Nat.clog 2 x)) + 3 := by
-  set m := Nat.clog 2 (Nat.clog 2 (Nat.clog 2 x))
-  rw [Nat.logStar_le_iff]
-  have h1 : x ≤ 2 ^ Nat.clog 2 x := Nat.le_pow_clog Nat.one_lt_two x
-  have h2 : Nat.clog 2 x ≤ 2 ^ Nat.clog 2 (Nat.clog 2 x) := Nat.le_pow_clog Nat.one_lt_two _
-  have h3 : Nat.clog 2 (Nat.clog 2 x) ≤ 2 ^ m := Nat.le_pow_clog Nat.one_lt_two _
-  have hm : m ≤ Nat.twoTower m := (Nat.lt_twoTower m).le
-  calc x ≤ 2 ^ (2 ^ (2 ^ m)) :=
-        h1.trans (Nat.pow_le_pow_right Nat.two_pos (h2.trans (Nat.pow_le_pow_right Nat.two_pos h3)))
-    _ ≤ 2 ^ (2 ^ (2 ^ Nat.twoTower m)) :=
-        Nat.pow_le_pow_right Nat.two_pos
-          (Nat.pow_le_pow_right Nat.two_pos (Nat.pow_le_pow_right Nat.two_pos hm))
-    _ = Nat.twoTower (m + 3) := rfl
-
 theorem two_pow_logStar_le_log_log (h : ValidRegime U V n R p_min q_min p_max q_max) :
     2 ^ Nat.logStar n ≤ 32 * (Nat.log 2 (Nat.log 2 n) + 1) := by
   set L := Nat.log 2 n
@@ -215,7 +201,7 @@ theorem two_pow_logStar_le_log_log (h : ValidRegime U V n R p_min q_min p_max q_
     refine (Nat.clog_mono_right 2 hcl1).trans (Nat.clog_le_of_le_pow ?_)
     have : L + 1 ≤ 2 ^ (t + 1) := by omega
     exact this.trans (Nat.pow_le_pow_right Nat.two_pos (by omega))
-  have hls := logStar_le_triple_clog_add_three n
+  have hls := Nat.logStar_le_triple_clog_add_three n
   set m := Nat.clog 2 (Nat.clog 2 (Nat.clog 2 n))
   have h2m : 2 ^ m ≤ 2 * (t + 2) := by
     calc 2 ^ m ≤ 2 * max (Nat.clog 2 (Nat.clog 2 n)) 1 := by
@@ -583,6 +569,26 @@ theorem canonicalSchedule_numNodes_eq {U V n R p_min q_min p_max q_max : ℕ}
       numNodes n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := by
   dsimp only [TreeSchedule.numNodes, numNodes]
   rw [canonicalSchedule_cumBranchBits_eq h ℓ hℓ]
+
+theorem canonicalSchedule_branchFactor_eq {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
+    (canonicalSchedule h).branchFactor ℓ =
+      branchFactor n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
+
+theorem canonicalSchedule_nFloor_eq {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
+    (canonicalSchedule h).nFloor ℓ =
+      nFloor n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
+
+theorem canonicalSchedule_delta_eq {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
+    (canonicalSchedule h).delta ℓ =
+      delta n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
+
+theorem canonicalSchedule_idBits_eq {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) (ℓ : ℕ) :
+    (canonicalSchedule h).idBits ℓ =
+      idBits n U (redundancyRatio n R) (treeDepth U (redundancyRatio n R)) ℓ := rfl
 
 /-- **`canonicalSchedule` concentration readiness**: across the entire `ValidRegime`,
 `canonicalSchedule h` satisfies all six probabilistic concentration conditions in

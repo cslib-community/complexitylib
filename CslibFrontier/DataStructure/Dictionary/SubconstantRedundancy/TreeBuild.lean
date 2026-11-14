@@ -312,134 +312,7 @@ theorem exists_allGoodSeeds_localized_pair {P : TreeSchedule} (hcr : P.Concentra
         rw [hp_eq]
         exact hbase.2 j hj w
 
-/-! ## Section 2: `ValidStoreLvl`, canonical bottom-up storage levels, and `buildTreeFromSeeds` -/
-
-/-- Per-key storage-level assignment validity on `S` with respect to `seeds`. -/
-structure ValidStoreLvl {P : TreeSchedule} (seeds : P.SeedAssignment)
-    (S : Finset (Fin P.paddedUniv)) (storeLvl : Fin P.paddedUniv → ℕ) : Prop where
-  bounds : ∀ x ∈ S, 1 ≤ storeLvl x ∧ storeLvl x ≤ P.depth
-  outside : ∀ x, x ∉ S → storeLvl x = 0
-  inner_card : ∀ (ℓ : ℕ), 2 ≤ ℓ → (hlt : ℓ < P.depth) → ∀ u : Fin (P.numNodes ℓ),
-    ((seeds.activeAt S ℓ hlt.le u).filter fun x => storeLvl x = ℓ).card = P.tableCap ℓ
-  leaf_card : ∀ u : Fin (P.numNodes P.depth),
-    ((seeds.activeAt S P.depth le_rfl u).filter fun x => storeLvl x = P.depth).card =
-      P.nLow P.depth
-
-theorem ValidStoreLvl.of_wellFormedPadded {P : TreeSchedule}
-    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
-    {st : P.TreeState} {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
-    (hwf : st.WellFormedPadded scheme d storeLvl) :
-    ValidStoreLvl st.seeds (P.paddedDom d) storeLvl where
-  bounds := hwf.storeLvl_bounds
-  outside := hwf.storeLvl_outside
-  inner_card ℓ h2 hlt u := by
-    have hinj := st.seeds.injOn_idAt_activeAt hwf.goodSeeds (by omega) hlt.le u
-    have hd := hwf.dom_eq ℓ (by omega) hlt.le u
-    rw [TreeState.nodeDom_inner st (by omega) h2 hlt hlt.le] at hd
-    rw [← card_image_of_injOn (hinj.mono (filter_subset _ _)), ← hd, hwf.inner_full ℓ h2 hlt u]
-  leaf_card u := by
-    have h1d : 1 ≤ P.depth := Nat.one_le_of_lt P.two_le_depth
-    have hinj := st.seeds.injOn_idAt_activeAt hwf.goodSeeds h1d le_rfl u
-    have hd := hwf.dom_eq P.depth h1d le_rfl u
-    rw [TreeState.nodeDom_depth] at hd
-    rw [← card_image_of_injOn (hinj.mono (filter_subset _ _)), ← hd, LeafNode.card_dom]
-
-theorem ValidStoreLvl.subtree_card_eq_nLow {P : TreeSchedule} {seeds : P.SeedAssignment}
-    {S : Finset (Fin P.paddedUniv)} {storeLvl : Fin P.paddedUniv → ℕ}
-    (hvsl : ValidStoreLvl seeds S storeLvl) {ℓ : ℕ} (h2 : 2 ≤ ℓ) (hℓ : ℓ ≤ P.depth)
-    (u : Fin (P.numNodes ℓ)) :
-    ((seeds.activeAt S ℓ hℓ u).filter fun x => ℓ ≤ storeLvl x).card = P.nLow ℓ := by
-  have hgen : ∀ (k m : ℕ), m + k = P.depth → 2 ≤ m → (hml : m ≤ P.depth) →
-      ∀ u' : Fin (P.numNodes m),
-        ((seeds.activeAt S m hml u').filter fun x => m ≤ storeLvl x).card = P.nLow m := by
-    intro k
-    induction k with
-    | zero =>
-      intro m hsum _ hml u'
-      obtain rfl : m = P.depth := by omega
-      have hfeq : ((seeds.activeAt S P.depth hml u').filter fun x => P.depth ≤ storeLvl x) =
-          (seeds.activeAt S P.depth hml u').filter fun x => storeLvl x = P.depth :=
-        filter_congr fun x hx => by
-          have hb := hvsl.bounds x (SeedAssignment.mem_activeAt_iff.mp hx).1; omega
-      rw [hfeq, hvsl.leaf_card u']
-    | succ k ih =>
-      intro m hsum hm2 hml u'
-      have hmlt : m < P.depth := by omega
-      have hsplit : ((seeds.activeAt S m hml u').filter fun x => m ≤ storeLvl x) =
-          ((seeds.activeAt S m hml u').filter fun x => storeLvl x = m) ∪
-          ((seeds.activeAt S m hml u').filter fun x => m + 1 ≤ storeLvl x) := by
-        ext x; simp only [mem_filter, mem_union]
-        exact ⟨fun ⟨hx, hle⟩ => if he : storeLvl x = m then Or.inl ⟨hx, he⟩
-          else Or.inr ⟨hx, by omega⟩, fun h => h.elim (fun ⟨hx, he⟩ => ⟨hx, by omega⟩)
-          (fun ⟨hx, hge⟩ => ⟨hx, by omega⟩)⟩
-      have hdisj : Disjoint
-          ((seeds.activeAt S m hml u').filter fun x => storeLvl x = m)
-          ((seeds.activeAt S m hml u').filter fun x => m + 1 ≤ storeLvl x) := by
-        rw [Finset.disjoint_left]; intro x h1 h2
-        have := (mem_filter.mp h1).2; have := (mem_filter.mp h2).2; omega
-      have hchildren : ((seeds.activeAt S m hml u').filter
-          fun x => m + 1 ≤ storeLvl x).card = P.branchFactor m * P.nLow (m + 1) := by
-        rw [TreeState.activeAt_filter_card_eq_sum_children seeds S hmlt u']
-        have hc : ∀ b : Fin (2 ^ P.branchBits m),
-            ((seeds.activeAt S (m + 1) hmlt (P.childNodeEquiv m (u', b))).filter
-              fun x => m + 1 ≤ storeLvl x).card = P.nLow (m + 1) :=
-          fun b => ih (m + 1) (by omega) (by omega) hmlt _
-        simp only [hc, sum_const, card_univ, Fintype.card_fin, smul_eq_mul, branchFactor]
-      have hcap_eq : P.tableCap m + P.branchFactor m * P.nLow (m + 1) = P.nLow m := by
-        dsimp only [tableCap, nLow, branchFactor]
-        rw [ite_eq_right (by omega), ite_eq_left hmlt, ite_eq_right (by omega),
-          ite_eq_right (by omega)]
-        have := P.inner_cap_le m hm2 hmlt; omega
-      rw [hsplit, card_union_of_disjoint hdisj, hvsl.inner_card m hm2 hmlt u', hchildren, hcap_eq]
-  exact hgen (P.depth - ℓ) ℓ (by omega) h2 hℓ u
-
-theorem ValidStoreLvl.wait_card_le {P : TreeSchedule} {seeds : P.SeedAssignment}
-    {S : Finset (Fin P.paddedUniv)} {storeLvl : Fin P.paddedUniv → ℕ}
-    (hgood : seeds.AllGoodSeeds S) (hvsl : ValidStoreLvl seeds S storeLvl)
-    {ℓ : ℕ} (h2 : 2 ≤ ℓ) (hℓ : ℓ ≤ P.depth) (u : Fin (P.numNodes ℓ)) :
-    (((seeds.activeAt S ℓ hℓ u).filter fun x => storeLvl x < ℓ).image
-      (seeds.idAt ℓ (by omega) hℓ)).card ≤ P.waitCap ℓ := by
-  rw [card_image_of_injOn ((seeds.injOn_idAt_activeAt hgood (by omega) hℓ u).mono
-    (filter_subset _ _))]
-  have hpart := card_filter_add_card_filter_not (s := seeds.activeAt S ℓ hℓ u)
-    (p := fun x => storeLvl x < ℓ)
-  have hnot : ((seeds.activeAt S ℓ hℓ u).filter fun x => ¬ storeLvl x < ℓ) =
-      (seeds.activeAt S ℓ hℓ u).filter fun x => ℓ ≤ storeLvl x :=
-    filter_congr fun _ _ => by omega
-  rw [hnot, hvsl.subtree_card_eq_nLow h2 hℓ u] at hpart
-  have hhi := (seeds.load_bounds_of_allGoodSeeds hgood hℓ u).2
-  have hdiff := P.nHigh_sub_nLow (by omega : 1 ≤ ℓ) hℓ
-  omega
-
-theorem ValidStoreLvl.root_card_le {P : TreeSchedule} {seeds : P.SeedAssignment}
-    {S : Finset (Fin P.paddedUniv)} {storeLvl : Fin P.paddedUniv → ℕ}
-    (hgood : seeds.AllGoodSeeds S) (hvsl : ValidStoreLvl seeds S storeLvl)
-    (u₁ : Fin (P.numNodes 1)) :
-    (((seeds.activeAt S 1 (Nat.one_le_of_lt P.two_le_depth) u₁).filter
-      fun x => storeLvl x = 1).image
-      (seeds.idAt 1 le_rfl (Nat.one_le_of_lt P.two_le_depth))).card ≤ P.tableCap 1 := by
-  have h1d : 1 ≤ P.depth := Nat.one_le_of_lt P.two_le_depth
-  have h1lt : 1 < P.depth := P.two_le_depth
-  rw [card_image_of_injOn ((seeds.injOn_idAt_activeAt hgood le_rfl h1d u₁).mono
-    (filter_subset _ _))]
-  have hpart := card_filter_add_card_filter_not (s := seeds.activeAt S 1 h1d u₁)
-    (p := fun x => storeLvl x = 1)
-  have hnot : ((seeds.activeAt S 1 h1d u₁).filter fun x => ¬ storeLvl x = 1) =
-      (seeds.activeAt S 1 h1d u₁).filter fun x => 2 ≤ storeLvl x :=
-    filter_congr fun x hx => by
-      have hb := hvsl.bounds x (SeedAssignment.mem_activeAt_iff.mp hx).1; omega
-  rw [hnot, TreeState.activeAt_filter_card_eq_sum_children seeds S h1lt u₁
-    (fun x => 2 ≤ storeLvl x)] at hpart
-  have hc : ∀ b : Fin (2 ^ P.branchBits 1),
-      ((seeds.activeAt S 2 P.two_le_depth (P.childNodeEquiv 1 (u₁, b))).filter
-        fun x => 2 ≤ storeLvl x).card = P.nLow 2 :=
-    fun b => hvsl.subtree_card_eq_nLow le_rfl P.two_le_depth _
-  rw [Finset.sum_congr rfl fun b _ => hc b, sum_const, card_univ, Fintype.card_fin,
-    smul_eq_mul] at hpart
-  have hhi := (seeds.load_bounds_of_allGoodSeeds hgood h1d u₁).2
-  have hcap1 : P.tableCap 1 = P.nHigh 1 - 2 ^ P.branchBits 1 * P.nLow 2 := by
-    dsimp only [tableCap, branchFactor]; rw [ite_eq_left rfl]
-  omega
+/-! ## Section 2: Canonical bottom-up storage levels and `buildTreeFromSeeds` -/
 
 /-- Bottom-up canonical storage-level construction for `(seeds, S, hgood)`. -/
 private noncomputable def canonicalStoreLvlAux {P : TreeSchedule} (seeds : P.SeedAssignment)
@@ -542,11 +415,7 @@ private noncomputable def canonicalStoreLvlAux {P : TreeSchedule} (seeds : P.See
         intro u
         have hlo := (seeds.load_bounds_of_allGoodSeeds hgood hml u).1
         have hrc := hrem_card u
-        have hcap_eq : P.tableCap m + P.branchFactor m * P.nLow (m + 1) = P.nLow m := by
-          dsimp only [tableCap, nLow, branchFactor]
-          rw [ite_eq_right (by omega), ite_eq_left hmlt, ite_eq_right (by omega),
-            ite_eq_right (by omega)]
-          have := P.inner_cap_le m hm2 hmlt; omega
+        have hcap_eq := P.tableCap_add_branchFactor_mul_nLow_succ hm2 hmlt
         omega
       let chosen : Fin (P.numNodes m) → Finset (Fin P.paddedUniv) := fun u =>
         takeFinset (rem u) (P.tableCap m) (hrem_ge u)
@@ -631,12 +500,8 @@ private noncomputable def canonicalStoreLvlAux {P : TreeSchedule} (seeds : P.See
                 fun x => m + 1 ≤ lvl_next x).card = P.nLow (m + 1) :=
             fun b => hsub_n hm1_2 hmlt _
           simp only [hc, sum_const, card_univ, Fintype.card_fin, smul_eq_mul, branchFactor]
-        have hcap_eq : P.tableCap m + P.branchFactor m * P.nLow (m + 1) = P.nLow m := by
-          dsimp only [tableCap, nLow, branchFactor]
-          rw [ite_eq_right (by omega), ite_eq_left hmlt, ite_eq_right (by omega),
-            ite_eq_right (by omega)]
-          have := P.inner_cap_le m hm2 hmlt; omega
-        rw [hsplit, card_union_of_disjoint hdisj, card_takeFinset, hchildren, hcap_eq]
+        rw [hsplit, card_union_of_disjoint hdisj, card_takeFinset, hchildren,
+          P.tableCap_add_branchFactor_mul_nLow_succ hm2 hmlt]
 
 /-- Canonical bottom-up storage-level function `Fin P.paddedUniv → ℕ` for `(seeds, S, hgood)`. -/
 noncomputable def canonicalStoreLvl {P : TreeSchedule} (seeds : P.SeedAssignment)

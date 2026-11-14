@@ -50,19 +50,12 @@ open Cslib.DataStructure
 open Cslib.DataStructure.Dictionary
 open Finset
 
-private def fiberPermEquiv {α β : Type*} (perm : α → Equiv.Perm β)
-    (hinv : ∀ a, Function.Involutive (perm a)) : Equiv.Perm (α × β) where
-  toFun p := (p.1, perm p.1 p.2)
-  invFun p := (p.1, perm p.1 p.2)
-  left_inv p := Prod.ext rfl (hinv p.1 p.2)
-  right_inv p := Prod.ext rfl (hinv p.1 p.2)
+/-- Fiberwise permutation equivalence `α × β ≃ α × β` via `Equiv.prodShear`. -/
+private def fiberPermEquiv {α β : Type*} (perm : α → Equiv.Perm β) : Equiv.Perm (α × β) :=
+  Equiv.prodShear (Equiv.refl _) perm
 
-@[simp] private theorem fiberPermEquiv_apply {α β : Type*} (perm : α → Equiv.Perm β)
-    (hinv : ∀ a, Function.Involutive (perm a)) (p : α × β) :
-    fiberPermEquiv perm hinv p = (p.1, perm p.1 p.2) := rfl
-
-@[simp] private theorem prodAssoc_symm_apply {α β γ : Type*} (x : α × β × γ) :
-    (Equiv.prodAssoc α β γ).symm x = ((x.1, x.2.1), x.2.2) := rfl
+@[simp] private theorem fiberPermEquiv_apply {α β : Type*} (perm : α → Equiv.Perm β) (p : α × β) :
+    fiberPermEquiv perm p = (p.1, perm p.1 p.2) := rfl
 
 namespace TreeSchedule
 
@@ -339,10 +332,8 @@ noncomputable def primZeroToOneEquiv (seeds : P.SeedAssignment) :
     P.PrimCoord 0 ≃ P.PrimCoord 1 :=
   let h0 : 0 < P.depth := Nat.lt_of_lt_of_le Nat.zero_lt_two P.two_le_depth
   have hr : P.routerRightUniv 0 = 2 ^ P.idBits 1 * P.idCompRightUniv 1 := rfl
-  (fiberPermEquiv (α := Fin (P.numNodes 0))
-    (β := Fin (2 ^ P.branchBits 0) × Fin (P.routerRightUniv 0))
-    (fun u₀ => P.routerPerm 0 (P.routerSeedOfNodeSeed h0 (seeds.seed 0 (Nat.zero_le _) u₀)))
-    (fun _ => P.routerPerm_involutive 0 _)).trans
+  (fiberPermEquiv
+    (fun u₀ => P.routerPerm 0 (P.routerSeedOfNodeSeed h0 (seeds.seed 0 (Nat.zero_le _) u₀)))).trans
     ((Equiv.prodAssoc _ _ _).symm.trans
       (Equiv.prodCongr (P.childNodeEquiv 0)
         ((finCongr hr).trans
@@ -362,27 +353,21 @@ theorem primZeroToOneEquiv_fst (seeds : P.SeedAssignment) (p : P.PrimCoord 0) :
           (seeds.seed 0 (Nat.zero_le _) p.1))) p.2) := by
   unfold primZeroToOneEquiv
   simp only [Equiv.trans_apply, fiberPermEquiv_apply, routerPerm_apply, FeistelPerm.feistelPair,
-    prodAssoc_symm_apply, Equiv.prodCongr_apply, Prod.map_fst]
+    Equiv.prodAssoc_symm_apply, Equiv.prodCongr_apply, Prod.map_fst]
 
 /-- Level-1 ID compression bijection `PrimCoord 1 ≃ LevelCoord 1`. -/
 noncomputable def primOneToCoordOneEquiv (seeds : P.SeedAssignment) :
     P.PrimCoord 1 ≃ P.LevelCoord 1 :=
-  fiberPermEquiv (α := Fin (P.numNodes 1))
-    (β := Fin (2 ^ P.idBits 1) × Fin (P.idCompRightUniv 1))
-    (fun u₁ => FeistelPerm.idCompressorPerm (P.idBits 1) (P.idCompRightUniv 1)
-      (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) u₁)))
-    (fun _ => FeistelPerm.idCompressorPerm_involutive _ _ _)
+  fiberPermEquiv (fun u₁ => FeistelPerm.idCompressorPerm (P.idBits 1) (P.idCompRightUniv 1)
+    (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) u₁)))
 
 theorem primOneToCoordOneEquiv_apply (seeds : P.SeedAssignment) (p : P.PrimCoord 1) :
     seeds.primOneToCoordOneEquiv p =
       (p.1, FeistelPerm.feistelPair
         (FeistelPerm.idCompressorRound (P.idBits 1) (P.idCompRightUniv 1)
           (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) p.1))) p.2) := by
-  change fiberPermEquiv (α := Fin (P.numNodes 1))
-      (β := Fin (2 ^ P.idBits 1) × Fin (P.idCompRightUniv 1))
-      (fun u₁ => FeistelPerm.idCompressorPerm (P.idBits 1) (P.idCompRightUniv 1)
-        (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) u₁)))
-      (fun _ => FeistelPerm.idCompressorPerm_involutive _ _ _) p = _
+  change fiberPermEquiv (fun u₁ => FeistelPerm.idCompressorPerm (P.idBits 1) (P.idCompRightUniv 1)
+    (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) u₁))) p = _
   rw [fiberPermEquiv_apply, FeistelPerm.idCompressorPerm_apply]
 
 /-- Full level-1 coordinate bijection `Fin P.paddedUniv ≃ P.LevelCoord 1`. -/
@@ -408,10 +393,8 @@ noncomputable def routeIdToPrimEquiv (seeds : P.SeedAssignment) {m : ℕ} (h1 : 
       (Fin (P.numNodes m) × (Fin (2 ^ P.branchBits m) × Fin (P.routerRightUniv m))) :=
     Equiv.prodCongr (Equiv.refl _)
       ((FeistelPerm.bitDomainEquiv hsL).trans (Equiv.prodCongr (Equiv.refl _) (finCongr hRight)))
-  let permMid := fiberPermEquiv (α := Fin (P.numNodes m))
-    (β := Fin (2 ^ P.branchBits m) × Fin (P.routerRightUniv m))
+  let permMid := fiberPermEquiv
     (fun u_m => P.routerPerm m (P.routerSeedOfNodeSeed hm (seeds.seed m hm.le u_m)))
-    (fun u_m => P.routerPerm_involutive m _)
   let splitOut : (Fin (P.numNodes m) × (Fin (2 ^ P.branchBits m) × Fin (P.routerRightUniv m))) ≃
       P.PrimCoord (m + 1) :=
     (Equiv.prodAssoc _ _ _).symm.trans
@@ -441,7 +424,7 @@ theorem routeIdToPrimEquiv_fst (seeds : P.SeedAssignment) {m : ℕ} (h1 : 1 ≤ 
   unfold routeIdToPrimEquiv
   simp only [Equiv.trans_apply, Equiv.prodCongr_apply, Prod.map_fst, Prod.map_snd,
     Equiv.refl_apply, fiberPermEquiv_apply, routerPerm_apply, FeistelPerm.feistelPair,
-    prodAssoc_symm_apply]
+    Equiv.prodAssoc_symm_apply]
   rfl
 
 /-- Level-`(m + 1)` ID compression bijection
@@ -452,11 +435,9 @@ noncomputable def primSuccToIdRemEquiv (seeds : P.SeedAssignment) {m : ℕ} (h1 
       Fin (P.numNodes (m + 1)) × Fin (2 ^ P.idBits (m + 1)) × Fin (2 ^ P.remBits m) :=
   have hComp : P.idCompRightUniv (m + 1) = 2 ^ P.remBits m := by
     dsimp only [idCompRightUniv]; rw [ite_eq_right (by omega)]; rfl
-  (fiberPermEquiv (α := Fin (P.numNodes (m + 1)))
-    (β := Fin (2 ^ P.idBits (m + 1)) × Fin (P.idCompRightUniv (m + 1)))
-    (fun u_next => FeistelPerm.idCompressorPerm (P.idBits (m + 1)) (P.idCompRightUniv (m + 1))
-      (P.idSeedOfNodeSeed (seeds.seed (m + 1) hm u_next)))
-    (fun u_next => FeistelPerm.idCompressorPerm_involutive _ _ _)).trans
+  (fiberPermEquiv (fun u_next => FeistelPerm.idCompressorPerm (P.idBits (m + 1))
+    (P.idCompRightUniv (m + 1))
+    (P.idSeedOfNodeSeed (seeds.seed (m + 1) hm u_next)))).trans
     (Equiv.prodCongr (Equiv.refl _) (Equiv.prodCongr (Equiv.refl _) (finCongr hComp)))
 
 /-- Quotient-remainder merge equivalence

@@ -84,7 +84,9 @@ noncomputable instance instFintypeGoodSeedSpec (P : TreeSchedule) (q : P.GoodSee
   Subtype.fintype _
 
 /-- Uniform distribution over good node seeds answering `q : P.GoodSeedQuery` under
-`P.ConcentrationReady` (`Algorithm 4`, lines 2–5). -/
+`P.ConcentrationReady` (`Algorithm 4`, lines 2–5). Note that `goodSeedLaw` models the post-condition
+of successful rejection sampling (sampling directly from good seeds) without executing rejection
+trials within `execHistory`. -/
 noncomputable def goodSeedLaw (P : TreeSchedule) (hcr : P.ConcentrationReady)
     (q : P.GoodSeedQuery) : PMF (P.goodSeedSpec q) :=
   have : Nonempty (P.goodSeedSpec q) :=
@@ -92,8 +94,10 @@ noncomputable def goodSeedLaw (P : TreeSchedule) (hcr : P.ConcentrationReady)
     ⟨⟨g, hg⟩⟩
   PMF.uniformOfFintype (P.goodSeedSpec q)
 
-/-- Per-call rehashing work `2 * P.nFloor q.lvl` charged to a successful `Rehash(u)` call at level
-`q.lvl` (accounting for at most `2` expected rejection-sampling trials of cost `nFloor q.lvl`). -/
+/-- Per-call rehashing work `2 * P.nFloor q.lvl` charged to a good-seed oracle call at level
+`q.lvl`. This weight accounts for at most `2` expected rejection-sampling trials of cost
+`nFloor q.lvl` (motivated by `expectedCost_retry_goodNodeSeed_le`), allowing `execHistory` to
+charge the work of rejection sampling while querying the idealized `goodSeedLaw` oracle once. -/
 noncomputable def rehashWorkCost (P : TreeSchedule) (q : P.GoodSeedQuery) : ℝ≥0∞ :=
   2 * (P.nFloor q.lvl : ℝ≥0∞)
 
@@ -184,15 +188,6 @@ theorem isCostBounded_pi_unit {ι : Type} {spec : OracleSpec ι}
       (h1 0).bind fun _ =>
         (OracleComp.isCostBounded_map_iff _ _ m).mpr (ih fun i => h1 i.succ)
 
-private theorem tsum_sum_finset {α κ : Type*} (s : Finset κ) (f : κ → α → ℝ≥0∞) :
-    (∑' a, ∑ k ∈ s, f k a) = ∑ k ∈ s, ∑' a, f k a := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert k s hk ih =>
-    simp_rw [Finset.sum_insert hk]
-    rw [tsum_add, ih]
-
 theorem tsum_evalWith_pi_coord {ι : Type} {spec : OracleSpec ι}
     (h : (q : ι) → PMF (spec q)) {m : ℕ} {β : Fin m → Type}
     (programs : (i : Fin m) → OracleComp spec (β i)) (i : Fin m) (f : β i → ℝ≥0∞) :
@@ -275,7 +270,7 @@ theorem expectedCost_runPiChain {ι Step : Type} {spec : OracleSpec ι}
     dsimp only [runPiChain, runCoordChain]
     rw [OracleComp.expectedCost_bind, OracleComp.expectedCost_pi]
     simp_rw [expectedCost_runPiChain h cost stepC ss, Finset.mul_sum]
-    rw [tsum_sum_finset, ← Finset.sum_add_distrib]
+    rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable, ← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun i _ => ?_
     rw [OracleComp.expectedCost_bind]
     congr 1
@@ -291,7 +286,7 @@ theorem expectedCost_pi_bind_runPiChain {ι Step : Type} {spec : OracleSpec ι}
         OracleComp.expectedCost h cost (initC i >>= runCoordChain (fun s => stepC s i) tr) := by
   rw [OracleComp.expectedCost_bind, OracleComp.expectedCost_pi]
   simp_rw [expectedCost_runPiChain h cost stepC tr, Finset.mul_sum]
-  rw [tsum_sum_finset, ← Finset.sum_add_distrib]
+  rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [OracleComp.expectedCost_bind]
   congr 1

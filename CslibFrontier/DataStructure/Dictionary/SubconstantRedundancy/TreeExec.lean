@@ -110,19 +110,6 @@ namespace TreeState
 
 variable {P : TreeSchedule}
 
-theorem seeds_withSentCount (st : P.TreeState) (sc : ℕ) :
-    ({ st with sentCount := sc } : P.TreeState).seeds = st.seeds := by
-  let st' : P.TreeState := { st with sentCount := sc }
-  ext ℓ hℓ u
-  by_cases h0 : ℓ = 0
-  · subst h0; rw [seeds_zero, seeds_zero]
-  · by_cases h1 : ℓ = 1
-    · subst h1; rw [seeds_one, seeds_one]
-    · by_cases hlt : ℓ < P.depth
-      · rw [seeds_inner st' (by omega) hlt hℓ, seeds_inner st (by omega) hlt hℓ]
-      · have hd : ℓ = P.depth := by omega
-        subst hd; rw [seeds_depth, seeds_depth]
-
 end TreeState
 
 /-! ## Section 1: Randomized `OracleComp` Dictionary Operations on `TreeState` -/
@@ -137,6 +124,29 @@ noncomputable def materializeFromTrunc (P : TreeSchedule) (hcr : P.Concentration
     P.buildTreeFromSeeds scheme d sc ts.toSeeds hg
   else
     P.initTree hcr scheme
+
+theorem materializeFromTrunc_of_good (P : TreeSchedule) (hcr : P.ConcentrationReady)
+    (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
+    (d : P.PaddedDict) (sc : ℕ) (ts : P.TruncSeeds P.depth)
+    (hg : ts.toSeeds.AllGoodSeeds (P.paddedDom d)) :
+    P.materializeFromTrunc hcr scheme d sc ts =
+      P.buildTreeFromSeeds scheme d sc ts.toSeeds hg := by
+  dsimp only [materializeFromTrunc]
+  rw [dite_eq_left hg]
+
+theorem materializeFromTrunc_eq_rehashSubtree_zero
+    (P : TreeSchedule) (hcr : P.ConcentrationReady)
+    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
+    {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
+    {st : P.TreeState} (hwf : st.WellFormedPadded scheme d storeLvl)
+    (ts : P.TruncSeeds P.depth) (hg : ts.toSeeds.AllGoodSeeds (P.paddedDom d))
+    (u₀ : Fin (P.numNodes 0))
+    (houtside : ∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
+      ¬ P.InSubtree 0 u₀ j v → ts.toSeeds.seed j hj v = st.seeds.seed j hj v) :
+    P.materializeFromTrunc hcr scheme d st.sentCount ts =
+      st.rehashSubtree hwf 0 (by omega) u₀ ts.toSeeds houtside hg := by
+  rw [P.materializeFromTrunc_of_good hcr scheme d st.sentCount ts hg,
+    st.rehashSubtree_zero hwf u₀ ts.toSeeds houtside hg]
 
 /-- Randomized `OracleComp` initialization of an empty external dictionary (`Dictionary.empty`)
 padded with `P.cap` sentinels. -/
@@ -205,18 +215,12 @@ noncomputable def execInsert (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) (v : Fin P.valBound) :
     OracleComp P.goodSeedSpec P.TreeState :=
-  let x := P.embedReal u
-  if (st.rawQuery scheme x).isSome then
-    pure (st.rawOverwrite scheme x v)
-  else if #(P.paddedDom (st.rawQuery scheme)) < P.cap then
-    st.execRawInsertFresh hcr scheme x v
-  else if hsc : 0 < st.sentCount ∧ st.sentCount ≤ P.cap then
-    let s_last := P.sentinelKey ⟨st.sentCount - 1, by omega⟩
-    st.execRawDeleteMem hcr scheme s_last >>= fun st_del =>
-      let st₁ : P.TreeState := { st_del with sentCount := st.sentCount - 1 }
-      st₁.execRawInsertFresh hcr scheme x v
-  else
-    pure st
+  st.insertWith (fun x v => st.rawOverwrite scheme x v)
+    (fun st' x v => st'.execRawInsertFresh hcr scheme x v)
+    (fun st' z => st'.execRawDeleteMem hcr scheme z)
+    (fun x => (st.rawQuery scheme x).isSome)
+    #(P.paddedDom (st.rawQuery scheme))
+    u v
 
 /-- Randomized external `delete` (no-op if absent, maintaining sentinel padding in
 `{cap - 1, cap}`). -/
@@ -224,18 +228,12 @@ noncomputable def execDelete (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (u : Fin P.univ) :
     OracleComp P.goodSeedSpec P.TreeState :=
-  let x := P.embedReal u
-  if !(st.rawQuery scheme x).isSome then
-    pure st
-  else if P.cap ≤ #(P.paddedDom (st.rawQuery scheme)) then
-    st.execRawDeleteMem hcr scheme x
-  else if hsc : st.sentCount < P.cap then
-    let s_new := P.sentinelKey ⟨st.sentCount, hsc⟩
-    st.execRawInsertFresh hcr scheme s_new ⟨0, P.val_pos⟩ >>= fun st_ins =>
-      let st₁ : P.TreeState := { st_ins with sentCount := st.sentCount + 1 }
-      st₁.execRawDeleteMem hcr scheme x
-  else
-    pure st
+  st.deleteWith
+    (fun st' s v => st'.execRawInsertFresh hcr scheme s v)
+    (fun st' x => st'.execRawDeleteMem hcr scheme x)
+    (fun x => (st.rawQuery scheme x).isSome)
+    #(P.paddedDom (st.rawQuery scheme))
+    u
 
 /-- Execute a single `Dynamic.Op P.univ` operation on `st : P.TreeState`. -/
 @[expose]
@@ -279,12 +277,6 @@ noncomputable def execHistory (P : TreeSchedule) (hcr : P.ConcentrationReady)
   P.execInit hcr scheme >>= P.execSteps hcr scheme ops
 
 /-! ## Section 2: Relational `OracleComp` Coupling to `execTruncHistory` -/
-
-private theorem evalWith_ne_zero_mem_support {ι : Type} {spec : OracleSpec ι} {α : Type}
-    {h : (q : ι) → PMF (spec q)} {prog : OracleComp spec α} {a : α}
-    (hne : OracleComp.evalWith h prog a ≠ 0) : a ∈ prog.support :=
-  OracleComp.supportWith_mono (fun _ _ _ => trivial) prog
-    ((OracleComp.support_evalWith h prog) ▸ (PMF.mem_support_iff _ a).mpr hne)
 
 /-- Relational invariant coupling a concrete `st : P.TreeState` with its truncated seed assignment
 `ts : P.TruncSeeds P.depth` on deterministic padded state `(d, sc)`. -/
@@ -393,8 +385,42 @@ private theorem coupledState_execInit {P : TreeSchedule} (hcr : P.ConcentrationR
     · rw [pure_bind]
       have hg : ts.toSeeds.AllGoodSeeds (P.paddedDom P.initPaddedDict) :=
         (goodTrunc_depth_iff _ ts).mp
-          (mem_support_initTrunc P.depth le_rfl hS₀ (evalWith_ne_zero_mem_support h0))
+          (mem_support_initTrunc P.depth le_rfl hS₀ (OracleComp.mem_support_of_evalWith_ne_zero h0))
       rw [hagree _ ts (P.materializeFromTrunc_stateSeedRel hcr scheme P.initPaddedDict P.cap ts hg)]
+
+private theorem coupledState_stepTrunc_materialize {P : TreeSchedule} (hcr : P.ConcentrationReady)
+    (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
+    (d' : P.PaddedDict) {sc : ℕ} {st : P.TreeState} {ts : P.TruncSeeds P.depth}
+    (hsc : st.sentCount = sc)
+    (pstep : P.PaddedStep) (hp_post : P.paddedDom d' = pstep.postSet) :
+    CoupledState scheme d' sc
+      (P.stepTrunc P.depth le_rfl pstep ts >>= fun am =>
+        pure (P.materializeFromTrunc hcr scheme d' st.sentCount am.1))
+      (P.stepTrunc P.depth le_rfl pstep ts >>= fun am => pure am.1) := by
+  refine ⟨fun st' hst' => ?_, fun h cost _ _ kt ks hagree => ?_⟩
+  · rw [OracleComp.mem_supportWith_bind_iff] at hst'
+    obtain ⟨am, ham, hst'_eq⟩ := hst'
+    have heq : st' = P.materializeFromTrunc hcr scheme d' st.sentCount am.1 := hst'_eq
+    subst heq
+    have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom d') := by
+      rw [hp_post]
+      exact (goodTrunc_depth_iff _ am.1).mp (mem_support_stepTrunc P.depth le_rfl pstep ts ham).1
+    have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme d' st.sentCount am.1 hg_am
+    exact ⟨hrel'.1.trans hsc, rfl, hrel'.2.2⟩
+  · rw [bind_assoc, bind_assoc, OracleComp.expectedCost_bind, OracleComp.expectedCost_bind]
+    congr 1
+    refine tsum_congr fun am => ?_
+    by_cases h0 : OracleComp.evalWith h (P.stepTrunc P.depth le_rfl pstep ts) am = 0
+    · rw [h0, zero_mul, zero_mul]
+    · rw [pure_bind, pure_bind]
+      have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom d') := by
+        rw [hp_post]
+        exact (goodTrunc_depth_iff _ am.1).mp
+          (mem_support_stepTrunc P.depth le_rfl pstep ts
+            (OracleComp.mem_support_of_evalWith_ne_zero h0)).1
+      have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme d' st.sentCount am.1 hg_am
+      rw [hsc] at hrel' ⊢
+      rw [hagree _ am.1 hrel']
 
 private theorem coupledState_execRawInsertFresh {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
@@ -435,32 +461,8 @@ private theorem coupledState_execRawInsertFresh {P : TreeSchedule} (hcr : P.Conc
     have hp_eq : P.mkInsertStep (P.paddedDom d) x hwf₀.goodSeeds.1 hcard₀ = pstep :=
       PaddedStep.ext hp_pre.symm hp_post.symm hp_key.symm
     rw [hp_eq, hts]
-    refine ⟨fun st' hst' => ?_, fun h cost _ _ kt ks hagree => ?_⟩
-    · rw [OracleComp.mem_supportWith_bind_iff] at hst'
-      obtain ⟨am, ham, hst'_eq⟩ := hst'
-      have heq : st' = P.materializeFromTrunc hcr scheme (Function.update d x (some v))
-          st.sentCount am.1 := hst'_eq
-      subst heq
-      have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom (Function.update d x (some v))) := by
-        rw [hdom_upd]; dsimp only [S']; rw [← hp_post]
-        exact (goodTrunc_depth_iff _ am.1).mp (mem_support_stepTrunc P.depth le_rfl pstep ts ham).1
-      have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme
-        (Function.update d x (some v)) st.sentCount am.1 hg_am
-      exact ⟨hrel'.1.trans hsc, rfl, hrel'.2.2⟩
-    · rw [bind_assoc, bind_assoc, OracleComp.expectedCost_bind, OracleComp.expectedCost_bind]
-      congr 1
-      refine tsum_congr fun am => ?_
-      by_cases h0 : OracleComp.evalWith h (P.stepTrunc P.depth le_rfl pstep ts) am = 0
-      · rw [h0, zero_mul, zero_mul]
-      · rw [pure_bind, pure_bind]
-        have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom (Function.update d x (some v))) := by
-          rw [hdom_upd]; dsimp only [S']; rw [← hp_post]
-          exact (goodTrunc_depth_iff _ am.1).mp
-            (mem_support_stepTrunc P.depth le_rfl pstep ts (evalWith_ne_zero_mem_support h0)).1
-        have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme
-          (Function.update d x (some v)) st.sentCount am.1 hg_am
-        rw [hsc] at hrel' ⊢
-        rw [hagree _ am.1 hrel']
+    exact coupledState_stepTrunc_materialize hcr scheme
+      (Function.update d x (some v)) hsc pstep (hdom_upd.trans hp_post.symm)
 
 private theorem coupledState_execRawDeleteMem {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
@@ -499,32 +501,8 @@ private theorem coupledState_execRawDeleteMem {P : TreeSchedule} (hcr : P.Concen
     have hp_eq : P.mkDeleteStep (P.paddedDom d) z hwf₀.goodSeeds.1 hcard₀ = pstep :=
       PaddedStep.ext hp_pre.symm hp_post.symm hp_key.symm
     rw [hp_eq, hts]
-    refine ⟨fun st' hst' => ?_, fun h cost _ _ kt ks hagree => ?_⟩
-    · rw [OracleComp.mem_supportWith_bind_iff] at hst'
-      obtain ⟨am, ham, hst'_eq⟩ := hst'
-      have heq : st' = P.materializeFromTrunc hcr scheme (Function.update d z none)
-          st.sentCount am.1 := hst'_eq
-      subst heq
-      have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom (Function.update d z none)) := by
-        rw [hdom_upd]; dsimp only [S']; rw [← hp_post]
-        exact (goodTrunc_depth_iff _ am.1).mp (mem_support_stepTrunc P.depth le_rfl pstep ts ham).1
-      have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme
-        (Function.update d z none) st.sentCount am.1 hg_am
-      exact ⟨hrel'.1.trans hsc, rfl, hrel'.2.2⟩
-    · rw [bind_assoc, bind_assoc, OracleComp.expectedCost_bind, OracleComp.expectedCost_bind]
-      congr 1
-      refine tsum_congr fun am => ?_
-      by_cases h0 : OracleComp.evalWith h (P.stepTrunc P.depth le_rfl pstep ts) am = 0
-      · rw [h0, zero_mul, zero_mul]
-      · rw [pure_bind, pure_bind]
-        have hg_am : am.1.toSeeds.AllGoodSeeds (P.paddedDom (Function.update d z none)) := by
-          rw [hdom_upd]; dsimp only [S']; rw [← hp_post]
-          exact (goodTrunc_depth_iff _ am.1).mp
-            (mem_support_stepTrunc P.depth le_rfl pstep ts (evalWith_ne_zero_mem_support h0)).1
-        have hrel' := P.materializeFromTrunc_stateSeedRel hcr scheme
-          (Function.update d z none) st.sentCount am.1 hg_am
-        rw [hsc] at hrel' ⊢
-        rw [hagree _ am.1 hrel']
+    exact coupledState_stepTrunc_materialize hcr scheme
+      (Function.update d z none) hsc pstep (hdom_upd.trans hp_post.symm)
 
 
 /-! ## Section 3: External Operation Coupling and Unconditional `Lemma 5.3` -/
@@ -607,7 +585,7 @@ private theorem exists_coupled_execInsert {P : TreeSchedule} (hcr : P.Concentrat
     refine ⟨Function.update d x (some v), sc, [], by simp, hdom_eq.symm, hm.overwrite hmem v,
       fun st ts ⟨hsc, hts, sl, hwfp⟩ => ?_⟩
     have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hwfp)
-    dsimp only [TreeState.execInsert, runTruncSteps]
+    dsimp only [TreeState.execInsert, TreeState.insertWith, runTruncSteps]
     rw [hd_eq, ite_eq_left hmem]
     exact CoupledState.pure_step
       ⟨(st.sentCount_rawOverwrite scheme x v).trans hsc,
@@ -625,7 +603,7 @@ private theorem exists_coupled_execInsert {P : TreeSchedule} (hcr : P.Concentrat
         ⟨rfl, (P.paddedDom_update_some d x v).symm⟩,
         hm.insert_fresh_lt hx_fresh hlt_pad v, fun st ts hrel => ?_⟩
       have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hrel.2.2.choose_spec)
-      dsimp only [TreeState.execInsert]
+      dsimp only [TreeState.execInsert, TreeState.insertWith]
       rw [hd_eq, ite_eq_right hmem, ite_eq_left hlt_pad]
       exact coupledState_execRawInsertFresh hcr scheme hrel hx_fresh v pstep rfl rfl rfl
     · have hcard_d : #(P.paddedDom d) = P.cap := by have := hm.card_hi; omega
@@ -654,7 +632,7 @@ private theorem exists_coupled_execInsert {P : TreeSchedule} (hcr : P.Concentrat
         hm.insert_fresh_full hx_fresh hlt_pad hsc_ok v, fun st ts hrel => ?_⟩
       have hsc_st : 0 < st.sentCount ∧ st.sentCount ≤ P.cap := hrel.1.symm ▸ hsc_ok
       have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hrel.2.2.choose_spec)
-      dsimp only [TreeState.execInsert]
+      dsimp only [TreeState.execInsert, TreeState.insertWith]
       rw [hd_eq, ite_eq_right hmem, ite_eq_right hlt_pad, dite_eq_left hsc_st]
       simp only [hrel.1]
       rw [show ([pstep₁, pstep₂] : List P.PaddedStep) = [pstep₁] ++ [pstep₂] from rfl,
@@ -696,7 +674,7 @@ private theorem exists_coupled_execDelete {P : TreeSchedule} (hcr : P.Concentrat
         ⟨rfl, (P.paddedDom_update_none d x).symm⟩,
         hm.delete_ge hx_dom hge_cap, fun st ts hrel => ?_⟩
       have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hrel.2.2.choose_spec)
-      dsimp only [TreeState.execDelete]
+      dsimp only [TreeState.execDelete, TreeState.deleteWith]
       rw [hd_eq, ite_eq_right (by simp [x, hmem]), ite_eq_left hge_cap]
       exact coupledState_execRawDeleteMem hcr scheme hrel hx_dom pstep rfl rfl rfl
     · have hcard_d : #(P.paddedDom d) = P.cap - 1 := by have := hm.card_lo; omega
@@ -726,7 +704,7 @@ private theorem exists_coupled_execDelete {P : TreeSchedule} (hcr : P.Concentrat
         hm.delete_lt hx_dom hge_cap hsc_lt, fun st ts hrel => ?_⟩
       have hsc_st : st.sentCount < P.cap := hrel.1.symm ▸ hsc_lt
       have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hrel.2.2.choose_spec)
-      dsimp only [TreeState.execDelete]
+      dsimp only [TreeState.execDelete, TreeState.deleteWith]
       rw [hd_eq, ite_eq_right (by simp [x, hmem]), ite_eq_right hge_cap, dite_eq_left hsc_st]
       simp only [hrel.1]
       rw [show ([pstep₁, pstep₂] : List P.PaddedStep) = [pstep₁] ++ [pstep₂] from rfl,
@@ -746,7 +724,7 @@ private theorem exists_coupled_execDelete {P : TreeSchedule} (hcr : P.Concentrat
       · rw [Function.update_of_ne hu]
     refine ⟨d, sc, [], by simp, rfl, hupd_eq.symm ▸ hm, fun st ts hrel => ?_⟩
     have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hrel.2.2.choose_spec)
-    dsimp only [TreeState.execDelete, runTruncSteps]
+    dsimp only [TreeState.execDelete, TreeState.deleteWith, runTruncSteps]
     rw [hd_eq, ite_eq_left (by simp [x, hmem])]
     exact CoupledState.pure_step hrel
 
@@ -890,8 +868,10 @@ theorem expectedCost_execHistory_eq_execSeedSteps {P : TreeSchedule} (hcr : P.Co
 /-- **Unconditional `Lemma 5.3` over external `Dynamic.Op` histories**
 (`[LiLiangYuZhou2024, Section 5.5]`):
 across initialization and any admissible sequence `ops` of `M = ops.length` external dictionary
-operations (`query`, `insert` with overwrite, and `delete`), the total expected rehashing work of
-`execHistory` under `goodSeedLaw hcr` is at most `14 * (depth + 1) * (cap + 2 * M)`. -/
+operations (`query`, `insert` with overwrite, and `delete`), the `rehashWorkCost`-weighted count
+of good-seed oracle calls across oblivious operations and canonical materialization under the
+idealized `goodSeedLaw hcr` (charging fixed weight `2 * nFloor ℓ` per level-`ℓ` node, bounding
+the cost of single-node rejection sampling) is at most `14 * (depth + 1) * (cap + 2 * M)`. -/
 theorem expectedCost_execHistory_le {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     {ops : List (Dynamic.Op P.univ)}
@@ -914,8 +894,9 @@ end TreeSchedule
 
 /-- **Unconditional `Lemma 5.3` across `ValidRegime` (`[LiLiangYuZhou2024, Section 5.5]`)**:
 for any admissible sequence `ops` of `M = ops.length` external dynamic dictionary operations
-starting from `Dictionary.empty U`, the total expected rehashing work of `canonicalSchedule h`
-across initialization and all `M` operations is `O((n + M) * Nat.logStar n)`, bounded explicitly by
+starting from `Dictionary.empty U`, the `rehashWorkCost`-weighted count of good-seed oracle calls
+across oblivious operations and canonical materialization for `canonicalSchedule h` across
+initialization and all `M` operations is `O((n + M) * Nat.logStar n)`, bounded explicitly by
 `84 * (n + ops.length) * Nat.logStar n`. -/
 theorem canonicalSchedule_expectedCost_execHistory_le
     {U V n R p_min q_min p_max q_max : ℕ}

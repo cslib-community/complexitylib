@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Canonical
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.StorageNode
 
 /-!
@@ -34,9 +35,7 @@ Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 5.5];
    process `expectedSubseqSuccesses` over an arbitrary valid subsequence of `T` updates at node `u`,
    strong induction on `T` proves the uniform linear bound
    `expectedSubseqSuccesses ≤ 1 + 20 * T / (nFloor ℓ) ^ 2` for all `T ≥ 0`
-   (`expectedSubseqSuccesses_le`), while geometric rejection sampling at each `Rehash(u)` call takes
-   at most `12 / 11 ≤ 2` expected seed trials (`expectedRejectionTrials_le_two`) without recursing
-   to children on failed trials (`Algorithm 4` Lines 3–5).
+   (`expectedSubseqSuccesses_le`).
 3. **Multi-level telescoping (`Lemma 5.3` recurrence step):** Multiplying the level recurrence
    `a_{ℓ + 1} ≤ a_ℓ * B_ℓ + 20 * M / n_{ℓ + 1} ^ 2` by `n_{ℓ + 1}` and using `2 * n_{j + 1} ≤
    B_j * n_{j + 1} ≤ n_j` yields `O(n + M)` expected work per level and
@@ -50,10 +49,8 @@ Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 5.5];
 
 * `TreeSchedule.rehashWindow`, `TreeSchedule.ValidPrimIdSeq`: look-ahead window `⌈n_ℓ ^ 2 / 10⌉` and
   valid primitive-ID trajectories.
-* `TreeSchedule.expectedSubseqSuccesses`, `seqChanges`: exact expected successful rehashes of a node
-  `u` across a valid oblivious subsequence of `T` steps and active-change count.
-* `TreeSchedule.LevelSubseqBatch`: partition of `≤ M` oblivious updates across `K` maximal
-  ancestor-rehash-free subsequences at level `ℓ`.
+* `TreeSchedule.expectedSubseqSuccesses`: exact expected successful rehashes of a node
+  `u` across a valid oblivious subsequence of `T` steps.
 
 ## Main results
 
@@ -61,9 +58,7 @@ Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 5.5];
   `TreeSchedule.prob_goodNodeSeed_survives_window_ge_half`,
   `TreeSchedule.condProb_goodNodeSeed_survives_window_ge_half`: `Claim 5.4` survival probability
   `≥ 1 / 2`.
-* `TreeSchedule.expectedSubseqSuccesses_le`, `TreeSchedule.expectedSubseqSuccesses_le_of_changes`,
-  `TreeSchedule.sum_expectedSubseqSuccesses_le`: `1 + 20 * T / n_ℓ ^ 2` and active-change bounds per
-  maximal subsequence, and `K + 20 * M / n_ℓ ^ 2` summed over `K` subsequences.
+* `TreeSchedule.expectedSubseqSuccesses_le`: `1 + 20 * T / n_ℓ ^ 2` bound per maximal subsequence.
 * `TreeSchedule.rehashWork_of_level_recurrence`, `canonicalSchedule_rehashWork_le_mul_logStar`:
   multi-level recurrence-telescoping step of `Lemma 5.3` (completed end-to-end in `TreeExec.lean`).
 
@@ -297,37 +292,6 @@ theorem condProb_goodNodeSeed_survives_window_ge_half (hcr : P.ConcentrationRead
 
 /-! ## Section 2: Online stopping-time subsequence bound and multi-level `Lemma 5.3` -/
 
-open scoped Classical in
-/-- Expected geometric rejection-sampling trials `(Fintype.card (NodeSeed ℓ) : ℝ) / #G₀` per
-`Rehash(u)` invocation is at most `2` (`≤ 12 / 11`). -/
-theorem expectedRejectionTrials_le_two (hcr : P.ConcentrationReady) {ℓ : ℕ} (hℓ : ℓ ≤ P.depth)
-    (S : Finset (P.PrimId ℓ)) (hlo : P.nLow ℓ ≤ #S) (hhi : #S ≤ P.nHigh ℓ) :
-    let G₀ := Finset.univ.filter fun g : P.NodeSeed ℓ => P.IsGoodNodeSeed ℓ g S
-    (Fintype.card (P.NodeSeed ℓ) : ℝ) / (#G₀ : ℝ) ≤ 2 := by
-  intro G₀
-  have hnF6 := hcr.six_le_nFloor ℓ hℓ
-  have h36 : 36 ≤ (P.nFloor ℓ) ^ 2 := by nlinarith
-  obtain ⟨g₀, hg₀⟩ := P.exists_isGoodNodeSeed hcr hℓ S hlo hhi
-  have hG₀_pos : 0 < #G₀ := card_pos.mpr ⟨g₀, mem_filter.mpr ⟨Finset.mem_univ g₀, hg₀⟩⟩
-  have hge := P.card_isGoodNodeSeed_ge hcr hℓ S hlo hhi
-  have hnat : Fintype.card (P.NodeSeed ℓ) ≤ 2 * #G₀ := by
-    have h1 : (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) ≤
-        2 * (((P.nFloor ℓ) ^ 2 - 3) * Fintype.card (P.NodeSeed ℓ)) := by
-      have hcoeff : (P.nFloor ℓ) ^ 2 ≤ 2 * ((P.nFloor ℓ) ^ 2 - 3) := by omega
-      calc (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ)
-          ≤ (2 * ((P.nFloor ℓ) ^ 2 - 3)) * Fintype.card (P.NodeSeed ℓ) :=
-            Nat.mul_le_mul_right _ hcoeff
-        _ = 2 * (((P.nFloor ℓ) ^ 2 - 3) * Fintype.card (P.NodeSeed ℓ)) := by ring
-    have h2 : (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) ≤
-        (P.nFloor ℓ) ^ 2 * (2 * #G₀) := by
-      calc (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ)
-          ≤ 2 * (((P.nFloor ℓ) ^ 2 - 3) * Fintype.card (P.NodeSeed ℓ)) := h1
-        _ ≤ 2 * ((P.nFloor ℓ) ^ 2 * #G₀) := Nat.mul_le_mul_left 2 hge
-        _ = (P.nFloor ℓ) ^ 2 * (2 * #G₀) := by ring
-    exact Nat.le_of_mul_le_mul_left h2 (by positivity)
-  rw [div_le_iff₀ (Nat.cast_pos.mpr hG₀_pos)]
-  exact_mod_cast hnat
-
 /-- Exact expected number of successful `Rehash(u)` completions across a maximal subsequence `seq`
 of `T` updates at a level-`ℓ` node `u`, starting from the initial `Rehash(u)` on `seq 0` and
 stopping/restarting at the first step `j₀ + 1 ∈ {1, …, T}` where the accepted seed fails. -/
@@ -545,10 +509,6 @@ private theorem expectedSubseqSuccesses_congr (ℓ : ℕ) {T₁ T₂ : ℕ} (hT 
   congr 1
   exact funext fun ⟨k, hk⟩ => hs k hk hk
 
-/-- Number of active transitions `i : Fin T` where `seq i.succ ≠ seq i.castSucc`. -/
-def seqChanges {α : Type*} [DecidableEq α] {T : ℕ} (seq : Fin (T + 1) → α) : ℕ :=
-  #(Finset.univ.filter fun i : Fin T => seq i.succ ≠ seq i.castSucc)
-
 /-- Number of active transitions in `(s₀, ss)` where consecutive sets differ. -/
 @[expose]
 def listChanges {α : Type*} [DecidableEq α] : α → List α → ℕ
@@ -580,37 +540,6 @@ private theorem mem_dedupAdj {α : Type*} [DecidableEq α] :
       rcases List.mem_cons.mp h with rfl | hm
       · exact List.mem_cons_self
       · exact List.mem_cons_of_mem s₁ (mem_dedupAdj hm)
-
-private theorem listChanges_ofFn {α : Type*} [DecidableEq α] :
-    ∀ {T : ℕ} (seq : Fin (T + 1) → α),
-      listChanges (seq 0) (List.ofFn fun i : Fin T => seq i.succ) = seqChanges seq
-  | 0, _ => by simp [listChanges, seqChanges]
-  | m + 1, seq => by
-    rw [List.ofFn_succ]
-    dsimp only [listChanges, Fin.succ_zero_eq_one]
-    have hih := listChanges_ofFn (fun i : Fin (m + 1) => seq i.succ)
-    rw [Fin.succ_zero_eq_one] at hih
-    rw [hih]
-    dsimp only [seqChanges]
-    have hsplit : #(Finset.univ.filter fun i : Fin (m + 1) => seq i.succ ≠ seq i.castSucc) =
-        (if seq 1 = seq 0 then 0 else 1) +
-          #(Finset.univ.filter fun j : Fin m => (seq j.succ.succ) ≠ (seq j.castSucc.succ)) := by
-      have hsum : ∀ {k : ℕ} (p : Fin k → Prop), [DecidablePred p] →
-          #(Finset.univ.filter p) = ∑ i : Fin k, if p i then 1 else 0 := by
-        intro _ p _; simp [Finset.sum_boole]
-      rw [hsum, Fin.sum_univ_succ]
-      congr 1
-      · by_cases h10 : seq 1 = seq 0
-        · have hf : ¬ (seq (0 : Fin (m + 1)).succ ≠ seq (0 : Fin (m + 1)).castSucc) := by
-            simpa using h10
-          rw [ite_eq_left h10, ite_eq_right hf]
-        · have ht : seq (0 : Fin (m + 1)).succ ≠ seq (0 : Fin (m + 1)).castSucc := by
-            simpa using h10
-          rw [ite_eq_right h10, ite_eq_left ht]
-      · rw [hsum fun j : Fin m => seq j.succ.succ ≠ seq j.castSucc.succ]
-        refine Finset.sum_congr rfl fun j _ => ?_
-        rw [Fin.castSucc_succ]
-    rw [hsplit]
 
 /-- Step-by-step online expected remaining rehashes starting from seed `g` across `seq 1, …, seq T`:
 keeps `g` while `IsGoodNodeSeed` holds (`0` cost) and restarts `expectedSubseqSuccesses` at the
@@ -772,61 +701,6 @@ theorem expectedSubseqSuccesses_seqOfHeadList_le (hcr : P.ConcentrationReady) {�
   dsimp only [seqOfHeadList]
   rw [Fin.cons_succ]
   exact hss _ (mem_dedupAdj (List.get_mem (dedupAdj s₀ ss) i))
-
-/-- **Stutter-invariant subsequence bound**: unchanged steps `seq i.succ = seq i.castSucc` never
-cause a good seed to fail, so `expectedSubseqSuccesses ℓ T seq` is bounded in terms of the number
-`seqChanges seq` of actual set changes rather than raw step count `T`. -/
-theorem expectedSubseqSuccesses_le_of_changes (hcr : P.ConcentrationReady) {ℓ : ℕ}
-    (hℓ : ℓ ≤ P.depth) (T : ℕ) (seq : Fin (T + 1) → Finset (P.PrimId ℓ))
-    (hvalid : P.ValidPrimIdSeq ℓ T seq) :
-    P.expectedSubseqSuccesses ℓ T seq ≤
-      1 + 20 * (seqChanges seq : ℝ) / (P.nFloor ℓ : ℝ) ^ 2 := by
-  let ls := List.ofFn fun i : Fin T => seq i.succ
-  have heq_seq : P.expectedSubseqSuccesses ℓ T seq =
-      P.expectedSubseqSuccesses ℓ ls.length (seqOfHeadList (seq 0) ls) := by
-    refine P.expectedSubseqSuccesses_congr ℓ (List.length_ofFn).symm fun k hk₁ hk₂ => ?_
-    rcases k with _ | k'
-    · rfl
-    · dsimp only [seqOfHeadList]
-      rw [show (⟨k' + 1, hk₂⟩ : Fin (ls.length + 1)) =
-        (⟨k', Nat.lt_of_succ_lt_succ hk₂⟩ : Fin ls.length).succ from rfl,
-        Fin.cons_succ, List.get_ofFn]
-      exact congrArg seq (Fin.ext rfl)
-  rw [heq_seq, ← listChanges_ofFn seq]
-  refine P.expectedSubseqSuccesses_seqOfHeadList_le hcr hℓ (seq 0) ls (hvalid 0) fun s hs => ?_
-  obtain ⟨r, rfl⟩ := List.mem_ofFn.mp hs
-  exact hvalid r.succ
-
-/-- Batch of `K` maximal ancestor-rehash-free subsequences across level-`ℓ` nodes during `M`
-oblivious updates (`∑ r, lengths r ≤ M`). -/
-structure LevelSubseqBatch (ℓ K M : ℕ) where
-  /-- Update count of each maximal ancestor-rehash-free subsequence. -/
-  lengths : Fin K → ℕ
-  /-- Oblivious `PrimId ℓ` set trajectory along each subsequence. -/
-  trajectories : ∀ r : Fin K, Fin (lengths r + 1) → Finset (P.PrimId ℓ)
-  valid : ∀ r : Fin K, P.ValidPrimIdSeq ℓ (lengths r) (trajectories r)
-  sum_lengths_le : ∑ r : Fin K, lengths r ≤ M
-
-/-- Summing `expectedSubseqSuccesses_le` across any `LevelSubseqBatch` of `K` subsequences with
-total update count `≤ M` gives at most `K + 20 * M / (nFloor ℓ) ^ 2` expected successful rehashes.
--/
-theorem sum_expectedSubseqSuccesses_le (hcr : P.ConcentrationReady) {ℓ K M : ℕ}
-    (hℓ : ℓ ≤ P.depth) (batch : P.LevelSubseqBatch ℓ K M) :
-    ∑ r : Fin K, P.expectedSubseqSuccesses ℓ (batch.lengths r) (batch.trajectories r) ≤
-      (K : ℝ) + 20 * (M : ℝ) / (P.nFloor ℓ : ℝ) ^ 2 := by
-  have hsq_pos : (0 : ℝ) < (P.nFloor ℓ : ℝ) ^ 2 :=
-    sq_pos_of_pos (Nat.cast_pos.mpr (P.nFloor_pos ℓ hℓ))
-  calc ∑ r : Fin K, P.expectedSubseqSuccesses ℓ (batch.lengths r) (batch.trajectories r)
-      ≤ ∑ r : Fin K, (1 + 20 * (batch.lengths r : ℝ) / (P.nFloor ℓ : ℝ) ^ 2) :=
-        sum_le_sum fun r _ => P.expectedSubseqSuccesses_le hcr hℓ _ _ (batch.valid r)
-    _ = (K : ℝ) + 20 * (∑ r : Fin K, (batch.lengths r : ℝ)) / (P.nFloor ℓ : ℝ) ^ 2 := by
-        rw [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one,
-          ← sum_div, ← mul_sum]
-    _ ≤ (K : ℝ) + 20 * (M : ℝ) / (P.nFloor ℓ : ℝ) ^ 2 := by
-        have hsum_real : (∑ r : Fin K, (batch.lengths r : ℝ)) ≤ (M : ℝ) := by
-          rw [← Nat.cast_sum]; exact_mod_cast batch.sum_lengths_le
-        exact add_le_add_right
-          (div_le_div_of_nonneg_right (by linarith) hsq_pos.le) _
 
 private theorem sum_inv_nFloor_le_two_div {ℓ : ℕ} (hℓ : ℓ ≤ P.depth) :
     ∑ j ∈ Finset.range (ℓ + 1), (1 : ℝ) / (P.nFloor j : ℝ) ≤

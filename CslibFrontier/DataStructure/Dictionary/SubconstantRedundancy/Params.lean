@@ -22,7 +22,8 @@ This module is the top-level parameter and space-accounting entry point for the 
 multi-level dictionary tree of [LiLiangYuZhou2024] (`arXiv:2310.20536v1`, Sections 5.1–5.2 and
 5.4–5.6, PDF pp. 25–36 / printed pp. 24–35), publicly re-exporting `Schedule`, `BitBudget`,
 `Canonical`, `SeedBounds`, and `NodeSlackBounds` and proving the headline pure space theorem
-`totalTreeBits_le_infoBits_add`:
+`totalTreeBits_le_infoBits_add` bounding the arithmetic bit budget of the intended Section 5
+layout (not tied to `TreeState` by an encoding):
 
 ```text
 (canonicalSchedule h).totalTreeBits ≤ infoBits U V n + spaceConst * R
@@ -40,8 +41,8 @@ for an explicit universal constant `spaceConst` across all
 
 * `redundancySlack_le_mul_effRedundancy`: all `V`-independent redundancy slack terms sum to at most
   `150000 * effRedundancy n R`.
-* `totalTreeBits_le_infoBits_add`: total pure tree representation bits are at most
-  `infoBits U V n + spaceConst * R`.
+* `totalTreeBits_le_infoBits_add`: total pure tree representation bit budget of the intended
+  Section 5 layout is at most `infoBits U V n + spaceConst * R` (with `spaceConst = 160000`).
 
 ## References
 
@@ -707,8 +708,10 @@ def spaceConst : ℕ := 160000
 
 /-- **Headline Section 5 Pure Tree Bit-Budget Bound** (`[LiLiangYuZhou2024, Sections 5.2 & 5.6]`):
 across all `ValidRegime U V n R p_min q_min p_max q_max` (with no upper bound on `V`),
-the total representation bits of `(canonicalSchedule h)` satisfy
-`(canonicalSchedule h).totalTreeBits ≤ infoBits U V n + spaceConst * R`. -/
+the arithmetic bit budget `totalTreeBits` of the intended Section 5 layout satisfies
+`(canonicalSchedule h).totalTreeBits ≤ infoBits U V n + spaceConst * R`
+(with `spaceConst = 160000`). Note that `totalTreeBits` computes the arithmetic bit budget of
+the intended layout and is not tied to `TreeState` by an explicit Word-RAM bit-packing encoding. -/
 theorem totalTreeBits_le_infoBits_add {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     (canonicalSchedule h).totalTreeBits ≤ infoBits U V n + spaceConst * R := by
