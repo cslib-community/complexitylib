@@ -189,6 +189,43 @@ Iterating a strict-PPT round `R a` times via [`Computability/Probabilistic/Adapt
 
 [`Complexity/FineGrained/SchoeningMachine.lean`](../../CslibFrontier/Computability/Complexity/FineGrained/SchoeningMachine.lean) applies binary-counter amplification and approximate modular sampling (`ProbComp.sampleModNat`) to realize Schöning's randomized local-search `k`-SAT algorithm [schoening99][schoening99] on fair-coin multitape Turing machines over `encCNF` (`CNF ℕ`), complementing the unit-cost `rand` Word-RAM realization in [`Algorithms/WordRAM/Schoening/Amplify.lean`](../../CslibFrontier/Algorithms/WordRAM/Schoening/Amplify.lean) and the pure Markov-chain bound in [`Complexity/FineGrained/Schoening.lean`](../../CslibFrontier/Computability/Complexity/FineGrained/Schoening.lean). Because clause lengths `m ≤ k` need not be powers of two, each walk step draws `w = 2 n + k + 3` fair bits (`n = φ.numVars`) via `sampleModNat w m`: `le_fairWalk_toReal` and `half_mul_succeedProb_trial_le_fairTrial` show that across `3 n` steps the cumulative dyadic bias satisfies `(1 - k / 2 ^ w) ^ (3 n) ≥ 1 / 2`, preserving at least half of the ideal single-trial success probability. Running `2 * schoeningTrials k φ.numVars c` binary-counted trials (`computableInPolyTime_two_mul_schoeningTrials`) yields `exists_multiTapePTM_KSAT`: for every fixed `k ≥ 3` and amplification parameter `c : ℕ`, one fair-coin `MultiTapePTM` halts on every branch within `C * (((2 (k - 1)) / k) ^ φ.numVars * (|encCNF φ| + 1) ^ E)` steps and `C * (|encCNF φ| + 1) ^ E` work-tape cells (`machine.toNTM.RunsInSpace`), outputs `PMF.pure [false]` whenever `φ ∉ KSAT k` (including formulas that violate width `k`), and accepts every `φ ∈ KSAT k` with probability at least `1 - Real.exp (-c)`. Setting `c = 2` gives `exists_decidesWithBoundedErrorInTime_KSAT` (`DecidesWithBoundedErrorInTime encCNF (KSAT k) T`) and the `(4 / 3) ^ n` `3`-SAT specialization `exists_decidesWithBoundedErrorInTime_ThreeSAT`, exercised on concrete formulas in [`CslibFrontierTests/BranchingAndSchoening.lean`](../../CslibFrontierTests/BranchingAndSchoening.lean).
 
+## Exact finite graph-selector profiles
+
+Import `CslibFrontier.Probability.ReplicableDecisions.Basic` and open
+`Cslib.ReplicableDecisions`. A `Problem V` gives a simple graph and disjoint forced-zero
+and forced-one sets. Alternatively, use `Problem.ofAcceptableSets G Γ` for the paper's
+nonempty binary acceptable sets; `ofAcceptableSets_accepts_iff` checks that correspondence.
+Vertices outside both forced sets accept both labels. The boundary contains both endpoints
+of every edge across which a selector changes labels. Neighborhood correctness checks the
+closed neighborhood, including the vertex itself.
+
+`Problem.classDistance` is the extended shortest distance between forced classes. Given
+`hD : P.classDistance = D` for a natural number `D`, apply `P.finite_profiles hD` to obtain
+$\Phi=1/(k+1)$ and $\Psi=1/k$, with $k=(D+1)/2$ using natural-number division.
+For $D\ge3$ the same theorem gives $\Lambda=1/(k-1)$. At $D\le2$,
+`P.neighborhoodProfile_eq_top hD hsmall` gives infinity and
+`not_neighborhoodCorrect_of_classDistance_le_two` rules out every deterministic selector.
+When the classes are disconnected or one is empty, `P.infinite_profiles hD` gives all
+three profiles zero on a nonempty vertex type.
+
+The stronger `joint_optimum`, `correct_optimum` and `neighborhood_optimum` statements
+include an attaining law and a lower bound against every admissible PMF over all binary
+labelings. The laws are uniform mixtures of BFS thresholds (plus the two constants for
+joint defect), with one threshold shared across all vertices. This is the exact semantic
+finite minimax endpoint of Chen's Theorem 3.2, PDF pages 13–14 (printed 11–12),
+[immutable manuscript](https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1425.pdf).
+No BFS runtime, sampling-bit cost, machine realization or statistical sample-complexity
+claim follows from this API.
+
+Start with the complete checked client
+[ReplicableDecisions.lean](../../CslibFrontierTests/ReplicableDecisions.lean), which proves actual
+line-graph distances three and four, applies the optimality theorems, and checks distances
+one/two, disconnected classes, an empty class and indifference. From a bootstrapped repository
+root, run `scripts/build.sh CslibFrontierTests.ReplicableDecisions`; success means the clients
+elaborate without warnings. If a distance hypothesis fails, verify the forced sets and
+connectivity first: `classDistance` takes the minimum over all pairs, rather than the distance
+between one arbitrarily selected pair. Full integration validation still uses the six gates.
+
 ## Known Limitations
 
 No expected-PPT machine predicate was identified in the surveyed probabilistic computability modules. The existing [ZPP definition](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ZPP.lean#L79) uses native polynomial-time `Option Bool` trials: every returned Boolean is correct and at least half of the polynomial-length seeds return an answer. It is [proved equal to `RP ∩ coRP`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ZPP.lean#L266); an expected-polynomial-time characterization is not modeled here. See its [machine-model account](../machines-and-classes/verifiers-counting-interaction.md). This survey did not inspect every low-level composition proof or run the `ppt` tactic. Query-bounded ideal algorithms and native realizable algorithms remain distinct interfaces in the model map.

@@ -7207,6 +7207,7 @@ public import CslibFrontier.Probability.Quantile
 public import CslibFrontier.Probability.RankDecoder
 public import CslibFrontier.Probability.RankDecoder.Native
 public import CslibFrontier.Probability.RejectionSampling
+public import CslibFrontier.Probability.ReplicableDecisions.Basic
 public import CslibFrontier.Probability.Resilience
 public import CslibFrontier.Probability.Rewinding
 public import CslibFrontier.Probability.Rewinding.Consistency
