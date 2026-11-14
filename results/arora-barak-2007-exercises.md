@@ -37,7 +37,7 @@ linked issue bodies read; a mention only in an older body may be missed.
 | Chapter | Exercises | T rows | C rows | S items | Owned or claimed T work |
 |---|---|---|---|---|---|
 | 1 | 17 | 8 | 0 | 1 | — |
-| 2 | 23 | 11 | 7 | 3 | §1(a), §1(b): [#4213](https://github.com/cslib-community/cslib-frontier/issues/4213) |
+| 2 | 23 | 10 | 8 | 3 | §1(a), §1(b): [#4213](https://github.com/cslib-community/cslib-frontier/issues/4213) |
 | 3 | 7 | 6 | 0 | 1 | — |
 | 4 | 9 | 6 | 1 | 2 | — |
 | 5 | 11 | 11 | 1 | 0 | — |
