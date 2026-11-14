@@ -2407,6 +2407,7 @@ Specify the experiment, admissible adversaries, success event and assumption; pr
 
 [complexitylib]: ../sources.md#complexitylib
 [holenstein09]: ../sources.md#holenstein09
+[odonnell14]: ../sources.md#odonnell14
 
 The two reserve-output theorems choose their output constant after the fixed hierarchy,
 ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
@@ -3067,6 +3068,40 @@ Not formalized:
 
 The book derives Proposition 11.27 from the semigroup law; here it is read off the Hermite
 expansion of `U_ρ f`.
+
+## Show that majority maximizes the sum of the degree-one coefficients
+
+Import
+[`CslibFrontier.Foundations.BooleanAnalysis.Majority`](../../CslibFrontier/Foundations/BooleanAnalysis/Majority.lean)
+and open `Cslib` and `Cslib.BitString`. A Boolean function `f : BooleanFunction n` is read as signs
+through `fun x => signVal (f x)`, and `majority n` (in `Data.BitString.Threshold`) breaks ties
+towards `true`, the book's `-1`; for odd `n` it is the book's `Majₙ`
+[O'Donnell, Definition 2.1][odonnell14].
+
+- `sum_fourierCoeff_singleton_eq_expect f`, in
+  [`LevelWeight`](../../CslibFrontier/Foundations/BooleanAnalysis/LevelWeight.lean), is
+  [O'Donnell, equation (2.3)][odonnell14]: the degree-one coefficients of a real function sum to
+  `𝔼 f(x) (x₁ + ⋯ + xₙ)`, with `xᵢ = signVal (x i)`.
+- `expect_card_agree` is [O'Donnell, Proposition 2.32][odonnell14]: the expected number of voters
+  who agree with the outcome of a two-candidate voting rule is `n / 2 + ½ ∑ᵢ F̂(i)`.
+- `sum_fourierCoeff_singleton_signVal_le` bounds `∑ᵢ F̂(i) ≤ 𝔼 |x₁ + ⋯ + xₙ|`, and
+  `sum_fourierCoeff_singleton_signVal_eq_iff` says equality holds exactly for the majority
+  functions, those with `F(x) (x₁ + ⋯ + xₙ) ≥ 0` everywhere
+  [O'Donnell, Theorem 2.33][odonnell14]. `signVal_majority_mul_sum_signVal_nonneg` shows
+  `majority n` is one of them, and `sum_fourierCoeff_singleton_le_majority` is the resulting
+  bound. For odd `n`, `sum_fourierCoeff_singleton_eq_majority_iff hn f` says `majority n` is the
+  only maximizer.
+- In `BooleanAnalysis.Monotone`, `totalInfluence_eq_sum_fourierCoeff_singleton_of_monotone` is
+  [O'Donnell, Proposition 2.31][odonnell14]: a monotone function has total influence `∑ᵢ F̂(i)`.
+  With `monotone_majority` from `Data.BitString.Threshold`,
+  `totalInfluence_le_majority_of_monotone` says majority has the largest total influence among
+  monotone functions.
+
+The checked
+[`BooleanAnalysisMajority.lean` clients](../../CslibFrontierTests/BooleanAnalysisMajority.lean)
+instantiate these statements on small cubes. Run
+`scripts/build.sh CslibFrontierTests.BooleanAnalysisMajority` from the repository root to check
+them. The asymptotic value of `I[Majₙ]` in Theorem 2.33 is not part of this module.
 
 ## Compare bits with Gaussians by the invariance principle
 

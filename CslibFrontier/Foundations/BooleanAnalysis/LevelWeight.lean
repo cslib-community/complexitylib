@@ -25,7 +25,9 @@ weights sum to `𝔼 f ^ 2` (`BitString.sum_levelWeight`). The weight at degree 
 mean (`BitString.levelWeight_zero`), the weight at degree one is `∑ᵢ f̂({i}) ^ 2`
 (`BitString.levelWeight_one`), and the weights above a level `t` are the Fourier weight
 `∑_{t < |S|} f̂(S) ^ 2` that the library uses for spectral concentration
-(`BitString.sum_levelWeight_Ioc`).
+(`BitString.sum_levelWeight_Ioc`). The degree-one coefficients themselves sum to the correlation
+`𝔼_x f(x) (x₁ + ⋯ + xₙ)` with the sum of the signs
+(`BitString.sum_fourierCoeff_singleton_eq_expect`) [O'Donnell, equation (2.3)][ODonnell2014].
 
 ## Main definitions
 
@@ -43,6 +45,7 @@ mean (`BitString.levelWeight_zero`), the weight at degree one is `∑ᵢ f̂({i}
 * `Cslib.BitString.levelWeight_zero`, `Cslib.BitString.levelWeight_one`,
   `Cslib.BitString.sum_levelWeight_Ioc`: the weights at degrees zero and one and the weight above
   a level.
+* `Cslib.BitString.sum_fourierCoeff_singleton_eq_expect`: `∑ᵢ f̂({i}) = 𝔼 f(x) (x₁ + ⋯ + xₙ)`.
 
 ## References
 
@@ -159,6 +162,14 @@ theorem levelWeight_one (f : (ι → Bool) → ℝ) :
     exact ⟨fun ⟨i, hi⟩ => ⟨i, hi.symm⟩, fun ⟨i, hi⟩ => ⟨i, hi.symm⟩⟩
   rw [levelWeight, h, sum_map]
   rfl
+
+/-- **The degree-one coefficients and the vote count**: the degree-one Fourier coefficients of `f`
+sum to its correlation with the sum of the signs of the bits
+[O'Donnell, equation (2.3)][ODonnell2014]. -/
+theorem sum_fourierCoeff_singleton_eq_expect (f : (ι → Bool) → ℝ) :
+    ∑ i, fourierCoeff f {i} = 𝔼 x, f x * ∑ i, signVal (x i) := by
+  simp only [fourierCoeff, chi_singleton, mul_sum]
+  exact (expect_sum_comm _ _ _).symm
 
 /-- The Fourier weights above level `t` are the Fourier weight on the sets of more than `t`
 coordinates. -/

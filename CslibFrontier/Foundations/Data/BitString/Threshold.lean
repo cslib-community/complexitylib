@@ -27,7 +27,8 @@ functions. On an arbitrary finite set of voting indices, `BitString.strictMajori
 
 ## Main results
 
-* `Cslib.monotone_threshold`: threshold functions are monotone.
+* `Cslib.monotone_threshold`, `Cslib.monotone_majority`: threshold functions, and majority in
+  particular, are monotone.
 * `Cslib.strictMajority_not`: strict majority of the negated bits is the negation of majority.
 * `Cslib.le_card_ne_of_strictMajority_ne`,
   `Cslib.BitString.card_filter_eq_le_half_of_strictMajorityOn_ne`: a wrong majority requires at
@@ -108,6 +109,10 @@ theorem monotone_threshold (j : ℕ) : Monotone (threshold n j) := fun _ _ hxy =
   rw [threshold_apply, threshold_apply]
   exact Bool.le_iff_imp.2 fun h =>
     decide_eq_true ((of_decide_eq_true h).trans (monotone_weight hxy))
+
+/-- The majority function is monotone. -/
+theorem monotone_majority : Monotone (majority n) :=
+  monotone_threshold _
 
 /-- With cutoff `0`, the threshold function is the constant `true`. -/
 @[simp] theorem threshold_zero_right (x : BitString n) : threshold n 0 x = true :=
