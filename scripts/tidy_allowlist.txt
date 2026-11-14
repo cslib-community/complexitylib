@@ -25,6 +25,9 @@ CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelIte.lean
 CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelNormalForm.lean
 CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelTransducer.lean
 CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelZeroSpace.lean
+# Named finite-control construction data with exact composition bounds; internal kernel milestone
+# #5442 (https://github.com/cslib-community/cslib-frontier/issues/5442).
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/NativeCompiler.lean
 # Existing loop/wrapper laws and supplied-machine fold compiler, exact #862 disposition:
 # https://github.com/cslib-community/cslib-frontier/issues/862#issuecomment-6408754101
 CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/FoldCompiler.lean
