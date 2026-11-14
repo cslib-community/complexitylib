@@ -4392,6 +4392,7 @@ public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordDecoder
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordReduction
 public import CslibFrontier.Crypto.Computational.GoldwasserMicali
 public import CslibFrontier.Crypto.Computational.HQC.DQCSD
+public import CslibFrontier.Crypto.Computational.HQC.INDCPA
 public import CslibFrontier.Crypto.Computational.HardCore
 public import CslibFrontier.Crypto.Computational.HashAndSign
 public import CslibFrontier.Crypto.Computational.Homomorphic.Basic
@@ -4632,6 +4633,7 @@ public import CslibFrontier.Crypto.Computational.SchnorrProofOfKnowledge
 public import CslibFrontier.Crypto.Computational.SchnorrProtocol
 public import CslibFrontier.Crypto.Computational.SchnorrSignature
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
+public import CslibFrontier.Crypto.Computational.SchnorrSignature.ForkPass
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.NativeROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.StatisticalROM
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.WordROM
@@ -4761,6 +4763,7 @@ public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.SpreadNecessity
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
 public import CslibFrontier.Crypto.Protocols.KEM.MLKEM
 public import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
 public import CslibFrontier.Crypto.Protocols.MAC.PolynomialEvaluation
@@ -4919,6 +4922,8 @@ public import CslibFrontier.DataStructure.BTree.PredSucc
 public import CslibFrontier.DataStructure.BTree.Range
 public import CslibFrontier.DataStructure.BTree.Rank
 public import CslibFrontier.DataStructure.BTree.TreeMap
+public import CslibFrontier.DataStructure.BallsToSlots.KickTree
+public import CslibFrontier.DataStructure.BallsToSlots.Spec
 public import CslibFrontier.DataStructure.CellProbe.OfWordRAM
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
@@ -4937,6 +4942,9 @@ public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
 public import CslibFrontier.DataStructure.Dictionary.DynamicMatching
 public import CslibFrontier.DataStructure.Dictionary.FeistelPerm
 public import CslibFrontier.DataStructure.Dictionary.FeistelQuotient
+public import CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm
+public import CslibFrontier.DataStructure.Dictionary.KickTree.RoundSeed
+public import CslibFrontier.DataStructure.Dictionary.KickTree.SmallUniversePerm
 public import CslibFrontier.DataStructure.Dictionary.Memory
 public import CslibFrontier.DataStructure.Dictionary.Minimap
 public import CslibFrontier.DataStructure.Dictionary.PerfectHashing.Construction
@@ -5702,6 +5710,7 @@ public import CslibFrontier.Foundations.Data.Code.Singleton
 public import CslibFrontier.Foundations.Data.Code.Sudan
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
 public import CslibFrontier.Foundations.Data.ENat.IInf
+public import CslibFrontier.Foundations.Data.Fin.AddFlip
 public import CslibFrontier.Foundations.Data.Fin.Append
 public import CslibFrontier.Foundations.Data.Fin.BalancedBlocks
 public import CslibFrontier.Foundations.Data.Fin.Counting
@@ -5763,6 +5772,7 @@ public import CslibFrontier.Foundations.Data.List.CommonPrefix
 public import CslibFrontier.Foundations.Data.List.ConsecutivePairs
 public import CslibFrontier.Foundations.Data.List.Counting
 public import CslibFrontier.Foundations.Data.List.CourseOfValues
+public import CslibFrontier.Foundations.Data.List.Dedup
 public import CslibFrontier.Foundations.Data.List.DotProduct
 public import CslibFrontier.Foundations.Data.List.Equiv
 public import CslibFrontier.Foundations.Data.List.EraseDups
@@ -5791,6 +5801,7 @@ public import CslibFrontier.Foundations.Data.List.OrderStatistic
 public import CslibFrontier.Foundations.Data.List.Palindrome
 public import CslibFrontier.Foundations.Data.List.Perm
 public import CslibFrontier.Foundations.Data.List.Primrec
+public import CslibFrontier.Foundations.Data.List.Product
 public import CslibFrontier.Foundations.Data.List.Range
 public import CslibFrontier.Foundations.Data.List.RowMajor
 public import CslibFrontier.Foundations.Data.List.SelectDistinct
@@ -5877,6 +5888,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
 public import CslibFrontier.Foundations.Data.Nat.Clog
 public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.ConstantDivision
+public import CslibFrontier.Foundations.Data.Nat.DescFactorial
 public import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Foundations.Data.Nat.Doubling
 public import CslibFrontier.Foundations.Data.Nat.Factorial
@@ -6372,11 +6384,14 @@ public import CslibFrontier.Languages.Probabilistic.Vector
 public import CslibFrontier.Languages.SQL.Column
 public import CslibFrontier.Languages.SQL.Equiv
 public import CslibFrontier.Languages.SQL.Expr
+public import CslibFrontier.Languages.SQL.JoinSize
 public import CslibFrontier.Languages.SQL.Query
 public import CslibFrontier.Languages.SQL.QueryEquiv
+public import CslibFrontier.Languages.SQL.QueryLaws
 public import CslibFrontier.Languages.SQL.Row
 public import CslibFrontier.Languages.SQL.Scalar
 public import CslibFrontier.Languages.SQL.Schema
+public import CslibFrontier.Languages.SQL.Simplify
 public import CslibFrontier.Languages.SQL.Truth
 public import CslibFrontier.Languages.SQL.Typing
 public import CslibFrontier.Languages.SQL.Value
@@ -7102,6 +7117,7 @@ public import CslibFrontier.Probability.PMF.BindFailure
 public import CslibFrontier.Probability.PMF.Bool
 public import CslibFrontier.Probability.PMF.Chebyshev
 public import CslibFrontier.Probability.PMF.Coin
+public import CslibFrontier.Probability.PMF.Coin.Complement
 public import CslibFrontier.Probability.PMF.Coupling
 public import CslibFrontier.Probability.PMF.DensityBounds
 public import CslibFrontier.Probability.PMF.Event
@@ -7149,6 +7165,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash.Universal
 public import CslibFrontier.Probability.PairwiseIndependentHash.ValidatedWords
 public import CslibFrontier.Probability.Pinsker
 public import CslibFrontier.Probability.PoissonBinomial
+public import CslibFrontier.Probability.PoissonBinomial.Reflection
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
@@ -7193,11 +7210,13 @@ public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
+public import CslibFrontier.Probability.StochasticDomination.SequentialUpper
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.SubGaussian
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.Uniform.Translate
+public import CslibFrontier.Probability.UniformEmbedding
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash

@@ -9,6 +9,7 @@ import CslibFrontierGuide.NPCompleteness
 import CslibFrontierGuide.Matching
 import CslibFrontierGuide.Streaming
 import CslibFrontierGuide.FirstOrderOperators
+import CslibFrontierGuide.SQL
 
 open Verso.Genre Manual
 
@@ -35,8 +36,8 @@ docstring and source. Other entry points:
   to propose and review changes.
 
 The guide is new: after first steps, it has chapters on NP-completeness, unweighted graph matching,
-streaming, and first-order logic with operators. Further areas follow one at a time, and each
-chapter's friction points are fixed in the library rather than documented around.
+streaming, first-order logic with operators, and SQL query semantics. Further areas follow one at a
+time, and each chapter's friction points are fixed in the library rather than documented around.
 
 [cslib]: https://github.com/leanprover/cslib
 [api]: https://www.cslib.io/cslib-frontier/
@@ -54,3 +55,5 @@ chapter's friction points are fixed in the library rather than documented around
 {include 1 CslibFrontierGuide.Streaming}
 
 {include 1 CslibFrontierGuide.FirstOrderOperators}
+
+{include 1 CslibFrontierGuide.SQL}
