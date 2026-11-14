@@ -1263,6 +1263,19 @@ witnesses on `identityScheme`, `identityUnifKeyScheme`, and `maskedShiftScheme`;
 and [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)
 instantiate `Scheme.indCcaRomAdvantage_le` (`≤ 3 / 8`) and `Scheme.indCcaBotAdvantage_le` (`≤ 1 / 4`, plus the `15 / 16` `probeDecapsAdv` separation on `unspreadPointPKE pairCoinPKE 0`) on `pairCoinScheme`.
 
+For a security-parameter family over words, import
+[`FujisakiOkamoto/Word.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Word.lean).
+`WordPKE` fixes at each parameter `n` the message length, the coin length and a bound on ciphertext
+lengths, and `WordPKE.IsEfficient` asks for strict PPT key generation and polynomial-time
+encryption and decryption. `WordPKE.scheme P keyLen n` is the `Scheme` bundle at `n`, and the
+native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
+`WordPKE.encaps`, and `WordPKE.decapsNotBot` and `WordPKE.decapsBot`, which reject words longer
+than the ciphertext bound and otherwise run `Scheme.decapsNotBotM` and `Scheme.decapsBotM`. Their
+native certificates (`WordPKE.IsEfficient.isPPTOn_keyGenNotBot`,
+`WordPKE.IsEfficient.isOraclePPTOn_encaps`, `WordPKE.IsEfficient.isOraclePPTOn_decapsNotBot`,
+`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`. The certified reduction
+and the asymptotic theorem are #5293's next steps.
+
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
 [`MLKEM/Security.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/Security.lean) and
