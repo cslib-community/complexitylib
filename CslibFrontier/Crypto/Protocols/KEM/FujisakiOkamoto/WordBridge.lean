@@ -37,9 +37,9 @@ the ciphertext space `WordPKE.Ciphertext P n` of words of length at most `ctLen 
 explicit-coin scheme `WordPKE.finitePKE P n` reads `encDet` as a ciphertext with
 `WordPKE.toCiphertext`, which keeps a word that fits and replaces a longer one by the empty word.
 
-**Properties of the PKE family.** `WordPKE.DeltaCorrect` and `WordPKE.GammaSpread` are the
-`δ`-correctness and `γ`-spreadness of [HofheinzHoevelmannsKiltz2017] at every parameter, stated
-for `finitePKE`. For a family whose ciphertexts fit (`WordPKE.CiphertextFits`, in
+**Properties of the PKE family.** `WordPKE.DeltaCorrect` is the `δ`-correctness of
+[HofheinzHoevelmannsKiltz2017] at every parameter, stated for `finitePKE`. For a family whose
+ciphertexts fit (`WordPKE.CiphertextFits`, in
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word`), `finitePKE` encrypts exactly as `P` on
 generated keys.
 
@@ -68,9 +68,7 @@ replaying the machine against the typed oracles gives its replay against the wor
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.finitePKE`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.finiteScheme`: the scheme and the FO bundle at
   one parameter over finite types.
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.DeltaCorrect`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.GammaSpread`: correctness and spreadness of the
-  PKE family.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.DeltaCorrect`: correctness of the PKE family.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.typedHQuery`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.typedQuery`: native requests as typed queries.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.savedCoinAdversary`: the typed view of a
@@ -168,13 +166,6 @@ probability that decryption of an encryption under uniform coins fails is at mos
 `ExplicitCoinPKE.DeltaCorrect` of the scheme at parameter `n`. -/
 @[expose] def DeltaCorrect (δ : ℕ → ℝ≥0) : Prop :=
   ∀ n, (P.finitePKE n).DeltaCorrect (δ n)
-
-/-- **`γ`-spreadness of `P`** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021),
-§2.1): at every parameter `n`, for every generated key pair, message and ciphertext, encryption
-under uniform coins hits the ciphertext with probability at most `2 ^ (-γ n)`. It is
-`ExplicitCoinPKE.GammaSpread` of the scheme at parameter `n`. -/
-@[expose] def GammaSpread (γ : ℕ → ℝ) : Prop :=
-  ∀ n, (P.finitePKE n).GammaSpread (γ n)
 
 /-! ### The typed view of a native adversary -/
 

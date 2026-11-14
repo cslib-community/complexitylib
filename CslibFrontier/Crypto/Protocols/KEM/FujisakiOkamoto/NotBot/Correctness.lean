@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
+public import CslibFrontier.Probability.StatisticalDistance.CloseTo
 import CslibFrontier.Crypto.Game.CloseTo
 import CslibFrontier.Crypto.Game.UntilBad
 import CslibFrontier.Languages.Probabilistic.Simulation
@@ -15,30 +16,38 @@ import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 import CslibFrontier.Probability.PMF.BindFailure
 
 /-!
-# Correctness hop of the `FO-notbot` IND-CCA proof
+# Correctness hop of the FO IND-CCA proofs
 
-This module bounds the distance between the lazy coupled game `Scheme.coupledGame` and the keyless
-simulator game `Scheme.simGame` of
+This module bounds the distance between the lazy coupled handler `Scheme.coupledFilterHandler`
+and the keyless simulator `Scheme.simFilterHandler` of
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids` by the decryption error of the
 underlying PKE. This is the correctness step of the proof of the §3.1 theorem for `T` in
-[HofheinzHoevelmannsKiltz2017], where the random oracle `G` is replaced by good coins.
+[HofheinzHoevelmannsKiltz2017] (games G1–G2 of the proof of Theorem 3.1), where the
+plaintext-checking oracle is replaced by re-encryption.
 
-The two games differ only in the decryption test `Dec(sk, c) = some m` of the key-derivation
+The two handlers differ only in the decryption test `Dec(sk, c) = some m` of the key-derivation
 oracle `H(false, m, c)`. For a fixed key pair, both are run on the same `SimState`, and a state is
 *bad* when some coin `r` cached for a message `m` in `gCache` fails to decrypt
 (`Dec(sk, Enc(pk, m; r)) ≠ some m`). Caches only grow, so bad states are absorbing, and from a good
 state the two handlers agree on every transition into a good state: a cached coin `r = G(m)` with
 `Enc(pk, m; r) = c` then forces `Dec(sk, c) = some m`. The difference lemma bounds the distance by
 the probability of reaching a bad state. Every `G` or `H` query samples at most one fresh coin,
-which fails with probability at most the worst-case message failure probability, while the
-challenge coin `r*` accounts for one more term. Averaging over key generation with `δ`-correctness
-gives the bound `(qG + qH + 1) δ`.
+which fails with probability at most the worst-case message failure probability
+(`closeTo_run_coupledFilterHandler_simFilterHandler`). The `FO-notbot` challenge hop applies this
+to the one-wayness run from empty caches. In the filtered games of the `FO^⊥` proof the challenge
+coin `r*` accounts for one more term, and averaging over key generation with `δ`-correctness gives
+the bound `(qG + qH + 1) δ`.
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_coupledGame_simGame_le`: for an
-  adversary making at most `qG` queries to `G` and `qH` queries to `H` against a `δ`-correct PKE,
-  the distinguishing advantage between `coupledGame` and `simGame` is at most `(qG + qH + 1) δ`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.closeTo_run_coupledFilterHandler_simFilterHandler`:
+  from a state whose cached coins decrypt correctly, a program making at most `k` queries to `G`
+  and `H` has output laws under the two handlers within `k` times the worst-message failure
+  probability of the key pair.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_coupledFilterGame_simFilterGame_le`: for
+  an adversary making at most `qG` queries to `G` and `qH` queries to `H` against a `δ`-correct PKE,
+  the distinguishing advantage between `coupledFilterGame` and `simFilterGame` is at most
+  `(qG + qH + 1) δ`.
 
 ## References
 
@@ -330,8 +339,13 @@ private theorem testHandler_run_bad_le [Fintype M] [Nonempty M] (S : Scheme PK S
     (OracleComp.IsCostBounded.of_forall_cost_eq_zero (fun _ => rfl) prog) (not_not.mpr hs)
   simpa only [mul_zero, add_zero, Nat.cast_zero] using h
 
-/-- The two lazy runs from a good cache are statistically close up to the failure budget. -/
-private theorem closeTo_run_coupled_sim [Fintype M] [Nonempty M] (S : Scheme PK SK M R CT K)
+/-- **The coupled and keyless handlers agree until a cached coin fails to decrypt.** Run from a
+state whose cached coins all decrypt correctly, and post-processed by any `next`, a program making
+at most `k` combined `G`/`H` queries has output laws under `coupledFilterHandler d₁` and
+`simFilterHandler d₂` within `k` times the worst-message failure probability of the key pair,
+provided the two decapsulation filters agree on such states. -/
+theorem closeTo_run_coupledFilterHandler_simFilterHandler [Fintype M] [Nonempty M]
+    (S : Scheme PK SK M R CT K)
     (pk : PK) (sk : SK) (cStar : CT) (d₁ d₂ : List (M × R) → CT → Bool)
     (hd : ∀ (st : SimState M R CT K) c, GoodCache S.pke pk sk st →
       d₁ st.gCache c = d₂ st.gCache c)
@@ -451,7 +465,8 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
         exact hr
       refine (CloseTo.bind_right_tsum _ (err := fun _ => ((qG + qH : ℕ) : ℝ≥0∞) * p)
         fun kRand _ => ?_).mono (le_of_eq (hconst _ _))
-      exact closeTo_run_coupled_sim S pk sk _ (d₁ pk sk) (d₂ pk) (hd pk sk) _ (hq.ghCost _) hgood _
+      exact closeTo_run_coupledFilterHandler_simFilterHandler S pk sk _ (d₁ pk sk) (d₂ pk)
+        (hd pk sk) _ (hq.ghCost _) hgood _
     · rw [ite_eq_right_of_eq_false _ _ (eq_false hr)]
       exact fun e => (Probability.PMF.toOuterMeasure_le_one _ e).trans
         (le_self_add.trans le_add_self)
@@ -472,18 +487,6 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
         ENNReal.toReal_mono (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hEtop) hadv
     _ = ((qG + qH + 1 : ℕ) : ℝ) * E.toReal := by rw [ENNReal.toReal_mul, ENNReal.toReal_natCast]
     _ ≤ ((qG + qH + 1 : ℕ) : ℝ) * δ := mul_le_mul_of_nonneg_left hδ (Nat.cast_nonneg _)
-
-/-- **Correctness hop** ([HofheinzHoevelmannsKiltz2017], proof of the §3.1 theorem for `T`): for
-an adversary making at most `qG` queries to `G` and `qH` queries to `H` against a `δ`-correct PKE,
-the lazy coupled game `coupledGame`, whose key-derivation oracle checks `Dec(sk, c) = some m`, and
-the keyless simulator game `simGame` have distinguishing advantage at most `(qG + qH + 1) δ`. -/
-theorem advantage_coupledGame_simGame_le [Fintype M] [Nonempty M]
-    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) {qG qH : ℕ}
-    (hq : ROQueryBounds A qG qH) {δ : ℝ} (hδ : S.pke.DeltaCorrect δ) (b : Bool) :
-    (Game.advantage (ProbComp.eval (S.coupledGame A b)) (ProbComp.eval (S.simGame A b)) : ℝ) ≤
-      ((qG + qH + 1 : ℕ) : ℝ) * δ :=
-  S.advantage_coupledFilterGame_simFilterGame_le (fun _ _ _ _ => true) (fun _ _ _ => true)
-    (fun _ _ _ _ _ => rfl) A hq hδ b
 
 end Scheme
 
