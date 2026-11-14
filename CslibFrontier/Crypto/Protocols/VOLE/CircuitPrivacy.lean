@@ -157,7 +157,7 @@ theorem circuitReceiverView_eq_expand (C : Circuit (arithSignature F) (p + k) m)
   congr 1 with verifier : 1
   simp [circuitCheck, maskedMulCheck, liftProver, ProbOracleComp.query,
     OracleComp.sumHandler, runAgainst, ProverStrategy.hoist, VerifierStrategy.hoist,
-    circuitCheckSpec, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
+    circuitCheckSpec, maskedMulCheckSpec, threeMoveSpec,
     interpret_liftVerifier, PMF.map, Function.comp_def, circuitExpandView,
     hfirst]
 

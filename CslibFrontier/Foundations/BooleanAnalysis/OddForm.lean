@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.BooleanAnalysis.Fourier
+public import CslibFrontier.Foundations.Data.BitString.Single
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -18,7 +19,8 @@ over the points whose parity on `S` is odd. Writing `[S · c odd] = (1 - χ_S(c)
 characters over all sets gives the identities
 `2 ∑_S L_f(S) = 2 ^ |ι| (∑ f - f 0)` and
 `4 ∑_S L_f(S) L_h(S) = 2 ^ |ι| ((F - f 0)(H - h 0) + ∑_c f c h c - f 0 h 0)`.
-The functions `onSingles a`, supported on the unit vectors `Pi.single i true`, have
+The functions `onSingles a`, supported on the unit vectors recognized by `BitString.IsSingle`,
+have
 `oddForm (onSingles a) S = ∑_{i ∈ S} a i`.
 
 These are used for the sharper score of Andreev's function
@@ -27,8 +29,8 @@ These are used for the sharper score of Andreev's function
 ## Main definitions
 
 * `Cslib.BitString.oddForm`: odd-parity forms.
-* `Cslib.BitString.IsSingle`, `Cslib.BitString.onSingles`: unit vectors and functions supported
-  on them; `Cslib.BitString.not_isSingle_zero`.
+* `Cslib.BitString.onSingles`: functions supported on unit vectors;
+  `Cslib.BitString.not_isSingle_zero`.
 
 ## Main results
 
@@ -168,13 +170,6 @@ theorem parityOn_single (S : Finset ι) (i : ι) :
     by_cases hji : j = i <;> split_ifs with hi <;> simp [Pi.single_apply, hji] <;> grind
   rw [parityOn, hf]
   split_ifs with hi <;> simp [hi]
-
-/-- A bit string is a unit vector if it is `Pi.single i true` for some `i`. -/
-def IsSingle (c : ι → Bool) : Prop :=
-  ∃ i, c = Pi.single i true
-
-instance (c : ι → Bool) : Decidable (IsSingle c) :=
-  inferInstanceAs (Decidable (∃ i, c = Pi.single i true))
 
 /-- The function that takes the value `a i` at the unit vector `Pi.single i true` and `0`
 elsewhere. -/

@@ -4,7 +4,7 @@ A useful contribution gives the next client a clearer theorem, construction or p
 
 ## Design the statement before its proof
 
-Specify the model, encodings, resource convention, uniformity and quantifier order. For a published result, identify the source version and locator and map those choices to the source. For a conditional or restricted milestone, state its restriction and preserve the broader objective. Assuming the difficult endpoint is not constructing it.
+Specify the model, encodings, resource convention, uniformity and quantifier order. For a published result, identify the source version and locator and map those choices to the source. For a conditional or restricted milestone, state its restriction and preserve the broader objective. Assuming the difficult endpoint is not constructing it. A security theorem in particular may assume named hardness assumptions, the adversary's class and properties of components that the cited result takes as given, but nothing about a reduction, distinguisher, simulator, extractor or hybrid that its proof derives from the adversary ([security theorems](../programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
 
 Model domain objects, problem instances, certificates, configurations, and multi-field algorithm contexts or states as documented `structure`s rather than tuple `abbrev`s or bare product sets, and declare field-tuple structure encodings with [`enc_structure`](choosing-models.md#write-the-contract-before-the-proof) ([structures for domain objects](../../AGENTS.md#structures-for-domain-objects-and-records)). Where ordinary pairs remain—such as generic combinators or `Instance × List Bool` verifier inputs—bind tuple components by name instead of reaching into nested tuples with chains such as `c.1.2`; CI stops a changed module from adding such chains to its public statements and definition bodies ([named components](../../CONTRIBUTING.md#library-quality-standard)). Write encodings so that readers can see them without parsing the same nested term repeatedly: name a compound encoding that recurs in a module's statements with a documented reducible `abbrev` (not a `local notation`, which CI rejects in changed modules), and keep unary versus binary and representation choices visible in names and docstrings. The [encoding rules](../../AGENTS.md#encodings-in-statements) state when a name is required.
 
@@ -34,15 +34,23 @@ the checks and how to record a concise before/after example without a separate a
 
 ## Validate the client, then the change
 
-Begin with diagnostics for the changed file and a representative downstream client. For new bundled hypotheses, provide a satisfying instance; use a negative case when it exposes vacuity or a model boundary. Tests should exercise behavior or the interface rather than restate a theorem by name.
+Begin with diagnostics for the changed file and a representative downstream client. To establish
+public API usability, use a `module` client with ordinary imports of the API, exercising intended
+operations through exposed bodies or public equations.
+[QuantumOracleModule.lean](../../CslibFrontierTests/QuantumOracleModule.lean) is a complete example.
+A test without `module`, or using `import all` for that API, has broader access and cannot
+establish usability for ordinary clients. Intentional internal, metaprogramming and axiom tests
+keep their documented access and supplement this evidence.
 
-After adding a library file, run `lake exe mk_all` to regenerate the aggregate. New tests belong in `CslibFrontierTests/` and are included by a Lake glob. During development:
+For new bundled hypotheses, provide a satisfying instance; use a negative case when it exposes vacuity or a model boundary. Tests should exercise behavior or the interface rather than restate a theorem by name.
+
+After adding a library file, run `lake exe mk_all` to regenerate the aggregate. New tests belong in `CslibFrontierTests/` and are included by a Lake glob. At a local validation checkpoint:
 
 ```bash
-scripts/check.sh --quick
+scripts/check.sh --quick --no-full-fallback
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet. A library aggregate whose only edit is the import lines `lake exe mk_all` adds for new modules keeps the quick plan, which then builds the aggregate's importing clients. Other non-Lean, unsupported or ambiguous changes, including deletions and renames, fall back to the full check; `scripts/check.sh --quick --no-full-fallback` instead reports the reason and exits with status 3. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet. A library aggregate whose only edit is the import lines `lake exe mk_all` adds for new modules keeps the quick plan, which then builds the aggregate's importing clients. With `--no-full-fallback`, other non-Lean, unsupported or ambiguous changes, including deletions and renames, report the reason and exit with status 3: run focused checks for the changed files and use hosted CI for full validation. Omitting the flag retains the automatic full-check fallback. Quick success is development feedback, not full integration validation.
 
 Quick mode also runs the changed-file lints that read only sources: an `@[expose]` section with nothing to expose, and a new test file that only restates signatures. When building targets directly instead, run them with `python3 scripts/check_changed_files.py --source-only`; CI's changed-file step additionally checks module-doc names against build outputs.
 
@@ -106,7 +114,12 @@ preserve the mathematical claim and resource bounds, and complete the cleanup af
 contribution before approval. Deferral requires the exceptional disposition described in
 [Improving library ergonomics](../../AGENTS.md#improving-library-ergonomics).
 
-Explain the problem, resulting behavior, limitations and validation in the PR. Link its task issue and source references, preserve contributor credit, and disclose AI tools and their role under the applicable policy. Obtain independent correctness/API review of the current revision. Reviewers read new and changed proofs against the rest of the file and nearby modules, because a diff does not show the existing proof that a new block repeats; a new copy of an argument the library already makes is a [review finding](../../AGENTS.md#review-cycle) when a shared lemma would pay under the [library quality standard](../../CONTRIBUTING.md#library-quality-standard). A reviewer who helped design or implement the change cannot supply that independence; agent review is not human approval.
+Write the PR for a contributor who has not followed the task. Introduce the setting, central
+idea and what the change enables, using the
+[PR-writing guidance and example](../../AGENTS.md#writing-in-issues-and-prs). Explain important
+limitations and put validation after the explanation, linking detailed evidence.
+
+Link its task issue and source references, preserve contributor credit, and disclose AI tools and their role under the applicable policy. Obtain independent correctness/API review of the current revision. Reviewers read new and changed proofs against the rest of the file and nearby modules, because a diff does not show the existing proof that a new block repeats; a new copy of an argument the library already makes is a [review finding](../../AGENTS.md#review-cycle) when a shared lemma would pay under the [library quality standard](../../CONTRIBUTING.md#library-quality-standard). A reviewer who helped design or implement the change cannot supply that independence; agent review is not human approval.
 
 After fixes, request review of the affected delta. Changed reasoning, statement semantics and uncertain conflict resolutions require fresh review; a clean rebase may sometimes preserve existing approval. Integration requires maintainer authority as well as validation and review. State what is complete and what remains. When only a milestone is delivered, keep the broader objective visible and open or explicitly disposed of.
 

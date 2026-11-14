@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
 module
@@ -47,6 +47,8 @@ free (`card_garbledRow`).
 ## Main results
 
 * `Cslib.Crypto.Garbling.FreeXOR.Garbled.run_garbleWith`: correctness.
+* `Cslib.Crypto.Garbling.FreeXOR.isTweakUnique_reduction`: when distinct slots have distinct
+  tweaks, the reduction asks every tweak at most once (`CCR.IsTweakUnique`).
 * `Cslib.Crypto.Garbling.FreeXOR.advantage_realGame_simGame`: privacy. The advantage of every
   distinguisher between the real and the simulated view equals the circular correlation
   robustness advantage of the reduction, which asks one query per slot of the garbled table
@@ -245,9 +247,9 @@ variable [AddCommGroup K]
 
 /-! ### Labels -/
 
-/-- The label for the bit `b` of a wire with zero label `W`: `W`, or `W + (δ, true)`. -/
+/-- The label for the bit `b` of a wire with zero label `W`: `W + bitOffset (δ, true) b`. -/
 @[expose] def label (δ : K) (W : K × Bool) (b : Bool) : K × Bool :=
-  if b then W + (δ, true) else W
+  W + bitOffset (δ, true) b
 
 /-- The colour of the label for `b` is the colour of the zero label plus `b`. -/
 theorem label_snd (δ : K) (W : K × Bool) (b : Bool) : (label δ W b).2 = W.2 + b := by
@@ -261,43 +263,34 @@ private theorem offset_add_offset (hK : ∀ k : K, k + k = 0) (δ : K) :
 /-- Labels add like their bits: this is what makes XOR gates free. -/
 theorem label_add_label (hK : ∀ k : K, k + k = 0) (δ : K) (W W' : K × Bool) (b b' : Bool) :
     label δ W b + label δ W' b' = label δ (W + W') (b + b') := by
-  cases b <;> cases b'
-  · rfl
-  · exact (add_assoc W W' _).symm
-  · exact add_right_comm W _ W'
-  · change W + (δ, true) + (W' + (δ, true)) = W + W'
-    rw [add_add_add_comm, offset_add_offset hK, add_zero]
+  simp only [label, bitOffset_add_of_add_self (offset_add_offset hK δ), add_add_add_comm]
 
 theorem sum_label {ι : Type*} (hK : ∀ k : K, k + k = 0) (δ : K) (S : Finset ι)
     (W : ι → K × Bool) (b : ι → Bool) :
     ∑ i ∈ S, label δ (W i) (b i) = label δ (∑ i ∈ S, W i) (∑ i ∈ S, b i) := by
   classical
   induction S using Finset.induction_on with
-  | empty => simp only [Finset.sum_empty]; rfl
+  | empty => exact (add_zero 0).symm
   | insert a S ha ih =>
     rw [Finset.sum_insert ha, Finset.sum_insert ha, Finset.sum_insert ha, ih,
       label_add_label hK]
 
 theorem label_label (hK : ∀ k : K, k + k = 0) (δ : K) (W : K × Bool) (b b' : Bool) :
     label δ (label δ W b) b' = label δ W (b + b') := by
-  cases b <;> cases b' <;> try rfl
-  change W + (δ, true) + (δ, true) = W
-  rw [add_assoc, offset_add_offset hK, add_zero]
+  simp only [label, add_assoc, ← bitOffset_add_of_add_self (offset_add_offset hK δ)]
 
 theorem label_label_self (hK : ∀ k : K, k + k = 0) (δ : K) (W : K × Bool) (b : Bool) :
     label δ (label δ W b) b = W := by
   rw [label_label hK, BooleanRing.add_self]
-  rfl
+  exact add_zero W
 
 private theorem label_add (δ : K) (W Y : K × Bool) (b : Bool) :
-    label δ W b + Y = label δ (W + Y) b := by
-  cases b
-  exacts [rfl, add_right_comm W _ Y]
+    label δ W b + Y = label δ (W + Y) b :=
+  add_right_comm W (bitOffset (δ, true) b) Y
 
 private theorem add_label (δ : K) (Y W : K × Bool) (b : Bool) :
-    Y + label δ W b = label δ (Y + W) b := by
-  cases b
-  exacts [rfl, (add_assoc Y W _).symm]
+    Y + label δ W b = label δ (Y + W) b :=
+  (add_assoc Y W (bitOffset (δ, true) b)).symm
 
 /-! ### Zero labels -/
 
@@ -515,12 +508,6 @@ private def reductionView (τ : Circuit.Topology n m s) {free : Fin s → Bool}
   input i := A (.input i)
   decoding o := (A (τ.outputs o)).2 + y o
 
-private theorem oracle_eq_label (H : K → T → K × Bool) (δ y : K) (t : T) (b : Bool) :
-    CCR.oracle H δ (δ, true) ⟨y, t, b⟩ = label δ (H (y + δ) t) b := by
-  rw [CCR.oracle_apply]
-  cases b
-  exacts [add_zero _, rfl]
-
 /-- Shift labels by the offset on the wires where `t` is set. -/
 private def shiftEquiv (hK : ∀ k : K, k + k = 0) (δ : K) {W : Type} (t : W → Bool) :
     (W → K × Bool) ≃ (W → K × Bool) where
@@ -563,10 +550,8 @@ private theorem reductionTable_circular (hK : ∀ k : K, k + k = 0) (δ : K)
         (isFirst (flipped A r) k && rowBit C I x A r) := fun k => by
     cases hf : flipped A r k
     · have h0 : isFirst (flipped A r) k = false := by simp [isFirst, hf]
-      rw [ite_eq_right Bool.false_ne_true, h0]
-      rfl
-    · rw [ite_eq_left rfl, reductionQuery, oracle_eq_label]
-      rfl
+      simp [h0, label]
+    · rfl
   simp only [reductionTable, hterm]
   rw [sum_label hK, sum_isFirst_and _ _ (exists_flipped_of_rowBit C I x A r), add_label]
   simp only [garbleTable, hb, label_label hK, bool_add_add_cancel, label_add, rowBit]
@@ -705,6 +690,21 @@ theorem isQueryBounded_reduction :
   rw [Finset.length_toList, Finset.card_univ] at h
   simp only [Nat.zero_add, Nat.add_zero] at h
   exact h
+
+/-- When distinct slots have distinct tweaks, the reduction makes at most one query with each
+tweak. -/
+theorem isTweakUnique_reduction [DecidableEq T] (htw : Function.Injective tw) :
+    CCR.IsTweakUnique (reduction C I H tw x D) := fun t => by
+  have h := (ProbOracleComp.isCostBounded_sample _
+    (ProbComp.uniform (Wire n C.size → K × Bool))).bind fun base =>
+    (ProbOracleComp.isCostBounded_tabulate_le_one (R := K × Bool) CCR.Query.tweak
+      (reductionQuery C I tw x (propagate C.topology free base))
+      (Finset.univ : Finset (GarbledSlot C.topology free)).nodup_toList
+      (by simpa [Function.comp_def, reductionQuery_tweak] using htw) t).bind fun O =>
+    ProbOracleComp.isCostBounded_sample _
+      (D (reductionView C.topology H tw (C.eval I x)
+        (propagate C.topology free base) O))
+  simpa only [reduction, Nat.zero_add, Nat.add_zero] using h
 
 private theorem eval_run_reduction (f : CCR.Query K T → K × Bool) :
     ProbComp.eval ((reduction C I H tw x D).run fun q => pure (f q)) =

@@ -247,6 +247,25 @@ state encoding at each column. See the [SCC and 2-SAT tests](../../CslibFrontier
 [Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
 and [XOR solver tests](../../CslibFrontierTests/XORSAT.lean).
 
+Quadratic equations over `𝔽₂` are `QuadEquation` records in
+[CSP/Quadratic.lean](../../CslibFrontier/Logics/Propositional/CSP/Quadratic.lean): the list of
+monomials `(i, j)` with coefficient one and a Boolean right-hand side. As for affine equations,
+`QuadEquation.Holds` sums in the Boolean ring, so repeated monomials cancel in pairs, and the
+diagonal monomial `(i, i)` is the linear term `u_i`. To use the NP-completeness of the satisfiable
+systems (Arora–Barak draft, Exercise 2§18), import
+`CslibFrontier.Computability.Complexity.Problems.QUADEQ` and use
+`QUADEQ_npComplete : NPComplete QUADEQ.encoding QUADEQ`. Instances use binary natural-number labels
+with no bound on their values, so certificates list values along first occurrences
+(`QUADEQ.assignment`), as for `SAT`. Hardness reduces `SAT` by `toQUADEQ`: each clause
+`ℓ₀ ∨ … ∨ ℓ₍ₖ₋₁₎` gets auxiliary variables with `z₀ = 1`, `zₜ₊₁ = zₜ·¬ℓₜ` and `zₖ = 0`
+(`CNF.toQuadSystem`, proved equisatisfiable by `CNF.satisfiable_toQuadSystem`), numbered with
+`splitVarToNat`. Building a reduction to QUADEQ from a gadget over another variable type follows
+the same pattern: prove satisfiability with `QuadSystem.satisfiable_relabel` for an injective
+numbering, and certify the numbering for `computableInPolyTime_relabel`. The
+[QUADEQ tests](../../CslibFrontierTests/QUADEQ.lean) run the verifier and the reduction on concrete
+satisfiable and unsatisfiable instances; check them with
+`scripts/build.sh CslibFrontierTests.QUADEQ`.
+
 The hard branch `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` imports all its mathematical
 and reduction ingredients. The positive-arity Boolean clone classification
 (`Cslib.Logic.BooleanClone.classification`) covers every arity: absent the six operations, every

@@ -78,7 +78,9 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> encodings, hypotheses and resource bounds.
+> Check public API usability in a representative `module` client with ordinary imports of the API.
+> Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
 > existing lemma already makes. Follow a representative caller: check whether named accessors,
 > matcher/range facts and generated certificates remove representation work, and compare any
@@ -171,6 +173,11 @@ Bare Lake commands still lack this audit. When a local check and CI disagree abo
 trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
+For hosted cache optimizations, measure the merge queue and following `main` run together.
+Include Actions cache and handoff transfer costs, and distinguish a successful handoff from a
+fallback build; a faster publication stage alone does not establish a faster complete cycle
+([profiling](workflows/troubleshooting.md#profile-slow-cache-publication)).
+
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.
 Coordinators check both against the final change. A reasoned finding of no impact is valid;
@@ -182,6 +189,10 @@ When an agent drifts, name the mismatch: the theorem became conditional, the mod
 example cannot be followed, or the task expanded beyond the agreed scope. Ask it to preserve
 the useful work, state the remaining objective and return to a concrete next step. When two
 agents overlap, have the coordinator resolve ownership before either overwrites the other's work.
+
+Ask for a PR description that explains the setting, central idea and result to someone who has
+not followed the task. Use the [writing guidance and example](../AGENTS.md#writing-in-issues-and-prs)
+to judge whether the explanation gives you enough context to understand the change.
 
 For a handoff, request the issue and PR, branch and revision, actual validation, review state,
 remaining work and the next action. Put that record in the issue/PR or commit, according to the

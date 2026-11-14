@@ -2,6 +2,43 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
+## Witness seedless extraction failure
+
+Import [Extractor/Basic.lean](../../CslibFrontier/Probability/Extractor/Basic.lean).
+For a deterministic `f : BitString n → BitString m` and explicit proofs `hn : 1 ≤ n`
+and `hm : 1 ≤ m`, apply `exists_minEntropy_map_first_eq_pure hn hm f`.
+The resulting source has real min-entropy at least `(n : ℝ) - 1`; its first output
+coordinate (index zero) is a point mass, and its output has statistical distance at
+least `1 / 2` from uniform. `not_isExtractor_bitString` gives the immediate failure
+of extraction with a `Unit` seed and error strictly below `1 / 2`.
+For arbitrary finite nonempty inputs, `exists_minEntropy_map_eq_pure_bool` supplies
+the reusable Boolean-fiber witness, with entropy `log₂ |Input| - 1`.
+
+This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draft,
+printed page 319 (PDF page 335): the source's first coordinate is indexed by one
+in the book. Distance uses the probability convention (half the L1 distance).
+These are information-theoretic distributions; no sampler or runtime is asserted.
+Exercise 12 is covered by the hashing corollary below; broader extractor objectives in issue #895 remain open.
+The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
+`n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
+From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
+## Apply the draft leftover hash lemma
+
+Import [Extractor/LeftoverHash.lean](../../CslibFrontier/Probability/Extractor/LeftoverHash.lean).
+For `hash : BitString t → BitString n → BitString k`, prove positive `δ` and
+`IsUniversalHash (PMF.uniformOfFintype (BitString t)) hash
+(ENNReal.ofReal ((1 + δ) / (2 : ℝ) ^ k))`.
+Apply `IsUniversalHash.isStrongExtractor_of_entropy_div` for a strong extractor,
+or `IsUniversalHash.isExtractor_append_of_entropy_div` for the book's output
+`Fin.append (hash s x) s`: digest first, seed last. Both require source min-entropy
+at least `(k : ℝ) / δ` and give error `Real.sqrt (2 * δ)`.
+These are Lemma 16.42 and Exercise 16.12 of the January 2007 draft, for all lengths
+and positive `δ`, including zero digest length. They assert no runtime or short seed.
+The [checked clients](../../CslibFrontierTests/LeftoverHashDraft.lean) use an 8-bit
+uniform source and Boolean matrix hash, and check zero digest, large error and order.
+Run `scripts/build.sh CslibFrontierTests.LeftoverHashDraft` in a configured checkout.
+
 ## Transport a distribution bound through a map
 
 Import [TotalVariation/Map.lean](../../CslibFrontier/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
@@ -680,6 +717,67 @@ sample per stage never gives relative error `1 / 2` there. Run
 `scripts/build.sh CslibFrontierTests.MarkovChain CslibFrontierTests.PathCoupling CslibFrontierTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
+
+## Bound expected hitting and return times of a finite Markov chain
+
+Import [MarkovChain/HittingTime.lean](../../CslibFrontier/Probability/MarkovChain/HittingTime.lean).
+For `P : MarkovChain V` with `[Fintype V] [DecidableEq V]`, `survival P v t x` is the probability
+`P_x(τ_v > t)` that the chain started at `x` avoids `v` at times `0, …, t`, defined by conditioning
+on the first step. `hittingTime P v x = ∑' t, survival P v t x` is the expected hitting time
+`E_x[τ_v]`, and `returnTime P v` is the expected return time `E_v[τ⁺_v]`. Both take values in
+`ℝ≥0∞`: they are exact expectations, possibly `⊤`, not truncated sums, and need no summability
+side conditions.
+
+Work with them through these lemmas rather than unfolding the tail sums.
+`hittingTime_eq_of_ne` and `returnTime_eq` are the first-step equations, and
+`hittingTime_le_add` is the triangle inequality `E_x[τ_w] ≤ E_x[τ_v] + E_v[τ_w]`.
+`mul_survival_le_hittingTime` is Markov's inequality `(t + 1) P_x(τ_v > t) ≤ E_x[τ_v]`, which
+turns an expectation bound into a bound on the probability that a `t`-step walk misses `v`.
+Kac's formula `mul_returnTime_eq` needs a stationary measure `π : V → ℝ≥0∞`, given as
+`∀ y, ∑ x, π x * P x y = π y`, and finiteness of `∑ x, π x * hittingTime P v x`; it gives
+`π v * returnTime P v = ∑ x, π x`. `IsStationary.mul_returnTime_eq_one` is the version for a
+stationary `PMF`. Finiteness comes from `hittingTime_ne_top`: give a set `S` closed under
+transitions of positive probability from which `v` is reachable along such transitions. Pass
+`Set.univ` for an irreducible chain, or a connected component.
+
+[MarkovChain/RandomWalk.lean](../../CslibFrontier/Probability/MarkovChain/RandomWalk.lean) is the
+worked client. `randomWalk G` is the simple random walk on a finite `SimpleGraph`, and an
+isolated vertex stays put, so it is a chain for every graph. The degrees are stationary
+(`sum_degree_mul_randomWalk`), so Kac's formula gives `degree_mul_returnTime_randomWalk`,
+`deg v * E_v[τ⁺_v] = 2 |E|`, for a connected graph. Then `hittingTime_randomWalk_add_degree_le`
+proves `E_u[τ_v] + deg v ≤ 2 |E|` for every edge (Goldreich, Exercise 6.19), and
+`hittingTime_randomWalk_le_dist_mul` proves `E_u[τ_v] ≤ dist(u, v) · 2 |E|`. The
+[checked clients](../../CslibFrontierTests/RandomWalkHitting.lean) state Exercise 6.19 in the
+source's form, compute `E_0[τ_1] = 1` and `E_0[τ⁺_0] = 2` on a single edge (so the edge bound is
+an equality there), and instantiate it on a triangle. Run
+`scripts/build.sh CslibFrontierTests.RandomWalkHitting`.
+
+For regular multigraphs, import
+[MarkovChain/RotationMap.lean](../../CslibFrontier/Probability/MarkovChain/RotationMap.lean).
+`G.randomWalk` follows a uniformly random edge label of `G : RotationMap V D`, with
+`randomWalk_apply` giving `edgeCount x y / |D|`. Use it when the statement counts label
+sequences, as Arora and Barak's Chapter 7 does: `survival_randomWalk_mul_pow` identifies
+`survival` with the fraction of label sequences `k : Fin T → D` whose `walkAt` avoids the target.
+The uniform law is the unique stationary law on a connected graph
+(`isStationary_randomWalk_iff`), from the maximum principle `eq_of_forall_sum_edgeCount_mul_eq`
+in [Expander/Harmonic.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Harmonic.lean),
+which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives the expected return
+time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
+`ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
+`hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the
+textbook `100 k n²` and `1000 n³`-step statements.
+[Expander/Visits.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Visits.lean)
+adds the law of large numbers for visit counts without aperiodicity. It is a graph module and needs
+no Markov-chain import. `eventually_visits_mem_Icc` bounds the fraction of label sequences whose
+`visits u v` fall outside `[(1 - ε) t / n, (1 + ε) t / n]`, and `visits_eq` unfolds `visits` to
+the number of times `1, …, t` at which `walkAt` is at `v`. Its reusable step is `exists_abs_sum_walk_pow_le`, uniform
+Cesàro convergence `∑_{j < N} Pʲ f = o(N)` for `f` of total `0` on a connected graph, which comes
+from Mathlib's mean ergodic theorem applied to `walkEuclidean`. The
+[checked clients](../../CslibFrontierTests/RegularRandomWalk.lean) restate them in source form and
+compute the return time `2` on a single edge; run
+`scripts/build.sh CslibFrontierTests.RegularRandomWalk`. If a proof needs `∑ y, P x y = 1`, use
+`sum_apply`. Do not convert to `ℝ` before the finiteness lemmas are available, since `toReal`
+sends `⊤` to `0`.
 
 ## Test for a perfect matching with a random determinant
 
@@ -2303,7 +2401,7 @@ and seed width zero, but does not yet supply adaptive-message cipher security.
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../CslibFrontier/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
 
-Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
+Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model. The final theorem keeps only the premises that [Security theorems and efficiency witnesses](../programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses) allows: named hardness assumptions, the adversary's class and properties of components that the cited result takes as given, never a bound on the reduction it builds.
 
 [complexitylib]: ../sources.md#complexitylib
 [holenstein09]: ../sources.md#holenstein09
@@ -2665,9 +2763,68 @@ discontinuous halfspace indicator. Run `scripts/build.sh CslibFrontierTests.Gaus
 from the repository root to check them; the monomial clients are in
 `CslibFrontierTests.GaussianNoiseOperator`.
 
-Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized. For the derivative of
-`ρ ↦ U_ρ f` in `L²`, see
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is in
+[Show that Gaussian noise smooths](#show-that-gaussian-noise-smooths).
+For the derivative of `ρ ↦ U_ρ f` in `L²`, see
 [Differentiate Gaussian noise with the Ornstein–Uhlenbeck operator](#differentiate-gaussian-noise-with-the-ornsteinuhlenbeck-operator).
+
+## Show that Gaussian noise smooths
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.NoiseSmooth`](../../CslibFrontier/Foundations/Probability/Gaussian/NoiseSmooth.lean)
+and open the `ProbabilityTheory` namespace, together with `open scoped ContDiff` for the `∞`
+order of smoothness. Write `γ` for `Measure.pi fun _ : ι => gaussianReal 0 1` as before.
+
+- `contDiff_gaussianNoiseOp hρ hf : ContDiff ℝ ∞ (gaussianNoiseOp ρ f)` for `hρ : |ρ| < 1` and
+  `hf : Integrable f γ` (Proposition 11.16). It concerns the pointwise integral
+  `gaussianNoiseOp ρ f` of Definition 11.12, so it holds at every point: for
+  `h := contDiff_gaussianNoiseOp hρ hf`, `h.continuous` gives continuity and
+  `(h.differentiable (by simp)).differentiableAt` differentiability at any `z`
+  (`ContDiff.differentiable` takes the side condition `∞ ≠ 0`). At `ρ = ±1` there is no noise and
+  the conclusion fails for discontinuous `f`.
+- `gaussianNoiseOp_congr_ae_of_abs_lt_one hρ h : gaussianNoiseOp ρ f = gaussianNoiseOp ρ f'` for
+  `hρ : |ρ| < 1` and `h : f =ᵐ[γ] f'`, with no measurability hypothesis. It is an equality of
+  functions, not only `γ`-almost everywhere as `gaussianNoiseOp_congr_ae` gives for `|ρ| ≤ 1`, so
+  `U_ρ f` is a canonical smooth function of the `L¹` class of `f`: changing `f` on a `γ`-null set
+  changes `U_ρ f` nowhere.
+- `gaussianNoiseOp_eq_integral_prod_div_mul hρ hf z` writes `U_ρ f z` as an integral against the
+  Mehler kernel (kernel or density form): for `hρ : |ρ| < 1` and
+  `hf : AEStronglyMeasurable f γ`, `gaussianNoiseOp ρ f z` is the integral against `γ` of
+  `(∏ i, gaussianPDFReal (ρ * z i) (1 - ρ ^ 2).toNNReal (y i) / gaussianPDFReal 0 1 (y i)) * f y`.
+  The one-dimensional density, `gaussianReal_eq_withDensity_div m hv` for `hv : v ≠ 0`, is in
+  [`CslibFrontier.Foundations.Probability.Gaussian.Real`](../../CslibFrontier/Foundations/Probability/Gaussian/Real.lean).
+
+The proof writes `U_ρ f` as a Gaussian in `z` times a Laplace transform
+`z ↦ ∫ y, exp (φ y z) • h y` with all exponential moments. Its smoothness is the general
+`contDiff_integral_exp_smul hφ hg hint : ContDiff ℝ ∞ fun w => ∫ a, rexp (φ a w) • g a ∂μ`, for
+`φ : α → V →L[ℝ] ℝ` with `hφ : AEStronglyMeasurable φ μ`, `g : α → E` with
+`hg : AEStronglyMeasurable g μ` and values in a complete space, and
+`hint : ∀ c, Integrable (fun a => rexp (c * ‖φ a‖) * ‖g a‖) μ`. It and the derivative formula
+`hasFDerivAt_integral_exp_smul`, both in the root namespace, are in
+[`CslibFrontier.Foundations.Analysis.Calculus.ParametricIntegralExp`](../../CslibFrontier/Foundations/Analysis/Calculus/ParametricIntegralExp.lean).
+Products of densities are in
+[`CslibFrontier.Foundations.MeasureTheory.Constructions.PiWithDensity`](../../CslibFrontier/Foundations/MeasureTheory/Constructions/PiWithDensity.lean):
+`MeasureTheory.Measure.pi_withDensity hf` identifies `Measure.pi fun i => (μ i).withDensity (f i)`
+with `(Measure.pi μ).withDensity fun x => ∏ i, f i (x i)` for `[∀ i, SigmaFinite (μ i)]`,
+measurable densities `hf : ∀ i, Measurable (f i)` and
+`[∀ i, SigmaFinite ((μ i).withDensity (f i))]` (the last is needed to form the left-hand side).
+Its proof uses the Tonelli theorem `MeasureTheory.lintegral_fintype_prod_eq_prod hf`,
+`∫⁻ x, ∏ i, f i (x i) ∂Measure.pi μ = ∏ i, ∫⁻ x, f i x ∂μ i` for σ-finite `μ i` and measurable
+`f i`, with its `Fin n` form `MeasureTheory.lintegral_fin_nat_prod_eq_prod`, both in
+[`CslibFrontier.Foundations.MeasureTheory.Integral.Pi`](../../CslibFrontier/Foundations/MeasureTheory/Integral/Pi.lean).
+Its direct Bochner counterpart is Mathlib's `MeasureTheory.integral_fintype_prod_eq_prod`; for a
+product over a subset of the coordinates under product probability measures, use
+`MeasureTheory.integral_finset_prod_pi_eq_prod` from the previous section.
+
+The checked [`GaussianNoiseSmooth.lean` clients](../../CslibFrontierTests/GaussianNoiseSmooth.lean)
+show that `U_{1/2}` of a discontinuous halfspace indicator is smooth and continuous, that
+`U_{-1/2}` of it is differentiable at the jump, that `U_1` of it is not smooth, that the Mehler
+kernel integrates to `1`, and that `U_{1/2}` of the indicator of a point vanishes everywhere. They
+also apply `contDiff_integral_exp_smul` to the moment generating function of a standard Gaussian,
+`lintegral_fintype_prod_eq_prod` to a product of two Gaussian densities, and `pi_withDensity` to
+the standard Gaussian measure on `ℝ²`. Run `scripts/build.sh CslibFrontierTests.GaussianNoiseSmooth`
+from the repository root to check them. Analyticity of `U_ρ f` and bounds on its derivatives are
+not formalized.
 
 ## Integrate Hermite polynomials against a Gaussian
 
@@ -3173,6 +3330,26 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
 
+## Bound bad visits along an expander walk
+
+Import [VisitCount.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean).
+Let `G : RotationMap V D`, with finite nonempty vertex type `V` and incident-port type `D`.
+Write `L = t + 1` for the number of visited vertices, `m : ℕ` for an integer visit threshold,
+and `q = dens W + G.spectralExpansion ^ 2` for a bad-vertex set `W`.
+For this set, `G.visitCount W p` counts all `t+1` vertices, including the
+initial vertex. Apply `dens_filter_selected_walkAt_mem_le` to arbitrary selected times,
+`expect_choose_visitCount_le` for factorial moments, and `dens_filter_visitCount_gt_le`
+for strict integer tails. `dens_filter_visitCount_half_lt` bounds a strict majority of
+bad samples by `(32 * dens W)^((t+1)/4)` when expansion is below `sqrt(dens W)`.
+The [checked clients](../../CslibFrontierTests/ExpanderVisitCount.lean) cover nonconsecutive
+times excluding zero, computed counts, boundaries, and even/odd majority events.
+Goldreich Exercise 8.44's strict displayed integer bound needs positive `q` and
+`1≤m≤L`; the general non-strict tails include degenerate cases. These are uniform-start
+probabilities on vertices and port sequences, not a sampler or runtime certificate.
+
+From the repository root, run `scripts/build.sh CslibFrontierTests.ExpanderVisitCount`
+to check the examples.
+
 ## Bound adapted Bernoulli counts and hitting times by stochastic domination
 
 Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
@@ -3218,6 +3395,17 @@ probabilities satisfy lower or upper bounds.
   `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
   sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Sequential processes with unreachable histories**:
+  [`StochasticDomination/SequentialSupport.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialSupport.lean)
+  provides `PMF.seqCount_stochasticallyDominates_poissonBinomial_of_support` and
+  `PMF.seqCount_active_toReal_Iio_le_of_support`. Their probability envelopes are required only
+  when `h ∈ (PMF.seqProcess step t).support`; the latter also requires the original count to be
+  below the target. Use these when invariants of actual responses fail on impossible histories.
+  The response type can have unbounded discrete support. `PMF.seqCount_congr_on_support`
+  transfers counts between events agreeing at every reachable prefix. The checked
+  [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
+  metadata and fair success bits: actual histories have authenticated tags, while an impossible
+  unauthenticated prefix has zero success probability and violates the older all-prefix premise.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and

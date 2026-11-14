@@ -246,8 +246,8 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
       F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n =
       (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
-    simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
-      kemToKDFDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
+    simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+      kemToKDFDistinguisher, PMF.pure_bind, k]
   rw [hreal, hddh]
   exact F.advantage_bind_sampleExp_pair_le n (d n) k
 

@@ -21,36 +21,51 @@ import (
 
 var errConflict = errors.New("published key has different contents")
 var errCapacity = errors.New("public entry capacity reached")
+var errMissing = errors.New("referenced artifact no longer present")
+
+const (
+	fullMediaType  = "application/x-tar"
+	probeMediaType = "application/vnd.cslib.cache-probe.v1+tar"
+	deltaMediaType = "application/vnd.cslib.cache-delta.v1+tar"
+)
 
 func (s *store) publish(body io.Reader, revision string) error {
+	_, err := s.receive(body, revision, fullMediaType)
+	return err
+}
+
+// Every request carries the complete inventory and mapping. A probe installs
+// nothing and is only a hint: delta commits recheck retained bytes under the
+// publication/GC lock, without trusting the earlier probe or an ancestor mapping.
+func (s *store) receive(body io.Reader, revision, mediaType string) ([]string, error) {
 	unlock, err := s.lock()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer unlock()
 	dir := fmt.Sprintf("staging/%x", randomID())
 	if err := s.root.Mkdir(dir, 0700); err != nil {
-		return err
+		return nil, err
 	}
 	defer s.root.RemoveAll(dir)
 	tr := tar.NewReader(body)
 	h, err := tr.Next()
 	if err != nil || h.Name != "publication.json" || !plainHeader(h) || h.Size > maxMetadata {
-		return fmt.Errorf("inventory must be the first regular USTAR entry")
+		return nil, fmt.Errorf("inventory must be the first regular USTAR entry")
 	}
 	b, err := io.ReadAll(tr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var m inventory
 	if err := decodeJSON(b, &m); err != nil {
-		return err
+		return nil, err
 	}
 	if err := m.validate(); err != nil {
-		return err
+		return nil, err
 	}
 	if m.Revision != revision {
-		return fmt.Errorf("URL and inventory revisions differ")
+		return nil, fmt.Errorf("URL and inventory revisions differ")
 	}
 	staged := map[string]string{}
 	for {
@@ -59,84 +74,95 @@ func (s *store) publish(body io.Reader, revision string) error {
 			break
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 		expected, ok := m.Files[h.Name]
 		limit := int64(maxArtifact)
 		if h.Name == m.mapping() {
 			limit = maxMapping
 		}
-		if !ok || staged[h.Name] != "" || !plainHeader(h) || h.Size <= 0 || h.Size > limit {
-			return fmt.Errorf("unexpected, duplicate or oversized entry %q", h.Name)
+		if (mediaType == probeMediaType && h.Name != m.mapping()) || !ok || staged[h.Name] != "" || !plainHeader(h) || h.Size <= 0 || h.Size > limit {
+			return nil, fmt.Errorf("unexpected, duplicate or oversized entry %q", h.Name)
 		}
 		name := fmt.Sprintf("%s/%d", dir, len(staged))
 		f, err := s.root.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		_, err = io.CopyN(f, tr, h.Size)
 		if err == nil {
 			err = f.Sync()
 		}
 		if err = errors.Join(err, f.Close()); err != nil {
-			return err
+			return nil, err
 		}
 		actual, err := s.digest(name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if actual != expected {
-			return fmt.Errorf("digest mismatch: %s", h.Name)
+			return nil, fmt.Errorf("digest mismatch: %s", h.Name)
 		}
 		staged[h.Name] = name
 	}
 	// Permit only bounded zero record-padding after the tar end marker.
 	padding, err := io.ReadAll(io.LimitReader(body, 10241))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(padding) > 10240 || !bytes.Equal(padding, make([]byte, len(padding))) {
-		return fmt.Errorf("invalid trailing package bytes")
+		return nil, fmt.Errorf("invalid trailing package bytes")
 	}
-	if len(staged) != len(m.Files) {
-		return fmt.Errorf("incomplete package")
+	if staged[m.mapping()] == "" || (mediaType == fullMediaType && len(staged) != len(m.Files)) {
+		return nil, fmt.Errorf("incomplete package")
 	}
 	mapping, err := s.read(staged[m.mapping()], maxMapping)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	refs, err := references(mapping)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if len(refs)+1 != len(staged) {
-		return fmt.Errorf("inventory must contain exactly the mapping's artifacts")
+	if len(refs)+1 != len(m.Files) {
+		return nil, fmt.Errorf("inventory must contain exactly the mapping's artifacts")
 	}
 	for key := range refs {
-		if staged[key] == "" {
-			return fmt.Errorf("missing referenced artifact %s", key)
+		if _, ok := m.Files[key]; !ok {
+			return nil, fmt.Errorf("missing referenced artifact %s", key)
 		}
 	}
 	// Preflight every conflict before installing any file. Retries accept identical
 	// bytes, but never silently preserve an unexpected artifact under a Lake hash.
 	objects, directories, err := s.scanPublic()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := checkAdmission(objects, directories, m.Files); err != nil {
-		return err
+		return nil, err
 	}
+	missing := make([]string, 0)
 	for key, expected := range m.Files {
 		actual, err := s.digest("public/" + key)
 		if errors.Is(err, fs.ErrNotExist) {
+			if key != m.mapping() {
+				missing = append(missing, key)
+			}
+			if mediaType != probeMediaType && staged[key] == "" {
+				return nil, fmt.Errorf("%w: %s", errMissing, key)
+			}
 			continue
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if actual != expected {
-			return fmt.Errorf("%w: %s", errConflict, key)
+			return nil, fmt.Errorf("%w: %s", errConflict, key)
 		}
+	}
+	if mediaType == probeMediaType {
+		sort.Strings(missing)
+		return missing, nil
 	}
 	keys := make([]string, 0, len(refs))
 	for key := range refs {
@@ -148,15 +174,15 @@ func (s *store) publish(body io.Reader, revision string) error {
 		if _, err := s.root.Lstat("public/" + key); err == nil {
 			continue
 		} else if !errors.Is(err, fs.ErrNotExist) {
-			return err
+			return nil, err
 		}
 		if err := s.install(staged[key], key); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	// Flush directory creation too before acknowledging publication. Crash or disk
 	// failure may leave unreferenced artifacts, which the collector can reclaim.
-	return s.syncDir("public")
+	return nil, s.syncDir("public")
 }
 
 func randomID() []byte {

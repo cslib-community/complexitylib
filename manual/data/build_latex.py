@@ -22,7 +22,7 @@ ORDER = [
       'computability-and-description', 'verifiers-counting-interaction', 'reductions',
       'parameterized-complexity', 'search-and-promises', 'endpoints-and-hierarchies', 'native-counting']),
     ('circuits-logic-and-other-models', ['index', 'circuits-and-formulas', 'networks-and-iteration',
-      'algebraic-and-quantum', 'query-and-communication', 'finite-model-logic',
+      'algebraic-and-quantum', 'query-and-communication', 'finite-model-logic', 'sql-semantics',
       'proof-systems', 'learning-and-testing', 'metacomplexity-and-methods']),
     ('programs-crypto-and-probability', ['index', 'programs-and-realization',
       'security-games-and-primitives', 'interactive-reductions', 'protocols-and-privacy',
