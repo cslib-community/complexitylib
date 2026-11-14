@@ -322,7 +322,7 @@ Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Procee
 <a id="bs23"></a>
 ## bs23
 
-Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version 0.6, January 2023. https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_6.pdf . Title, authors and edition verified from the primary PDF during independent source review on 2026-11-02. Detailed textbook locator claims remain attributed to the Lean source docstrings; no complete textbook correspondence audit was performed.
+Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version 0.6, January 2023. https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_6.pdf . Title, authors and edition verified from the primary PDF during independent source review on 2026-11-02; Section 8.1.1 (Definition 8.2 "Keyless hash functions" and Fig. 8.3 "Asymptotic version of Attack Game 8.1", pp. 290–291) checked against the primary PDF on 2026-11-14. Remaining textbook locator claims remain attributed to the Lean source docstrings; no complete textbook correspondence audit was performed.
 
 <a id="bt06"></a>
 ## bt06
@@ -480,6 +480,11 @@ José R. Correa, Andreas S. Schulz and Nicolás E. Stier-Moses. *Selfish Routing
 Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected. Also cited for Section 2.10 (Fano's inequality: Theorem 2.10.1, the corollary after it with the sharper `log(|𝒳| − 1)` form for estimators valued in `𝒳`, and the remark on guessing without side information), Section 7.1 (capacity of the binary symmetric channel), Lemma 7.9.2 and Theorem 7.9.1 (the converse to the channel coding theorem); these locators were likewise checked against secondary course material, not the printed book.
 
 Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
+
+<a id="cs03"></a>
+## cs03
+
+Ronald Cramer and Victor Shoup. “Design and Analysis of Practical Public-Key Encryption Schemes Secure against Adaptive Chosen Ciphertext Attack.” *SIAM Journal on Computing* 33(1), 167–226, 2003. https://doi.org/10.1137/S0097539702403773 . Authors' revised manuscript (August 14, 2003): https://www.shoup.net/papers/cca2.pdf (Section 5.1, target collision resistance; Section 6.1, Figure 1, the hash key `hk` drawn at key generation and published in the public key; Section 6.2, Theorem 1). Checked against that manuscript on 2026-11-14.
 
 <a id="cslib"></a>
 ## cslib
@@ -1757,6 +1762,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="uov26"></a>
+## uov26
+
+Ward Beullens, Ming-Shing Chen, Jintai Ding, Boru Gong, Matthias J. Kannwischer, Jacques Patarin, Bo-Yuan Peng, Dieter Schmidt, Cheng-Jhih Shih, Chengdong Tao, Bo-Yin Yang. *UOV: Unbalanced Oil and Vinegar, Algorithm Specifications and Supporting Documentation*, Version 3.0, August 30, 2026 (bibliography key `UOV2026`). https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/UOV_Specification_R3.pdf . Checked against that PDF on 2026-11-14 (SHA-256 `ce9044adf1b4e407467968438fa66794882bcaa6411d3509bed72ff54380181a`): Section 3.1 (printed pp. 11–13, specifically p. 12) defines `Upper(M)` as the unique upper-triangular matrix `M'` such that `M' - M` is alternating. `CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic` formalizes only this generic matrix construction (`Matrix.upperQuadratic`), its `Matrix.IsUpperTriangular` and `LinearMap.IsAlt` properties, `Matrix.toQuadraticForm'` equality, and uniqueness; UOV block keys, oil subspaces, signing/verification, restart bounds, and security reductions remain open under [#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
 <a id="valiant84"></a>
 ## valiant84

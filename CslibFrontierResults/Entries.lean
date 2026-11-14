@@ -172,7 +172,7 @@ import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.OneWay
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
-import CslibFrontier.Crypto.Computational.NaorYung
+import CslibFrontier.Crypto.Computational.NaorYungUOWHF
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -5513,7 +5513,8 @@ register_result "ajtai-collision-sis" where
   topic := "cryptography"
   sources := [
     { paper := Ajtai1996, theorem := unverified, locator := unverified },
-    { paper := BonehShoup2023, theorem := unverified, locator := unverified }
+    { paper := BonehShoup2023, theorem := "Definition 8.2",
+      locator := "Section 8.1.1, pp. 290–291" }
   ]
   theorems := [
     Cslib.Crypto.IsAjtaiCollision.isSolution_sub,

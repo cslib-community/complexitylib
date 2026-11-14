@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
-public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordReduction
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -27,7 +27,9 @@ apply to it. Its native decapsulations are run against fixed oracles `G` and `H`
 The native keyless simulator of the IND-CPA reduction caches an in-domain `G` request, rejects a
 `G` request of the wrong length and the challenge ciphertext, and answers another decapsulation
 request from its ciphertext table. The reduction of an adversary that queries `G` on its
-challenge word is uniform strict PPT.
+challenge word is uniform strict PPT. In the word ROM IND-CCA game, decapsulation of the challenge
+ciphertext and a `G` request of the wrong length get the empty word and leave the random oracles
+unchanged, and an in-domain `G` request is answered and cached.
 -/
 
 public section
@@ -154,5 +156,23 @@ example : (identityPKE.romCpaReductionWord (fun n => n) queryChallengeG).IsPPT e
   identityPKE_isEfficient.isPPT_romCpaReductionWord
     (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
     isOraclePPT_queryChallengeG
+
+/-! ### The word ROM IND-CCA game -/
+
+/-- The game's decapsulation oracle refuses the challenge ciphertext with the empty word. -/
+example : ProbComp.eval (identityPKE.ccaWordOracle (fun _ => 0) 1 dk [false] (.decaps, [false])
+      {}) = PMF.pure ([], {}) := by
+  simp [WordPKE.ccaWordOracle, stateT_pure_apply]
+
+/-- A `G` request of the wrong length gets the empty word and leaves the caches unchanged. -/
+example : ProbComp.eval (identityPKE.ccaWordOracle (fun _ => 0) 1 dk [false] (.G, [true, true])
+      {}) = PMF.pure ([], {}) := by
+  simp [WordPKE.ccaWordOracle, WordPKE.roWordOracle, identityPKE]
+
+/-- An in-domain `G` request is answered with a coin of length `coinLen 1 = 0` and cached. -/
+example : ProbComp.eval (identityPKE.ccaWordOracle (fun _ => 0) 1 dk [false] (.G, [true])
+      {}) = PMF.pure ([], { gCache := [([true], [])] }) := by
+  simp [WordPKE.ccaWordOracle, WordPKE.roWordOracle, identityPKE, roHashG,
+    RandomOracle.zoomStateT, memoize, BitString.sampleList, pmf_norm]
 
 end CslibFrontierTests.Crypto.FujisakiOkamotoWord

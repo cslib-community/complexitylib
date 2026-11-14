@@ -69,7 +69,7 @@ concrete-security results on block cipher networks from [KatzLindell2020] and or
 In [KatzLindell2020], Section 8.6 and Exercises 8.16–8.18 state the distinguishers against Feistel
 networks instantiated with keyed PRFs `F_{k_i}`. Proving acceptance with probability `1` for every
 fixed tuple of round functions `f₁, f₂, f₃ : G → G` immediately implies acceptance with probability
-`1` under any key distribution (such as `feistel3KeyedGame` in `LubyRackoff`).
+`1` under any key distribution (such as the keys of `feistel3Cipher` in `LubyRackoff`).
 
 ## References
 
