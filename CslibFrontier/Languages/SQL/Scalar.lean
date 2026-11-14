@@ -216,7 +216,8 @@ theorem exists_asText_eq_ok_iff {d : Datum} : (∃ x, d.asText = .ok x) ↔ d.Ha
   rcases d with _ | (_ | _ | _) <;> simp [asText]
 
 /-- An integer operand is a given integer exactly when the datum is that integer. -/
-theorem asInt_eq_ok_some {d : Datum} {z : ℤ} : d.asInt = .ok (some z) ↔ d = some (.int z) := by
+theorem asInt_eq_ok_some_iff {d : Datum} {z : ℤ} :
+    d.asInt = .ok (some z) ↔ d = some (.int z) := by
   rcases d with _ | (_ | _ | _) <;> simp [asInt]
 
 theorem toTruth_eq_error {d : Datum} {e : EvalError} (h : d.toTruth = .error e) :

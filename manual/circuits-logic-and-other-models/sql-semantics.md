@@ -9,9 +9,10 @@ docstrings and [NOTICE](../../NOTICE) record what was taken and what changed. Ev
 the namespace `Cslib.SQL`.
 
 The layers present so far are values with `NULL`, three-valued logic, scalar operators including
-three-valued `IN`, and resolved expressions over rows with typing, safety and equivalence.
-Queries, the query equivalence levels and the simplifier are later milestones of #5282 and will
-extend this page.
+three-valued `IN`, resolved expressions over rows with typing, safety and equivalence, and
+bag-semantics queries over database schemas with typing, safety and three levels of equivalence.
+The proved query transformations and the simplifier are later milestones of #5282 and will extend
+this page.
 
 ## Values, `NULL` and errors
 
@@ -136,30 +137,138 @@ data never makes it zero: the check reads only the expression.
 row conforming to `Γ`, both expressions fail or both succeed with the same datum. Equivalence
 observes `Except.toOption`, not which error occurred, because SQL leaves the order of evaluation
 to the engine and strict evaluation fixes only one order. It is an equivalence relation
-(`Expr.equivSetoid`), a congruence for every constructor (`Expr.Equiv.unary`,
-`Expr.Equiv.binary`, `Expr.Equiv.inList`, `Expr.Equiv.caseWhen`), and compatible with renaming
-(`Expr.Equiv.rename`) and with substitution of equivalent expressions (`Expr.Equiv.subst_right`).
+(`Expr.equivSetoid`; equivalences chain with `calc`), a congruence for every constructor
+(`Expr.Equiv.unary`, `Expr.Equiv.binary`, `Expr.Equiv.inList`, `Expr.Equiv.caseWhen`), and
+compatible with renaming (`Expr.Equiv.rename`) and with substitution of equivalent expressions
+(`Expr.Equiv.subst_right`).
 Substituting into equivalent expressions (`Expr.Equiv.subst`) needs the substituted expressions
 to be `divSafe` and of the column types: `TRUE` and `x IS NULL OR x IS NOT NULL` are equivalent,
 but after substituting `1 / 0` for `x` only the second fails. `Expr.Equiv.evalTruth` says that
 equivalent predicates keep the same rows.
 
+A law whose two sides return the same `Except` value on every conforming row is proved with
+`Expr.Equiv.of_eval_eq`. That is not enough when the sides may fail with different first errors:
+`a AND b` reports `a`'s error first and `b AND a` reports `b`'s. Such laws are proved on
+observations, by rewriting with `Except.toOption_bind` and casing on the operands' results;
+`Expr.Equiv.binary_comm` does this once for every operator whose observations do not depend on
+the order of its operands, so `Expr.Equiv.binary_comm (fun a b => by rw [evalBinOp_and_comm])`
+proves `a AND b ≡ b AND a`.
+
+## Schemas and database instances
+
+[Schema.lean](../../CslibFrontier/Languages/SQL/Schema.lean) defines a database schema
+`DbSchema`: a type `Table` of table names and, for each table `t`, its arity `arity t` and its
+column declarations `columns t : Fin (arity t) → Column`. The schema does not depend on data, so an
+empty table has its columns and types. `S.ctx t` is the typing context of table `t`, its list of
+declared types. A database instance `D : Database S` gives each table its rows,
+`D t : List (Row (S.arity t))`. The list is a bag: duplicates matter, and its order is a property
+of the representation only. `D.Conforms` says that every row of every table conforms to its
+table's declared types; it is decidable when the table type is a `Fintype`, and
+`Database.conforms_empty` says that the instance with only empty tables conforms.
+
+## Queries
+
+[Query.lean](../../CslibFrontier/Languages/SQL/Query.lean) defines `Query S n`, a query over the
+schema `S` whose result rows have `n` columns:
+
+| Constructor | SQL | Result |
+|---|---|---|
+| `table t` | `t` | the rows of `t`, with arity `S.arity t` |
+| `select p q` | `SELECT * FROM q WHERE p` | the rows of `q` on which `p` is `TRUE` |
+| `project es q` | `SELECT es₀, …, esₖ₋₁ FROM q` | one row of results per row of `q` |
+| `join θ q₁ q₂` | `q₁ JOIN q₂ ON θ` | the rows `Fin.append r s` of the pairs on which `θ` is `TRUE` |
+| `unionAll q₁ q₂` | `q₁ UNION ALL q₂` | the rows of both |
+| `distinct q` | `SELECT DISTINCT * FROM q` | one copy of each row of `q` |
+
+A cross join is `join (lit (.bool true)) q₁ q₂` and an equijoin
+`join (binary (.cmp .eq) (col i) (col (Fin.natAdd n j))) q₁ q₂`. The arity is the type index:
+`es : Fin k → Expr n` and `θ : Expr (n + m)` cannot mention a column their input lacks, and the
+right columns of a join are `Fin.natAdd n j`.
+
+`Query.eval D q : Except EvalError (List (Row n))` is structural and total. Projection, join and
+`UNION ALL` keep duplicates; `DISTINCT` removes them with `List.dedup`, which keeps the last copy
+of each row, and rows with `NULL` in the same places are duplicates, as SQL's `DISTINCT` treats
+them. The list order is a property of the representation: a table keeps its list order, `WHERE`
+and projection keep their input's order, a join enumerates pairs with the left row outermost
+(`Row.product`), and `UNION ALL` lists its left input first. SQL promises no order without
+`ORDER BY`, so laws about SQL are stated at the bag level below.
+
+Evaluation is strict. `Expr.filterRows p rs` evaluates `p` on every row of `rs` and
+`Expr.evalRow es r` every expression of a `SELECT` list on `r`, from left to right, and the first
+error fails the whole query, even if an engine would have stopped before the failing row. A query
+over an empty input evaluates nothing and succeeds: `SELECT dept / 0 FROM emp` fails when `emp` has
+a row and returns no rows when it is empty. `Expr.toOption_filterRows` and
+`Expr.evalRow_eq_ok_iff` state what `WHERE` and a `SELECT` list compute when they succeed.
+
+## Query typing and safety
+
+`Query.typeOf q : Option (Fin n → SqlType)` is the typing context of the result rows: a table has
+its declared types, `WHERE` and `ON` predicates must be boolean over their input
+(`Query.typeOf_select_eq_some`, `Query.typeOf_join_eq_some`), the expressions of a `SELECT` list
+must be well-typed (`Query.typeOf_project_eq_some`), and the two inputs of `UNION ALL` must have
+the same types. Type soundness, `Query.eval_ok_or_divisionByZero`, says that on a conforming
+instance a well-typed query returns rows conforming to its type, or divides by zero in a
+predicate or projection that is not `divSafe`; it never raises `typeMismatch`
+(`Query.eval_ne_typeMismatch`, `Query.conforms_of_eval_eq_ok`). `Query.IsSafe q` (well-typed,
+every division by a nonzero literal) is decidable, and a safe query succeeds on every conforming
+instance (`Query.IsSafe.exists_eval_eq_ok`).
+
+## Query equivalence
+
+[QueryEquiv.lean](../../CslibFrontier/Languages/SQL/QueryEquiv.lean) defines
+`Query.Equiv ℓ q₁ q₂`: on every conforming instance, both queries fail, or both succeed with
+results related at the level `ℓ : EquivLevel`:
+
+- `ordered`: equal lists. Nothing in the fragment orders rows, so this level is about the list
+  representation; a law that holds at it holds at the others.
+- `bag`: lists that are permutations of each other (`List.Perm`), SQL's meaning of a query
+  without `ORDER BY`.
+- `set`: lists with the same members, which is all that `DISTINCT` observes.
+
+Like expression equivalence, it observes success and result through `Except.toOption`, not which
+error occurred. `Query.Equiv.mono` weakens an equivalence from a finer level to a coarser one
+(`ordered ≤ bag ≤ set`), and `Query.Equiv.of_ordered` to every level. Each level is an
+equivalence relation (`Query.equivSetoid`, with `calc` support). The levels differ:
+`emp UNION ALL q` and `q UNION ALL emp` are bag- but not ordered-equivalent, and `emp UNION ALL
+emp` and `emp` are set- but not bag-equivalent; the
+[tests](../../CslibFrontierTests/Languages/SQL/Query.lean) check both on a concrete instance.
+
+Every constructor is a congruence at every level. In its query arguments this holds without
+conditions (`Query.Equiv.select`, `Query.Equiv.project`, `Query.Equiv.join`,
+`Query.Equiv.unionAll`, `Query.Equiv.distinct`). In its expression arguments it holds for
+expression equivalence in the typing context of the input, which the input must have
+(`Query.Equiv.select_expr`, `Query.Equiv.project_expr` and `Query.Equiv.join_expr`, taking
+`q.typeOf = some Γ`): the input's rows then conform to `Γ`, which is where `Expr.Equiv Γ` speaks.
+`DISTINCT` turns set equivalence into bag equivalence (`Query.Equiv.distinct_of_set`). The
+list-level facts behind these proofs, such as `EquivLevel.Rel.filterRows` for `WHERE` over related
+inputs, are public for proofs of further laws.
+
 ## Working with the API
 
-Import `CslibFrontier.Languages.SQL.Scalar` for the operators, or
-`CslibFrontier.Languages.SQL.Equiv` for expressions with typing and equivalence (each re-exports
-the layers below it, except name resolution in `CslibFrontier.Languages.SQL.Column`), and open
-`Cslib.SQL`. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
+Import `CslibFrontier.Languages.SQL.Scalar` for the operators,
+`CslibFrontier.Languages.SQL.Equiv` for expressions with typing and equivalence, or
+`CslibFrontier.Languages.SQL.QueryEquiv` for schemas, queries and query equivalence (each
+re-exports the layers below it, except name resolution in `CslibFrontier.Languages.SQL.Column`),
+and open `Cslib.SQL`. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
 example `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
 Use `rfl` rather than `decide` for results of type `Except`: Batteries derives
 `DecidableEq (Except ε α)` without exposing its body, so `decide` cannot evaluate it from another
-module. `decide` does work on datums, truth values and `Option`, for instance after
-`Except.toOption`. To prove a law for all datums, case on the datums and their values, or rewrite
+module. `decide` does work on datums, truth values, rows and `Option`, for instance after
+`Except.toOption`. A query result is a list of rows, which are functions, so compare it through
+`Except.toOption` by `decide`, as in `((project ![col 1] emp).eval D).toOption = some […]`; `rfl`
+cannot compare a computed row such as `Fin.append r s` with a literal `![…]`. Conformance of a
+concrete instance is `decide` once the table type has a `Fintype` instance. To prove a law for all
+datums, case on the datums and their values, or rewrite
 with the characterizations `Datum.exists_toTruth_eq_ok_iff`, `Datum.exists_asInt_eq_ok_iff` and
 `CmpOp.exists_eval_eq_ok_iff`, which say when an operand is accepted. For expressions, prove a
 law with `Expr.Equiv.of_eval_eq` and the evaluation equations `Expr.eval_unary`,
-`Expr.eval_binary` and their siblings, then lift it into larger expressions with the congruence
-lemmas. The checked examples are in [Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
-[Scalar.lean](../../CslibFrontierTests/Languages/SQL/Scalar.lean) and
-[Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean) under
+`Expr.eval_binary` and their siblings, or on observations as above, then lift it into larger
+expressions with the congruence lemmas and into queries with `Query.Equiv.select_expr` and its
+siblings. For queries, `Query.Equiv.of_eval_eq` proves a law whose sides evaluate equally; in
+general, rewrite with the evaluation equations (`Query.eval_select`, …), `Except.toOption_bind`,
+and `Expr.toOption_filterRows` or `Except.toOption_mapM`, which reduce a query's observation to
+list operations. The checked examples are in [Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
+[Scalar.lean](../../CslibFrontierTests/Languages/SQL/Scalar.lean),
+[Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean) and
+[Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean) under
 `CslibFrontierTests/Languages/SQL/`.

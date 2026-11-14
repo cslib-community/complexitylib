@@ -218,6 +218,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `fulltuple` | [Positive-dimensional full-tuple ordered interpretations](circuits-logic-and-other-models/index.md) | finite-logic |
 | `sql-scalar` | [SQL values with `NULL`, three-valued logic and strict scalar operators](circuits-logic-and-other-models/sql-semantics.md) | query-language |
 | `sql-expr` | [Resolved SQL expressions over positional rows, with typing, safety and equivalence](circuits-logic-and-other-models/sql-semantics.md#expressions) | query-language |
+| `sql-query` | [Bag-semantics SQL queries over database schemas, with typing, safety and ordered, bag and set equivalence](circuits-logic-and-other-models/sql-semantics.md#queries) | query-language |
 | `cnf` | [Literal lists, CNF and assignment counting](circuits-logic-and-other-models/index.md) | propositional-models |
 | `clause-set` | [Finite-set CNF for sparsification](circuits-logic-and-other-models/index.md) | propositional-models |
 | `csp` | [Relation-alphabet constraint satisfaction problems](circuits-logic-and-other-models/index.md) | propositional-models |

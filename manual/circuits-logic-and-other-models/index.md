@@ -13,7 +13,7 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | [Networks and finite dynamics](networks-and-iteration.md) | How do graph separators, tensor contractions, nondeterministic paths and function iteration connect? |
 | [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, including LOCAL rounds and Byzantine agreement, and what lower-bound and simulation theorems use them? |
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |
-| [SQL query semantics](sql-semantics.md) | What do SQL values, `NULL`, three-valued predicates, operators and expressions mean, when is an expression safe, and which rewrite laws hold? |
+| [SQL query semantics](sql-semantics.md) | What do SQL values, `NULL`, three-valued predicates, operators, expressions and bag-semantics queries mean, when is an expression or a query safe, and when are two queries equivalent? |
 | [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation, algebraic proof systems, cutting planes and Frege proofs? |
 | [Learning and property testing](learning-and-testing.md) | Are the proved bounds on samples, queries, or machine time? |
 | [Metacomplexity and lower-bound methods](metacomplexity-and-methods.md) | What are the MCSP and time-bounded Kolmogorov problems, which magnification, one-way-function and NP-hardness consequences are proved and under which hypotheses, and how are general lower-bound arguments packaged? |
