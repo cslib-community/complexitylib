@@ -219,6 +219,11 @@ Dimitri P. Bertsekas. "The auction algorithm: A distributed relaxation method fo
 
 Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. Athena Scientific, Belmont, MA, 1998. ISBN 1-886529-02-7. Author-hosted copy: https://web.mit.edu/dimitrib/www/netbook_Full_Book_NEW.pdf . Checked against that copy on 2026-11-08 UTC: §1.3.3 and Prop. 1.4 (an assignment satisfying `ε`-complementary slackness is within `n ε` of optimal); §7.1.1, ε-CS (7.1), the bidding rule (7.2)–(7.5) with the Gauss–Seidel version, Prop. 7.1 (ε-CS is preserved) and Prop. 7.2 (termination, `n ε`-optimality, optimality for integer data and `ε < 1/n`); Figs. 1.12–1.14 (the price-war example); §7.1.4 and Prop. 7.3 (`ε`-scaling, not formalized).
 
+<a id="beullenscamposcelihesskannwischer26"></a>
+## beullenscamposcelihesskannwischer26
+
+Ward Beullens, Fabio Campos, Sofía Celi, Basil Hess and Matthias J. Kannwischer. *MAYO: Round 3 Version*, August 31, 2026 (bibliography key `BeullensCamposCeliHessKannwischer2026`). https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/mayo_specification.pdf . Checked against that PDF on 2026-11-14 (SHA-256 `1fc7561dc8ffdbe36c101b985266e4d3c8aa88fa580e18ead215a80ac7bb371f`): Section 2.1.2, Algorithm 2, printed pp. 8–9 specifies `SampleSolution` by shifting with explicit randomness, rejecting a matrix without full row rank even when the shifted system is consistent, and shifting the solution back. Section 2.1.5, Algorithm 7, printed p. 14 tries at most 256 separately derived randomness records and keeps the first successful call; the remark on printed p. 3 says a failed signing attempt retains the salt and derives fresh randomness for another preimage-sampling attempt. The formalization records only the deterministic abstract solver contract, shift correctness and ordered bounded-retry behavior. It does not formalize the source's uniform-sampling statement, rank probability, signing algorithm, correctness or security reductions.
+
 <a id="beyersdorffgalesilauria10"></a>
 ## beyersdorffgalesilauria10
 
