@@ -7,10 +7,12 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
@@ -561,6 +563,68 @@ theorem warnA : 1 = 2 := by sorry
                 c.main(["--files-from", str(warn_scope), "--jobs", "2", "--quiet"], self.root), 1)
         self.assertLess(warn_out.getvalue().index("FAIL  Demo/WarnA.lean"),
                         warn_out.getvalue().index("FAIL  Demo/WarnB.lean"))
+
+    def _assert_interrupt_cleans_up_descendants(self, sig: signal.Signals) -> None:
+        for name in ("SlowA", "SlowB"):
+            self.write(f"Demo/{name}.lean", f"""import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do
+  let pid ← IO.Process.getPID
+  IO.FS.writeFile "{name.lower()}.pid" (toString pid)
+  IO.sleep 30000
+""")
+            self.trace(f"Demo/{name}", synthetic=True, log=[])
+        scope = self.root / "slow_scope.json"
+        scope.write_text(json.dumps(["Demo/SlowA.lean", "Demo/SlowB.lean"]))
+
+        captured_pids: list[int] = []
+
+        def trigger_interrupt() -> None:
+            deadline = time.monotonic() + 10.0
+            pid_files = [self.root / "slowa.pid", self.root / "slowb.pid"]
+            while time.monotonic() < deadline:
+                pids = []
+                for pf in pid_files:
+                    if pf.is_file():
+                        try:
+                            pids.append(int(pf.read_text().strip()))
+                        except (ValueError, OSError):
+                            pass
+                if len(pids) == 2:
+                    captured_pids.extend(pids)
+                    break
+                time.sleep(0.02)
+            os.kill(os.getpid(), sig)
+
+        watcher = threading.Thread(target=trigger_interrupt, daemon=True)
+        watcher.start()
+
+        started = time.monotonic()
+        with self.assertRaises(KeyboardInterrupt):
+            c.main(["--files-from", str(scope), "--jobs", "2", "--quiet"], self.root)
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(len(captured_pids), 2, "both lean child processes should have recorded PIDs")
+        self.assertLess(elapsed, 6.0, f"interrupt cleanup took too long: {elapsed:.2f}s")
+
+        for child_pid in captured_pids:
+            alive = True
+            deadline = time.monotonic() + 1.0
+            while time.monotonic() < deadline:
+                try:
+                    os.kill(child_pid, 0)
+                    time.sleep(0.05)
+                except OSError:
+                    alive = False
+                    break
+            self.assertFalse(alive, f"child lean process {child_pid} was not terminated")
+
+    @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
+    def test_parallel_real_lake_sigint_cleans_up_descendant_process_tree(self) -> None:
+        self._assert_interrupt_cleans_up_descendants(signal.SIGINT)
+
+    @unittest.skipUnless(sys.platform == "linux", "Linux /proc required for descendant inspection")
+    def test_parallel_real_lake_sigterm_cleans_up_descendant_process_tree(self) -> None:
+        self._assert_interrupt_cleans_up_descendants(signal.SIGTERM)
 
 
 if __name__ == "__main__":

@@ -44,6 +44,8 @@ import concurrent.futures
 import json
 import os
 from pathlib import Path
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -159,12 +161,117 @@ def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> i
     return jobs
 
 
-def terminate_process(proc: subprocess.Popen) -> None:
-    """Terminate `proc` without leaving children outside the caller's process group."""
+def _proc_children(pid: int) -> list[int]:
+    """Return direct child PIDs of `pid` by inspecting /proc/<pid>/task/*/children,
+    falling back to /proc scanning or pgrep."""
+    children: list[int] = []
+    task_dir = Path(f"/proc/{pid}/task")
+    read_children_file = False
     try:
-        proc.kill()
+        if task_dir.is_dir():
+            for entry in task_dir.iterdir():
+                children_file = entry / "children"
+                if children_file.is_file():
+                    try:
+                        children.extend(int(p) for p in children_file.read_text().split())
+                        read_children_file = True
+                    except OSError:
+                        pass
     except OSError:
         pass
+    if not read_children_file:
+        # Fallback for systems/containers without /proc/<pid>/task/*/children:
+        # scan /proc for processes whose ppid equals pid.
+        proc_root = Path("/proc")
+        try:
+            if proc_root.is_dir():
+                for entry in proc_root.iterdir():
+                    if not entry.name.isdigit():
+                        continue
+                    try:
+                        stat_text = (entry / "stat").read_text()
+                        rparen = stat_text.rfind(")")
+                        if rparen != -1:
+                            fields = stat_text[rparen + 1:].split()
+                            if fields and int(fields[1]) == pid:
+                                children.append(int(entry.name))
+                                read_children_file = True
+                    except (OSError, ValueError, IndexError):
+                        pass
+        except OSError:
+            pass
+    if not read_children_file and shutil.which("pgrep"):
+        # Portable POSIX fallback (e.g. macOS):
+        try:
+            res = subprocess.run(["pgrep", "-P", str(pid)], capture_output=True, text=True)
+            if res.returncode == 0:
+                children.extend(int(p) for p in res.stdout.split() if p.isdigit())
+        except OSError:
+            pass
+    return children
+
+
+def _descendant_pids(pid: int) -> list[int]:
+    """Return all descendant process IDs of `pid` in breadth-first order."""
+    descendants: list[int] = []
+    queue = [pid]
+    visited = {pid}
+    while queue:
+        curr = queue.pop(0)
+        for child in _proc_children(curr):
+            if child not in visited:
+                visited.add(child)
+                descendants.append(child)
+                queue.append(child)
+    return descendants
+
+
+def terminate_process(proc: subprocess.Popen) -> None:
+    """Terminate `proc` and its descendant process tree without leaving orphaned children."""
+    pid = getattr(proc, "pid", None)
+    if pid is None:
+        return
+    descendants = _descendant_pids(pid)
+    for child in reversed(descendants):
+        try:
+            os.kill(child, signal.SIGTERM)
+        except OSError:
+            pass
+    terminate_fn = getattr(proc, "terminate", None)
+    if callable(terminate_fn):
+        try:
+            terminate_fn()
+        except OSError:
+            pass
+    else:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
+
+    time.sleep(0.05)
+
+    survivors = set(descendants) | set(_descendant_pids(pid))
+    for child in reversed(list(survivors)):
+        try:
+            os.kill(child, 0)
+        except OSError:
+            continue
+        try:
+            os.kill(child, signal.SIGKILL)
+        except OSError:
+            pass
+    kill_fn = getattr(proc, "kill", None)
+    if callable(kill_fn):
+        try:
+            kill_fn()
+        except OSError:
+            pass
+    else:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
 
 
 def elaborate(root: Path, rel: str, env: Mapping[str, str] | None = None,
@@ -179,6 +286,7 @@ def elaborate(root: Path, rel: str, env: Mapping[str, str] | None = None,
     if active_lock is not None and stopping is not None:
         with active_lock:
             if stopping.is_set():
+                # Placeholder result for aborted workers; only consumed when re-raising an exception.
                 return subprocess.CompletedProcess(cmd, -15, "")
     # `lake lean` creates a temporary `--setup` file via `IO.FS.createTempFile` without removing
     # it; scoping temporary directories per invocation prevents `/tmp` growth across large audits.
@@ -263,6 +371,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
 
     def run_one(index: int, rel: str) -> subprocess.CompletedProcess:
         if stopping is not None and stopping.is_set():
+            # Placeholder result for aborted workers; only consumed when re-raising an exception.
             return subprocess.CompletedProcess([], -15, "")
         if args.progress:
             line = (f"Cache-restore audit [{index + 1}/{len(files)}]: {rel} "
@@ -288,6 +397,15 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         for index, rel in enumerate(files):
             report_result(rel, run_one(index, rel), failed, None)
     else:
+        previous_sigterm = None
+        def handle_sigterm(signum, frame):
+            raise KeyboardInterrupt
+
+        try:
+            previous_sigterm = signal.signal(signal.SIGTERM, handle_sigterm)
+        except (ValueError, OSError):
+            pass
+
         next_submit = 0
         next_report = 0
         completed: dict[int, subprocess.CompletedProcess] = {}
@@ -322,6 +440,12 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
             raise
         else:
             executor.shutdown(wait=True)
+        finally:
+            if previous_sigterm is not None:
+                try:
+                    signal.signal(signal.SIGTERM, previous_sigterm)
+                except (ValueError, OSError):
+                    pass
     elapsed = time.monotonic() - started
     if failed:
         print(f"Re-elaborating {len(failed)} file(s) with restored or missing traces "
