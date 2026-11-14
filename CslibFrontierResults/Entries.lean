@@ -267,6 +267,7 @@ import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 import CslibFrontier.Probability.BilinearFingerprint
+import CslibFrontier.Probability.Extractor.LeftoverHash
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -5810,6 +5811,22 @@ register_result "goldreich-expander-varying-density-hitting" where
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
 
+register_result "finite-abelian-homomorphism-testing" where
+  title := "Finite abelian homomorphism testing and plurality correction"
+  topic := "property testing"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.21(1)–(3)",
+      locator := "r5.pdf; PDF 69–70 / printed 451–452; rendered notation checked" }
+  ]
+  theorems := [Cslib.HomomorphismTesting.concentration,
+    Cslib.HomomorphismTesting.plurality_add, Cslib.HomomorphismTesting.closeness,
+    Cslib.HomomorphismTesting.distance_attained, Cslib.HomomorphismTesting.min_le_rejection]
+  scope := "Arbitrary finite additive commutative groups, including trivial groups. Uniform \
+    independent rejection epsilon and attained minimum normalized homomorphism \
+    disagreement delta. Every plurality has mass at least 1-2epsilon; below 1/6 it is \
+    a homomorphism with disagreement at most 2epsilon. Unconditionally epsilon >= \
+    min(1/6,delta/2). No efficiency or encoding claim."
+
 register_result "linear-space-ne-np" where
   title := "Book: linear space is not NP"
   topic := "space complexity"
@@ -5827,18 +5844,16 @@ register_result "linear-space-ne-np" where
     cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
     polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
 
-register_result "finite-abelian-homomorphism-testing" where
-  title := "Finite abelian homomorphism testing and plurality correction"
-  topic := "property testing"
+register_result "arora-barak-draft-leftover-hash" where
+  title := "Draft leftover hash lemma with entropy k/delta"
+  topic := "pseudorandomness"
   sources := [
-    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.21(1)–(3)",
-      locator := "r5.pdf; PDF 69–70 / printed 451–452; rendered notation checked" }
+    { paper := AroraBarak07, theorem := "Lemma 16.42; Chapter 16, Exercise 12",
+      locator := "January 8, 2007 draft; printed 308 / PDF 324; exercise printed 319 / PDF 335" }
   ]
-  theorems := [Cslib.HomomorphismTesting.concentration,
-    Cslib.HomomorphismTesting.plurality_add, Cslib.HomomorphismTesting.closeness,
-    Cslib.HomomorphismTesting.distance_attained, Cslib.HomomorphismTesting.min_le_rejection]
-  scope := "Arbitrary finite additive commutative groups, including trivial groups. Uniform \
-    independent rejection epsilon and attained minimum normalized homomorphism \
-    disagreement delta. Every plurality has mass at least 1-2epsilon; below 1/6 it is \
-    a homomorphism with disagreement at most 2epsilon. Unconditionally epsilon >= \
-    min(1/6,delta/2). No efficiency or encoding claim."
+  theorems := [Cslib.Probability.IsUniversalHash.isStrongExtractor_of_entropy_div,
+    Cslib.Probability.IsUniversalHash.isExtractor_append_of_entropy_div]
+  scope := "All n,k,t and positive delta. Uniform independent seed, distinct-input collision \
+    bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
+    sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
+    and large delta; no efficiency or short-seed assertion."
