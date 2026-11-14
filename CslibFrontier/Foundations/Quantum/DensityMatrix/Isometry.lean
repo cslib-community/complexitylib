@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Quantum.DensityMatrix
+public import CslibFrontier.Foundations.Quantum.DensityMatrix.Linear
+public import CslibFrontier.Foundations.Quantum.Bipartite
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Matrix.Bilinear
 
@@ -55,12 +56,33 @@ theorem densityConj_apply (V : Matrix ι' ι ℂ) (ρ : Matrix ι ι ℂ) :
   unfold densityConj
   rfl
 
+/-- Matrix multiplication composes the corresponding state evolutions, including rectangular
+maps between registers of different dimensions. -/
+theorem densityConj_mul {ι'' : Type*} [Fintype ι'] (U : Matrix ι'' ι' ℂ)
+    (V : Matrix ι' ι ℂ) (ρ : Matrix ι ι ℂ) :
+    densityConj (U * V) ρ = densityConj U (densityConj V ρ) := by
+  simp only [densityConj_apply, conjTranspose_mul, Matrix.mul_assoc]
+
+/-- The identity matrix leaves an arbitrary state operator unchanged. -/
+@[simp] theorem densityConj_one [DecidableEq ι] (ρ : Matrix ι ι ℂ) :
+    densityConj (1 : Matrix ι ι ℂ) ρ = ρ := by
+  simp [densityConj_apply]
+
 /-- A rectangular isometry carries every density matrix to a density matrix. -/
 theorem IsDensityMatrix.densityConj [Fintype ι'] [DecidableEq ι] {ρ : Matrix ι ι ℂ}
     (hρ : IsDensityMatrix ρ) {V : Matrix ι' ι ℂ} (hV : Vᴴ * V = 1) :
     IsDensityMatrix (densityConj V ρ) := by
   rw [densityConj_apply]
   exact hρ.conj_isometry hV
+
+/-- A local isometry preserves a joint density matrix and retains the full reference. -/
+theorem IsDensityMatrix.densityConj_kronecker [Fintype ι'] [Fintype κ]
+    [DecidableEq ι] [DecidableEq κ] {ρ : Matrix (ι × κ) (ι × κ) ℂ}
+    (hρ : IsDensityMatrix ρ) {V : Matrix ι' ι ℂ} (hV : Vᴴ * V = 1) :
+    IsDensityMatrix (Cslib.Quantum.densityConj (V ⊗ₖ (1 : Matrix κ κ ℂ)) ρ) := by
+  apply hρ.densityConj
+  rw [conjTranspose_kronecker, conjTranspose_one, ← mul_kronecker_mul,
+    hV, one_mul, one_kronecker_one]
 
 /-- The matrix of a linear isometry has orthonormal columns, even when it is rectangular. -/
 theorem matrix_isometry [Fintype ι'] [DecidableEq ι]
@@ -84,6 +106,21 @@ theorem densityConj_pureState [DecidableEq ι] (V : Matrix ι' ι ℂ)
   simp only [densityConj_apply, Matrix.mul_apply, pureState_apply, conjTranspose_apply,
     Matrix.toEuclideanLin, Matrix.toLpLin_apply, mulVec, dotProduct,
     star_sum, star_mul, Finset.mul_sum, Finset.sum_mul, mul_assoc]
+
+/-- On a product pure state, local conjugation evolves the active vector and retains the
+reference vector. Correlated inputs still use the unrestricted joint-matrix operation. -/
+theorem densityConj_kronecker_pureState [Fintype κ] [DecidableEq ι] [DecidableEq κ]
+    (V : Matrix ι' ι ℂ) (ψ : EuclideanSpace ℂ ι) (φ : EuclideanSpace ℂ κ) :
+    densityConj (V ⊗ₖ (1 : Matrix κ κ ℂ)) (pureState (prodState ψ φ)) =
+      pureState (prodState (V.toEuclideanLin ψ) φ) := by
+  rw [densityConj_pureState]
+  congr 1
+  ext p
+  simp only [Matrix.toEuclideanLin, Matrix.toLpLin_apply, prodState_apply]
+  rw [show (prodState ψ φ).ofLp = (fun q => ψ.ofLp q.1 * φ.ofLp q.2) from
+    funext (prodState_apply ψ φ)]
+  simpa only [Matrix.one_mulVec] using
+    congrFun (kronecker_mulVec_mul V (1 : Matrix κ κ ℂ) ψ.ofLp φ.ofLp) p
 
 /-- Applying a rectangular isometry to the first system leaves the reference marginal unchanged.
 The input may be mixed or entangled, and need not even be normalized for this identity. -/

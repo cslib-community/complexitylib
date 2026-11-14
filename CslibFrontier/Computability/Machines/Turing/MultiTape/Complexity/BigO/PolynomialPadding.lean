@@ -32,6 +32,8 @@ on inputs long enough to pay for it.
   `2 ^ (k * Nat.size (n + 1) + s)` of a binary natural in unary in time `O((n + 1) ^ (k + 1))`.
 * `Turing.MultiTapeTM.computableInO_roundedPolynomialPadding`: round the padding length up to
   `2 ^ (k * Nat.size (n + 1))` and write it in time `O((n + 1) ^ (k + 1))`.
+* `Turing.MultiTapeTM.ComputableInO.unframe`: read the word framed at the start of a word, in
+  linear time and space.
 * `Turing.MultiTapeTM.computableInO_polynomialPaddingGuard`: compare the `k`th power of the
   decoded word length plus one with the full input length in quadratic time and linear space.
 
@@ -155,6 +157,13 @@ theorem computableInO_roundedPolynomialPadding {k : ℕ} (hk : 1 ≤ k) :
     omega
   · omega
 
+/-- **Unframing is linear**: the word framed at the start of a word is read in linear time and
+space. -/
+theorem ComputableInO.unframe :
+    ComputableInO Turing.MultiTapeTM.unframe encBits encBits (fun x => x.length)
+      fun x => x.length :=
+  (ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)).computableInO
+
 /-- Testing whether a framed word has polynomially sufficient padding takes quadratic time and
 linear space in the full input length, independently of the fixed exponent. -/
 theorem computableInO_polynomialPaddingGuard (k : ℕ) :
@@ -167,9 +176,7 @@ theorem computableInO_polynomialPaddingGuard (k : ℕ) :
     ComputableInPolyTime.binary_le'
       (ComputableInPolyTime.binary_pow' (by fun_prop) (.const k))
       (.snd encNat encNat)
-  have hu : ComputableTidilyInO unframe encBits encBits
-      (fun x => x.length) (fun x => x.length) :=
-    .of_linear (.of_unframe fun _ => rfl)
+  have hu := ComputableInO.unframe.tidy
   have h := hp.natPair_inO.tidy.comp
     ((ComputableInO.lengthNat.tidy.comp hu).prod ComputableInO.lengthNat.tidy)
   refine .of_tidy (h.mono 12 (fun x => ?_) fun x => ?_)
