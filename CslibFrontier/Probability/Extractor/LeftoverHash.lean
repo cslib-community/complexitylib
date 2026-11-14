@@ -127,13 +127,8 @@ theorem IsUniversalHash.isStrongExtractor_of_entropy_div
     have heq : (source.bind fun x =>
         (PMF.uniformOfFintype (BitString t)).map fun s => (s, hash s x)) =
         PMF.uniformOfFintype (BitString t × BitString 0) := by
-      rw [← uniformOfFintype_prod]
-      have hc : ∀ x s, hash s x = (default : BitString 0) :=
-        fun _ _ => Subsingleton.elim _ _
-      have hz : PMF.uniformOfFintype (BitString 0) = PMF.pure default := by
-        ext x
-        simp [Subsingleton.elim x (default : BitString 0)]
-      simp [hc, hz, PMF.bind_const, PMF.map, Function.comp_def]
+      rw [bind_map_eq_seededHash, seededHash_eq_uniform_of_subsingleton,
+        uniformOfFintype_prod]
     rw [heq, dist_self]
     exact Real.sqrt_nonneg _
   have hpow : (2 : ℝ) ^ ((k : ℝ) - (k : ℝ) / δ) ≤ 2 * δ := by
