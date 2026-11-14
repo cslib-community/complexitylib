@@ -191,6 +191,43 @@ argument can read `CNF V` on one side and `List (List (V × Bool))` on the other
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
 
+**Security premises** ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)).
+A security theorem assumes nothing about an object that its proof constructs, from the adversary
+or not ([AGENTS.md](AGENTS.md#security-theorems)). After a build,
+`python3 scripts/check_security_premises.py` reads the elaborated statements of the public Crypto
+theorems from the `.olean` files. It flags each premise that is `Negligible …`, an advantage
+inequality, a class membership (`… ∈ 𝒟` or `Admissible …`), an `IsPPT…` predicate or an
+indistinguishability predicate about a reduction, distinguisher, simulator, extractor, key
+generator or other program defined in the Crypto tree, or about a distribution or game that such
+a definition builds from an adversary or scheme structure, directly or through a predicate applied
+to it. It also flags an advantage bound that holds only for parameters an `∃` chooses for such a
+program, and a *realization*: an equation saying that a variable which another premise makes
+efficient or admissible computes such a program applied to another variable. That is how a
+theorem takes the reduction from the caller, as the Carter–Wegman theorems that #5347 deleted did
+with `hD : IsOraclePPT encBool D` and
+`hreal : eval (prfRealGame family D n) = … nonceFnDistinguisher … (forger n)`. Games,
+experiments, advantages, ideal laws, encodings and the theorem's own variables never count.
+`scripts/security_premises_baseline.json` records the allowed hits, one per line with a
+justification: algebraic helpers whose names and docstrings say so (`…_of_reduction_le`,
+`…_of_isPPTOn`), premises that the rule allows but the checker cannot tell apart (a named
+assumption about a component the scheme uses, the hypothesis of a cited generic theorem), and the
+§1 items of #5293 that are being fixed. CI fails a pull request whose changed modules have an
+unrecorded hit or a baseline entry that no longer matches, and prints such differences in other
+modules as a notice; a change to the checker or its baseline is checked against every module, and
+merge groups only report. To add a deliberately conditional helper, name and document it as such,
+run `python3 scripts/check_security_premises.py --update-baseline` and fill in its `why`; `--list`
+shows every hit.
+
+The check supplements review: a clean run is not evidence that a security theorem is right. It
+does not judge vacuous or misdefined notions, games and assumptions; a wrong or nonstandard
+assumption, such as an MLWE variant without the short secrets that ML-KEM's security needs;
+anything outside `Cslib.Crypto`; or names and docstrings that overclaim. Its rules are syntactic
+over elaborated terms, so it also misses a premise whose definition builds the constructed object
+in its own body, a distribution applied only to numbers or functions (such as a key law at fixed
+parameters), a bound without an advantage-named constant, a caller-supplied object whose existence
+the theorem should prove, and a realization stated other than as an equation (an inequality, a
+predicate of the library or a bundled program).
+
 ### Algorithms are programs
 
 Probabilistic algorithms, such as key generation, signing, provers, verifiers, simulators,

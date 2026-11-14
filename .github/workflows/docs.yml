@@ -27,7 +27,7 @@ jobs:
   docs:
     # ubuntu-latest moved to Ubuntu 26.04 on 2026-10-30, and doc-gen4 has run out of memory there
     # ("resource exhausted (error code: 12)") on every run since; upstream cslib#1191 pins the same.
-    runs-on: cslib-ubuntu-24.04-8core
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:

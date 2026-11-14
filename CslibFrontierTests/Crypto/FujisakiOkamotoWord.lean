@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordReduction
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -22,6 +23,11 @@ apply to it. Its native decapsulations are run against fixed oracles `G` and `H`
 * a ciphertext whose decryption has the wrong length is a decryption failure, so `FO-notbot`
   returns the fallback key `H(true, s, c)` and `FO^⊥` returns `none`;
 * a word longer than the ciphertext bound is rejected with `none` by both.
+
+The native keyless simulator of the IND-CPA reduction caches an in-domain `G` request, rejects a
+`G` request of the wrong length and the challenge ciphertext, and answers another decapsulation
+request from its ciphertext table. The reduction of an adversary that queries `G` on its
+challenge word is uniform strict PPT.
 -/
 
 public section
@@ -94,5 +100,59 @@ oracle call. -/
 example : identityPKE.decapsNotBot (fun _ => 20) 1 dk [false, false] = pure none ∧
     identityPKE.decapsBot (fun _ => 20) 1 [] [] [false, false] = pure none := by
   simp [WordPKE.decapsNotBot, WordPKE.decapsBot, identityPKE]
+
+/-! ### The native simulator and the reduction -/
+
+theorem stateT_pure_apply {σ α : Type} (a : α) (s : σ) :
+    (pure a : StateT σ ProbComp α) s = pure (a, s) := rfl
+
+theorem stateT_bind_apply {σ α β : Type} (x : StateT σ ProbComp α)
+    (f : α → StateT σ ProbComp β) (s : σ) : (x >>= f) s = x s >>= fun p => f p.1 p.2 :=
+  StateT.run_bind x f s
+
+/-- An in-domain `G` request is cached: at parameter `1` with empty coins, `G([true])` answers the
+empty coin word and records it. -/
+example : ProbComp.eval (identityPKE.simFilterWordHandler (fun _ => 0) (fun _ _ _ => true) 1 []
+      [false] (.G, [true]) {}) =
+    PMF.pure ([], { gCache := [([true], [])] }) := by
+  simp [WordPKE.simFilterWordHandler, identityPKE, Scheme.simFilterHandler,
+    Scheme.simFilterDispatch, simHashG, RandomOracle.zoomStateT, memoize, WordPKE.scheme,
+    WordPKE.toExplicitCoin, BitString.sampleList, pmf_norm]
+
+/-- A `G` request of the wrong length gets the empty reply and leaves the state unchanged. -/
+example : ProbComp.eval (identityPKE.simFilterWordHandler (fun _ => 0) (fun _ _ _ => true) 1 []
+      [false] (.G, [true, false]) {}) = PMF.pure ([], {}) := by
+  simp [WordPKE.simFilterWordHandler, identityPKE]
+
+/-- Decapsulation of the challenge ciphertext is refused with the empty reply. -/
+example : ProbComp.eval (identityPKE.simFilterWordHandler (fun _ => 0) (fun _ _ _ => true) 1 []
+      [false] (.decaps, [false]) {}) = PMF.pure ([], {}) := by
+  simp [WordPKE.simFilterWordHandler, identityPKE, Scheme.simFilterHandler,
+    Scheme.simFilterDispatch, stateT_pure_apply, pmf_norm]
+
+/-- Any other ciphertext within the bound is answered from the ciphertext table `H_q`: with empty
+keys the reply is `encOption encBits (some []) = [true]`, and `([true], [])` is recorded. -/
+example : ProbComp.eval (identityPKE.simFilterWordHandler (fun _ => 0) (fun _ _ _ => true) 1 []
+      [false] (.decaps, [true]) {}) =
+    PMF.pure ([true], { hqCache := [([true], [])] }) := by
+  simp [WordPKE.simFilterWordHandler, identityPKE, Scheme.simFilterHandler,
+    Scheme.simFilterDispatch, filterDecaps, simHashHq, RandomOracle.zoomStateT, memoize,
+    WordPKE.scheme, BitString.sampleList, stateT_pure_apply, stateT_bind_apply, pmf_norm]
+
+/-- An adversary that queries `G` on its challenge word and reports whether the reply is empty. -/
+def queryChallengeG (_ : ℕ) (challenge : List Bool) : WordOracleComp CCAOp Bool :=
+  (fun r : List Bool => r.isEmpty) <$> (List.take 1 <$>
+    ProbOracleComp.query (spec := fun _ : CCAOp × List Bool => List Bool) (CCAOp.G, challenge))
+
+/-- The adversary is uniform strict oracle PPT. -/
+theorem isOraclePPT_queryChallengeG : IsOraclePPT encBool queryChallengeG :=
+  ((IsOraclePPTOn.query_take' CCAOp.G (ComputableInPolyTime.snd encUnary encBits)
+    (ComputableInPolyTime.const 1)).map' (by fun_prop)).isOraclePPT
+
+/-- Its IND-CPA reduction against the identity scheme is uniform strict PPT. -/
+example : (identityPKE.romCpaReductionWord (fun n => n) queryChallengeG).IsPPT encBits :=
+  identityPKE_isEfficient.isPPT_romCpaReductionWord
+    (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
+    isOraclePPT_queryChallengeG
 
 end CslibFrontierTests.Crypto.FujisakiOkamotoWord
