@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Universal.Description
 
 /-!
-# An adaptive client of finite oracle-machine descriptions
+# Tests for finite oracle-machine descriptions
 
 This module exercises the public description API across an ordinary module boundary. The machine
 makes an empty first query, reads the reply symbol `7`, writes it into the next query buffer, and
@@ -21,20 +21,8 @@ The example also checks zero clock, an empty table, out-of-range operation and s
 and an invalid initial state tag. These are semantic boundary checks, not resource or security
 claims.
 
-## Main definitions
-
-* `Turing.MultiTapePTM.Universal.AdaptiveExample.description`: the adaptive two-query description.
-* `Turing.MultiTapePTM.Universal.AdaptiveExample.handler`: a shared stateful handler recording
-  requests.
-
-## Main results
-
-* `Turing.MultiTapePTM.Universal.AdaptiveExample.run_description`: the exact output and handler-log
-  law.
-* `Turing.MultiTapePTM.Universal.AdaptiveExample.run_zero`: the zero-clock boundary.
-* `Turing.MultiTapePTM.Universal.AdaptiveExample.empty_action`, `.invalid_query_action`,
-  `.invalid_query_next_action`, `.invalid_ordinary_next_control`, and `.invalid_initial_action`:
-  malformed boundaries halt locally.
+The client imports the description module through its public interface. It checks the complete
+output and shared handler-state law, plus zero-clock, empty-table and malformed-tag boundaries.
 
 ## References
 
@@ -43,9 +31,9 @@ This checked client example is original to this module.
 
 @[expose] public section
 
-namespace Turing.MultiTapePTM.Universal.AdaptiveExample
+namespace CslibFrontierTests.OracleDescription
 
-open Cslib Cslib.Probability Turing.MultiTapeMachine
+open Cslib Cslib.Probability Turing Turing.MultiTapeMachine Turing.MultiTapePTM.Universal
 
 /-- A deterministic ordinary action with no work tapes. -/
 def ordinary (next output : Option ℕ) : Turing.MultiTapeTM.Universal.Act where
@@ -259,6 +247,16 @@ theorem run_zero :
     ProbOracleComp.runWith handler (description.runOracle 0 []) [] = PMF.pure ([], []) := by
   simp [description]
 
+/-- The all-zero, empty-table boundary has only the four unary structure fields in its encoding. -/
+def emptyDescription : Desc where
+  tapes := 0
+  states := 0
+  operations := 0
+  q₀ := 0
+  table := []
+
+theorem empty_description_length : descLen emptyDescription = 4 := rfl
+
 /-- An empty table selects the local halting action. -/
 theorem empty_action (coin : Bool) :
     ({ tapes := 0, states := 1, operations := 1, q₀ := 0, table := [] } : Desc).action
@@ -289,4 +287,4 @@ theorem invalid_initial_action (coin : Bool) :
   simp only [control_eq_none_of_not_lt 1 1 (by omega)]
   rfl
 
-end Turing.MultiTapePTM.Universal.AdaptiveExample
+end CslibFrontierTests.OracleDescription

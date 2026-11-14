@@ -26,7 +26,7 @@ The encoding is a bit string with the following convention. States, symbols and 
 use `Turing.MultiTapeTM.encUnary`; blanks use `encOption`; finite vectors and the transition table
 use framed `encList`; products and structures use framed `encPair`; and the two action constructors
 use the leading-bit tags of `encSum`. Ordinary keys and tape actions retain the existing
-`Turing.MultiTapeTM.Universal.eKey` and `.eAct` layouts. The resulting `descSize` is therefore a
+`Turing.MultiTapeTM.Universal.eKey` and `.eAct` layouts. The resulting `descLen` is therefore a
 rigorous unary model-code length, not an implementation byte count. It includes the declared
 control and operation counts, every control and operation tag, and the complete transition table.
 
@@ -38,7 +38,7 @@ The handler's own computation remains external to the machine clock.
 ## Main definitions
 
 * `Turing.MultiTapePTM.Universal.Key`, `.Act`, `.Branches`, `.Desc`: first-order syntax.
-* `Turing.MultiTapePTM.Universal.eDesc`, `.descSize`: the injective encoding and its bit length.
+* `Turing.MultiTapePTM.Universal.eDesc`, `.descLen`: the injective encoding and its bit length.
 * `Turing.MultiTapePTM.Universal.Desc.toMachine`: denotation as a `MultiTapePTM` with operation
   type `Fin d.operations`.
 * `Turing.MultiTapePTM.Universal.Desc.runOracle`: exact open-oracle semantics.
@@ -52,7 +52,7 @@ The handler's own computation remains external to the machine clock.
 
 This module supplies syntax and denotation only. It does not claim the resource bounds of a fixed
 universal interpreter or charge the cost of an implementation of the external handler. In
-particular, runtime controller, copying and query-marshalling work are not part of `descSize` and
+particular, runtime controller, copying and query-marshalling work are not part of `descLen` and
 need separate bounds when an interpreter is introduced.
 
 ## References
@@ -244,7 +244,7 @@ def Desc.toMachine (d : Desc) :
 @[simp] theorem Desc.toMachine_initial (d : Desc) :
     d.toMachine.initial = control d.states d.q₀ := rfl
 
-@[simp] theorem Desc.toMachine_tr (d : Desc) (state : Option (Fin d.states))
+theorem Desc.toMachine_tr (d : Desc) (state : Option (Fin d.states))
     (input : Option ℕ)
     (work : Fin d.tapes → Option ℕ) (answers : Fin d.operations → Option ℕ)
     (coin : Bool) :
@@ -289,7 +289,7 @@ theorem eAct_injective : Function.Injective eAct := eAct.injective
 theorem eDesc_injective : Function.Injective eDesc := eDesc.injective
 
 /-- Bit length of the injective first-order description encoding. -/
-def descSize (d : Desc) : ℕ := (eDesc d).length
+def descLen (d : Desc) : ℕ := (eDesc d).length
 
 /-! ### Exact open semantics -/
 
@@ -316,7 +316,7 @@ theorem Desc.runWith_toMachine {OracleState : Type} (d : Desc)
     d.runOracle 0 input = pure [] := rfl
 
 /-- The empty table always selects the local halting action, independently of the coin. -/
-@[simp] theorem Desc.action_empty (tapes states operations q₀ : ℕ)
+theorem Desc.action_empty (tapes states operations q₀ : ℕ)
     (state : Option (Fin states)) (input : Option ℕ) (work : Fin tapes → Option ℕ)
     (answers : Fin operations → Option ℕ) (coin : Bool) :
     ({ tapes := tapes, states := states, operations := operations, q₀ := q₀,
@@ -336,7 +336,7 @@ theorem Desc.action_of_find_eq_some (d : Desc) (state : Fin d.states)
 
 /-- A matching head entry is selected before the rest of the table. This equation also exposes
 the exact conversion of the selected Boolean branch to a machine action. -/
-@[simp] theorem Desc.action_cons_hit (tapes states operations q₀ : ℕ)
+theorem Desc.action_cons_hit (tapes states operations q₀ : ℕ)
     (state : Fin states) (input : Option ℕ) (work : Fin tapes → Option ℕ)
     (answers : Fin operations → Option ℕ) (branches : Branches)
     (table : List (Key × Branches)) (coin : Bool) :
@@ -346,7 +346,7 @@ the exact conversion of the selected Boolean branch to a machine action. -/
       (branches.get coin).toAction tapes states operations := by
   simp [Desc.action]
 
-@[simp] theorem Desc.action_cons_hit_false (tapes states operations q₀ : ℕ)
+theorem Desc.action_cons_hit_false (tapes states operations q₀ : ℕ)
     (state : Fin states) (input : Option ℕ) (work : Fin tapes → Option ℕ)
     (answers : Fin operations → Option ℕ) (branches : Branches)
     (table : List (Key × Branches)) :
@@ -357,7 +357,7 @@ the exact conversion of the selected Boolean branch to a machine action. -/
   simpa only [Branches.get_false] using
     Desc.action_cons_hit tapes states operations q₀ state input work answers branches table false
 
-@[simp] theorem Desc.action_cons_hit_true (tapes states operations q₀ : ℕ)
+theorem Desc.action_cons_hit_true (tapes states operations q₀ : ℕ)
     (state : Fin states) (input : Option ℕ) (work : Fin tapes → Option ℕ)
     (answers : Fin operations → Option ℕ) (branches : Branches)
     (table : List (Key × Branches)) :
