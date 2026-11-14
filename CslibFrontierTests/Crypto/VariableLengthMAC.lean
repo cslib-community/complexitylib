@@ -77,4 +77,43 @@ example (M : MACScheme) (n : ℕ) (hL : M.msgLen n = 12) :
     ProbComp.eval (M.blockwiseGame noIndexEncoder M.swapBlocksAdversary n) true = 1 :=
   M.blockwiseGame_noIndex n (by rw [hL]; decide)
 
+open Probability Turing.MultiTapeTM in
+/-- Honest blockwise signing, verification, and the blockwise EUF-CMA game are polynomial-time. -/
+example (M : MACScheme) (F : BlockwiseMACForger) (hF : IsOraclePPT encForgerOutput F) :
+    IsPPTOn encSignInput encTag
+      (fun p : ℕ × List Bool × List Bool => M.blockwiseSign fullEncoder p.1 p.2.1 p.2.2) ∧
+    ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × Tag =>
+        M.blockwiseVerify fullEncoder p.1 p.2.1 p.2.2.1 p.2.2.2)
+      encVerifyInput encBool ∧
+    IsPPT encBool (fun n _ => M.blockwiseGame fullEncoder F.toAdversary n) :=
+  ⟨M.isPPTOn_blockwiseSign isPolyTimeEncoder_fullEncoder,
+    M.computableInPolyTime_blockwiseVerify isPolyTimeEncoder_fullEncoder,
+    M.isPPT_blockwiseGame isPolyTimeEncoder_fullEncoder hF⟩
+
+open Probability Turing.MultiTapeTM in
+/-- The truncated reduction `blockwiseBoundedReduction` is uniformly strict oracle PPT. -/
+example (M : MACScheme) (tagBound : ℕ → ℕ)
+    (htagBound : ComputableInPolyTime tagBound encUnary encUnary)
+    (F : BlockwiseMACForger) (hF : IsOraclePPT encForgerOutput F) :
+    IsOraclePPT (encPair encBits encBits)
+      (M.blockwiseBoundedReduction fullEncoder tagBound F) :=
+  M.isOraclePPT_blockwiseBoundedReduction isPolyTimeEncoder_fullEncoder htagBound hF
+
+/-- Uniform EUF-CMA security lifts to `BlockwiseEUFCMA fullEncoder` when `M.msgLen` is
+polynomially lower-bounded. -/
+example (M : MACScheme) (h : M.EUFCMA) (hmsgLen : PolynomiallyLowerBounded M.msgLen) :
+    M.BlockwiseEUFCMA fullEncoder :=
+  h.blockwiseEUFCMA hmsgLen
+
+/-- Omitting any field breaks uniform `BlockwiseEUFCMA` once `3 ≤ fieldWidth (M.msgLen n)`
+eventually. -/
+example (M : MACScheme) (hw : ∀ᶠ n in Filter.atTop, 3 ≤ fieldWidth (M.msgLen n)) :
+    ¬ M.BlockwiseEUFCMA noIndexEncoder ∧
+      ¬ M.BlockwiseEUFCMA noLengthEncoder ∧
+      ¬ M.BlockwiseEUFCMA noIdentifierEncoder :=
+  ⟨M.not_blockwiseEUFCMA_noIndexEncoder hw,
+    M.not_blockwiseEUFCMA_noLengthEncoder hw,
+    M.not_blockwiseEUFCMA_noIdentifierEncoder hw⟩
+
 end Cslib.Crypto.VariableLengthMACTests

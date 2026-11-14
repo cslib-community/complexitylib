@@ -1599,14 +1599,21 @@ bound, this statement is information-theoretic. Concrete checks are in
 For messages of varying length built from a fixed-length `MACScheme`, import
 [`Protocols/MAC/VariableLength.lean`](../../CslibFrontier/Crypto/Protocols/MAC/VariableLength.lean)
 (Katz–Lindell 3rd ed., §4.3.2, Construction 4.7 and Theorem 4.8). `MACScheme.blockwiseSign` tags
-every block together with a fresh uniform identifier, the message length and the block index.
-`MACScheme.blockwiseGame_le` bounds the fresh-message EUF-CMA success probability by the advantage
-of `blockwiseReduction` against the fixed-length scheme plus `(∑ i ∈ range Q, i) / 2 ^ w` for an
-adversary with at most `Q` signing queries, where `w` is a quarter of the fixed input length.
-`blockwiseGame_noIndex`, `blockwiseGame_noLength` and `blockwiseGame_noIdentifier` show that
-omitting any one of the three fields gives an adversary that wins with probability `1` once
-`w ≥ 3`, that is, once the fixed input length is at least `12`. No uniform PPT corollary is stated.
-Concrete checks are in
+every block together with a fresh uniform identifier, the message length and the block index;
+`isPPTOn_blockwiseSign`, `computableInPolyTime_blockwiseVerify` and `isPPT_blockwiseGame` certify
+the honest algorithms and experiment for any `IsPolyTimeEncoder` and strict oracle-PPT
+`BlockwiseMACForger`. `MACScheme.blockwiseGame_le` bounds the fresh-message EUF-CMA success
+probability by the advantage of `blockwiseReduction` against the fixed-length scheme plus
+`(∑ i ∈ range Q, i) / 2 ^ w` for an adversary with at most `Q` signing queries, where `w` is a
+quarter of the fixed input length. Truncating fixed-length oracle replies to a polynomial bound on
+honest tags yields the uniform strict oracle-PPT reduction `blockwiseBoundedReduction`
+(`isOraclePPT_blockwiseBoundedReduction`), and `MACScheme.EUFCMA.blockwiseEUFCMA` derives uniform
+asymptotic `BlockwiseEUFCMA fullEncoder` whenever `PolynomiallyLowerBounded M.msgLen`.
+`blockwiseGame_noIndex`, `blockwiseGame_noLength` and `blockwiseGame_noIdentifier` (together with
+`not_blockwiseEUFCMA_noIndexEncoder`, `not_blockwiseEUFCMA_noLengthEncoder` and
+`not_blockwiseEUFCMA_noIdentifierEncoder`) show that omitting any one of the three fields gives a
+strict oracle-PPT forger that wins with probability `1` once `w ≥ 3`, that is, once the fixed
+input length is at least `12`. Concrete checks are in
 [`CslibFrontierTests/Crypto/VariableLengthMAC.lean`](../../CslibFrontierTests/Crypto/VariableLengthMAC.lean).
 
 A weak pseudorandom function only has to look random on uniformly random inputs. In
