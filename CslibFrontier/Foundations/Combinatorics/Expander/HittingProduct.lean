@@ -91,20 +91,22 @@ private noncomputable def maskedSteps : ℕ → (ℕ → Finset V) → (V → �
   | t + 1, B, f => maskedSteps t (fun i => B (i + 1))
       (fun v => if v ∈ B 0 then G.walk f v else 0)
 
-omit [Nonempty V] in
-private theorem expect_maskedSteps_sq_le (t : ℕ) (B : ℕ → Finset V) (f : V → ℝ) :
+omit [Nonempty V] [Nonempty D] in
+private theorem expect_maskedSteps_sq_le (t : ℕ) (B : ℕ → Finset V)
+    (c : ℕ → ℝ) (hc : ∀ i, 0 ≤ c i)
+    (hstep : ∀ i (f : V → ℝ),
+      (𝔼 v, (if v ∈ B i then G.walk f v else 0) ^ 2) ≤ c i * (𝔼 v, f v ^ 2))
+    (f : V → ℝ) :
     (𝔼 v, G.maskedSteps t B f v ^ 2) ≤
-      (∏ i ∈ range t, ((dens (B i) : ℝ) + G.spectralExpansion ^ 2)) *
-        (𝔼 v, f v ^ 2) := by
-  induction t generalizing B f with
+      (∏ i ∈ range t, c i) * (𝔼 v, f v ^ 2) := by
+  induction t generalizing B c f with
   | zero => simp [maskedSteps]
   | succ t ih =>
-    calc _ ≤ (∏ i ∈ range t, ((dens (B (i + 1)) : ℝ) + G.spectralExpansion ^ 2)) *
-        (𝔼 v, (if v ∈ B 0 then G.walk f v else 0) ^ 2) := ih _ _
-      _ ≤ (∏ i ∈ range t, ((dens (B (i + 1)) : ℝ) + G.spectralExpansion ^ 2)) *
-        (((dens (B 0) : ℝ) + G.spectralExpansion ^ 2) * (𝔼 v, f v ^ 2)) := by
-          gcongr
-          exact G.expect_mask_walk_sq_le _ _
+    calc _ ≤ (∏ i ∈ range t, c (i + 1)) *
+        (𝔼 v, (if v ∈ B 0 then G.walk f v else 0) ^ 2) :=
+          ih _ _ (fun i => hc (i + 1)) (fun i => hstep (i + 1)) _
+      _ ≤ (∏ i ∈ range t, c (i + 1)) * (c 0 * (𝔼 v, f v ^ 2)) :=
+          mul_le_mul_of_nonneg_left (hstep 0 f) (prod_nonneg fun i _ => hc (i + 1))
       _ = _ := by rw [prod_range_succ']; ring
 
 omit [Nonempty V] [Nonempty D] in
@@ -130,11 +132,16 @@ private theorem expect_mul_walk_weightedWalk (t : ℕ) (B : ℕ → Finset V) (f
     simp only [heq]
     exact ih _ _
 
-/-- The squared varying-density hitting bound; `t` counts edges, hence `t + 1` vertices. -/
-theorem sq_dens_filter_forall_walkAt_mem_le_product (B : ℕ → Finset V) (t : ℕ) :
+omit [Nonempty D] in
+/-- Squared hitting bound from bounds for the individual masked walk steps. -/
+theorem sq_dens_filter_forall_walkAt_mem_le_of_step_bounds (B : ℕ → Finset V) (t : ℕ)
+    (c : ℕ → ℝ) (hc : ∀ i, 0 ≤ c i)
+    (hstep : ∀ i (f : V → ℝ),
+      (𝔼 v, (if v ∈ B (i + 1) then G.walk f v else 0) ^ 2) ≤
+        c i * (𝔼 v, f v ^ 2)) :
     (dens {p : V × (Fin t → D) | ∀ i ≤ t, G.walkAt p i ∈ B i} : ℝ) ^ 2 ≤
       (dens (B 0) : ℝ) *
-        ∏ i ∈ range t, ((dens (B (i + 1)) : ℝ) + G.spectralExpansion ^ 2) := by
+        ∏ i ∈ range t, c i := by
   let f : V → ℝ := fun v => if v ∈ B 0 then 1 else 0
   have hprob : (dens {p : V × (Fin t → D) | ∀ i ≤ t, G.walkAt p i ∈ B i} : ℝ) =
       𝔼 v, G.maskedSteps t (fun i => B (i + 1)) f v := by
@@ -154,13 +161,21 @@ theorem sq_dens_filter_forall_walkAt_mem_le_product (B : ℕ → Finset V) (t : 
       simp only [weightedWalk_succ, Pi.mul_apply]
       exact G.expect_mul_walk_weightedWalk t (fun i => B (i + 1)) f
   rw [hprob]
-  have hc := expect_mul_sq_le_sq_mul_sq univ
+  have hcs := expect_mul_sq_le_sq_mul_sq univ
     (G.maskedSteps t (fun i => B (i + 1)) f) (fun _ => (1 : ℝ))
-  simp only [mul_one, one_pow, Fintype.expect_const] at hc
-  have hb := G.expect_maskedSteps_sq_le t (fun i => B (i + 1)) f
+  simp only [mul_one, one_pow, Fintype.expect_const] at hcs
+  have hb := G.expect_maskedSteps_sq_le t (fun i => B (i + 1)) c hc hstep f
   have hf : (𝔼 v, f v ^ 2) = (dens (B 0) : ℝ) := Fintype.expect_boole_mem_sq _
   rw [hf] at hb
-  exact hc.trans (hb.trans_eq (mul_comm _ _))
+  exact hcs.trans (hb.trans_eq (mul_comm _ _))
+
+/-- The squared varying-density hitting bound; `t` counts edges, hence `t + 1` vertices. -/
+theorem sq_dens_filter_forall_walkAt_mem_le_product (B : ℕ → Finset V) (t : ℕ) :
+    (dens {p : V × (Fin t → D) | ∀ i ≤ t, G.walkAt p i ∈ B i} : ℝ) ^ 2 ≤
+      (dens (B 0) : ℝ) *
+        ∏ i ∈ range t, ((dens (B (i + 1)) : ℝ) + G.spectralExpansion ^ 2) := by
+  exact G.sq_dens_filter_forall_walkAt_mem_le_of_step_bounds B t _
+    (fun _ => by positivity) (fun _ => G.expect_mask_walk_sq_le _)
 
 /-- Goldreich Exercise 8.43, equation (8.24), for `t + 1` vertices. -/
 theorem dens_filter_forall_walkAt_mem_le_product (B : ℕ → Finset V) (t : ℕ) :

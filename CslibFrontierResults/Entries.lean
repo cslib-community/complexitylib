@@ -9,6 +9,7 @@ import CslibFrontierResults.Registry
 import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Probability.MarkovChain.RotationMap
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
+import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -5863,3 +5864,24 @@ register_result "arora-barak-draft-leftover-hash" where
     bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
     sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
     and large delta; no efficiency or short-seed assertion."
+
+register_result "goldreich-expander-visit-count" where
+  title := "Expander-walk selected-time hitting and visit-count tails"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := Goldreich2007DraftR4, theorem := "Exercise 8.44",
+      locator := "March 2007 draft, printed p. 381 / PDF p. 117" }
+  ]
+  theorems := [
+    Cslib.RotationMap.dens_filter_selected_walkAt_mem_le,
+    Cslib.RotationMap.expect_choose_visitCount_le,
+    Cslib.RotationMap.dens_filter_visitCount_ge_le,
+    Cslib.RotationMap.dens_filter_visitCount_gt_le,
+    Cslib.RotationMap.dens_filter_visitCount_gt_lt,
+    Cslib.RotationMap.dens_filter_visitCount_half_lt
+  ]
+  scope := "Finite nonempty rotation map and ports; uniform initial vertex and independent \
+    ports. Length L=t+1 counts vertices, including time zero. Arbitrary selected \
+    times, factorial moments, integer tails and strict half-visits for every positive \
+    L. The source strict integer bound requires 1<=m<=L and rho+eta^2>0; alpha*L needs \
+    an integer convention. No sampler/runtime claim."
