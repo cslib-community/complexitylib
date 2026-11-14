@@ -78,7 +78,7 @@ The default makes this total even for a short buffer. -/
 theorem poly_zipIdx {α β : Type} {e : α ↪ List Bool} {eb : β ↪ List Bool}
     {f : α → List β} (hf : ComputableInPolyTime f e (encList eb)) :
     ComputableInPolyTime (fun x => (f x).zipIdx) e (encList (encPair eb encUnary)) :=
-  .of_tidy ((ComputableTidilyInPolyTime.zipIdx eb).comp hf.tidy)
+  ((ComputableInPolyTime.zipIdx eb).comp hf)
 
 theorem poly_product {α β : Type} (ea : α ↪ List Bool) (eb : β ↪ List Bool) :
     ComputableInPolyTime (fun p : List α × List β => p.1.product p.2)

@@ -71,7 +71,7 @@ theorem computableInPolyTime_replaceGadgets [Finite Src]
   have hi := computableInPolyTime_instantiate encRel B
   have hz : ComputableInPolyTime (fun F : CSP Src ℕ => F.zipIdx)
       (encCSP encSrc encNat) (encList (encPair (encConstraint encSrc encNat) encUnary)) :=
-    .of_tidy (ComputableTidilyInPolyTime.zipIdx _)
+    (ComputableInPolyTime.zipIdx _)
   unfold replaceGadgets
   apply flatMapWithInput hz
   exact hi.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) =>

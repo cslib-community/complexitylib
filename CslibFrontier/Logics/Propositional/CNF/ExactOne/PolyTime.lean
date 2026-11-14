@@ -215,7 +215,7 @@ private theorem computableInPolyTime_clauseClauses (enc : V ↪ List Bool) :
   have hzip : ComputableInPolyTime (fun p : ℕ × Clause V => p.2.zipIdx)
       (encPair encUnary (encList (encPair enc encBool)))
       (encList (encPair (encPair enc encBool) encUnary)) :=
-    (ComputableTidilyInPolyTime.zipIdx (encPair enc encBool)).computableInPolyTime.comp'
+    (ComputableInPolyTime.zipIdx (encPair enc encBool)).comp'
       (ComputableInPolyTime.snd encUnary (encList (encPair enc encBool)))
   exact ComputableInPolyTime.listAppend'
     (ComputableInPolyTime.cons'
@@ -229,7 +229,7 @@ theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
       (encCNFOver enc) (encCNFOver (encVariable enc)) := by
   have hzip :=
-    (ComputableTidilyInPolyTime.zipIdx (encList (encPair enc encBool))).computableInPolyTime
+    (ComputableInPolyTime.zipIdx (encList (encPair enc encBool)))
   have hswap : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => (p.2.2, p.2.1))
       (encPair (encList (encList (encPair enc encBool)))

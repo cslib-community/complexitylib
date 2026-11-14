@@ -265,8 +265,8 @@ actual constraint, scope and occurrence lists, independently of relation arities
   have hz : ComputableInPolyTime (fun p : CSP Rel V × Graph.RotationCertificate =>
       p.1.occurrences.zipIdx) (encCSPRotationCertificate encRel encV)
       (encList (encPair (encOccurrenceRecord encV) encUnary)) :=
-    .of_tidy ((ComputableTidilyInPolyTime.zipIdx (encOccurrenceRecord encV)).comp
-      (ho.tidy.comp (by fun_prop)))
+    ((ComputableInPolyTime.zipIdx (encOccurrenceRecord encV)).comp
+      (ho.comp (by fun_prop)))
   apply ComputableInPolyTime.allWithInput hz
   have hk : ComputableInPolyTime
       (fun p : (CSP Rel V × Graph.RotationCertificate) × ((ℕ × ℕ × V) × ℕ) => 2 * p.2.2 + 1)

@@ -4368,6 +4368,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.MACThenEncrypt
 public import CslibFrontier.Crypto.Computational.Encryption.OFBMode
+public import CslibFrontier.Crypto.Computational.Encryption.OFBMode.Uniform
 public import CslibFrontier.Crypto.Computational.Encryption.PolyTime
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyCPA
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement

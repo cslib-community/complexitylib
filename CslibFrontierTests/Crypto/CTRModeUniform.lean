@@ -41,8 +41,9 @@ example : blockPairValid 2 [true, false, true, true] [false, false, false, false
 
 /-! ### A toy family -/
 
-/-- A toy keyed family: XOR of key and input (not pseudorandom). -/
-public def xorFamily (key query : List Bool) : List Bool := List.zipWith xor key query
+/-- A toy keyed family: XOR of key and input (not pseudorandom). The body is exposed so that the
+OFB tests can evaluate it. -/
+@[expose] public def xorFamily (key query : List Bool) : List Bool := List.zipWith xor key query
 
 public theorem xorFamily_length (key query : List Bool) (h : query.length = key.length) :
     (xorFamily key query).length = key.length := by
