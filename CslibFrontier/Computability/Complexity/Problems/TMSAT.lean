@@ -108,6 +108,12 @@ def Accepts (a : TMSATInstance) (u : List Bool) : Prop :=
   universal (a.machine, (encPair encBits encBits (a.input, u)).map eBit, a.steps) =
     ([eBit true], true)
 
+theorem accepts_iff (a : TMSATInstance) (u : List Bool) :
+    a.Accepts u ↔
+      universal (a.machine, (encPair encBits encBits (a.input, u)).map eBit, a.steps) =
+        ([eBit true], true) :=
+  Iff.rfl
+
 /-- **Acceptance on the description of a machine**: the machine, run on `⟨x, u⟩` for `t` steps,
 has halted with output `[true]`. -/
 theorem accepts_desc_iff {k : ℕ} {State : Type} [Fintype State] (eS : State ↪ ℕ)
