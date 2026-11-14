@@ -18,7 +18,8 @@ This test module exercises `CslibFrontier.Computability.Interactive.AuxZK`:
 1. **Auxiliary-input zero knowledge** (`PerfectHVZK`, `AuxHVZK`, `PerfectAuxHVZK`, `Reduction.ZK`,
    `EfficientAuxHVZK`, `ComputationalHVZK`, `ComputationalAuxHVZK`):
    * Positive instances on `sendWitness (fun x w => w = x)` and `Sumcheck.round`, including
-     malicious-verifier zero knowledge (`Reduction.ZK`) and its specialization to `AuxHVZK` via
+     statistical malicious-verifier zero knowledge (`Reduction.ZK`, unbounded simulator and
+     verifier) and its specialization to `AuxHVZK` via
      `Reduction.ZK.auxHVZK`, lifting from `HVZK` / `PerfectHVZK` / `EfficientHVZK` /
      `ComputationalHVZK`, and the statistical-to-computational bridges.
    * Negative separation for `AuxHVZK` when two witnesses produce distinct transcripts
@@ -78,8 +79,8 @@ noncomputable def simMaliciousSendWitness {Aux View : Type}
     let v' ← v x
     v'
 
-/-- `sendWitness eqRel` satisfies malicious-verifier auxiliary-input zero knowledge
-(`Reduction.ZK`) with error `0`. -/
+/-- `sendWitness eqRel` satisfies statistical malicious-verifier auxiliary-input zero knowledge
+(`Reduction.ZK`, unbounded simulator and verifier) with error `0`. -/
 theorem zk_sendWitness_eqRel {Aux View : Type} :
     (sendWitness eqRel).ZK eqRel (simMaliciousSendWitness (Aux := Aux) (View := View))
       (fun _ _ => 0) := by

@@ -43,7 +43,11 @@ The proof follows the template of [KatzLindell2020], Theorem 3.33 (CTR mode):
    advantages give the final bound (`advantage_ofbCpaGame_le`).
 
 The PRF experiments are the concrete ones of `Cslib.Crypto.PRF` ([BonehShoup2023], Chapter 4). The
-reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is made.
+reductions here are typed `ProbOracleComp` programs without an efficiency certificate. The uniform
+statement, with a certified word-level reduction and the asymptotic theorem
+`PseudorandomFunction.indcpa_ofbWordEncrypt`, is in
+`CslibFrontier/Crypto/Computational/Encryption/OFBMode/Uniform.lean`, which reuses
+`advantage_idealExperiment_ofbReduction_le`.
 
 ## Main definitions
 

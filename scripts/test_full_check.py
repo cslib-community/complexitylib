@@ -361,7 +361,7 @@ class ParityProblemTests(unittest.TestCase):
         self.assertReported(problems, "Operator manual links and excerpts", "--strict")
 
     def test_job_level_settings(self):
-        anchor = "  lean-checks:\n    runs-on: ubuntu-latest\n"
+        anchor = "  lean-checks:\n"
         defaults = "    defaults:\n      run:\n        shell: sh\n"
         env = "    env:\n      STRICT: \"1\"\n"
         self.assertReported(self.report((anchor, anchor + defaults)), "defaults")

@@ -33,15 +33,16 @@ from dataclasses import dataclass, field
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 from typing import TextIO
 
 try:
     import check_vm_map_count
+    from check_progress import run_logged
 except ModuleNotFoundError:
     from scripts import check_vm_map_count
+    from scripts.check_progress import run_logged
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -55,6 +56,7 @@ class Step:
     commands: tuple[str, ...]
     cwd: str | None = None  # the step's `working-directory`
     env: dict[str, str] = field(default_factory=dict)  # the step's literal `env` values
+    progress: bool = False  # stream the local cache audit's progress, retaining its full log
 
 
 STEPS = (
@@ -72,6 +74,12 @@ STEPS = (
          ("python3 -B -m unittest test_cache_handoff.HandoffTests"
           ".test_real_lake_reuses_module_and_native_outputs_without_setup_inputs",),
          cwd="scripts", env={"COMPLEXITYLIB_TEST_LAKE_HANDOFF": "1"}),
+    Step("Test real Lake interrupt cleanup",
+         ("python3 -B -m unittest "
+          "scripts.test_check_cache_restores.RealLakeTests"
+          ".test_parallel_real_lake_sigint_cleans_up_descendant_process_tree "
+          "scripts.test_check_cache_restores.RealLakeTests"
+          ".test_parallel_real_lake_sigterm_cleans_up_descendant_process_tree",)),
     Step("Test real Lake cache publication staging",
          ("python3 -B -m unittest scripts.test_cache_publish.RealLakePublicationTests",)),
     Step("lake build",
@@ -84,6 +92,9 @@ STEPS = (
           "test -d .lake/packages",
           "python3 -B -m unittest scripts/test_check_tidy_surface.py",
           "python3 -B scripts/check_tidy_surface.py")),
+    Step("Security premise ratchet (changed modules)",
+         ("python3 -B -m unittest scripts/test_check_security_premises.py",
+          'python3 -B scripts/check_security_premises.py --base "$BASE"')),
     Step("Result registry references", ("python3 -B scripts/results_registry.py --compiled",)),
     Step("Changed-file lints", ('python3 -B scripts/check_changed_files.py --base "$BASE"',)),
     Step("lake exe mk_all --check", ("lake exe mk_all --check",)),
@@ -91,7 +102,9 @@ STEPS = (
          ("test -x .lake/build/bin/mk_all",
           "python3 -B -m unittest discover -s scripts -p 'test_mk_all.py'")),
     Step("lake exe lint-style", ("lake exe lint-style",)),
-    Step("checkInitImports", ("lake exe checkInitImports",)),
+    Step("checkInitImports", ("command -v lean",
+                              "python3 -B -m unittest scripts/test_check_init_imports.py",
+                              "lake exe checkInitImports")),
 )
 
 # Run after `STEPS`; not CI steps, so `scripts/test_full_check.py` keeps their names apart from CI's.
@@ -99,7 +112,7 @@ LOCAL_STEPS = (
     # The local artifact cache restores outputs without their warnings, which `--wfail` and
     # `--iofail` then miss (#4523). CI's remote cache is published only from `main`.
     Step("Re-elaborate root-package files restored from the artifact cache",
-         ("python3 -B scripts/check_cache_restores.py",)),
+         ("python3 -B scripts/check_cache_restores.py --progress",), progress=True),
 )
 
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
@@ -112,6 +125,8 @@ CI_ONLY = {
         "merge groups and main pushes only; reports and always succeeds",
     "Projection chain report":
         "merge groups and main pushes only; reports and always succeeds",
+    "Security premise report":
+        "merge groups and main pushes only; reports and always succeeds",
     "Repeated-proof-block notice (advisory)":
         "advisory; never fails the job. Run `scripts/proof_copies.py --base REF` to see it",
     "Reclaim unused hosted-runner SDK space": "hosted-runner disk cleanup",
@@ -122,8 +137,6 @@ CI_ONLY = {
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
-    "Save .lake after cache publication (experiment)":
-        "main pushes only; default-off CI cache experiment (#4972)",
     "Parallel-definition and duplicate-statement notices (advisory)":
         "advisory; never fails the job. Run `scripts/parallel_defs.py [--theorems]` to see it",
     "PR description names (advisory)":
@@ -142,12 +155,12 @@ def run_steps(steps: tuple[Step, ...], base: str, root: Path = ROOT,
     status = 0
     for number, step in enumerate(steps, 1):
         log = log_dir / f"{number}.log"
-        with log.open("w") as stream:
-            result = subprocess.run(
+        with log.open("wb") as stream:
+            result = run_logged(
                 ["bash", "-e", "-c", "\n".join(step.commands)],
                 cwd=root / step.cwd if step.cwd else root,
                 env={**os.environ, **step.env, "BASE": base},
-                stdout=stream, stderr=subprocess.STDOUT)
+                log=stream, progress=out if step.progress else None)
         if result.returncode:
             status = 1
             out.write(f"FAIL  {step.name}\n" + log.read_text(errors="replace"))

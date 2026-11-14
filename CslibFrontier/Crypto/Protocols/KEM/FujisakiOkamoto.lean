@@ -34,10 +34,12 @@ scheme `PKE = (Gen, Enc, Dec)` with explicit coin space `R` into two modular ste
 
 **Scope of this module**: this file formalizes the `T`, `FO^⊥`, and `FO-notbot` transforms together
 with their deterministic recovery and re-encryption rigidity lemmas. The generic explicit-coin PKE
-interface, correctness, spreadness, and fixed-message IND-CPA experiment live in
-`CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`. Adaptive random-oracle IND-CCA games,
-quantitative transfer of PKE `δ`-correctness to KEM correctness, and security reductions are
-deferred to follow-up modules.
+interface, correctness and spreadness live in `CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`.
+The IND-CPA notion of the FO security theorems is two-stage IND-CPA (`cpaAdvantage`, via
+`PKE.cpaExperiment` on `ExplicitCoinPKE.toPKE`), not the fixed-message `indCpaGame`. Adaptive
+random-oracle IND-CCA games and the security reductions live in the `FujisakiOkamoto/` submodules;
+a standalone transfer of PKE `δ`-correctness to KEM correctness is not formalized (`δ` enters only
+as a hop inside the IND-CCA bounds).
 
 ## Source map and model differences
 
@@ -51,8 +53,9 @@ by IACR ePrint 2017/604, dated **2 November 2021**:
 * **§3.2.2, Figure 12**: implicit-rejection KEM `FO-notbot = U-notbot ∘ T` (`ImplicitSK`,
   `Scheme.keyGenNotBot`, `Scheme.encapsNotBot`, `Scheme.decapsNotBot`).
 
-The PKE-level fixed-coin-type, arbitrary-sampler, and fixed-message IND-CPA differences are
-documented in `CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`. This transform differs from the
+The PKE-level fixed-coin-type and arbitrary-sampler differences are documented in
+`CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`; the security theorems use two-stage
+IND-CPA. This transform differs from the
 paper's presentation in two further respects:
 
 1. **Fixed message/key types and arbitrary samplers**: in [HofheinzHoevelmannsKiltz2017]

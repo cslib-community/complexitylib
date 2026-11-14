@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -53,12 +53,19 @@ from an optimal coupling (`Cslib.Probability.PMF.dist_bind_le_mul`).
 * `Cslib.Probability.MarkovChain.IsStationary.antitone_distToStationary`,
   `Cslib.Probability.MarkovChain.antitone_distPair`: Exercise 4.2.
 * `Cslib.Probability.MarkovChain.IsStationary.distToStationary_mul_le`: (4.32).
+* `Cslib.Probability.MarkovChain.IsStationary.dist_mul_le_mul`,
+  `Cslib.Probability.MarkovChain.dist_prod_ofFn_le`,
+  `Cslib.Probability.MarkovChain.IsStationary.distToStationary_le_half_mul_two_mul_pow`:
+  two-step and `t`-step `(1 / 2) * (2 * δ) ^ t` contraction for `π`-stationary kernels
+  ([ArbitmanNaorSegev2010], Theorem 5.6).
 * `Cslib.Probability.MarkovChain.IsStationary.mixingTime_le_iff`: `t_mix(ε) ≤ t ↔ d(t) ≤ ε`.
 * `Cslib.Probability.MarkovChain.IsStationary.mixingTime_le_ceil_logb_mul`: (4.34).
 
 ## References
 
 * [LevinPeres2017], Sections 4.4 and 4.5.
+* [Y. Arbitman, M. Naor and G. Segev, *Backyard Cuckoo Hashing: Constant Worst-Case Operations
+  with a Succinct Representation*][ArbitmanNaorSegev2010], Section 5.3, Theorem 5.6.
 -/
 
 public section
@@ -194,6 +201,72 @@ theorem IsStationary.distToStationary_mul_le (hπ : P.IsStationary π) (ℓ t : 
     P.distToStationary π (ℓ * t) ≤ (2 * P.distToStationary π t) ^ ℓ :=
   (hπ.distToStationary_le_distPair _).trans <| (P.distPair_mul_le ℓ t).trans <|
     pow_le_pow_left₀ (P.distPair_nonneg t) (P.distPair_le_two_mul_distToStationary t) ℓ
+
+omit [Fintype S] in
+private theorem isStationary_list_prod {l : List (MarkovChain S)}
+    (hl : ∀ Q ∈ l, Q.IsStationary π) : l.prod.IsStationary π := by
+  induction l with
+  | nil => exact PMF.bind_pure π
+  | cons Q rest ih =>
+    rw [List.prod_cons]
+    exact (hl Q List.mem_cons_self).mul (ih fun R hR => hl R (List.mem_cons_of_mem Q hR))
+
+/-- Running a chain `P₁` within `δ₁` of `π` followed by a `π`-stationary chain `P₂` within `δ₂` of
+`π` produces a chain within `δ₁ * (2 * δ₂)` of `π`. -/
+theorem IsStationary.dist_mul_le_mul {P₁ P₂ : MarkovChain S} (hπ₂ : P₂.IsStationary π)
+    {δ₁ δ₂ : ℝ} (hb₁ : ∀ x, dist (P₁ x) π ≤ δ₁) (hb₂ : ∀ y, dist (P₂ y) π ≤ δ₂) (x : S) :
+    dist ((P₁ * P₂) x) π ≤ δ₁ * (2 * δ₂) := by
+  have hpair (a b : S) : dist (P₂ a) (P₂ b) ≤ 2 * δ₂ := by
+    calc dist (P₂ a) (P₂ b) ≤ dist (P₂ a) π + dist π (P₂ b) := dist_triangle _ _ _
+      _ ≤ δ₂ + δ₂ := by rw [dist_comm π]; exact add_le_add (hb₂ a) (hb₂ b)
+      _ = 2 * δ₂ := by ring
+  rw [mul_apply, ← hπ₂]
+  exact (dist_bind_le_mul (P₁ x) π P₂ hpair).trans
+    (mul_le_mul_of_nonneg_right (hb₁ x) (by linarith [dist_nonneg.trans (hb₂ x)]))
+
+private theorem dist_prod_ofFn_succ_le {π : PMF S} {δ : ℝ} :
+    ∀ (m : ℕ) (Ps : Fin (m + 1) → MarkovChain S),
+      (∀ i, (Ps i).IsStationary π) →
+      (∀ i x, dist (Ps i x) π ≤ δ) →
+      ∀ x : S, dist (((List.ofFn Ps).prod) x) π ≤ (1 / 2 : ℝ) * (2 * δ) ^ (m + 1)
+  | 0, Ps, _, hδ, x => by
+    simp only [List.ofFn_succ, List.ofFn_zero, List.prod_cons, List.prod_nil, mul_one]
+    rw [pow_one]
+    linarith [hδ 0 x]
+  | m + 1, Ps, hstat, hδ, x => by
+    rw [List.ofFn_succ, List.prod_cons]
+    have htail_stat : ((List.ofFn fun i : Fin (m + 1) => Ps i.succ).prod).IsStationary π :=
+      isStationary_list_prod fun Q hQ => by
+        obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hQ
+        exact hstat i.succ
+    have ih := dist_prod_ofFn_succ_le m (fun i => Ps i.succ)
+      (fun i => hstat i.succ) (fun i y => hδ i.succ y)
+    refine (htail_stat.dist_mul_le_mul (hδ 0) ih x).trans_eq ?_
+    rw [pow_succ]
+    ring
+
+/-- Composing `t ≥ 1` `π`-stationary Markov chains `Ps 0, …, Ps (t - 1)`, each within statistical
+distance `δ` of `π` from every start state, contracts statistical distance to at most
+`(1 / 2) * (2 * δ) ^ t` ([ArbitmanNaorSegev2010], `arXiv:0912.5424v3`, Section 5.3, Theorem 5.6,
+PDF p. 25 / printed p. 24). -/
+theorem dist_prod_ofFn_le {t : ℕ} (ht : 1 ≤ t) (Ps : Fin t → MarkovChain S) {π : PMF S}
+    (hstat : ∀ i, (Ps i).IsStationary π) {δ : ℝ} (hδ : ∀ i x, dist (Ps i x) π ≤ δ) (x : S) :
+    dist (((List.ofFn Ps).prod) x) π ≤ (1 / 2 : ℝ) * (2 * δ) ^ t := by
+  obtain ⟨m, rfl⟩ : ∃ m, t = m + 1 := ⟨t - 1, (Nat.sub_add_cancel ht).symm⟩
+  exact dist_prod_ofFn_succ_le m Ps hstat hδ x
+
+/-- Sharpened `t`-step stationary contraction `d(t) ≤ (1 / 2) * (2 d(1)) ^ t` for `1 ≤ t`. -/
+theorem IsStationary.distToStationary_le_half_mul_two_mul_pow (hπ : P.IsStationary π)
+    {t : ℕ} (ht : 1 ≤ t) :
+    P.distToStationary π t ≤ (1 / 2 : ℝ) * (2 * P.distToStationary π 1) ^ t := by
+  have hd1 (x : S) : dist (P x) π ≤ P.distToStationary π 1 := by
+    simpa [pow_one] using P.dist_le_distToStationary π 1 x
+  refine P.distToStationary_le π (fun x => ?_)
+    (mul_nonneg (by positivity) (pow_nonneg (by linarith [P.distToStationary_nonneg π 1]) t))
+  have hprod : (List.ofFn fun _ : Fin t => P).prod = P ^ t := by
+    simp
+  rw [← hprod]
+  exact dist_prod_ofFn_le ht (fun _ => P) (fun _ => hπ) (fun _ => hd1) x
 
 theorem mixingTime_eq_top_iff (ε : ℝ) :
     P.mixingTime π ε = ⊤ ↔ ∀ t, ε < P.distToStationary π t := by

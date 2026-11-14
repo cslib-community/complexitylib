@@ -2,6 +2,43 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
+## Witness seedless extraction failure
+
+Import [Extractor/Basic.lean](../../CslibFrontier/Probability/Extractor/Basic.lean).
+For a deterministic `f : BitString n → BitString m` and explicit proofs `hn : 1 ≤ n`
+and `hm : 1 ≤ m`, apply `exists_minEntropy_map_first_eq_pure hn hm f`.
+The resulting source has real min-entropy at least `(n : ℝ) - 1`; its first output
+coordinate (index zero) is a point mass, and its output has statistical distance at
+least `1 / 2` from uniform. `not_isExtractor_bitString` gives the immediate failure
+of extraction with a `Unit` seed and error strictly below `1 / 2`.
+For arbitrary finite nonempty inputs, `exists_minEntropy_map_eq_pure_bool` supplies
+the reusable Boolean-fiber witness, with entropy `log₂ |Input| - 1`.
+
+This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draft,
+printed page 319 (PDF page 335): the source's first coordinate is indexed by one
+in the book. Distance uses the probability convention (half the L1 distance).
+These are information-theoretic distributions; no sampler or runtime is asserted.
+Exercise 12 is covered by the hashing corollary below; broader extractor objectives in issue #895 remain open.
+The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
+`n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
+From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
+## Apply the draft leftover hash lemma
+
+Import [Extractor/LeftoverHash.lean](../../CslibFrontier/Probability/Extractor/LeftoverHash.lean).
+For `hash : BitString t → BitString n → BitString k`, prove positive `δ` and
+`IsUniversalHash (PMF.uniformOfFintype (BitString t)) hash
+(ENNReal.ofReal ((1 + δ) / (2 : ℝ) ^ k))`.
+Apply `IsUniversalHash.isStrongExtractor_of_entropy_div` for a strong extractor,
+or `IsUniversalHash.isExtractor_append_of_entropy_div` for the book's output
+`Fin.append (hash s x) s`: digest first, seed last. Both require source min-entropy
+at least `(k : ℝ) / δ` and give error `Real.sqrt (2 * δ)`.
+These are Lemma 16.42 and Exercise 16.12 of the January 2007 draft, for all lengths
+and positive `δ`, including zero digest length. They assert no runtime or short seed.
+The [checked clients](../../CslibFrontierTests/LeftoverHashDraft.lean) use an 8-bit
+uniform source and Boolean matrix hash, and check zero digest, large error and order.
+Run `scripts/build.sh CslibFrontierTests.LeftoverHashDraft` in a configured checkout.
+
 ## Transport a distribution bound through a map
 
 Import [TotalVariation/Map.lean](../../CslibFrontier/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
@@ -124,7 +161,9 @@ statistic of i.i.d. samples from a measure into this setting, import
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
 almost everywhere measurable maps into finite types with
 `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
-Hoeffding's `pi_sum_abs_sub_mean_ge` in
+Hoeffding's `pi_sum_abs_sub_mean_ge` (and the `[0, 1]`-score forms
+`pi_sum_le_mean_sub_card_mul`, `pi_sum_ge_mean_add_card_mul`, and
+`pi_sum_abs_sub_mean_ge_card_mul` at deviation `card ι * γ` with exponent `-2 card ι γ²`) in
 [Concentration.lean](../../CslibFrontier/Probability/Concentration.lean) and the Chernoff lower
 tail `pi_sum_le_one_sub_mul` in [Chernoff.lean](../../CslibFrontier/Probability/Chernoff.lean). For
 a uniform draw on a finite group, import
@@ -680,6 +719,67 @@ sample per stage never gives relative error `1 / 2` there. Run
 `scripts/build.sh CslibFrontierTests.MarkovChain CslibFrontierTests.PathCoupling CslibFrontierTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
+
+## Bound expected hitting and return times of a finite Markov chain
+
+Import [MarkovChain/HittingTime.lean](../../CslibFrontier/Probability/MarkovChain/HittingTime.lean).
+For `P : MarkovChain V` with `[Fintype V] [DecidableEq V]`, `survival P v t x` is the probability
+`P_x(τ_v > t)` that the chain started at `x` avoids `v` at times `0, …, t`, defined by conditioning
+on the first step. `hittingTime P v x = ∑' t, survival P v t x` is the expected hitting time
+`E_x[τ_v]`, and `returnTime P v` is the expected return time `E_v[τ⁺_v]`. Both take values in
+`ℝ≥0∞`: they are exact expectations, possibly `⊤`, not truncated sums, and need no summability
+side conditions.
+
+Work with them through these lemmas rather than unfolding the tail sums.
+`hittingTime_eq_of_ne` and `returnTime_eq` are the first-step equations, and
+`hittingTime_le_add` is the triangle inequality `E_x[τ_w] ≤ E_x[τ_v] + E_v[τ_w]`.
+`mul_survival_le_hittingTime` is Markov's inequality `(t + 1) P_x(τ_v > t) ≤ E_x[τ_v]`, which
+turns an expectation bound into a bound on the probability that a `t`-step walk misses `v`.
+Kac's formula `mul_returnTime_eq` needs a stationary measure `π : V → ℝ≥0∞`, given as
+`∀ y, ∑ x, π x * P x y = π y`, and finiteness of `∑ x, π x * hittingTime P v x`; it gives
+`π v * returnTime P v = ∑ x, π x`. `IsStationary.mul_returnTime_eq_one` is the version for a
+stationary `PMF`. Finiteness comes from `hittingTime_ne_top`: give a set `S` closed under
+transitions of positive probability from which `v` is reachable along such transitions. Pass
+`Set.univ` for an irreducible chain, or a connected component.
+
+[MarkovChain/RandomWalk.lean](../../CslibFrontier/Probability/MarkovChain/RandomWalk.lean) is the
+worked client. `randomWalk G` is the simple random walk on a finite `SimpleGraph`, and an
+isolated vertex stays put, so it is a chain for every graph. The degrees are stationary
+(`sum_degree_mul_randomWalk`), so Kac's formula gives `degree_mul_returnTime_randomWalk`,
+`deg v * E_v[τ⁺_v] = 2 |E|`, for a connected graph. Then `hittingTime_randomWalk_add_degree_le`
+proves `E_u[τ_v] + deg v ≤ 2 |E|` for every edge (Goldreich, Exercise 6.19), and
+`hittingTime_randomWalk_le_dist_mul` proves `E_u[τ_v] ≤ dist(u, v) · 2 |E|`. The
+[checked clients](../../CslibFrontierTests/RandomWalkHitting.lean) state Exercise 6.19 in the
+source's form, compute `E_0[τ_1] = 1` and `E_0[τ⁺_0] = 2` on a single edge (so the edge bound is
+an equality there), and instantiate it on a triangle. Run
+`scripts/build.sh CslibFrontierTests.RandomWalkHitting`.
+
+For regular multigraphs, import
+[MarkovChain/RotationMap.lean](../../CslibFrontier/Probability/MarkovChain/RotationMap.lean).
+`G.randomWalk` follows a uniformly random edge label of `G : RotationMap V D`, with
+`randomWalk_apply` giving `edgeCount x y / |D|`. Use it when the statement counts label
+sequences, as Arora and Barak's Chapter 7 does: `survival_randomWalk_mul_pow` identifies
+`survival` with the fraction of label sequences `k : Fin T → D` whose `walkAt` avoids the target.
+The uniform law is the unique stationary law on a connected graph
+(`isStationary_randomWalk_iff`), from the maximum principle `eq_of_forall_sum_edgeCount_mul_eq`
+in [Expander/Harmonic.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Harmonic.lean),
+which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives the expected return
+time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
+`ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
+`hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the
+textbook `100 k n²` and `1000 n³`-step statements.
+[Expander/Visits.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Visits.lean)
+adds the law of large numbers for visit counts without aperiodicity. It is a graph module and needs
+no Markov-chain import. `eventually_visits_mem_Icc` bounds the fraction of label sequences whose
+`visits u v` fall outside `[(1 - ε) t / n, (1 + ε) t / n]`, and `visits_eq` unfolds `visits` to
+the number of times `1, …, t` at which `walkAt` is at `v`. Its reusable step is `exists_abs_sum_walk_pow_le`, uniform
+Cesàro convergence `∑_{j < N} Pʲ f = o(N)` for `f` of total `0` on a connected graph, which comes
+from Mathlib's mean ergodic theorem applied to `walkEuclidean`. The
+[checked clients](../../CslibFrontierTests/RegularRandomWalk.lean) restate them in source form and
+compute the return time `2` on a single edge; run
+`scripts/build.sh CslibFrontierTests.RegularRandomWalk`. If a proof needs `∑ y, P x y = 1`, use
+`sum_apply`. Do not convert to `ℝ` before the finiteness lemmas are available, since `toReal`
+sends `⊤` to `0`.
 
 ## Test for a perfect matching with a random determinant
 
@@ -1850,10 +1950,12 @@ postprocessing on forwarded replies, and exhibit a failed real hop without KEM c
 
 For a concrete PKE that needs the generic explicit-coin interface but not an FO transform, import
 [`PKE/ExplicitCoin.lean`](../../CslibFrontier/Crypto/Protocols/PKE/ExplicitCoin.lean) directly.
-It owns `ExplicitCoinPKE`, `DeltaCorrect`, `GammaSpread`, and the deliberately fixed-message
-`indCpaGame`; the FO module publicly re-exports that API for existing transform clients.
+It owns `ExplicitCoinPKE`, `DeltaCorrect`, `GammaSpread`, two-stage IND-CPA `cpaAdvantage` (the
+shared `PKE.cpaExperiment` of `toPKE`), and the narrower fixed-message `indCpaGame`; the FO module
+publicly re-exports that API for existing transform clients. State new IND-CPA hypotheses with
+`cpaAdvantage`: a bound for every fixed message pair does not give two-stage security.
 
-When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `cpaAdvantage`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless two-stage IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.simFilterOwExperiment`, `Scheme.succProbability_simFilterOwExperiment_le`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the concrete per-instance IND-CCA advantage bound `Scheme.indCcaRomAdvantage_le` for adversaries with explicit coins (`RandomizedROAdversary`), in terms of the two-stage IND-CPA advantage of the one reduction `romCpaReduction A` and `δ`-correctness (no `γ`-spreadness, as in HHK17) is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
 
 ## Certify a list accumulator
 
@@ -2303,7 +2405,7 @@ and seed width zero, but does not yet supply adaptive-message cipher security.
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../CslibFrontier/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
 
-Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
+Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model. The final theorem keeps only the premises that [Security theorems and efficiency witnesses](../programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses) allows: named hardness assumptions, the adversary's class and properties of components that the cited result takes as given, never a bound on the reduction it builds.
 
 [complexitylib]: ../sources.md#complexitylib
 [holenstein09]: ../sources.md#holenstein09
@@ -2578,7 +2680,13 @@ Most theorems assume `|ρ| ≤ 1`, since `√(1 - ρ²)` is `0` in Lean outside 
   covariance `ρ` equals it by `eq_correlatedGaussian`.
 - For halfspaces through the origin with `a ≠ 0`, `gaussianNoiseStability_ite_pos_dotProduct hρ ha`
   (open, `0 < a ⬝ᵥ z`) and `gaussianNoiseStability_ite_nonneg_dotProduct hρ ha` (closed) both give
-  `1 - 2 / π * arccos ρ`.
+  `1 - 2 / π * arccos ρ`. For a halfspace `a ⬝ᵥ z ≤ b` with any offset `b`, see
+  [Evaluate the Gaussian quadrant probability](#evaluate-the-gaussian-quadrant-probability).
+- `correlatedGaussian_zero`, `correlatedGaussian_one` and `correlatedGaussian_neg_one` give the
+  pair at `ρ = 0, 1, -1`, and `correlatedGaussian_map_neg_snd ρ` says that negating `z'` turns a
+  `ρ`-correlated pair into a `-ρ`-correlated one. For vectors, `correlatedGaussianPi_eq_map_pi`
+  unfolds the product over coordinates, `correlatedGaussianPi_eq_map` writes `z'` as
+  `ρ z + √(1 - ρ²) g`, and `correlatedGaussianPi_one` gives `(z, z)` at `ρ = 1`.
 - For one coordinate, `gaussianNoiseStability_indicator_Iic_eval hρ i` gives
   `1 / 2 - arccos ρ / (2 * π)` for the indicator of `z i ≤ 0`. For any measurable function of a
   projection, `gaussianNoiseStability_comp_dotProduct` reduces stability to an integral against
@@ -2968,6 +3076,124 @@ Not formalized:
 The book derives Proposition 11.27 from the semigroup law; here it is read off the Hermite
 expansion of `U_ρ f`.
 
+## Evaluate the Gaussian quadrant probability
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.Quadrant`](../../CslibFrontier/Foundations/Probability/Gaussian/Quadrant.lean)
+and open the `ProbabilityTheory` namespace. Write `Φ` for `cdf (gaussianReal 0 1)`. Then
+`gaussianQuadrant ρ α β` is O'Donnell's `Λ_ρ(α, β)` (Definition 11.77): the probability under
+`correlatedGaussian ρ` that `Φ z ≤ α` and `Φ z' ≤ β`. It avoids `Φ⁻¹`, so it is defined for all
+real `α`, `β`, which act as if clamped to `[0, 1]`. Borell's `Λ_ρ(α)` is
+`gaussianQuadrant ρ α α`. `gaussianQuadrant_cdf_cdf ρ t t'` recovers the book's form
+`Λ_ρ(Φ t, Φ t') = P[z ≤ t, z' ≤ t']`. `gaussianQuadrant_eq_clamp_left` and `_right` replace an
+argument by its clamp `max (min α 1) 0`. The cdf facts it uses are in
+[`Probability/CDF.lean`](../../CslibFrontier/Foundations/Probability/CDF.lean) for any probability
+measure on `ℝ`. That file proves continuity without atoms, strict monotonicity when
+`volume ≪ ν`, and the probability integral transform `measureReal_setOf_cdf_le`
+(`P[F x ≤ α] = α` on `[0, 1]` for a continuous cdf `F`). The Gaussian cases, with
+`Φ (-x) = 1 - Φ x` and `Φ 0 = 1 / 2`, are in
+[`Gaussian/CDF.lean`](../../CslibFrontier/Foundations/Probability/Gaussian/CDF.lean).
+
+- Lipschitz bounds (Exercise 11.19 (e)). `abs_gaussianQuadrant_sub_le hρ α β α' β'` gives
+  `|Λ_ρ(α, β) - Λ_ρ(α', β')| ≤ |α - α'| + |β - β'|` for all real arguments. The one-argument
+  forms are `abs_gaussianQuadrant_sub_le_left` and `abs_gaussianQuadrant_sub_le_right`. The
+  corollary `lipschitzWith_gaussianQuadrant_diag hρ` is
+  `LipschitzWith 2 fun α => gaussianQuadrant ρ α α`.
+- Halfspaces (Exercise 11.19 (a)). For `a ≠ 0`,
+  `gaussianNoiseStability_indicator_setOf_dotProduct_le ρ ha b` writes the stability of the
+  `0`-`1` indicator of `{z | a ⬝ᵥ z ≤ b}` as `Λ_ρ` at its Gaussian volume. Given
+  `hα : (Measure.pi fun _ => gaussianReal 0 1).real {z | a ⬝ᵥ z ≤ b} = α`, the form
+  `gaussianNoiseStability_indicator_setOf_dotProduct_le_of_measureReal_eq ρ ha hα` concludes
+  `= gaussianQuadrant ρ α α`. `measureReal_pi_gaussianReal_setOf_dotProduct_le ha b` computes the
+  volume as `Φ (b / √(a ⬝ᵥ a))`.
+- Special values (Exercise 11.19 (b)), for `α, β ∈ [0, 1]`: `gaussianQuadrant_comm`,
+  `gaussianQuadrant_zero` (`αβ`), `gaussianQuadrant_one` (`min α β`),
+  `gaussianQuadrant_neg_one` (`max (α + β - 1) 0`), and `gaussianQuadrant_zero_left` and `_right`,
+  `gaussianQuadrant_one_left` and `_right`, and the bound `gaussianQuadrant_le_min`. The
+  reflections are `gaussianQuadrant_neg` (`α - Λ_ρ(α, 1 - β)`) and
+  `gaussianQuadrant_neg_eq_sub_one_sub_left` (`β - Λ_ρ(1 - α, β)`). Sheppard's value is
+  `gaussianQuadrant_half_half` (`1 / 2 - arccos ρ / (2 * π)`).
+- Comparison with independence (Exercise 11.19 (c)): `mul_le_gaussianQuadrant` for `ρ ∈ [0, 1]`
+  and `gaussianQuadrant_le_mul` for `ρ ∈ [-1, 0]`.
+- Regularity, for `|ρ| ≤ 1`: `lipschitzWith_gaussianQuadrant hρ` (`2`-Lipschitz on `ℝ × ℝ`),
+  `continuous_gaussianQuadrant hρ` and `measurable_gaussianQuadrant hρ` for the uncurried
+  function, and `Measurable.gaussianQuadrant hρ ha hb` for `x ↦ Λ_ρ(a x, b x)`.
+
+The checked [`GaussianQuadrant.lean` clients](../../CslibFrontierTests/GaussianQuadrant.lean)
+evaluate `Λ_{1/2}(1 / 2) = 1 / 3`, the cases `ρ = 0, 1, -1`, both reflections and a clamped
+argument. They also apply the book's form, the comparison with independence, the Lipschitz
+bounds and the halfspace formula. Run `scripts/build.sh CslibFrontierTests.GaussianQuadrant`
+from the repository root to check them.
+
+The comparison in (c) is non-strict, and the derivative formula of Exercise 11.19 (d) is not
+proved. Borell's Isoperimetric Theorem, that halfspaces maximize `Stab_ρ` among sets of volume
+`α`, is not part of this module; for its reduction to one dimension, see
+[Reduce Borell's Isoperimetric Theorem to one dimension](#reduce-borells-isoperimetric-theorem-to-one-dimension).
+
+## Reduce Borell's Isoperimetric Theorem to one dimension
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.Borell`](../../CslibFrontier/Foundations/Probability/Gaussian/Borell.lean)
+and open the `ProbabilityTheory` namespace. Write `Φ` for `cdf (gaussianReal 0 1)`, `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1`, `E_γ f` for `∫ z, f z ∂γ` and `(z, z')` for a pair
+drawn from `correlatedGaussianPi ι ρ`. The module formalizes the structural part of the
+Mossel–Neeman proof (O'Donnell, Exercises 11.26 and 11.27); the one-dimensional inequality itself
+stays a hypothesis.
+
+- The two predicates. `TwoFunctionBorellInequality ρ ι` says that for measurable
+  `f, g : (ι → ℝ) → ℝ` with values in `[0, 1]`,
+  `E[gaussianQuadrant ρ (f z) (g z')] ≤ gaussianQuadrant ρ (E_γ f) (E_γ g)`.
+  `TwoSetBorellInequality ρ ι` says that for measurable `A`, `B`,
+  `(correlatedGaussianPi ι ρ).real (A ×ˢ B) ≤ gaussianQuadrant ρ (γ.real A) (γ.real B)`. Unfold
+  them with `twoFunctionBorellInequality_iff` and `twoSetBorellInequality_iff`. Both are meant
+  for `ρ ∈ [0, 1]`; the book states them for `ρ ∈ (0, 1)`, and they fail for `ρ ∈ [-1, 0)`.
+- Tensorization (Exercise 11.27). For `hι : TwoFunctionBorellInequality ρ ι`, `hι.sum hρ hκ`
+  passes from `ι` and `κ` to `ι ⊕ κ`, `h.of_equiv e` relabels the coordinates along `e : ι ≃ κ`,
+  and `twoFunctionBorellInequality_of_isEmpty ρ` covers dimension `0`. Together they give
+  `h.of_fin_one hρ ι`: the case `Fin 1` implies every finite `ι`. `sum` and `of_fin_one` need
+  `hρ : |ρ| ≤ 1`; relabelling and dimension `0` need nothing. The splitting lemmas `pi_gaussianReal_sum` and `correlatedGaussianPi_sum` and the
+  relabelling lemmas `measurePreserving_pi_gaussianReal_comp_symm` and
+  `correlatedGaussianPi_map_comp_symm` are public.
+- From functions to sets and back (Exercise 11.26 (a), (b)). `h.twoSetBorellInequality hρ` turns
+  the two-function form into the two-set form, through `integral_gaussianQuadrant_indicator`.
+  For `0 ≤ ρ ≤ 1`, `h.gaussianNoiseStability_le hρ0 hρ1 hf hf01` is Borell's theorem for
+  `[0, 1]`-valued `f`: `gaussianNoiseStability ρ f ≤ gaussianQuadrant ρ (E_γ f) (E_γ f)`. Its
+  `_of_ae` form takes `AEStronglyMeasurable f γ` and values in `[0, 1]` almost everywhere, and
+  `_of_integral_eq_half` concludes `≤ 1 / 2 - arccos ρ / (2 * π)` when `E_γ f = 1 / 2`.
+  Conversely, `TwoSetBorellInequality.twoFunctionBorellInequality` takes the two-set form in
+  `ι ⊕ Unit` to the two-function form in `ι`.
+- Equality cases (Exercise 11.26 (c)). For `a ≠ 0`,
+  `measureReal_correlatedGaussianPi_setOf_dotProduct_le_prod ρ ha b₁ b₂` shows that the parallel
+  halfspaces `a ⬝ᵥ z ≤ b₁` and `a ⬝ᵥ z ≤ b₂` attain the two-set bound, and
+  `integral_gaussianQuadrant_indicator_setOf_dotProduct_le hρ ha b₁ b₂` restates it for their
+  indicators.
+  `integral_gaussianQuadrant_cdf_dotProduct_add ρ a b₁ b₂` gives equality for
+  `f z = Φ (a ⬝ᵥ z + b₁)` and `g z = Φ (a ⬝ᵥ z + b₂)`, for any `a`.
+- The whole reduction. `h.twoSetBorellInequality_of_fin_one hρ ι` and
+  `h.gaussianNoiseStability_le_of_fin_one hρ0 hρ1 hf hf01` start from
+  `h : TwoFunctionBorellInequality ρ (Fin 1)`. As non-vacuity checks,
+  `twoFunctionBorellInequality_zero ι` and `twoFunctionBorellInequality_one ι` prove the
+  predicate outright at `ρ = 0` and `ρ = 1`.
+
+The checked [`GaussianBorell.lean` clients](../../CslibFrontierTests/GaussianBorell.lean) take a
+hypothetical one-dimensional inequality to `Fin 3`: the two-set bound, Borell's bound for a
+`[0, 1]`-valued `f`, the volume-`1 / 2` bound for a set and, through
+`twoFunctionBorellInequality_iff`, the two-function bound for `f z = Φ (z 0)` and `g = 1 / 2`.
+They apply the converse from `Fin 2 ⊕ Unit` to `Fin 2`, and give the unconditional two-set
+bounds at `ρ = 0` and `ρ = 1`; at `ρ = 1`, through `twoSetBorellInequality_iff`, the bound is
+`≤ min (γ.real A) (γ.real B)`. They check both equality cases, for the halfspaces
+`z₀ + z₁ ≤ 1` and `z₀ + z₁ ≤ -2` and for `Φ (z₀ - 1)` and `Φ (z₀ + 3)`. Finally they prove
+`¬ TwoSetBorellInequality (-(1 / 2)) (Fin 1)`: the half-lines `z ≤ 0` and `z ≥ 0` give
+`1 / 3 > 1 / 6`. Run
+`scripts/build.sh CslibFrontierTests.GaussianBorell` from the repository root to check them.
+
+The one-dimensional two-function inequality (Exercises 11.28 and 11.29) is not proved, so
+Borell's Isoperimetric Theorem itself remains a conditional result here. The book's
+`[-1, 1]`-valued volume-`1 / 2` form, `Stab_ρ[f] ≤ 1 - 2 / π * arccos ρ` for `E_γ f = 0`, is not
+stated; it follows from `_of_integral_eq_half` applied to `fun z => (1 + f z) / 2`.
+Exercise 11.25 (sets suffice) is not needed, since the two-function route handles
+`[0, 1]`-valued `f` directly.
+
 ## Compare bits with Gaussians by the invariance principle
 
 Import
@@ -3178,6 +3404,26 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
 
+## Bound bad visits along an expander walk
+
+Import [VisitCount.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean).
+Let `G : RotationMap V D`, with finite nonempty vertex type `V` and incident-port type `D`.
+Write `L = t + 1` for the number of visited vertices, `m : ℕ` for an integer visit threshold,
+and `q = dens W + G.spectralExpansion ^ 2` for a bad-vertex set `W`.
+For this set, `G.visitCount W p` counts all `t+1` vertices, including the
+initial vertex. Apply `dens_filter_selected_walkAt_mem_le` to arbitrary selected times,
+`expect_choose_visitCount_le` for factorial moments, and `dens_filter_visitCount_gt_le`
+for strict integer tails. `dens_filter_visitCount_half_lt` bounds a strict majority of
+bad samples by `(32 * dens W)^((t+1)/4)` when expansion is below `sqrt(dens W)`.
+The [checked clients](../../CslibFrontierTests/ExpanderVisitCount.lean) cover nonconsecutive
+times excluding zero, computed counts, boundaries, and even/odd majority events.
+Goldreich Exercise 8.44's strict displayed integer bound needs positive `q` and
+`1≤m≤L`; the general non-strict tails include degenerate cases. These are uniform-start
+probabilities on vertices and port sequences, not a sampler or runtime certificate.
+
+From the repository root, run `scripts/build.sh CslibFrontierTests.ExpanderVisitCount`
+to check the examples.
+
 ## Bound adapted Bernoulli counts and hitting times by stochastic domination
 
 Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
@@ -3223,6 +3469,28 @@ probabilities satisfy lower or upper bounds.
   `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
   sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Sequential processes with unreachable histories**:
+  [`StochasticDomination/SequentialSupport.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialSupport.lean)
+  provides `PMF.seqCount_stochasticallyDominates_poissonBinomial_of_support` and
+  `PMF.seqCount_active_toReal_Iio_le_of_support`. Their probability envelopes are required only
+  when `h ∈ (PMF.seqProcess step t).support`; the latter also requires the original count to be
+  below the target. Use these when invariants of actual responses fail on impossible histories.
+  The response type can have unbounded discrete support. `PMF.seqCount_congr_on_support`
+  transfers counts between events agreeing at every reachable prefix. The checked
+  [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
+  metadata and fair success bits: actual histories have authenticated tags, while an impossible
+  unauthenticated prefix has zero success probability and violates the older all-prefix premise.
+  For an upper envelope, use
+  [`StochasticDomination/SequentialUpper.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialUpper.lean):
+  `PMF.poissonBinomial_replicate_stochasticallyDominates_seqCount_of_support` bounds the count
+  by `poissonBinomial (List.replicate n p)` when each reached-prefix event probability is at
+  most `p`. `PMF.seqCount_toReal_Ici_le_of_support` exposes the binomial upper tail directly.
+  The same checked client complements its event: its probability is still one-half on actual
+  histories, but becomes one at the impossible prefix. The proof reuses the lower comparison
+  and [`PoissonBinomial/Reflection.lean`](../../CslibFrontier/Probability/PoissonBinomial/Reflection.lean),
+  which derives count reflection from `BitString.weight_not`; callers need no separate
+  comparison induction or assumptions on impossible histories. These are probability lemmas;
+  they do not by themselves instantiate a stochastic-oracle deadline lower bound.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and

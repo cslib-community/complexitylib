@@ -16,9 +16,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.StatisticalDistance.Event
-import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
 
 /-!
 # Statistical distance of independent repetitions
@@ -30,10 +28,10 @@ Direct Product Lemma of Sahai and Vadhan [SahaiVadhan2003, Lemma 3.4]; the upper
 
 The distinguisher counts the coordinates that fall in the event `S` on which `μ` is more likely
 than `ν`. Each coordinate lands in `S` with probability `p` under `μ` and `q = p - δ` under `ν`, so
-the count concentrates near `k p` under `μ` and near `k q` under `ν`. Hoeffding's inequality
-(`Cslib.Probability.PMF.pi_sum_ge_mean_add`, `Cslib.Probability.PMF.pi_sum_le_mean_sub`) bounds
-the probability that the count crosses the midpoint threshold, under either distribution, by
-`exp (-k δ² / 2)`.
+the count concentrates near `k p` under `μ` and near `k q` under `ν`. Hoeffding's inequality for
+`[0, 1]` scores (`Cslib.Probability.PMF.pi_sum_ge_mean_add_card_mul`,
+`Cslib.Probability.PMF.pi_sum_le_mean_sub_card_mul`) bounds the probability that the count crosses
+the midpoint threshold, under either distribution, by `exp (-k δ² / 2)`.
 
 ## Main results
 
@@ -57,7 +55,7 @@ Together with `dist_iid_le` this is the Direct Product Lemma. -/
 theorem one_sub_two_mul_exp_le_dist_iid (μ ν : PMF α) (k : ℕ) :
     1 - 2 * Real.exp (-(k * dist μ ν ^ 2) / 2) ≤ dist (iid μ k) (iid ν k) := by
   classical
-  rcases Nat.eq_zero_or_pos k with rfl | hk
+  rcases Nat.eq_zero_or_pos k with rfl | _
   · simp only [Nat.cast_zero, zero_mul, neg_zero, zero_div, Real.exp_zero]
     linarith [dist_nonneg (x := iid μ 0) (y := iid ν 0)]
   set d := dist μ ν with hd
@@ -80,32 +78,29 @@ theorem one_sub_two_mul_exp_le_dist_iid (μ ν : PMF α) (k : ℕ) :
     rw [toOuterMeasure_apply_toReal]
     simp only [score, mul_ite, mul_one, mul_zero, Finset.sum_const, Finset.card_univ,
       Fintype.card_fin, nsmul_eq_mul]
-  set ε : ℝ := k * d / 2 with hε
-  have hε0 : 0 ≤ ε := by positivity
-  have hkR : (0 : ℝ) < k := Nat.cast_pos.2 hk
-  have hexp : -2 * ε ^ 2 / ((Fintype.card (Fin k) : ℝ) * 1 ^ 2) = -(k * d ^ 2) / 2 := by
-    rw [Fintype.card_fin, hε]
-    field_simp
+  have hd2 : 0 ≤ d / 2 := div_nonneg dist_nonneg zero_le_two
+  have hexp : -2 * (k : ℝ) * (d / 2) ^ 2 = -(k * d ^ 2) / 2 := by ring
   -- Under `ν`, the count reaches the midpoint only with exponentially small probability.
-  set E : Set (Fin k → α) := {x | k * q + ε ≤ ∑ i, score i (x i)} with hE
+  set E : Set (Fin k → α) := {x | k * q + k * (d / 2) ≤ ∑ i, score i (x i)} with hE
   have hν : ((iid ν k).toOuterMeasure E).toReal ≤ Real.exp (-(k * d ^ 2) / 2) := by
-    have h := pi_sum_ge_mean_add (fun _ : Fin k => ν) score zero_le_one (hscore ν) hε0
-    rw [hmean, hexp] at h
+    have h := pi_sum_ge_mean_add_card_mul (fun _ : Fin k => ν) score (hscore ν) hd2
+    rw [Fintype.card_fin, hmean, hexp] at h
     rwa [iid_eq_pi]
   -- Under `μ`, the count stays above the midpoint except with exponentially small probability.
   have hμ : 1 - Real.exp (-(k * d ^ 2) / 2) ≤ ((iid μ k).toOuterMeasure E).toReal := by
-    have h := pi_sum_le_mean_sub (fun _ : Fin k => μ) score zero_le_one (hscore μ) hε0
-    rw [hmean, hexp, ← hp, ← iid_eq_pi] at h
-    have hsub : Eᶜ ⊆ {x : Fin k → α | ∑ i, score i (x i) ≤ k * p - ε} := by
+    have h := pi_sum_le_mean_sub_card_mul (fun _ : Fin k => μ) score (hscore μ) hd2
+    rw [Fintype.card_fin, hmean, hexp, ← hp, ← iid_eq_pi] at h
+    have hsub : Eᶜ ⊆ {x : Fin k → α | ∑ i, score i (x i) ≤ k * p - k * (d / 2)} := by
       intro x hx
       simp only [hE, Set.mem_compl_iff, Set.mem_ofPred_eq, not_le] at hx
       simp only [Set.mem_ofPred_eq]
-      have : k * q + ε = k * p - ε := by
-        rw [hε, ← hpq]
+      have : k * q + k * (d / 2) = k * p - k * (d / 2) := by
+        rw [← hpq]
         ring
       linarith
     have hmono : ((iid μ k).toOuterMeasure Eᶜ).toReal ≤
-        ((iid μ k).toOuterMeasure {x : Fin k → α | ∑ i, score i (x i) ≤ k * p - ε}).toReal :=
+        ((iid μ k).toOuterMeasure
+          {x : Fin k → α | ∑ i, score i (x i) ≤ k * p - k * (d / 2)}).toReal :=
       toOuterMeasure_toReal_mono (iid μ k) hsub
     have hc := toOuterMeasure_toReal_add_compl (iid μ k) E
     linarith

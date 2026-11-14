@@ -287,7 +287,7 @@ class HandoffTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             return result.stdout
 
-        run("lake", "build", "fixture")
+        run("lake", "build", "--wfail", "--iofail", "fixture")
         setup = [p.relative_to(self.build) for p in self.build.rglob("*.json")
                  if handoff.module_setup_input(p.relative_to(self.build))]
         self.assertTrue(any(p.name.endswith(".setup.json") for p in setup))
@@ -295,6 +295,12 @@ class HandoffTests(unittest.TestCase):
         for name in ("lib/lean/Fixture/Basic.olean.server", "lib/lean/Fixture/Basic.olean.private",
                      "lib/lean/Fixture/Basic.ir", "ir/Fixture/Basic.c", "bin/fixture"):
             self.assertTrue((self.build / name).is_file(), name)
+        # Model archives inherited from an earlier main publication. An ordinary merge-group
+        # build and handoff should retain them without another archive-preparation phase.
+        run("lake", "build", "--no-build", "--wfail", "--iofail", "Fixture", "-o",
+            str(self.base / "producer-mapping.jsonl"))
+        self.assertEqual(len(list(self.build.rglob("*.ltar"))), 2)
+        run("lake", "build", "--wfail", "--iofail", "fixture")
         run("git", "add", ".")
         run("git", "-c", "commit.gpgsign=false", "-c", "user.name=Test",
             "-c", "user.email=test@example.invalid", "commit", "-qm", "Real Lake fixture")
@@ -317,6 +323,8 @@ class HandoffTests(unittest.TestCase):
         # compiled modules, IR, executable and saved traces unchanged, without setup inputs.
         run("lake", "build", "--no-build", "fixture")
         run("lake", "build", "fixture")
+        run("lake", "build", "--no-build", "--wfail", "--iofail", "Fixture", "-o",
+            str(self.base / "consumer-mapping.jsonl"))
         self.assertTrue(all(not (self.build / p).exists() for p in setup))
         for name, expected in outputs.items():
             path = self.build / name
@@ -324,11 +332,17 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(run(str(self.build / "bin/fixture")).strip(), "42")
 
         # A genuine source change still compiles and recreates both kinds of setup input.
+        archive = self.build / "ir/Fixture/Basic.ltar"
+        original_archive = handoff.digest(archive)
         (consumer / "Fixture/Basic.lean").write_text(basic.replace("n + n", "n + n + 1"))
         run("lake", "build", "fixture")
         self.assertTrue((self.build / "ir/Fixture/Basic.setup.json").is_file())
         self.assertTrue((self.build / "ir/Fixture/Basic.irsetup.json").is_file())
         self.assertEqual(run(str(self.build / "bin/fixture")).strip(), "43")
+        self.assertFalse(archive.exists(), "Lake must invalidate the changed module's archive")
+        run("lake", "build", "--no-build", "--wfail", "--iofail", "Fixture", "-o",
+            str(self.base / "changed-mapping.jsonl"))
+        self.assertNotEqual(handoff.digest(archive), original_archive)
 
     def test_identity_mismatch_or_unsuccessful_run_never_downloads(self):
         cases = ({"head_sha": "f" * 40}, {"event": "pull_request"},

@@ -79,13 +79,19 @@ Sometimes `lake build --wfail --iofail` or `lake test --wfail --iofail` passes l
 
 After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_cache_restores.py`. Full mode checks all built sources in the root package, including unchanged clients, tests and executables. This conservative scope also covers deletions and configuration changes that cannot use quick mode's import graph. Quick mode passes its affected source files, including unchanged importing clients. It also checks built aggregates on those clients' import paths: an aggregate can warn about a deprecated import even when its importing client elaborates silently. Unused library aggregates are omitted. Selected executables add their built helpers and affected built aggregates conservatively because their helper imports are outside the library graph. These optional paths are audited only when outputs exist. A synthetic, missing or unreadable trace triggers re-elaboration; an ordinary trace has already replayed its messages during the build.
 
-The audit fails on any message or elaboration failure. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. Files are elaborated one at a time, so each restored file adds its elaboration time to the check; a full check after a large restore can take appreciably longer. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
+The audit fails on any message or elaboration failure, reporting failures in source-path order even though parallel workers elaborate and stream start notices non-deterministically. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. By default, it elaborates up to eight files concurrently (bounded by available CPUs and any positive `LEAN_NUM_THREADS`), setting `LEAN_NUM_THREADS=1` in each worker when running multiple workers so parallel checks do not multiply Lean's internal thread pool; setting `--jobs N` (or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`) bounds concurrent `lean` processes, which directly limits total `.olean` mmap file handles and process memory rather than Lean's per-worker threads. Even in parallel, a full check after restoring thousands of modules still re-elaborates each restored root-package source. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
 
-The restored-source audit reports its selected count, current source and elapsed audit time
-before each local elaboration, so a long-running file remains visible. The final summary also
-reports total elapsed time. When `CI` is set, per-file progress is quiet by default; use
+Full and quick checks stream the restored-source audit's selected count, worker mode, each source
+before its local elaboration starts and elapsed time, while retaining the complete output in their
+failure logs. The final summary also reports total elapsed time. Successful audits currently leave
+synthetic traces unchanged, so repeating the check can repeat that elaboration; ordinary targeted
+builds do not run this audit. Follow the [focused validation workflow](getting-started.md#prerequisites-and-the-checkouts-version)
+and use hosted CI for full validation when available.
+
+When running the audit directly with `CI` set, per-file progress is quiet by default; use
 `python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to suppress
-it locally. Both modes retain all selected checks, failure messages and the final summary.
+it locally. Both modes retain all selected checks, failure messages and the final summary;
+the full and quick wrappers explicitly request progress.
 
 ## Diagnose "failed to read file" on whole-library imports
 
@@ -111,7 +117,7 @@ On a shared host, concurrent builds can exhaust the kernel's file-handle table b
 cut -f1,3 /proc/sys/fs/file-nr
 ```
 
-One Lake build runs roughly as many `lean` processes at once as its thread pool allows, which `LEAN_NUM_THREADS` sets. Bound both that setting and the number of builds running at the same time on the host; CPU quotas do not reduce the handles. Build the changed modules and their clients rather than the whole library, and use hosted CI for the full validation run. Rerun the failed command once the count has dropped. Lake reuses the modules that completed.
+One Lake build runs roughly as many `lean` processes at once as its thread pool allows, which `LEAN_NUM_THREADS` sets (`scripts/check_cache_restores.py` also caps its default worker pool by `LEAN_NUM_THREADS`, or explicitly via `CSLIB_FRONTIER_CACHE_AUDIT_JOBS` / `--jobs`). Bound both that setting and the number of builds running at the same time on the host; CPU quotas do not reduce the handles. Build the changed modules and their clients rather than the whole library, and use hosted CI for the full validation run. Rerun the failed command once the count has dropped. Lake reuses the modules that completed.
 
 ## Distinguish the checks that passed
 
@@ -126,6 +132,16 @@ phase timings and archive counts in `CACHE_STAGING_METRICS`. The mapping-produci
 pack missing module archives even when no Lean source needs recompilation. The
 [cache publication profiling procedure](../../scripts/cache/README.md#profile-cache-publication)
 gives the clean-checkout command, metric meanings and controls for a comparison. Separate this
-preparation from upload time: both GCS and MIT receive the same staged files.
+preparation from upload time: both publishers consume the same complete staged files, while
+MIT can transfer only missing archive payloads. Its `CACHE_HTTP_PUBLICATION` log reports the
+request body sizes and whether it used incremental transfer or a full compatibility/race
+fallback. The [protocol contract](../../tools/cache-origin/README.md#publication-contract)
+explains those modes; a smaller upload does not mean staging became cheaper.
+
+CI saves `.lake` after staging so subsequent builds can reuse the new archives. Ordinary builds
+and successful handoffs preserve unchanged archives; source changes still let Lake invalidate
+them. Include Actions restore/save bytes and time and handoff transfer costs when comparing the
+whole cycle. Larger snapshots can evict older caches, and cancellation before the late save loses
+that run's snapshot; a failed check remains failed even when its reusable build outputs are saved.
 
 [complexitylib]: ../sources.md#complexitylib

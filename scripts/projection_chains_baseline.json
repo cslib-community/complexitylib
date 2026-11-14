@@ -245,7 +245,6 @@
  "CslibFrontier/Crypto/Computational/Kilian/MicaliSoundness.lean": 8,
  "CslibFrontier/Crypto/Computational/LWE/DualRegev.lean": 1,
  "CslibFrontier/Crypto/Computational/LWE/Regev.lean": 4,
- "CslibFrontier/Crypto/Computational/NaorYung.lean": 4,
  "CslibFrontier/Crypto/Computational/SIS/ModulusSwitch/CenteredBinomial.lean": 2,
  "CslibFrontier/Crypto/Computational/SIS/ModulusSwitch/Failure.lean": 1,
  "CslibFrontier/Crypto/Computational/SchnorrSignature/EncodedROM.lean": 1,

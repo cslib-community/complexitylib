@@ -22,8 +22,8 @@ distinguishing advantage of the two experiments.
 
 This is the concrete, single-key form of PRF security for arbitrary finite domains and ranges. It
 complements the word-level asymptotic games `Cslib.Crypto.prfRealGame` and
-`Cslib.Crypto.prfIdealGame`, and the same-domain-and-range games without private coins used for
-the Luby–Rackoff hybrids (`Cslib.Crypto.LubyRackoff.prfSingleRealGame`).
+`Cslib.Crypto.prfIdealGame`. Several independent keys reduce to this game through the hybrid
+reductions of `Cslib.Crypto.PRF.multiKeyReduction`, which the finite Luby–Rackoff theorems use.
 
 ## Main definitions
 

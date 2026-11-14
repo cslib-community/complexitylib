@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.Fold
@@ -828,7 +829,7 @@ private theorem computableInPolyTime_branchClamped :
     (unary_add.comp (((length_list (encList (encList encNat))).comp heqs).prod
       (unary_add.comp (hn'.prod hn')))))
   have hdiv := binary_div.comp ((unary_to_binary.comp hnum).prod
-    (unary_to_binary.comp (bi_unary_max.comp ((const 1).prod hQu))))
+    (unary_to_binary.comp (unary_max' (const 1) hQu)))
   have hq : PolyT branchTruncQ encBranchEvalInput encUnary := by
     refine (binary_min_unary' hnum hdiv).of_enc_eq fun inp => congrArg encUnary ?_
     dsimp only [Function.comp_apply, branchTruncQ]
@@ -989,8 +990,8 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hc_cap := unary_mul.comp ((unary_mul.comp ((const 4).prod hℓ_p)).prod
       (unary_add.comp ((unary_add.comp ((unary_mul.comp (hmeq_p.prod hn_p)).prod
         hn_p)).prod (const 1))))
-    have hc_meas := bi_unary_min.comp (hc_cap.prod (unary_mul.comp (hru_p.prod hm_rows)))
-    have hnode := bi_intBin_add' (intBin_natCast.comp (unary_to_binary.comp ht)) (const 1)
+    have hc_meas := unary_min' hc_cap (unary_mul' hru_p hm_rows)
+    have hnode := intBin_add' (intBin_natCast.comp (unary_to_binary.comp ht)) (const 1)
     have hvgt := (listGetD (encA := encList (encList encNat)) []).comp
       ((computableInPolyTime_varGroups hdat).prod ht)
     have hgmt := (listGetD (encA := encList (encList (encList encIntBin))) []).comp
@@ -1024,7 +1025,7 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hmeq_f := (length_list (encList (encList encNat))).comp heqs_f
     have hnode_fn : PolyT (fun q : (_ × List JetRows) × ℕ => ((q.2 : ℤ) + 1))
         (encPair eF encUnary) encIntBin :=
-      bi_intBin_add' (intBin_natCast.comp (unary_to_binary.comp (snd eF encUnary))) (const 1)
+      intBin_add' (intBin_natCast.comp (unary_to_binary.comp (snd eF encUnary))) (const 1)
     have hnodes : PolyT
         (fun p : (BranchEvalInput × ReplacementDesignData) × List JetRows =>
           (List.range (branchQ_u p.1.1)).map fun (t : ℕ) => ((t : ℤ) + 1)) eF (encList encIntBin) :=

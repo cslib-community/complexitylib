@@ -38,6 +38,9 @@ Naor and Yung ([NaorYung1989], Section 3; §§2.1–2.3 in the March 13, 1995 ma
 see also [Goldreich2004], Section 6.4.3.2, June 2003 chapter draft Construction 6.4.20 and
 Proposition 6.4.21) construct a universal one-way (target collision-resistant) hash family from any
 one-way permutation `f` without collision-free trapdoors.
+This module is about that hash construction only. It is not the Naor–Yung public-key encryption
+scheme secure against non-adaptive chosen-ciphertext attacks (CCA1), which comes from a different
+paper and which the library does not formalize.
 Rather than pairing `f` with an `(m - 1) × m` affine/Toeplitz universal hash, this module uses a
 direct `{0, δ}`-coset pivot-deletion quotient on `m`-bit shift keys `δ` so that the single-step
 reduction has exact loss `1` and zero additive error:

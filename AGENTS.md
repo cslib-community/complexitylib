@@ -71,6 +71,10 @@ statements does not discharge this work. Deferral is exceptional under
 [Improving library ergonomics](#improving-library-ergonomics).
 
 Optimize for trustworthy, reusable results, not the number of closed issues or merged PRs.
+Correct statements that are faithful to their sources take priority over forward progress. When
+the two conflict, fix the statement or the name, even if the milestone slips; do not land a weaker
+result under the name of the stronger one
+([Faithful headlines](#faithful-headlines)).
 When narrowing a task, preserve its original objective and record the bounded deliverable and
 remaining gap prominently. A restricted model, conditional result, or partial theorem does not
 complete a broader objective. Do not silently retitle an ambitious issue into an easier completed
@@ -295,9 +299,11 @@ MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
-Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
-validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
-`scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
+Use MCP goal inspection, diagnostics and theorem search while iterating. When a build is needed,
+use `scripts/build.sh <affected modules and representative clients> --wfail --iofail`;
+reserve `scripts/check.sh --quick --no-full-fallback` for local validation checkpoints.
+`scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and `scripts/worktree.sh create`
+run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
 Use `scripts/worktree.sh` for isolated worktrees; follow its
@@ -321,19 +327,20 @@ optional caches and runs every locally reproducible step from CI's parallel `sou
 `lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
 (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
 encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
-statement ratchet, result registry and changed-file lints. Changed-file checks compare with the
-merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining
-step stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
-fails when either execution job gains a step that is neither mirrored nor recorded there, when a
-mirrored step runs a line or sets an option that the local run does not repeat, or when the
-required aggregator stops requiring both jobs to succeed and forwarding the Lean job's publication
-output.
+statement and security premise ratchets, result registry and changed-file lints. Changed-file
+checks compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py`
+records why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need
+GitHub context), and its test fails when either execution job gains a step that is neither
+mirrored nor recorded there, when a mirrored step runs a line or sets an option that the local
+run does not repeat, or when the required aggregator stops requiring both jobs to succeed and
+forwarding the Lean job's publication output.
 The split overlaps work rather than removing it: it adds another checkout and runner plus the
 aggregator's scheduling time, and saves only source-check time that would otherwise extend the
 slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
-After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
-restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
-affected sources, including unchanged importing clients, built import aggregates and executable
+After the Lean gates, full mode also re-elaborates built root-package sources whose individual
+artifacts Lake restored without diagnostic logs. This recovers warnings and informational output;
+it is not part of an ordinary targeted build. Quick mode checks the affected sources, including
+unchanged importing clients, built import aggregates and executable
 helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
@@ -341,16 +348,18 @@ generated research data. They catch source/link drift and malformed visual marku
 replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
-repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
-need direct checks of the changed behavior. Required CI and merge-group checks still apply.
+repeat it locally merely to satisfy a second reporting requirement. Run local full validation
+(`scripts/check.sh`) only when explicitly requested or hosted coverage is unavailable; changes
+to validation machinery also need direct checks of the changed behavior. Required CI and
+merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
 any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
-For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
-transitive importing clients, then checks import aggregates. The comparison uses the merge base
+At local validation checkpoints, `scripts/check.sh --quick --no-full-fallback [--base REF]`
+builds changed Lean modules and their transitive importing clients, then checks import aggregates.
+The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene and the source-only changed-file lints
 (`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
@@ -358,14 +367,16 @@ when a library module changed, the encoding readability and projection chain rat
 only sources and take seconds. Run the same changed-file lints when building targets directly
 instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, aggregate edits other than the import
-lines `lake exe mk_all` adds for new modules, unsupported layouts and ambiguous change/import
+not full validation. Without `--no-full-fallback`, non-Lean changes, deletions/renames, aggregate
+edits other than the import lines `lake exe mk_all` adds for new modules, unsupported layouts and
+ambiguous change/import
 analysis fall back to the full check. The exceptions are the ratchet baselines
 `scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
-which no Lean gate reads: a change to one runs its ratchet instead. On a shared host, use
-`--quick --no-full-fallback`: it reports such a change and exits with status 3, so you can build
-the changed modules and clients directly and leave the full run to CI. Quick success alone does
-not satisfy the full validation requirement above; documentation-only checks need not invoke
+which no Lean gate reads: a change to one runs its ratchet instead. With `--no-full-fallback`,
+an unsupported change exits with status 3: run focused checks for the changed files and
+representative clients, and leave the full run to hosted CI. Do not respond to status 3 by
+starting a full local check unless the full-validation condition above applies. Quick success
+alone does not satisfy the full validation requirement above; documentation-only checks need not invoke
 quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
@@ -536,6 +547,44 @@ a new copy of an argument the library already makes is a finding when the
 [library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
+
+**Check every new or changed headline before anything else**
+([Faithful headlines](#faithful-headlines)). In the review, quote its statement (abridged) and
+compare the name, docstring, PR title and any inventory entry with what the statement proves. For
+a theorem that claims a cited result, classify each hypothesis as one of:
+
+- (i) an assumption the cited source names, stated relative to the problem, sampler or component
+  it concerns;
+- (ii) membership of the adversary or input in the admitted class;
+- (iii) a property of a generic component that the source takes as given;
+- (iv) anything else: a step of the cited proof, a property of an object the proof builds, a
+  caller-supplied object whose existence or efficiency is what the result proves, or unassumed
+  idealized behaviour of the construction's own algorithms.
+
+For original mathematics or internal library infrastructure
+([New statements and definitions](#new-statements-and-definitions)), an absent cited source is not
+a defect: check instead that its name, docstring and PR title accurately match its actual
+hypotheses and scope, that it is non-vacuous and genuinely reusable, and that it does not imply a
+cited endpoint was proved.
+
+Any vacuous hypothesis blocks approval. When a statement is presented as the cited endpoint, or
+advertises a headline property that its premises assume rather than establish, any (iv)
+hypothesis, undisclosed deviation, overclaiming name/title or weaker stand-in blocks approval.
+Such a finding is not a nit, and it is not deferred to a follow-up under
+[Improving library ergonomics](#improving-library-ergonomics); a reviewer does not offer "document
+it as a milestone" in place of fixing it. Resolve it either by proving the faithful statement,
+or—when the conditional statement is a useful, non-vacuous intermediate step—by renaming
+(`…_of_reduction_le`, `…_of_realization`) and documenting it as a helper under rule 2 of
+[Faithful headlines](#faithful-headlines): such a helper is permitted provided the published
+theorem stays open and the helper never occupies its name, PR title or
+[results inventory](results/README.md) entry. Also check that the change removes or demotes any
+stand-in it supersedes (rule 4). In `Cslib.Crypto`, `scripts/check_security_premises.py`
+supplements this gate on elaborated premise shapes ([Security theorems](#security-theorems)),
+without replacing semantic review.
+
+Before a published theorem enters the [results inventory](results/README.md), a human maintainer
+checks the statement against the source and records that check in a comment written by the human,
+not by an agent posting from their account. Agent review alone does not admit an entry.
 
 Before approving library changes, read the **Parallel-definition**, **Duplicate-statement** and
 **Repeated-proof-block** notices in the CI job summary or step logs for the reviewed revision. Inspect both
@@ -709,6 +758,52 @@ Syntactic similarity is a prompt to inspect reuse, not proof that models should 
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
 
+### Faithful headlines
+
+A *headline* is a theorem presented as a cited result or as the property its name advertises
+("security", "soundness", "hardness", "proof of knowledge", "is PPT"), whether by its name, its
+docstring, its module documentation, a manual page, a PR title or a
+[results inventory](results/README.md) entry. Lean checks proofs, not whether a statement says what
+its presentation claims, so this is the part of a change that review exists to check.
+
+1. **A headline states the result it names.** For a cited result, its quantifiers, hypotheses,
+   model, admitted adversaries or inputs, resource conventions and conclusion match the source,
+   apart from deviations that the docstring names as part of the result's scope and that review
+   accepts as the same theorem in a different formal setting (for example, the library's two-world
+   advantage in place of the source's `|Pr[b' = b] - 1/2|`, with the factor of two carried
+   through). Original mathematics and internal library infrastructure need no cited source
+   ([New statements and definitions](#new-statements-and-definitions)); their names, docstrings and
+   PR titles state their actual hypotheses and scope, they are genuinely reusable, and they do not
+   imply that a cited endpoint was proved.
+2. **Disclosure does not license a weaker headline.** A result is a *stand-in* when it assumes a
+   step of the cited proof, something about an object that its own proof builds (a reduction,
+   simulator, extractor, hybrid or decoder), or a caller-supplied object whose existence or
+   efficiency is what the result proves. It is also a stand-in when it replaces the construction's
+   algorithms with idealized ones, proves the claim for a fixed finite instance instead of a
+   family, or weakens the notion, model or adversary class (including parameters chosen after the
+   adversary). A theorem the source itself states conditionally, such as a hardness-magnification
+   implication, is not a stand-in when its hypothesis is the source's.
+   A useful, non-vacuous stand-in may land as an intermediate step, never as the headline for the
+   cited result: its name states the condition (`…_of_reduction_le`, `…_of_realization`), its
+   docstring opens by saying it is a step or helper and not the cited result, it cites the source
+   as "a step of" or "after" rather than as its endpoint, the cited objective stays open, and
+   neither the PR title nor the results inventory presents it as the cited result. Listing the gap
+   under "Limitations", in the PR body, at the end of a docstring or in an inventory scope note
+   does not meet this rule.
+3. **No vacuous headlines.** A headline—or a step landed under rule 2—whose hypotheses cannot hold
+   together, or whose conclusion follows trivially (an extractor that ignores the transcript), is a
+   misformalization even when it is documented. When a hypothesis might be unsatisfiable, check a
+   satisfying instance.
+4. **The faithful statement supersedes its stand-ins.** A change that proves the faithful
+   statement deletes or demotes every stand-in it supersedes, together with their docstrings,
+   manual text, `ROADMAP.md` lines and inventory entries. Search for them by conclusion, by
+   `_of_…` names and in the milestone's issue, not only by name.
+
+Stand-ins already on `main` are misformalizations to fix under these rules, not precedents to copy.
+Record them in an issue (#5293 for cryptography). Domain contracts, such as
+[Security theorems](#security-theorems) for cryptography, refine what counts as a named assumption
+and a generic component in their area.
+
 ### Structures for domain objects and records
 
 Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
@@ -781,6 +876,45 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
+
+### Security theorems
+
+A security theorem may assume only (a) named hardness assumptions, that is, Prop-valued
+definitions documented as assumptions (`F.DDH setup`, `DecisionLWE …`, `OneWay f`,
+`QuadraticResiduosityHard setup`, or a named collision-resistance or circular-security assumption
+on a component the scheme uses), stated relative to the setup sampler or component they concern;
+(b) that the adversary is in the admitted class (`A.IsPPT`, `IsOraclePPT …`, or the model's
+circuit bound); and (c) properties of components that the cited result itself takes as given,
+supplied by the caller.
+
+It must not assume anything about an object that its proof constructs, whether from the adversary
+or not (a reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success,
+its membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+whose existence or efficiency is the content of the cited result, such as the knowledge extractor
+of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
+scheme's own algorithms behave like idealized ones (for example, that the key generator's output
+is indistinguishable from an ideal key law) unless the cited result names that as an assumption.
+And it may not stop at a bound for parameters that an `∃` chooses after the adversary
+(`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`); a uniform reduction chooses them itself.
+
+Write each reduction as an explicit program with an efficiency witness proved from the
+adversary's certificate: an `isPPT_…` or `isOraclePPT_…` lemma, or the model's efficiency
+certificate (for example a circuit-size bound). Prove the asymptotic theorem by applying the
+assumption to the reduction through that witness, as `DDH.elGamalINDCPA` does
+([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
+Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
+`Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s
+advantage, or `B_A ∈ 𝒟`, as a premise is an algebraic helper: its name (`…_of_reduction_le`) and
+docstring say so, and no headline or asymptotic theorem stops at it.
+
+Names and docstrings state the model (standard, random-oracle, ideal, query-bounded or
+information-theoretic), the notion (single- or multi-challenge, one-time or many-time,
+honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
+cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
+to an honestly named and documented helper, and updates its ROADMAP, manual and
+[results inventory](results/README.md) mentions ([Faithful headlines](#faithful-headlines); #5293).
+`scripts/check_security_premises.py` checks the premise rule after a build against a justified
+baseline ([details](CONTRIBUTING.md#library-quality-standard)).
 
 ## Design commitments (do not re-litigate casually)
 

@@ -234,16 +234,8 @@ class WorkflowWiringTests(unittest.TestCase):
                 self.assertNotIn("continue-on-error", text.split(install, 1)[1].split("      - ", 1)[0])
                 self.assertLess(text.index(install),
                                 text.index("      - name: Restore Mathlib cache with retries"))
-                if name == "docs.yml":
-                    # API docs still use lean-action, for its GitHub cache restore.
-                    marker = next(line for line in text.splitlines(keepends=True)
-                                  if line.startswith("      - uses: leanprover/lean-action@"))
-                    action = text.split(marker, 1)[1].split("      - ", 1)[0]
-                    self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
-                    self.assertNotIn("continue-on-error", action)
-                else:
-                    # A release outage must not fail CI: elan comes only from install-lean.
-                    self.assertNotIn("leanprover/lean-action", text)
+                # A release outage must not fail CI: elan comes only from install-lean.
+                self.assertNotIn("leanprover/lean-action", text)
                 step = text.split("      - name: Restore Mathlib cache with retries\n", 1)[1].split("      - ", 1)[0]
                 self.assertIn("continue-on-error: true", step)
                 self.assertIn("timeout-minutes: 10", step)

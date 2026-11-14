@@ -77,8 +77,20 @@ failure. The [codebase troubleshooting chapter](workflows/troubleshooting.md) ex
 Assign review to an agent that did not design or implement the change. For example:
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
-> statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds.
+> statements. Start with each headline: quote it and compare its name, docstring, title and any
+> inventory entry with what the statement proves. For a cited result, classify every hypothesis as
+> a source-named assumption, the admitted class, a generic component the source takes as given, or
+> something else (such as a proof step or a property of an object the proof builds); for original
+> mathematics or internal infrastructure, an absent source is not a defect—check instead that it
+> is non-vacuous, genuinely reusable, accurately named for its actual hypotheses and scope, and
+> does not imply a cited endpoint was proved. Any vacuous hypothesis, or any hypothesis in the
+> last class, undisclosed deviation or stand-in presented as the cited endpoint or advertised
+> headline, blocks approval; do not offer "document it as a milestone" instead. A useful,
+> non-vacuous step honestly named (`…_of_reduction_le`, `…_of_realization`) and documented as a
+> helper—leaving the published theorem open and out of its name, title and inventory entry—is
+> permitted, and any stand-in superseded by a faithful theorem must be removed or demoted. Check
+> the mathematical claim, API and representative client, including the model, encodings,
+> hypotheses and resource bounds.
 > Check public API usability in a representative `module` client with ordinary imports of the API.
 > Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
@@ -107,6 +119,17 @@ and why; the [caller review procedure](../AGENTS.md#check-the-api-through-its-ca
 checks. An approval must cover the final revision; substantive
 fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
 its identity.
+
+A faithful statement matters more than a milestone. Agent reviews have approved theorems that
+assumed something about their own reduction because the PR disclosed it
+([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293); in `Cslib.Crypto`,
+`scripts/check_security_premises.py` catches common elaborated premise shapes under
+[security theorems](../AGENTS.md#security-theorems), while review owns semantic fidelity). When a
+report says a result landed "with limitations", ask whether the theorem is named and documented as
+a step ([faithful headlines](../AGENTS.md#faithful-headlines)) and whether the cited result is
+still open. Before a published theorem enters the [results inventory](../results/README.md), check
+its statement against the source yourself and say so in your own comment; agent review alone does
+not admit an entry.
 
 ## Direct a coordinator
 
@@ -172,6 +195,11 @@ and executable helpers.
 Bare Lake commands still lack this audit. When a local check and CI disagree about a warning,
 trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
+
+For hosted cache optimizations, measure the merge queue and following `main` run together.
+Include Actions cache and handoff transfer costs, and distinguish a successful handoff from a
+fallback build; a faster publication stage alone does not establish a faster complete cycle
+([profiling](workflows/troubleshooting.md#profile-slow-cache-publication)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

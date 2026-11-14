@@ -9,7 +9,15 @@ module
 
 public import CslibFrontier.Crypto.Computational.RSATrapdoor
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
+import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Extension
+import CslibFrontier.Computability.Probabilistic.Traverse
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Data.Nat.Size
 
@@ -44,6 +52,11 @@ recovers `x` exactly whenever the predictor is always correct on the modulus (`e
 * `Cslib.Crypto.lsbRecover_lsbQueries`: a correct parity oracle determines the RSA preimage.
 * `Cslib.Crypto.eval_lsbInverter`, `Cslib.Crypto.succProbability_rsaInversionGame_lsbInverter`:
   a perfect predictor inverts RSA with certainty.
+* `Cslib.Crypto.computableInPolyTime_lsbQueries`, `Cslib.Crypto.computableInPolyTime_lsbRecover`,
+  `Cslib.Crypto.isPPT_lsbInverter`: uniform polynomial-time and strict-PPT efficiency
+  certificates for the query generator, recovery arithmetic, and doubling inverter.
+* `Cslib.Crypto.RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor`: under `RSAOneWay` on
+  eventually odd moduli, no strict-PPT predictor is always correct on infinitely many parameters.
 
 ## Implementation notes
 
@@ -57,8 +70,9 @@ the assumption over word-level predictors reading the same layout on keys with `
 [KatzLindell2020], Theorem 12.31, states that the least significant bit is hard-core
 for RSA whenever RSA is hard. Its proof must handle predictors that are only noticeably better than
 a fair guess; that reconstruction is not formalized here, so `RSAHardCoreLSB` is a separate
-assumption, and the inversion from a perfect predictor (by repeated doubling) is only the
-noiseless special case. A strict PPT certificate for `lsbInverter` is also not proved here.
+assumption, and `RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor` establishes only the
+noiseless consequence (`isPPT_lsbInverter` plus `succProbability_rsaInversionGame_lsbInverter`) for
+predictors that are always correct on every residue modulo `N`.
 `HardCore` in `CslibFrontier.Crypto.Computational.HardCore` covers unkeyed functions on uniform bit
 strings, so it cannot express a predicate of a uniform residue under generated RSA keys;
 `rsaLSBGame` is a separate keyed game that reuses `Game.guessingAdvantage`.
@@ -306,5 +320,127 @@ theorem succProbability_rsaInversionGame_lsbInverter {gen : RSAGen} {P : RSAPred
       PMF.pure_bind, decide_eq_true rfl]
   rw [hgame]
   simp [Game.succProbability]
+
+/-! ### Efficiency certificates and noiseless impossibility -/
+
+/-- Generating the `m` doubling queries `2 ^ ((k + 1) * e) * y % N` is computable in polynomial
+time when `N`, `e`, and `y` are binary, `m` is unary, and `0 < N`. -/
+theorem computableInPolyTime_lsbQueries {α : Type} {enc : α ↪ List Bool} {N e y m : α → ℕ}
+    (hN : ComputableInPolyTime N enc encNat) (he : ComputableInPolyTime e enc encNat)
+    (hy : ComputableInPolyTime y enc encNat) (hm : ComputableInPolyTime m enc encUnary)
+    (hpos : ∀ a, 0 < N a) :
+    ComputableInPolyTime (fun a => lsbQueries (N a) (e a) (y a) (m a)) enc (encList encNat) := by
+  have hrange : ComputableInPolyTime (fun a => List.range (m a)) enc (encList encUnary) :=
+    ComputableInPolyTime.range.comp hm
+  have hpow : ComputableInPolyTime
+      (fun p : α × ℕ => 2 ^ ((p.2 + 1) * e p.1) % N p.1)
+      (encPair enc encUnary) encNat := by
+    have hk : ComputableInPolyTime (fun p : α × ℕ => p.2) (encPair enc encUnary) encNat :=
+      ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd enc encUnary)
+    have hexp : ComputableInPolyTime (fun p : α × ℕ => (p.2 + 1) * e p.1)
+        (encPair enc encUnary) encNat :=
+      ComputableInPolyTime.binary_mul'
+        (ComputableInPolyTime.binary_add' hk (ComputableInPolyTime.const 1))
+        (he.comp (ComputableInPolyTime.fst enc encUnary))
+    exact ComputableInPolyTime.binary_powMod (ComputableInPolyTime.const 2) hexp
+      (hN.comp (ComputableInPolyTime.fst enc encUnary)) (fun p => hpos p.1)
+  have hstep : ComputableInPolyTime
+      (fun p : α × ℕ => 2 ^ ((p.2 + 1) * e p.1) * y p.1 % N p.1)
+      (encPair enc encUnary) encNat := by
+    have hmul : ComputableInPolyTime
+        (fun p : α × ℕ => (2 ^ ((p.2 + 1) * e p.1) % N p.1) * y p.1 % N p.1)
+        (encPair enc encUnary) encNat :=
+      ComputableInPolyTime.binary_mod'
+        (ComputableInPolyTime.binary_mul' hpow
+          (hy.comp (ComputableInPolyTime.fst enc encUnary)))
+        (hN.comp (ComputableInPolyTime.fst enc encUnary))
+    simpa only [Nat.mod_mul_mod] using hmul
+  exact ComputableInPolyTime.mapWithInput hrange hstep
+
+/-- Computing `lsbRecover N m bits = (BitString.binaryValue bits * N + 2 ^ m - 1) / 2 ^ m` is
+computable in polynomial time when `N` is binary and `m` is unary. -/
+theorem computableInPolyTime_lsbRecover {α : Type} {enc : α ↪ List Bool}
+    {N m : α → ℕ} {bits : α → List Bool}
+    (hN : ComputableInPolyTime N enc encNat) (hm : ComputableInPolyTime m enc encUnary)
+    (hbits : ComputableInPolyTime bits enc (encList encBool)) :
+    ComputableInPolyTime (fun a => lsbRecover (N a) (m a) (bits a)) enc encNat := by
+  have hval : ComputableInPolyTime (fun a => BitString.binaryValue (bits a)) enc encNat :=
+    ComputableInPolyTime.bitsBinaryValue.comp (ComputableInPolyTime.listToBits.comp hbits)
+  have hpow : ComputableInPolyTime (fun a => 2 ^ m a) enc encNat :=
+    ComputableInPolyTime.binary_two_pow.comp hm
+  have hnum : ComputableInPolyTime (fun a => BitString.binaryValue (bits a) * N a + 2 ^ m a - 1)
+      enc encNat :=
+    ComputableInPolyTime.binary_sub'
+      (ComputableInPolyTime.binary_add' (ComputableInPolyTime.binary_mul' hval hN) hpow)
+      (ComputableInPolyTime.const 1)
+  exact ComputableInPolyTime.binary_div' hnum hpow
+
+/-- `lsbInverter P` runs in uniform strict polynomial time whenever the predictor `P` is PPT. -/
+theorem isPPT_lsbInverter {P : RSAPredictor} (hP : P.IsPPT) : (lsbInverter P).IsPPT := by
+  have hqueries : ComputableInPolyTime
+      (fun x : RSAInput => lsbQueries x.publicKey.N x.publicKey.e x.challenge x.publicKey.N.size)
+      encRSAInput (encList encNat) :=
+    computableInPolyTime_lsbQueries (by fun_prop) (by fun_prop)
+      (RSAInput.computableInPolyTime_challenge_val (by fun_prop))
+      (ComputableInPolyTime.binary_size.comp (by fun_prop))
+      (fun x => x.challenge.pos)
+  have hprepare : ComputableInPolyTime
+      (fun p : RSAInput × ℕ =>
+        ({ secParam := p.1.secParam, publicKey := p.1.publicKey,
+           challenge := ⟨p.2 % p.1.publicKey.N, Nat.mod_lt _ p.1.challenge.pos⟩ } : RSAInput))
+      (encPair encRSAInput encNat) encRSAInput := by
+    have hraw : ComputableInPolyTime
+        (fun p : RSAInput × ℕ =>
+          (p.1.secParam, p.1.publicKey, p.2 % p.1.publicKey.N))
+        (encPair encRSAInput encNat) (encPair encUnary (encPair encRSAPublicKey encNat)) :=
+      (ComputableInPolyTime.prod (by fun_prop)
+        (ComputableInPolyTime.prod (by fun_prop)
+          (ComputableInPolyTime.binary_mod' (by fun_prop) (by fun_prop))))
+    exact hraw.of_enc_eq fun _ => rfl
+  have hqueryPPT : IsPPTOn (encPair encRSAInput encNat) encBool
+      (fun p : RSAInput × ℕ =>
+        P p.1.secParam p.1.publicKey ⟨p.2 % p.1.publicKey.N, Nat.mod_lt _ p.1.challenge.pos⟩) :=
+    hP.preprocess hprepare
+  have hmapM : IsPPTOn encRSAInput (encList encBool)
+      (fun x : RSAInput =>
+        (lsbQueries x.publicKey.N x.publicKey.e x.challenge x.publicKey.N.size).mapM
+          fun query => P x.secParam x.publicKey
+            ⟨query % x.publicKey.N, Nat.mod_lt _ x.challenge.pos⟩) :=
+    IsPPTOn.mapMWith hqueryPPT hqueries
+  have hpost : ComputableInPolyTime
+      (fun p : RSAInput × List Bool =>
+        lsbRecover p.1.publicKey.N p.1.publicKey.N.size p.2 % p.1.publicKey.N)
+      (encPair encRSAInput (encList encBool)) encNat :=
+    ComputableInPolyTime.binary_mod'
+      (computableInPolyTime_lsbRecover (by fun_prop)
+        (ComputableInPolyTime.binary_size.comp (by fun_prop)) (by fun_prop))
+      (by fun_prop)
+  refine (hmapM.map_with (f := fun x bits =>
+      lsbRecover x.publicKey.N x.publicKey.N.size bits % x.publicKey.N)
+    hpost).congr fun x => ?_
+  simp only [lsbInverter, ProbComp.eval_map, ProbComp.eval_bind, ProbComp.eval_pure,
+    PMF.map_bind, PMF.pure_map]
+  rfl
+
+/-- Under `RSAOneWay gen` and eventually odd moduli, no uniform strict-PPT predictor can predict
+`x.testBit 0` with certainty on every residue modulo `N` for infinitely many security parameters
+(the noiseless corollary of `isPPT_lsbInverter` and
+`succProbability_rsaInversionGame_lsbInverter`). -/
+theorem RSAOneWay.not_frequently_alwaysCorrect_lsbPredictor {gen : RSAGen}
+    (hRSA : RSAOneWay gen)
+    (hodd : ∀ᶠ n in Filter.atTop, ∀ desc ∈ (gen n).support, Odd desc.modulus)
+    {P : RSAPredictor} (hP : P.IsPPT) :
+    ¬ ∃ᶠ n in Filter.atTop, ∀ desc ∈ (gen n).support, ∀ z : Fin desc.modulus,
+      ProbComp.eval (P n desc.publicKey (desc.publicKey.eval z)) =
+        PMF.pure ((z : ℕ).testBit 0) := by
+  intro hfreq
+  have hneg := hRSA (lsbInverter P) (isPPT_lsbInverter hP)
+  obtain ⟨m, hm⟩ := (negligible_iff _).mp hneg 0 1 zero_lt_one
+  obtain ⟨n, hnm, hodd_n, hcorr_n⟩ :=
+    Filter.frequently_atTop.mp (hodd.and_frequently hfreq) m
+  have h1 := succProbability_rsaInversionGame_lsbInverter hodd_n hcorr_n
+  have hlt := hm n hnm
+  simp only [pow_zero, one_mul, h1] at hlt
+  exact lt_irrefl _ hlt
 
 end Cslib.Crypto

@@ -42,6 +42,8 @@ The packaging and resource bridge are original formalization infrastructure.
 
 ## Main results
 
+* `Cslib.Crypto.NativeQuantum.computationallyIndistinguishable_iff`: characterize the native
+  assumption by negligible advantage for every uniform circuit family.
 * `Cslib.Crypto.NativeQuantum.ComputationallyIndistinguishable.of_within`: concrete-to-asymptotic
   transfer for polynomially bounded challenge lengths and native circuit resources.
 
@@ -115,6 +117,14 @@ unary security parameter and the challenge length; no polynomial challenge-lengt
 into this definition. -/
 def ComputationallyIndistinguishable (X Y : ℕ → PMF (List Bool)) : Prop :=
   Game.Indistinguishable (distinguishingGame X) (distinguishingGame Y) (fun _ => True)
+
+/-- Native quantum indistinguishability tests every uniform circuit family with the same
+ensemble sampling and terminal decision convention. -/
+theorem computationallyIndistinguishable_iff {X Y : ℕ → PMF (List Bool)} :
+    ComputationallyIndistinguishable X Y ↔
+      ∀ family, Negligible (fun n =>
+        Game.advantage (distinguishingGame X family n) (distinguishingGame Y family n)) := by
+  simp [ComputationallyIndistinguishable, Game.Indistinguishable]
 
 /-- An ensemble is native-quantum computationally indistinguishable from itself. -/
 theorem ComputationallyIndistinguishable.refl (X : ℕ → PMF (List Bool)) :

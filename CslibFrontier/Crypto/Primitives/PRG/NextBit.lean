@@ -71,10 +71,16 @@ and `Cslib.Crypto.PRG.predictionTest`.
 * `Cslib.Crypto.PRG.Generator.advantage_le_sum_predictionAdvantage`,
   `Cslib.Crypto.PRG.Generator.exists_half_add_div_le_predictionExperiment`: a test with
   advantage `ε` yields a predictor for some position with success probability `1 / 2 + ε / m`.
-* `Cslib.Crypto.PRG.Generator.Unpredictable.secure`: unpredictability with error `δ` implies
-  security with error `m * δ`.
-* `Cslib.Crypto.PRG.Generator.Secure.unpredictable`: security with error `ε` implies
-  unpredictability with error `ε`.
+* `Cslib.Crypto.PRG.Generator.Unpredictable.secure_of_admissible_nextBitPredictor`:
+  unpredictability with error `δ` implies security with error `m * δ`, when the predictors built
+  from admissible tests are admissible.
+* `Cslib.Crypto.PRG.Generator.Secure.unpredictable_of_admissible_predictionTest`: security with
+  error `ε` implies unpredictability with error `ε`, when the tests built from admissible
+  predictors are admissible.
+
+Both are algebraic helpers over abstract admissibility classes: they assume that the class contains
+the objects that the proof builds. The uniform next-bit theorem for strict-PPT adversaries is
+open (#5293).
 
 ## References
 
@@ -382,8 +388,10 @@ theorem Generator.exists_half_add_div_le_predictionExperiment
 
 /-- **Unpredictability implies security** [Boneh and Shoup, Theorem 3.6][BonehShoup2023]. If every
 admissible predictor has advantage at most `δ`, and the predictors built from admissible tests are
-admissible, then every admissible test has advantage at most `m * δ`. -/
-theorem Generator.Unpredictable.secure {G : Generator Seed (Fin m → Bool)}
+admissible, then every admissible test has advantage at most `m * δ`. An algebraic helper: `hred`
+assumes that the class admits the predictors that the proof builds. -/
+theorem Generator.Unpredictable.secure_of_admissible_nextBitPredictor
+    {G : Generator Seed (Fin m → Bool)}
     {Admissible : Adversary (Fin m → Bool) → Prop}
     {AdmissiblePredictor : (i : Fin m) → Adversary (Fin i → Bool) → Prop} {δ : ℝ≥0}
     (hG : G.Unpredictable AdmissiblePredictor δ)
@@ -436,8 +444,10 @@ theorem Generator.advantage_predictionTest (G : Generator Seed (Fin m → Bool))
 
 /-- **Security implies unpredictability** [Boneh and Shoup, Theorem 3.4][BonehShoup2023]. If every
 admissible test has advantage at most `ε`, and the tests built from admissible predictors are
-admissible, then every admissible predictor has advantage at most `ε`. -/
-theorem Generator.Secure.unpredictable {G : Generator Seed (Fin m → Bool)}
+admissible, then every admissible predictor has advantage at most `ε`. An algebraic helper: `hred`
+assumes that the class admits the tests that the proof builds. -/
+theorem Generator.Secure.unpredictable_of_admissible_predictionTest
+    {G : Generator Seed (Fin m → Bool)}
     {Admissible : Adversary (Fin m → Bool) → Prop}
     {AdmissiblePredictor : (i : Fin m) → Adversary (Fin i → Bool) → Prop} {ε : ℝ≥0}
     (hG : G.Secure Admissible ε)
