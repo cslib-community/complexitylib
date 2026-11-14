@@ -278,12 +278,9 @@ theorem three_pow_modulusExp_le (m : ℕ) : 3 ^ modulusExp m ≤ (4 * Nat.log 2 
 theorem modulus_polyTime : ComputableInPolyTime modulus encUnary (encList encNat) := by
   have hb := ComputableInPolyTime.unary_to_binary
   have hlog := ComputableInPolyTime.binary_log_two.comp hb
-  -- Elaborated without an expected type: unifying `?f ∘ ?g` with `fun m => 3 ^ modulusExp m`
-  -- before the arguments are known fails only after unfolding `ComputableInPolyTime`.
-  have hpow := ComputableInPolyTime.binary_pow.comp
-    ((ComputableInPolyTime.const 3).prod modulusExp_polyTime)
   have hE : ComputableInPolyTime (fun m => 3 ^ modulusExp m) encUnary encUnary :=
-    ComputableInPolyTime.binary_to_unary_bounded hpow
+    ComputableInPolyTime.binary_to_unary_bounded (ComputableInPolyTime.binary_pow.comp
+      ((ComputableInPolyTime.const 3).prod modulusExp_polyTime))
       ((ComputableInPolyTime.unary_pow 2).comp (ComputableInPolyTime.unary_add'
         (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 4) hlog)
         (ComputableInPolyTime.const 2))) three_pow_modulusExp_le

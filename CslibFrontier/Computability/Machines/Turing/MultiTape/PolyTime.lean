@@ -24,9 +24,11 @@ within time and space bounded by polynomially bounded functions of the length of
 `Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength`; that a polynomial time bound already bounds
 the space is a lemma about machines, not part of the definition.
 
-The predicate is registered with `fun_prop`. This file proves the closure rules that need no
-machine construction beyond upstream's: the identity, constants, functions on finite types and
-changes of representation.
+The predicate is registered with `fun_prop`. It is a one-field structure rather than a definition,
+so a failed unification between two instances, such as `fun_prop` trying a rule stated for other
+encodings, stops at the predicate instead of unfolding the machine semantics and the encodings.
+This file proves the closure rules that need no machine construction beyond upstream's: the
+identity, constants, functions on finite types and changes of representation.
 
 ## Main definitions
 
@@ -34,6 +36,7 @@ changes of representation.
 
 ## Main results
 
+* `Turing.MultiTapeTM.computableInPolyTime_def`: the unfolding of the predicate.
 * `Turing.MultiTapeTM.ComputableInPolyTime.of_eq`, `Turing.MultiTapeTM.ComputableInPolyTime.id'`:
   functions that do not change the encoded word.
 * `Turing.MultiTapeTM.ComputableInPolyTime.const`,
@@ -45,7 +48,7 @@ changes of representation.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
@@ -53,11 +56,25 @@ open Cslib
 
 /-- `f` is computable in polynomial time: some machine with a binary alphabet and finitely many
 states computes `f`, relative to the encodings `encIn` and `encOut`, within time and space
-bounded by polynomially bounded functions of the length of the encoded input. -/
-def ComputableInPolyTime {α β : Type*} (f : α → β) (encIn : α ↪ List Bool)
-    (encOut : β ↪ List Bool) : Prop :=
-  ∃ t s : ℕ → ℕ, PolynomiallyBounded t ∧ PolynomiallyBounded s ∧
+bounded by polynomially bounded functions of the length of the encoded input.
+
+The predicate is a one-field structure, as Mathlib's `Continuous` is, so that unification never
+unfolds it to the machine semantics when two instances fail to match syntactically (as happens
+when `fun_prop` tries a rule stated for other encodings). Anonymous constructors and patterns
+`⟨t, s, ht, hs, h⟩` build and destructure it as they would the existential;
+`Turing.MultiTapeTM.computableInPolyTime_def` states the unfolding. -/
+structure ComputableInPolyTime {α β : Type*} (f : α → β) (encIn : α ↪ List Bool)
+    (encOut : β ↪ List Bool) : Prop where
+  /-- Polynomially bounded time and space bounds and a machine computing `f` within them. -/
+  exists_bounds : ∃ t s : ℕ → ℕ, PolynomiallyBounded t ∧ PolynomiallyBounded s ∧
     ComputableInTimeAndSpaceOfLength f encIn encOut t s
+
+/-- The unfolding of `Turing.MultiTapeTM.ComputableInPolyTime`. -/
+theorem computableInPolyTime_def {α β : Type*} {f : α → β} {encIn : α ↪ List Bool}
+    {encOut : β ↪ List Bool} :
+    ComputableInPolyTime f encIn encOut ↔ ∃ t s : ℕ → ℕ, PolynomiallyBounded t ∧
+      PolynomiallyBounded s ∧ ComputableInTimeAndSpaceOfLength f encIn encOut t s :=
+  ⟨fun h => h.exists_bounds, fun h => ⟨h⟩⟩
 
 namespace ComputableInPolyTime
 

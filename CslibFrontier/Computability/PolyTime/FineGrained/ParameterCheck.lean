@@ -512,8 +512,6 @@ section PolyTime
 
 open ComputableInPolyTime
 
-attribute [local irreducible] ComputableInPolyTime
-
 /-- The parameter schedule `(λ, ν, r, Q, R, A₀)` computed by `computeScheduleParams`, all in binary:
 the framed `λ`, `ν`, `r`, `Q` and `R` in turn, then `A₀`. -/
 abbrev encReplacementParams : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ ↪ List Bool :=

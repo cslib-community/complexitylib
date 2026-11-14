@@ -459,8 +459,6 @@ abbrev encVertex : List ℕ × T ↪ List Bool := encPair (encList encNat) encT
 
 variable {encQ encY encT}
 
-attribute [local irreducible] ComputableInPolyTime
-
 /-- The number of edges of a described network, in unary. -/
 theorem numEdges_polyTime :
     ComputableInPolyTime (fun d : DescribedNetwork T => d.numEdges) (encDescribed encT)

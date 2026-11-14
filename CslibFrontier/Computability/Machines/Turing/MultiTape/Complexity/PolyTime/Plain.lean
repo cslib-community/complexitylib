@@ -109,7 +109,7 @@ deciding membership, the form used by the classes in `Cslib.Complexity`.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
@@ -179,12 +179,13 @@ theorem computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength :
 
 /-! ### Bridges to `ComputableInPolyTime` -/
 
-/-- **Plain and tidy polynomial time agree.** `Turing.MultiTapeTM.ComputableInPolyTime` unfolds to
-the right-hand side of
+/-- **Plain and tidy polynomial time agree.** `Turing.MultiTapeTM.ComputableInPolyTime` unfolds
+(`Turing.MultiTapeTM.computableInPolyTime_def`) to the right-hand side of
 `Turing.MultiTapeTM.computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength`. -/
 theorem computableInPolyTime_iff_computableTidilyInPolyTime :
     ComputableInPolyTime f encIn encOut ↔ ComputableTidilyInPolyTime f encIn encOut :=
-  computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength.symm
+  computableInPolyTime_def.trans
+    computableTidilyInPolyTime_iff_exists_computableInTimeAndSpaceOfLength.symm
 
 /-- A function computable in polynomial time is tidily computable in polynomial time. The tidy
 machine runs within time and space linear in the plain time bound. -/
@@ -196,7 +197,7 @@ theorem ComputableInPolyTime.tidy (h : ComputableInPolyTime f encIn encOut) :
 machine within the same bounds. -/
 theorem ComputableInPolyTime.of_tidy (h : ComputableTidilyInPolyTime f encIn encOut) :
     ComputableInPolyTime f encIn encOut :=
-  h.exists_computableInTimeAndSpaceOfLength
+  ⟨h.exists_computableInTimeAndSpaceOfLength⟩
 
 /-- `Turing.MultiTapeTM.ComputableInPolyTime.of_tidy` for dot notation on a tidy hypothesis. As a
 `fun_prop` transition rule, it proves the atoms of a plain goal from tidy certificates. -/

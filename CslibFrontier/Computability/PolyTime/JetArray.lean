@@ -768,8 +768,6 @@ section PolyTime
 
 open Turing MultiTapeTM
 
-attribute [local irreducible] ComputableInPolyTime
-
 variable {α : Type} {encIn : α ↪ List Bool}
 
 /-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)`. The dimension pair is framed,

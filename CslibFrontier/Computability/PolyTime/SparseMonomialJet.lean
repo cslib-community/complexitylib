@@ -938,7 +938,6 @@ theorem length_encIntBin_evalEquationParityFactorJet_le {J ℓ k B₀ : ℕ} {dD
 section PolyTime
 
 open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
-attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 

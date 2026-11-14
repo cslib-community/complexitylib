@@ -114,9 +114,7 @@ theorem length_encNat_candidateTupleCount_le (m P : ℕ) :
     {m P : α → ℕ} (hm : ComputableInPolyTime m input encUnary)
     (hP : ComputableInPolyTime P input encUnary) :
     ComputableInPolyTime (fun a => candidateTupleCount (m a) (P a)) input encNat := by
-  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
-  have h := computableInPolyTime_candidateTupleCount.comp' (hm.prod hP)
-  exact h
+  exact computableInPolyTime_candidateTupleCount.comp' (hm.prod hP)
 
 /-- Decode a binary candidate index `j : ℕ` in base `2 * m` into `((e₁, c₁), …, (e_P, c_P))`
 via `Cslib.Radix.digit` without materializing `(2 * m) ^ P` lists
@@ -322,9 +320,7 @@ abbrev encTestPairs : List (ℕ × Bool) ↪ List Bool :=
     (hP : ComputableInPolyTime P input encUnary) (hj : ComputableInPolyTime j input encNat) :
     ComputableInPolyTime (fun a => decodeTestTuple (m a) (P a) (j a))
       input encTestPairs := by
-  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
-  have h := computableInPolyTime_decodeTestTuple.comp' ((hm.prod hP).prod hj)
-  exact h
+  exact computableInPolyTime_decodeTestTuple.comp' ((hm.prod hP).prod hj)
 
 /-! ### Mod-`2` row materialization -/
 
@@ -426,9 +422,7 @@ theorem count_true_materializeTestRow_decodeTestTuple_le (m P j : ℕ) :
     {m : α → ℕ} {γ : α → List (ℕ × Bool)} (hm : ComputableInPolyTime m input encUnary)
     (hγ : ComputableInPolyTime γ input encTestPairs) :
     ComputableInPolyTime (fun a => materializeTestRow (m a) (γ a)) input encBits := by
-  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
-  have h := computableInPolyTime_materializeTestRow.comp' (hm.prod hγ)
-  exact h
+  exact computableInPolyTime_materializeTestRow.comp' (hm.prod hγ)
 
 /-! ### Streaming `(2m)^P` min-count selector and `3n`-round greedy loop -/
 
@@ -804,9 +798,7 @@ theorem computableInPolyTime_augCandidateRows :
   have hrows := (ComputableInPolyTime.fst (encList encBits) _).comp'
     ((ComputableInPolyTime.snd (encPair encUnary encUnary) encRest).comp'
       (ComputableInPolyTime.snd encNat (encPair (encPair encUnary encUnary) encRest)))
-  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
-  have h := (ComputableInPolyTime.snoc encBits).comp' (hrows.prod hcand)
-  exact h
+  exact (ComputableInPolyTime.snoc encBits).comp' (hrows.prod hcand)
 
 /-- Update `SelectBestAcc` after evaluating the candidate score `p.2` at `IndexFold` state `p.1`. -/
 @[expose] def finishSelectBestStep (p : (ℕ × SelectBestAcc) × ℕ) : SelectBestAcc :=
@@ -956,10 +948,8 @@ private def greedyRoundCountIn (a : ℕ × ℕ × ℕ × List (List Bool)) : ℕ
 private theorem computableInPolyTime_greedyRoundCountIn :
     ComputableInPolyTime greedyRoundCountIn encGreedyIn encNat := by
   unfold greedyRoundCountIn encGreedyIn
-  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
-  have h := ComputableInPolyTime.unary_to_binary.comp'
+  exact ComputableInPolyTime.unary_to_binary.comp'
     (ComputableInPolyTime.unary_mul' (.const 3) (ComputableInPolyTime.fst encUnary encSelectBestIn))
-  exact h
 
 /-- Native machine certificate for the `3 * n`-round `greedyParityRows` procedure for a fixed
 counter `(countSys, cCount)`.

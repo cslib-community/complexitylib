@@ -45,7 +45,7 @@ generated circuit, so no separate runtime assumption on the base decryption func
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 
@@ -68,8 +68,8 @@ theorem computableInPolyTime_keyPair {depth : α → ℕ}
       (hkeys.prod (ComputableInPolyTime.const 0))
   have hlast := (ComputableInPolyTime.listGetD
     (encA := encPair encBits encBits) ([], [])).comp (hkeys.prod hdepth)
-  exact (hpublic.of_enc_eq fun _ => rfl).prod
-    ((hfirst.snd'.prod hlast.snd').of_enc_eq fun _ => rfl)
+  exact ((hpublic.of_enc_eq fun _ => rfl).prod
+    ((hfirst.snd'.prod hlast.snd').of_enc_eq fun _ => rfl)).of_enc_eq fun _ => rfl
 
 variable {E : Scheme}
   (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)

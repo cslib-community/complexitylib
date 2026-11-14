@@ -116,7 +116,8 @@ theorem publicKey_indistinguishable_zero :
       (fun n => (ProbComp.eval (keyGen E n (budget n))).map Prod.fst)
       (fun n => (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) 0)).map encPublicKey) := by
   intro adversary hadversary
-  have hpublic := (ComputableInPolyTime.snd encUnary encPublicKey).of_enc_eq fun _ => rfl
+  have hpublic := (ComputableInPolyTime.snd encUnary encPublicKey).of_enc_eq
+    (g := fun p => encPublicKey (Prod.snd p)) (encD := encBits) fun _ => rfl
   have htest : IsPPTOn (encPair encUnary encPublicKey) encBool
       (fun p => adversary p.1 (encPublicKey p.2)) :=
     hadversary.on.preprocess ((ComputableInPolyTime.fst encUnary encPublicKey).prod hpublic)

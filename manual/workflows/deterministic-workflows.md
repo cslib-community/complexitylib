@@ -1,6 +1,6 @@
 # Prove deterministic resource bounds
 
-Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [cslib-frontier][complexitylib]
+Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. It is a one-field structure: build or take apart a certificate with `⟨t, s, ht, hs, h⟩`, or use the unfolding `Turing.MultiTapeTM.computableInPolyTime_def` when a proof needs the bare existential. Unification does not unfold it, so a failed rule attempt in `fun_prop` stops at the predicate instead of expanding the machine semantics, and no `attribute [local irreducible]` is needed. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [cslib-frontier][complexitylib]
 
 ## Compose a certified function
 

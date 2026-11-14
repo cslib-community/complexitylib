@@ -413,7 +413,8 @@ private theorem packetVertices_polyTime {P : δ → ℕ} {cedges : δ → List (
       e₁ (encList encUnary) := listTake hdrop (hTp.comp hx)
   have hpacket := hpqb.prod ((ComputableInPolyTime.sumInr (encList encNat) encPacketDesc).comp
     ((packetCtx_polyTime hfl ha hL hi hT hpt ht hζ hg).prod (htags.prod hslice)))
-  exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hP) hpacket
+  exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hP)
+    (hpacket.of_enc_eq fun _ => rfl)
 
 /-- The parts of a native packing. -/
 private theorem packing_parts (hpk : ComputableInPolyTime pk encIn PacketPacking.encNativePacking) :

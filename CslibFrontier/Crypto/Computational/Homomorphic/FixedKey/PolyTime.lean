@@ -42,7 +42,7 @@ are polynomially bounded as a consequence of the generator certificate.
   construction][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.FixedKey
 
@@ -74,9 +74,9 @@ theorem isPPTOn_keyGen
         (encPublicKey (p.1.2.1, p.2), p.1.2.2))
       (encPair (encPair input (encPair encBits encBits)) (encList encBits))
       (encPair encBits encBits) from
-      (((ComputableInPolyTime.fst _ _).snd'.fst'.prod
+      ((((ComputableInPolyTime.fst _ _).snd'.fst'.prod
         (ComputableInPolyTime.snd _ _)).of_enc_eq fun _ => rfl).prod
-          (ComputableInPolyTime.fst _ _).snd'.snd')
+          (ComputableInPolyTime.fst _ _).snd'.snd').of_enc_eq fun _ => rfl)
 
 include hencrypt in
 /-- Decode any public word and encrypt under the decoded base public key. -/

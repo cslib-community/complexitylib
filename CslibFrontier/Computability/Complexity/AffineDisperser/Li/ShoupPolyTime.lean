@@ -52,7 +52,7 @@ namespace Cslib.AffineDisperser.Li
 open Turing.MultiTapeTM
 open Cslib.BitString (listDot)
 
-attribute [local irreducible] ComputableInPolyTime ComputableTidilyInPolyTime
+attribute [local irreducible] ComputableTidilyInPolyTime
 
 /-! ### Unary parameter selection (`fifthRoot`, `primeThresholdBound`, `primeDeg`) -/
 

@@ -520,9 +520,6 @@ private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
       (hρs.prod hresponse))
     ((ComputableInPolyTime.zip encNat encKilianOpening).comp (hqueries.prod hanswers))
 
--- Keeping `ComputableInPolyTime` folded stops the final `exact` from checking defeq by unfolding
--- it and evaluating the conflict search under the grouped output encoding.
-attribute [local irreducible] ComputableInPolyTime in
 private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime

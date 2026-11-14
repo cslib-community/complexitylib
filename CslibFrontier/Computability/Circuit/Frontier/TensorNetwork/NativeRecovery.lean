@@ -1016,8 +1016,6 @@ section PolyTime
 
 open Turing.MultiTapeTM
 
-attribute [local irreducible] ComputableInPolyTime
-
 variable {α : Type} {encIn : α ↪ List Bool}
 
 private theorem lengthPolyTime {β : Type} {encB : β ↪ List Bool} {l : α → List β}

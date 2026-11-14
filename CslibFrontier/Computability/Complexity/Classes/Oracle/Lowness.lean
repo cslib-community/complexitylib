@@ -85,7 +85,7 @@ The proof combines deterministic instruction-indexed oracle replay
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -152,7 +152,7 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_NP {f : α → β} {P : α ×
     dsimp only [T]
     fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableInPolyTime.id'
+    .of_eq fun _ => rfl
   -- weight each transcript by the indicator of `P` on its replayed output
   let F : α × List Bool → ℕ := fun x => if P x then 1 else 0
   have hF : F ∈ SharpP (encPair enc encBits) := SharpP.ite_mem hP SharpP.one_mem SharpP.zero_mem
@@ -336,7 +336,7 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_UP {f : α → β} {P : α ×
     dsimp only [T]
     fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableInPolyTime.id'
+    .of_eq fun _ => rfl
   -- weight each transcript by the indicator of `P` on its replayed output
   let F : α × List Bool → ℕ := fun x => if P x then 1 else 0
   have hF : F ∈ SharpP (encPair enc encBits) := SharpP.ite_mem hP SharpP.one_mem SharpP.zero_mem

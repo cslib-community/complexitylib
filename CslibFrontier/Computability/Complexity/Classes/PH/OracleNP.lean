@@ -174,7 +174,7 @@ theorem oracleTranscriptNo_mem_coNP [Finite Control] [Finite Operation] (hA : A 
     oracleTranscriptNo machine enc A ∈ coNP (encPair enc encBits) := by
   let _ := Fintype.ofFinite Operation
   obtain ⟨pA, VA, hVA, hA⟩ := mem_NP.mp hA
-  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := ComputableInPolyTime.id'
+  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := .of_eq fun _ => rfl
   let req : (α × List Bool) × ℕ → List Bool :=
     fun y => machine.pendingRequest (machine.replayPrefix (enc y.1.1) y.1.2 y.2)
   let isQ : (α × List Bool) × ℕ → Bool :=
@@ -266,7 +266,7 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_SigmaP_two {f : α → β}
   let good : Set (α × List Bool) :=
     {x | P (x.1, machine.replayOutput (enc x.1) x.2) = true}
   have hgood : good ∈ SigmaP 2 (encPair enc encBits) := by
-    have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := ComputableInPolyTime.id'
+    have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := .of_eq fun _ => rfl
     have hgoodP : good ∈ Complexity.P (encPair enc encBits) :=
       ⟨fun x => P (x.1, machine.replayOutput (enc x.1) x.2), hP.comp
         ((ComputableInPolyTime.fst _ _).prod
